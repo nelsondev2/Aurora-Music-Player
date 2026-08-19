@@ -1874,6 +1874,16 @@ const I18N = {
     fr: 'OK',
     it: 'OK',
     ru: 'ОК'
+  },
+  listeners_standalone_hint: {
+    es: 'Estás en modo reproductor normal. Para escuchar con amigos en tiempo real, usa Aurora dentro de un chat de Delta Chat. Consejo: abre esta página en otra pestaña para probar la sincronización.',
+    en: 'You are in standalone player mode. To listen together in real time, use Aurora inside a Delta Chat. Tip: open this page in another tab to try syncing.',
+    pt: 'Estás no modo de reprodutor normal. Para ouvir com amigos em tempo real, usa a Aurora dentro de um chat do Delta Chat. Dica: abre esta página noutro separador para testar a sincronização.',
+    zh: '当前为普通播放器模式。要与好友实时同步收听，请在 Delta Chat 聊天中使用 Aurora。提示：在其他标签页打开本页可试用同步功能。',
+    ja: '通常のプレイヤーモードです。友人とリアルタイムで一緒に聴くには、Delta Chat 内で Aurora を使ってください。ヒント: 別タブでこのページを開くと同期を試せます。',
+    fr: "Vous êtes en mode lecteur normal. Pour écouter en temps réel avec des amis, utilisez Aurora dans une discussion Delta Chat. Astuce : ouvrez cette page dans un autre onglet pour tester la synchronisation.",
+    it: "Sei in modalità lettore normale. Per ascoltare in tempo reale con gli amici, usa Aurora dentro una chat Delta Chat. Suggerimento: apri questa pagina in un'altra scheda per provare la sincronizzazione.",
+    ru: 'Вы в режиме обычного плеера. Чтобы слушать вместе в реальном времени, откройте Aurora в чате Delta Chat. Совет: откройте эту страницу в другой вкладке, чтобы попробовать синхронизацию.'
   }
 };
 

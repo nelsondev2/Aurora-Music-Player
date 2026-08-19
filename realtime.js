@@ -17,7 +17,7 @@
  *
  *  Integración con Aurora:
  *    - Usa IndexedDB (vía AuroraStorage) para persistir chunks.
- *    - Expone window.AuroraRealtime con métodos para que app.js
+ *    - Expone window.AuroraRealtime con métodos para que la app (js/realtime-bridge.js)
  *      avise de eventos (play, pause, next, seek, addTrack, deleteTrack).
  * ===================================================================== */
 
@@ -577,7 +577,7 @@
   }
 
   /* ============================================================
-   *  AuroraRealtime — Fachada para app.js
+   *  AuroraRealtime — Fachada para la app (js/realtime-bridge.js)
    * ============================================================
    *  Métodos públicos:
    *    connect()
@@ -794,7 +794,7 @@
       // Actualizar nuestro lastAction con el del peer
       this._state.lastAction = best;
       this._channel.setState(this._state);
-      // Notificar a app.js para que salte a esa pista/posición
+      // Notificar a la app para que salte a esa pista/posición
       this._emit('playback', best);
       if (best.alert) this._emit('state', this._state);
     },
@@ -964,7 +964,7 @@
       return `${n} song${n === 1 ? '' : 's'}`;
     },
 
-    /* ---------- API para refrescar lista de archivos desde app.js ---------- */
+    /* ---------- API para refrescar lista de archivos desde la app ---------- */
     refreshKnownFiles(tracks) {
       const files = tracks
         .filter(t => t.fileSize && t.fileSize > 0)

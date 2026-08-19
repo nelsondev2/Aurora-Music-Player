@@ -334,7 +334,7 @@
     /* Normaliza cualquier texto de letras a un array de líneas.
      * - Si ya tiene timestamps LRC [mm:ss.xx], respeta el formato.
      * - Si es texto plano sin timestamps, lo deja como líneas sueltas
-     *   (la app.js las mostrará sin sincronización).
+     *   (js/realtime-bridge.js las mostrará sin sincronización).
      * - Filtra metadata LRC irrelevante ([ar:], [ti:], etc.) solo si
      *   hay timestamps reales; si no, las mantiene como texto normal. */
     normalizeLyrics(text) {

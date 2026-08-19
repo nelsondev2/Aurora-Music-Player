@@ -2276,6 +2276,17 @@ svg { display: block; }
   background: #dc2626;
 }
 
+/* Aviso de modo reproductor normal dentro del sheet de oyentes */
+.listeners-hint {
+  font-size: 12.5px;
+  color: var(--text-3);
+  line-height: 1.55;
+  padding: 10px 12px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  margin: 0 0 12px;
+}
+
 /* Accesibilidad: sin doble-tap zoom en controles (el pinch-zoom sigue
  * disponible — el viewport ya no bloquea el escalado). */
 button,

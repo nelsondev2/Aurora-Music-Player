@@ -70,6 +70,10 @@ window.webxdc = window.webxdc || (function () {
   })();
 
   return {
+    // Marca para que la app distinga el stub (navegador) del webxdc real
+    // inyectado por Delta Chat → habilita el "modo reproductor normal".
+    __isStub: true,
+
     // Dirección del peer actual (simulada)
     selfAddr: tabId + '@localhost',
 
