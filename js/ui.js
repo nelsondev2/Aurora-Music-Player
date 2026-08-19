@@ -65,6 +65,7 @@ Object.assign(App, {
       // Reset del flag de selección si se cierra el sheet de listas
       if (id === 'sheetPlaylists') {
         this._selectPlaylistForAdd = false;
+        this._trackToAddId = null;
       }
       // Si se cierra el sheet de creación, limpiar modo "add"
       if (id === 'sheetCreatePlaylist') {

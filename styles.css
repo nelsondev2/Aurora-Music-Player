@@ -2287,6 +2287,66 @@ svg { display: block; }
   margin: 0 0 12px;
 }
 
+/* =====================================================================
+ *  Pulido: LRC bilingüe (traducción bajo la línea principal)
+ * ===================================================================== */
+.lrc-line .lrc-translation {
+  display: block;
+  font-size: 0.72em;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--text-3);
+  margin-top: 3px;
+  letter-spacing: 0.01em;
+  transition: color .15s ease;
+}
+
+.lrc-line.active .lrc-translation { color: var(--text-2); }
+
+/* =====================================================================
+ *  Pulido: picker de pistas — estado "ya está en la lista"
+ * ===================================================================== */
+.pick-row.in-pl {
+  opacity: 0.55;
+}
+
+.pick-row.in-pl:active {
+  background: transparent;   /* no parece pulsable */
+}
+
+.pick-row.in-pl .row-check {
+  background: var(--surface-2);
+  color: var(--text-3);
+}
+
+.in-pl-tag {
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Botón "añadir a lista" por fila: mismo tratamiento que el de borrar */
+.add-to-pl { color: var(--text-3); }
+.add-to-pl:active { color: var(--accent); background: rgba(168, 85, 247, 0.12); }
+
+/* =====================================================================
+ *  Pulido: accesibilidad de teclado y movimiento reducido
+ * ===================================================================== */
+
+/* Contorno visible solo al navegar con teclado (no molesta al tap).
+ * Nota: el movimiento reducido ya lo cubre el bloque global
+ * prefers-reduced-motion existente en este archivo. */
+button:focus-visible,
+.track-row:focus-visible,
+.pick-row:focus-visible,
+.menu-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
 /* Accesibilidad: sin doble-tap zoom en controles (el pinch-zoom sigue
  * disponible — el viewport ya no bloquea el escalado). */
 button,

@@ -103,6 +103,29 @@ Object.assign(App, {
           const tb = b.timed ? b.time : 0;
           return ta - tb;
         });
+
+        // Fusionar líneas con el MISMO timestamp: la primera es el texto
+        // principal y la siguiente es su traducción (formato LRC bilingüe,
+        // muy común en archivos con idioma original + traducción).
+        const merged = [];
+        for (const line of result) {
+          const prev = merged[merged.length - 1];
+          if (
+            line.timed && prev && prev.timed &&
+            Math.abs(prev.time - line.time) < 0.001 &&
+            !prev.translation
+          ) {
+            if (!prev.text && line.text) {
+              prev.text = line.text;   // la 1ª estaba vacía: promover su texto
+            } else if (line.text) {
+              prev.translation = line.text;
+            }
+            continue;
+          }
+          merged.push(line);
+        }
+        result.length = 0;
+        result.push(...merged);
       }
       result.hasTimed = hasTimed;
       return result;
@@ -152,12 +175,18 @@ Object.assign(App, {
         cont.appendChild(badge);
       }
 
-      this.lrcLines.forEach((l, i) => {
+        this.lrcLines.forEach((l, i) => {
         const div = document.createElement('div');
         div.className = 'lrc-line';
         if (!l.text) div.classList.add('empty');
         if (!this.lrcHasTimed) div.classList.add('untimed');
-        div.textContent = l.text || '♪';
+        // Traducción (LRC bilingüe): línea secundaria bajo el texto principal
+        if (l.translation) {
+          div.innerHTML = '<span class="lrc-main">' + this.esc(l.text || '♪') + '</span>' +
+            '<span class="lrc-translation">' + this.esc(l.translation) + '</span>';
+        } else {
+          div.textContent = l.text || '♪';
+        }
         div.dataset.idx = i;
         // Tap en una línea con timestamp → saltar a ese punto (#11)
         if (l.timed && l.time >= 0) {

@@ -132,6 +132,7 @@ Object.assign(App, {
         if (!t) return;
         const li = document.createElement('li');
         li.className = 'track-row';
+        li.dataset.trackId = id;   // identificación robusta para _removeTrackFromEditView
         li.innerHTML = `
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
@@ -185,7 +186,13 @@ Object.assign(App, {
       }
       // Actualizar solo el contador y la lista, sin parpadeo
       this._updatePlaylistMeta(pl);
-      this._removeTrackFromEditView(trackId);
+      // Si el editor de esta playlist está abierto:
+      // - lista vacía → re-render completo (muestra el estado "sin pistas")
+      // - si no → quitar solo la fila afectada
+      if (this._editingPlaylistId === playlistId) {
+        if (pl.trackIds.length === 0) this.renderEditPlaylist();
+        else this._removeTrackFromEditView(trackId);
+      }
       this.renderQueue();
       this.toast(this.t('toast_removed_from_playlist'));
     },
@@ -201,20 +208,16 @@ Object.assign(App, {
 
     /* Eliminar una pista de la vista de edición sin re-render completo */
     _removeTrackFromEditView(trackId) {
-      const items = document.querySelectorAll('#editPlaylistTracks .track-row');
-      // No podemos usar data-track porque la vista de edición no lo tiene
-      // Buscar por el texto del título de la pista
-      const track = this.tracks.find(t => t.id === trackId);
-      if (!track) return;
-      items.forEach(item => {
-        const title = item.querySelector('.row-title');
-        if (title && title.textContent === track.title) {
-          item.style.transition = 'opacity .2s, transform .2s';
-          item.style.opacity = '0';
-          item.style.transform = 'translateX(-20px)';
-          setTimeout(() => item.remove(), 200);
-        }
-      });
+      // Match por data-track-id (robusto): antes se buscaba por el texto
+      // del título, lo que eliminaba de la vista TODAS las filas de
+      // canciones con el mismo nombre aunque solo se quitara una.
+      const row = document.querySelector('#editPlaylistTracks .track-row[data-track-id="' + CSS.escape(trackId) + '"]');
+      if (row) {
+        row.style.transition = 'opacity .2s, transform .2s';
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(-20px)';
+        setTimeout(() => row.remove(), 200);
+      }
     },
 
     /* Vacía una playlist (sin borrar las pistas de la biblioteca) */

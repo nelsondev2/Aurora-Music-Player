@@ -392,12 +392,20 @@ Object.assign(App, {
             <div class="row-sub">${this.esc(t.artist)}${t.album && t.album !== this.t('no_album') ? ' · ' + this.esc(t.album) : ''}</div>
           </div>
           <div class="row-duration">${this.fmtTime(t.duration)}</div>
+          <button class="row-action add-to-pl" aria-label="${this.esc(this.t('menu_add_to_playlist'))}"><i class="fa-solid fa-list-plus"></i></button>
           <button class="row-action delete-track" aria-label="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
         `;
         li.addEventListener('click', (e) => {
-          if (e.target.closest('.delete-track')) return;
+          if (e.target.closest('.delete-track, .add-to-pl')) return;
           this.playTrack(t.id, { type: 'all' });
           this.closeSheet('sheetLibrary');
+        });
+        li.querySelector('.add-to-pl').addEventListener('click', (e) => {
+          e.stopPropagation();
+          // Añadir ESTA pista (no la que está sonando) a una playlist
+          this._trackToAddId = t.id;
+          this._selectPlaylistForAdd = true;
+          this.openSheet('sheetPlaylists');
         });
         li.querySelector('.delete-track').addEventListener('click', async (e) => {
           e.stopPropagation();
@@ -483,11 +491,15 @@ Object.assign(App, {
           }
           li.addEventListener('click', (e) => {
             if (e.target.closest('.row-action')) return;
-            // Modo "seleccionar playlist para añadir la pista actual"
+            // Modo "seleccionar playlist para añadir una pista"
             if (this._selectPlaylistForAdd) {
               this._selectPlaylistForAdd = false;
+              // Prioridad: pista concreta elegida desde una fila de la
+              // biblioteca; si no, la pista que está sonando
+              const tid = this._trackToAddId || (this.currentTrack && this.currentTrack.id) || null;
+              this._trackToAddId = null;
               this.closeSheet('sheetPlaylists');
-              this.addCurrentTrackToPlaylist(pl.id);
+              if (tid) this.addTrackToPlaylist(tid, pl.id);
               return;
             }
             // Modo normal: abrir editor de la playlist
@@ -522,18 +534,27 @@ Object.assign(App, {
       const ul = document.getElementById('pickTracksList');
       if (!ul) return;
       ul.innerHTML = '';
+      // En modo "añadir a playlist existente" sabemos qué pistas ya están dentro
+      const targetPl = this._addingToPlaylistId
+        ? this.playlists.find(p => p.id === this._addingToPlaylistId)
+        : null;
       this.tracks.forEach(t => {
+        const inPl = !!(targetPl && targetPl.trackIds.includes(t.id));
         const li = document.createElement('li');
-        li.className = 'pick-row';
+        li.className = 'pick-row' + (inPl ? ' in-pl' : '');
         li.dataset.trackId = t.id;
+        if (inPl) li.setAttribute('aria-disabled', 'true');
         li.innerHTML = `
           <div class="row-check"><i class="fa-solid fa-check"></i></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
-            <div class="row-sub">${this.esc(t.artist)}</div>
+            <div class="row-sub">${this.esc(t.artist)}${inPl ? ' · <span class="in-pl-tag">' + this.esc(this.t('picker_already_in')) + '</span>' : ''}</div>
           </div>
         `;
-        li.addEventListener('click', () => li.classList.toggle('checked'));
+        li.addEventListener('click', () => {
+          if (li.classList.contains('in-pl')) return; // ya está en la lista
+          li.classList.toggle('checked');
+        });
         ul.appendChild(li);
       });
     },
@@ -592,21 +613,38 @@ Object.assign(App, {
     },
 
     /* Añade la pista actual a una playlist existente (atajo desde el menú "Más") */
+    /* Añade una pista concreta a una playlist (generalización de
+     * addCurrentTrackToPlaylist: permite añadir cualquier pista de la
+     * biblioteca, no solo la que está sonando). */
+    addTrackToPlaylist(trackId, playlistId) {
+      const pl = this.playlists.find(p => p.id === playlistId);
+      if (!pl) return;
+      const t = this.tracks.find(x => x.id === trackId);
+      if (!t) {
+        this.toast(this.t('toast_pick_at_least_one'));
+        return;
+      }
+      if (pl.trackIds.includes(trackId)) {
+        this.toast(this.t('toast_already_in_playlist') + ' ♥ ' + pl.name);
+        return;
+      }
+      pl.trackIds.push(trackId);
+      pl._coverCache = null;
+      pl._coverCacheHash = null;
+      this.persistPlaylist(pl);
+      this.renderPlaylists();
+      // Si el sheet de edición de esa playlist está abierto (debajo),
+      // refrescarlo para que la pista reaparezca al instante
+      if (this._editingPlaylistId === pl.id) this.renderEditPlaylist();
+      this.toast('♥ ' + this.t('toast_added_to_playlist_plural') + ' ' + pl.name);
+    },
+
+    /* Atajo: añade la pista que está sonando */
     addCurrentTrackToPlaylist(playlistId) {
       if (!this.currentTrack) {
         this.toast(this.t('toast_pick_at_least_one'));
         return;
       }
-      const pl = this.playlists.find(p => p.id === playlistId);
-      if (!pl) return;
-      const tid = this.currentTrack.id;
-      if (pl.trackIds.includes(tid)) {
-        this.toast(this.t('toast_already_in_playlist') + ' ♥ ' + pl.name);
-        return;
-      }
-      pl.trackIds.push(tid);
-      this.persistPlaylist(pl);
-      this.renderPlaylists();
-      this.toast('♥ ' + this.t('toast_added_to_playlist_plural') + ' ' + pl.name);
+      this.addTrackToPlaylist(this.currentTrack.id, playlistId);
     },
 });

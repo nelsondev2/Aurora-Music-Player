@@ -1845,6 +1845,16 @@ const I18N = {
     it: 'Già in questa lista',
     ru: 'Уже в этом списке'
   },
+  picker_already_in: {
+    es: 'en la lista',
+    en: 'in this list',
+    pt: 'na lista',
+    zh: '已在列表中',
+    ja: 'リスト内',
+    fr: 'dans la liste',
+    it: 'nella lista',
+    ru: 'в списке'
+  },
   cancel: {
     es: 'Cancelar',
     en: 'Cancel',
