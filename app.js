@@ -50,7 +50,6 @@
     lrcUserScrolling: false,  // true cuando el usuario hace scroll manual
     lrcUserScrollTimer: null,
     lrcLoop: null,       // {startIdx, endIdx} para loop de sección
-    playbackRate: 1,     // velocidad de reproducción
 
     /* #15 #16 Cache de objectURLs y preload */
     _urlCache: new Map(),     // trackId → objectURL (cache para reutilizar)
@@ -473,7 +472,7 @@
       };
       await this.saveStats();
       this.renderStats();
-      this.toast('Estadísticas reiniciadas');
+      this.toast(this.t('stats_reset_toast'));
     },
 
     /* Reiniciar historial de reproducción */
@@ -481,7 +480,7 @@
       this._playHistory = [];
       try { await window.AuroraStorage.setSetting('history', this._playHistory); } catch (e) {}
       this.renderHistory();
-      this.toast('Historial reiniciado');
+      this.toast(this.t('history_reset_toast'));
     },
 
     /* Registrar que una pista empezó a sonar */
@@ -1141,9 +1140,18 @@
       const idx = this.tracks.findIndex(t => t.id === trackId);
       if (idx < 0) return;
       const wasCurrent = this.currentTrack && this.currentTrack.id === trackId;
-      // Liberar objectURL
+      // Liberar objectURL (la del track y la que pueda haber en la cache #15)
       const t = this.tracks[idx];
-      if (t.src && t.src.startsWith('blob:')) URL.revokeObjectURL(t.src);
+      const cachedUrl = this._urlCache.get(trackId);
+      if (cachedUrl) {
+        try { URL.revokeObjectURL(cachedUrl); } catch (e) {}
+        this._urlCache.delete(trackId);
+      }
+      if (t.src && t.src.startsWith('blob:') && t.src !== cachedUrl) {
+        URL.revokeObjectURL(t.src);
+      }
+      // Limpiar también la cache de ganancia normalizada (#6)
+      this._trackGainCache.delete(trackId);
       this.tracks.splice(idx, 1);
       // Quitar de la cola
       const qIdx = this.queue.indexOf(trackId);
@@ -1198,6 +1206,12 @@
           try { URL.revokeObjectURL(t.src); } catch (e) {}
         }
       }
+      // ...incluidas las que estén en la cache #15 y la de ganancias #6
+      for (const url of this._urlCache.values()) {
+        try { URL.revokeObjectURL(url); } catch (e) {}
+      }
+      this._urlCache.clear();
+      this._trackGainCache.clear();
 
       // 3. Vaciar estado en memoria
       this.tracks = [];
@@ -1594,7 +1608,7 @@
         return;
       }
       if (!window.webxdc || typeof window.webxdc.sendToChat !== 'function') {
-        this.toast('sendToChat no disponible');
+        this.toast(this.t('sendtochat_unavailable'));
         return;
       }
       try {
@@ -1610,7 +1624,7 @@
         this.toast(this.t('toast_track_shared'));
       } catch (e) {
         console.warn('[Aurora] Error compartiendo pista al chat:', e);
-        this.toast('Error: ' + e.message);
+        this.toast(this.t('error_toast').replace('X', e.message || ''));
       }
     },
 
@@ -2869,7 +2883,7 @@
         this.persistTrack(this.currentTrack);
       }
       const sign = this.lrcOffset >= 0 ? '+' : '';
-      this.toast('Offset: ' + sign + this.lrcOffset.toFixed(1) + 's');
+      this.toast(this.t('lrc_offset_toast').replace('X', sign + this.lrcOffset.toFixed(1) + 's'));
     },
     resetLrcOffset() {
       // Reset COMPLETO: deshace todos los cambios hechos en la vista de letras
@@ -3226,7 +3240,7 @@
         }
       }
       if (this.queue.length === 0) {
-        ul.innerHTML = '<li class="track-row" style="justify-content:center;color:var(--text-3);font-size:13px;padding:24px">' + this.t('queue_title') + '</li>';
+        ul.innerHTML = '<li class="track-row" style="justify-content:center;color:var(--text-3);font-size:13px;padding:24px">' + this.t('queue_empty') + '</li>';
         return;
       }
       this.queue.forEach((id, i) => {
@@ -3583,13 +3597,13 @@
       if (!pl) return;
       const tid = this.currentTrack.id;
       if (pl.trackIds.includes(tid)) {
-        this.toast('♥ ' + pl.name);
+        this.toast(this.t('toast_already_in_playlist') + ' ♥ ' + pl.name);
         return;
       }
       pl.trackIds.push(tid);
       this.persistPlaylist(pl);
       this.renderPlaylists();
-      this.toast('♥ ' + pl.name);
+      this.toast('♥ ' + this.t('toast_added_to_playlist_plural') + ' ' + pl.name);
     },
 
     /* ============================================================
@@ -3978,7 +3992,7 @@
         const ms = this.sleepEndAt - Date.now();
         const m = Math.floor(ms / 60000);
         const s = Math.floor((ms % 60000) / 1000);
-        el.textContent = `Activo · falta ${m}:${String(s).padStart(2,'0')}`;
+        el.textContent = `${this.t('sleep_active_prefix')} ${m}:${String(s).padStart(2,'0')} ${this.t('sleep_remaining')}`;
       } else {
         el.textContent = '';
       }
@@ -4539,11 +4553,11 @@
       cont.appendChild(resetDiv);
       const btnRS = document.getElementById('btnResetStats');
       if (btnRS) btnRS.addEventListener('click', () => {
-        if (confirm('¿Reiniciar estadísticas?')) this.resetStats();
+        if (confirm(this.t('stats_reset_confirm'))) this.resetStats();
       });
       const btnRH = document.getElementById('btnResetHistory');
       if (btnRH) btnRH.addEventListener('click', () => {
-        if (confirm('¿Reiniciar historial?')) this.resetHistory();
+        if (confirm(this.t('history_reset_confirm'))) this.resetHistory();
       });
 
       // Dibujar covers

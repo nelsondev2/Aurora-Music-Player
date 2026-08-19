@@ -1752,6 +1752,98 @@ const I18N = {
     fr: 'a démarré une session partagée sur Aurora',
     it: 'ha avviato una sessione condivisa su Aurora',
     ru: 'начал совместную сессию в Aurora'
+  },
+
+  /* ---------- Pulido i18n: textos que estaban hardcodeados en español ---------- */
+  queue_empty: {
+    es: 'La cola está vacía',
+    en: 'Queue is empty',
+    pt: 'A fila está vazia',
+    zh: '队列为空',
+    ja: 'キューは空です',
+    fr: 'La file est vide',
+    it: 'La coda è vuota',
+    ru: 'Очередь пуста'
+  },
+  stats_reset_toast: {
+    es: 'Estadísticas reiniciadas',
+    en: 'Statistics reset',
+    pt: 'Estatísticas reiniciadas',
+    zh: '统计已重置',
+    ja: '統計をリセットしました',
+    fr: 'Statistiques réinitialisées',
+    it: 'Statistiche azzerate',
+    ru: 'Статистика сброшена'
+  },
+  history_reset_toast: {
+    es: 'Historial reiniciado',
+    en: 'History cleared',
+    pt: 'Histórico reiniciado',
+    zh: '历史已重置',
+    ja: '履歴をリセットしました',
+    fr: 'Historique réinitialisé',
+    it: 'Cronologia azzerata',
+    ru: 'История сброшена'
+  },
+  stats_reset_confirm: {
+    es: '¿Reiniciar estadísticas?',
+    en: 'Reset statistics?',
+    pt: 'Reiniciar estatísticas?',
+    zh: '重置统计？',
+    ja: '統計をリセットしますか？',
+    fr: 'Réinitialiser les statistiques ?',
+    it: 'Azzerare le statistiche?',
+    ru: 'Сбросить статистику?'
+  },
+  history_reset_confirm: {
+    es: '¿Reiniciar historial?',
+    en: 'Clear history?',
+    pt: 'Reiniciar histórico?',
+    zh: '重置历史？',
+    ja: '履歴をリセットしますか？',
+    fr: "Réinitialiser l'historique ?",
+    it: 'Azzerare la cronologia?',
+    ru: 'Сбросить историю?'
+  },
+  sendtochat_unavailable: {
+    es: 'sendToChat no disponible',
+    en: 'sendToChat not available',
+    pt: 'sendToChat indisponível',
+    zh: 'sendToChat 不可用',
+    ja: 'sendToChat は利用できません',
+    fr: 'sendToChat indisponible',
+    it: 'sendToChat non disponibile',
+    ru: 'sendToChat недоступен'
+  },
+  error_toast: {
+    es: 'Error: X',
+    en: 'Error: X',
+    pt: 'Erro: X',
+    zh: '错误：X',
+    ja: 'エラー: X',
+    fr: 'Erreur : X',
+    it: 'Errore: X',
+    ru: 'Ошибка: X'
+  },
+  lrc_offset_toast: {
+    es: 'Desfase: X',
+    en: 'Offset: X',
+    pt: 'Desvio: X',
+    zh: '偏移：X',
+    ja: 'オフセット: X',
+    fr: 'Décalage : X',
+    it: 'Scostamento: X',
+    ru: 'Смещение: X'
+  },
+  toast_already_in_playlist: {
+    es: 'Ya está en la lista',
+    en: 'Already in this playlist',
+    pt: 'Já está nesta lista',
+    zh: '已在歌单中',
+    ja: '既にプレイリストにあります',
+    fr: 'Déjà dans cette liste',
+    it: 'Già in questa lista',
+    ru: 'Уже в этом списке'
   }
 };
 

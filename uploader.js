@@ -4,7 +4,7 @@
  *
  *  Funciones:
  *    - Aceptar mp3/m4a/flac/wav/ogg vía input file o drag-drop
- *    - Leer metadatos ID3 con jsmediatags (CDN)
+ *    - Leer metadatos ID3 con jsmediatags (embebido localmente)
  *    - Generar portada dinámica si no hay artwork
  *    - Intentar cargar archivo .lrc con el mismo nombre
  *    - Guardar el blob en IndexedDB y devolver un objectURL
