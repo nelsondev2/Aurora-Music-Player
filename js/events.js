@@ -317,37 +317,7 @@ Object.assign(App, {
         el.addEventListener('click', () => this.closeSheet(el.dataset.closeSheet));
       });
 
-      // Audio events
-      this.audio.addEventListener('timeupdate', () => {
-        this.updateProgress();
-      });
-      this.audio.addEventListener('loadedmetadata', () => {
-        const dur = this.audio.duration;
-        document.getElementById('timeTotal').textContent = this.fmtTime(dur);
-        // Guardar duración real en el track y persistirla
-        if (this.currentTrack && isFinite(dur) && (!this.currentTrack.duration || this.currentTrack.duration === 0)) {
-          this.currentTrack.duration = Math.floor(dur);
-          this.persistTrack(this.currentTrack);
-          this.renderLibrary();
-          this.renderQueue();
-        }
-      });
-      this.audio.addEventListener('ended', () => {
-        // Marcar como reproducida completamente y contar estadística
-        if (this.currentTrack && !this._trackFullyPlayed) {
-          this._trackFullyPlayed = true;
-          this.stats.plays[this.currentTrack.id] = (this.stats.plays[this.currentTrack.id] || 0) + 1;
-          this.stats.totalSeconds += Math.floor(this.audio.duration || 0);
-          this.saveStats();
-        }
-        this.next(true);
-      });
-      this.audio.addEventListener('error', (e) => {
-        this._lastError = { msg: 'audio error: ' + (e.message || 'unknown'), ts: Date.now() };
-        // No mostrar toast si es solo CORS del análisis Web Audio
-      });
-      this.audio.addEventListener('waiting', () => {});
-      this.audio.addEventListener('canplay', () => {});
+      this.bindAudioElement(this.audio);
 
       // Progress bar seek
       const pt = $('progressTrack');
@@ -417,6 +387,53 @@ Object.assign(App, {
           case 'p': case 'P': this.prev(); break;
         }
       });
+    },
+
+    /* Cablea timeupdate / ended / metadata en el <audio> activo.
+     * Se vuelve a llamar tras un swap gapless (otro elemento Audio). */
+    bindAudioElement(el) {
+      if (!el) return;
+      if (!this._onAudioTimeUpdate) {
+        this._onAudioTimeUpdate = () => this.updateProgress();
+        this._onAudioLoadedMeta = () => {
+          const dur = this.audio && this.audio.duration;
+          const totalEl = document.getElementById('timeTotal');
+          if (totalEl) totalEl.textContent = this.fmtTime(dur);
+          if (this.currentTrack && isFinite(dur) && dur > 0 &&
+              (!this.currentTrack.duration || this.currentTrack.duration === 0)) {
+            this.currentTrack.duration = Math.floor(dur);
+            this.persistTrack(this.currentTrack);
+            this.renderLibrary();
+            this.renderQueue();
+            if (this._editingPlaylistId) this.renderEditPlaylist();
+          }
+        };
+        this._onAudioEnded = () => {
+          if (this.currentTrack && !this._trackFullyPlayed) {
+            this._trackFullyPlayed = true;
+            this.stats.plays[this.currentTrack.id] = (this.stats.plays[this.currentTrack.id] || 0) + 1;
+            this.stats.totalSeconds += Math.floor((this.audio && this.audio.duration) || 0);
+            this.saveStats();
+          }
+          this._trackFullyPlayed = false;
+          this.next(true);
+        };
+        this._onAudioError = (e) => {
+          this._lastError = { msg: 'audio error: ' + ((e && e.message) || 'unknown'), ts: Date.now() };
+        };
+      }
+      if (this._boundAudioEl && this._boundAudioEl !== el) {
+        this._boundAudioEl.removeEventListener('timeupdate', this._onAudioTimeUpdate);
+        this._boundAudioEl.removeEventListener('loadedmetadata', this._onAudioLoadedMeta);
+        this._boundAudioEl.removeEventListener('ended', this._onAudioEnded);
+        this._boundAudioEl.removeEventListener('error', this._onAudioError);
+      }
+      if (this._boundAudioEl === el) return;
+      el.addEventListener('timeupdate', this._onAudioTimeUpdate);
+      el.addEventListener('loadedmetadata', this._onAudioLoadedMeta);
+      el.addEventListener('ended', this._onAudioEnded);
+      el.addEventListener('error', this._onAudioError);
+      this._boundAudioEl = el;
     },
 
     wireGestures() {

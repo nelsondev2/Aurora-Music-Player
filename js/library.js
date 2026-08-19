@@ -183,6 +183,8 @@ Object.assign(App, {
       const oldAudio = this.audio;
       this.audio = this._preloadAudio;
       this._preloadAudio = oldAudio;
+      // Los listeners (ended, timeupdate…) estaban en el <audio> anterior.
+      if (typeof this.bindAudioElement === 'function') this.bindAudioElement(this.audio);
       // Actualizar estado
       this.currentTrack = nextTrack;
       this.currentTrackIdx = this.tracks.findIndex(t => t.id === nextTrackId);

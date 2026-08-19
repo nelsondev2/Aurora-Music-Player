@@ -1922,36 +1922,61 @@ svg { display: block; }
   margin-top: 4px;
 }
 
-/* Fila de acciones de la playlist (4 botones) */
+/* Fila de acciones de la playlist */
 .edit-pl-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 18px;
 }
-.edit-pl-actions .primary-btn {
-  padding: 10px 8px;
+.pl-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-1);
   font-size: 12px;
-  display: inline-flex;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  text-align: left;
+  transition: transform .15s, background .15s, border-color .15s;
+}
+.pl-action-btn:active { transform: scale(0.97); background: var(--surface-2); }
+.pl-action-ico {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  text-align: center;
+  flex-shrink: 0;
+  background: var(--surface-hi);
+  color: var(--accent);
 }
-.edit-pl-actions .primary-btn i { font-size: 13px; }
-.edit-pl-actions .primary-btn.compact { font-weight: 600; }
-.edit-pl-actions .primary-btn.ghost {
-  background: var(--surface);
-  color: var(--text-1);
-  border: 1px solid var(--border);
+.pl-action-ico i { font-size: 14px; }
+.pl-action-btn.pl-action-play {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(168, 85, 247, 0.28);
 }
-.edit-pl-actions .primary-btn.ghost:active { background: var(--surface-2); }
-.edit-pl-actions .primary-btn.ghost.danger {
+.pl-action-btn.pl-action-play .pl-action-ico {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+.pl-action-btn.pl-action-danger { color: var(--text-1); }
+.pl-action-btn.pl-action-danger .pl-action-ico {
   color: var(--danger);
-  border-color: rgba(239, 68, 68, 0.3);
-}
-.edit-pl-actions .primary-btn.ghost.danger:active {
   background: rgba(239, 68, 68, 0.12);
+}
+.pl-action-btn.pl-action-danger:active {
+  background: rgba(239, 68, 68, 0.10);
+  border-color: rgba(239, 68, 68, 0.28);
 }
 
 /* Variantes compactas usadas en otros sitios */

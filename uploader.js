@@ -137,12 +137,14 @@
         meta.cover = this.randomCover();
       }
 
+      const duration = await this.probeDuration(file);
+
       return {
         id,
         title: meta.title,
         artist: meta.artist,
         album: meta.album,
-        duration: 0,            // se rellena al cargar el audio
+        duration: duration,
         src: URL.createObjectURL(file),  // objectURL temporal
         cover: meta.cover,              // dataURL de artwork O {from,to,angle}
         coverIsImage: typeof meta.cover === 'string' && meta.cover.startsWith('data:'),
@@ -203,6 +205,31 @@
         r.onload = () => resolve(r.result);
         r.onerror = reject;
         r.readAsText(file);
+      });
+    },
+
+    /* Lee la duración real del archivo con un <audio> temporal. */
+    probeDuration(file) {
+      return new Promise((resolve) => {
+        try {
+          const a = document.createElement('audio');
+          a.preload = 'metadata';
+          const url = URL.createObjectURL(file);
+          let settled = false;
+          const finish = (sec) => {
+            if (settled) return;
+            settled = true;
+            try { URL.revokeObjectURL(url); } catch (e) {}
+            try { a.removeAttribute('src'); a.load(); } catch (e) {}
+            resolve(sec > 0 && isFinite(sec) ? Math.round(sec) : 0);
+          };
+          a.addEventListener('loadedmetadata', () => finish(a.duration));
+          a.addEventListener('error', () => finish(0));
+          setTimeout(() => finish(0), 8000);
+          a.src = url;
+        } catch (e) {
+          resolve(0);
+        }
       });
     },
 

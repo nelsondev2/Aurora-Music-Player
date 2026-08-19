@@ -206,7 +206,12 @@ Object.assign(App, {
       }
       // Asignar src SIEMPRE (no comparar) y reproducir inmediatamente.
       // audio.load() fuerza al navegador a empezar a cargar el nuevo src.
-      this.audio.src = t.src;
+      const url = this.getTrackUrl(t);
+      if (!url) {
+        console.warn('[Aurora] Sin URL de audio para', t.id);
+        return;
+      }
+      this.audio.src = url;
       this.audio.load();
       // #6 Normalización de volumen
       if (this._normalizeVolume) {
@@ -254,8 +259,11 @@ Object.assign(App, {
         this.updatePlayUI();
         return;
       }
-      this.audio.src = t.src;
-      this.audio.load();
+      const url = this.getTrackUrl(t);
+      if (url) {
+        this.audio.src = url;
+        this.audio.load();
+      }
       this.isPlaying = false;
       this.renderCurrentTrack();
       this.renderLyrics();
@@ -445,6 +453,19 @@ Object.assign(App, {
     },
 
     next(auto) {
+      // Si la cola se quedó vacía o desfasada, reconstruirla desde la lista
+      if (this.playContext && this.playContext.type === 'playlist' && this.playContext.id) {
+        const pl = this.playlists.find(p => p.id === this.playContext.id);
+        if (pl && pl.trackIds.length) {
+          const ids = pl.trackIds.filter(id => this.tracks.some(t => t.id === id));
+          if (ids.length && (this.queue.length !== ids.length || ids.some((id, i) => this.queue[i] !== id))) {
+            const cur = this.currentTrack && this.currentTrack.id;
+            this.queue = ids;
+            const qIdx = ids.indexOf(cur);
+            this.queueIdx = qIdx >= 0 ? qIdx : 0;
+          }
+        }
+      }
       // #4 Intentar gapless si es auto-advance y está habilitado
       if (auto && this._gaplessEnabled && this.gaplessNext()) {
         return;
