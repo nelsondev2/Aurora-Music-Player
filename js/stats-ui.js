@@ -45,7 +45,7 @@ Object.assign(App, {
         ${topArtists.length === 0 ? '<p class="stats-empty">' + this.t('no_results') + '</p>' : ''}
         <ul class="stats-list">
           ${topArtists.map((a, i) => `
-            <li class="stats-row">
+            <li class="stats-row" data-artist="${this.esc(a.artist)}">
               <div class="stats-rank">${i + 1}</div>
               <div class="stats-info">
                 <div class="stats-name">${this.esc(a.artist)}</div>
@@ -90,6 +90,21 @@ Object.assign(App, {
 
       // Dibujar covers
       cont.querySelectorAll('.stats-row').forEach((row, i) => {
+        const artist = row.dataset.artist;
+        if (artist) {
+          row.addEventListener('click', () => {
+            this._searchFilter = 'artist';
+            document.querySelectorAll('.search-filter').forEach(x => {
+              x.classList.toggle('active', x.dataset.filter === 'artist');
+            });
+            const inp = document.getElementById('searchInput');
+            if (inp) inp.value = artist;
+            this.closeSheet('sheetStats');
+            this.runSearch(artist, 'artist');
+            this.openSheet('sheetSearch');
+          });
+          return;
+        }
         const tid = row.dataset.track;
         if (!tid) return;
         const track = this.tracks.find(t => t.id === tid);
@@ -135,7 +150,7 @@ Object.assign(App, {
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
-            <div class="row-sub">${this.esc(t.artist)}${t.album && t.album !== this.t('no_album') ? ' · ' + this.esc(t.album) : ''}</div>
+            <div class="row-sub">${this.esc(t.artist)}${t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + this.esc(t.album) : ''}</div>
           </div>
           <div class="row-duration">${this.fmtTime(t.duration)}</div>
         `;
@@ -178,7 +193,7 @@ Object.assign(App, {
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
-            <div class="row-sub">${this.esc(t.artist)}${t.album && t.album !== this.t('no_album') ? ' · ' + this.esc(t.album) : ''}</div>
+            <div class="row-sub">${this.esc(t.artist)}${t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + this.esc(t.album) : ''}</div>
           </div>
           <div class="row-duration">${this.fmtTime(t.duration)}</div>
           <button class="row-action unfav-track" aria-label="${this.esc(this.t('toast_removed_fav'))}"><i class="fa-solid fa-heart"></i></button>

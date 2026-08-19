@@ -34,7 +34,7 @@
     isPlaying: false,
     shuffle: false,
     repeat: 'off', // 'off' | 'all' | 'one'
-    volume: 0.8,
+    volume: 1,
     playbackRate: 1,
 
     /* Visualizador — deshabilitado (eliminado por decisión del usuario).

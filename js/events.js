@@ -131,6 +131,20 @@ Object.assign(App, {
         this.buildLangList();
         this.openSheet('sheetLanguage');
       });
+      const btnRetag = document.getElementById('menuRetagTracks');
+      if (btnRetag) btnRetag.addEventListener('click', () => {
+        this.closeSheet('sheetSettings');
+        this.toast(this.t('toast_retag_start'));
+        this.retagExistingTracks().catch(() => {});
+      });
+      const btnExport = document.getElementById('menuExportLibrary');
+      if (btnExport) btnExport.addEventListener('click', () => {
+        this.exportLibrary();
+      });
+      const btnImport = document.getElementById('menuImportLibrary');
+      if (btnImport) btnImport.addEventListener('click', () => {
+        this.importLibrary();
+      });
 
       // Volver / cargar música
       $('btnBack').addEventListener('click', () => this.openFilePicker());
@@ -399,7 +413,10 @@ Object.assign(App, {
           case 'ArrowLeft': if (e.shiftKey) this.prev(); else this.seekTo(Math.max(0,((this.audio.currentTime||0)-5)) / (this.audio.duration||1)); break;
           case 'ArrowUp': e.preventDefault(); this.setVolume(Math.min(1, this.volume + 0.05)); break;
           case 'ArrowDown': e.preventDefault(); this.setVolume(Math.max(0, this.volume - 0.05)); break;
-          case 'm': case 'M': this.setVolume(this.volume > 0 ? 0 : 0.8); break;
+          case 'm': case 'M':
+            if (this.volume > 0) { this._volBeforeMute = this.volume; this.setVolume(0); }
+            else this.setVolume(this._volBeforeMute > 0 ? this._volBeforeMute : 1);
+            break;
           case 'l': case 'L': this.toggleFavorite(); break;
           case 'n': case 'N': this.next(); break;
           case 'p': case 'P': this.prev(); break;
@@ -427,13 +444,6 @@ Object.assign(App, {
           }
         };
         this._onAudioEnded = () => {
-          if (this.currentTrack && !this._trackFullyPlayed) {
-            this._trackFullyPlayed = true;
-            this.stats.plays[this.currentTrack.id] = (this.stats.plays[this.currentTrack.id] || 0) + 1;
-            this.stats.totalSeconds += Math.floor((this.audio && this.audio.duration) || 0);
-            this.saveStats();
-          }
-          this._trackFullyPlayed = false;
           this.next(true);
         };
         this._onAudioError = (e) => {

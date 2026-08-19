@@ -30,7 +30,7 @@ Object.assign(App, {
       document.getElementById('trackArtist').textContent = t.artist || this.t('unknown_artist');
       const albumEl = document.getElementById('trackAlbum');
       if (albumEl) {
-        const hasAlbum = t.album && t.album !== this.t('no_album');
+        const hasAlbum = t.album && !this.isPlaceholderAlbum(t.album);
         albumEl.textContent = hasAlbum ? t.album : '';
         albumEl.style.display = hasAlbum ? '' : 'none';
       }
@@ -115,7 +115,7 @@ Object.assign(App, {
       // Letra inicial
       ctx.globalAlpha = 0.85;
       ctx.fillStyle = '#fff';
-      ctx.font = (mini ? '700 38px ' : '900 220px ') + "'Space Grotesk', sans-serif";
+      ctx.font = (mini ? '700 38px ' : '900 220px ') + "ui-rounded, -apple-system, sans-serif";
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(track.title.charAt(0).toUpperCase(), cx, cy);

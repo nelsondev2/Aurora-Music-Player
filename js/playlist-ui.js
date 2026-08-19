@@ -423,7 +423,7 @@ Object.assign(App, {
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
-            <div class="row-sub">${this.esc(t.artist)}${t.album && t.album !== this.t('no_album') ? ' · ' + this.esc(t.album) : ''}</div>
+            <div class="row-sub">${this.esc(t.artist)}${t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + this.esc(t.album) : ''}</div>
           </div>
           <div class="row-duration">${this.fmtTime(t.duration)}</div>
           <button class="row-action add-to-pl" aria-label="${this.esc(this.t('menu_add_to_playlist'))}"><i class="fa-solid fa-list-plus"></i></button>

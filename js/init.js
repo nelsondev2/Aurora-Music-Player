@@ -94,6 +94,15 @@ Object.assign(App, {
       // === Sistema de tiempo real (compartir música) ===
       this.initRealtime();
 
+      // Releer tags de pistas antiguas (sin portada / artista / letras)
+      const needsRetag = this.tracks.some(t =>
+        (t._file || t.fileBlob) &&
+        (!t.coverIsImage || this.isPlaceholderArtist(t.artist) || !t.lrc)
+      );
+      if (needsRetag) {
+        this.retagExistingTracks({ silent: true }).catch(() => {});
+      }
+
       console.log('[Aurora] App inicializada ·', this.tracks.length, 'pistas', restored ? '· sesión restaurada' : '');
     },
 

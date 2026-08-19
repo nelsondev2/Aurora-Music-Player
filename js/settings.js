@@ -57,6 +57,9 @@ Object.assign(App, {
         this.queueIdx = qIdx >= 0 ? qIdx : 0;
         this.shuffle = !!session.shuffle;
         this.repeat = session.repeat || 'off';
+        if (session.playContext && typeof session.playContext === 'object') {
+          this.playContext = session.playContext;
+        }
 
         // Cargar la pista en el audio SIN reproducir (el usuario debe tocar play)
         this.audio.src = this.currentTrack.src;

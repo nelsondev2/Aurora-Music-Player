@@ -1638,6 +1638,22 @@ const I18N = {
     es: 'Importar biblioteca', en: 'Import library', pt: 'Importar biblioteca', zh: '导入媒体库', ja: 'ライブラリをインポート',
     fr: 'Importer la bibliothèque', it: 'Importa libreria', ru: 'Импортировать библиотеку'
   },
+  settings_retag: {
+    es: 'Releer metadatos', en: 'Reread metadata', pt: 'Relê metadados', zh: '重新读取元数据', ja: 'メタデータを再読込',
+    fr: 'Relire les métadonnées', it: 'Rileggi metadati', ru: 'Перечитать метаданные'
+  },
+  toast_retag_start: {
+    es: 'Releyendo metadatos…', en: 'Rereading metadata…', pt: 'Relendo metadados…', zh: '正在重新读取元数据…', ja: 'メタデータを読み直し中…',
+    fr: 'Relecture des métadonnées…', it: 'Rilettura metadati…', ru: 'Перечитывание метаданных…'
+  },
+  toast_retag_done: {
+    es: 'X pista(s) actualizada(s)', en: 'X track(s) updated', pt: 'X faixa(s) atualizada(s)', zh: '已更新 X 首', ja: 'X 曲を更新しました',
+    fr: 'X piste(s) mise(s) à jour', it: 'X traccia/e aggiornata/e', ru: 'Обновлено треков: X'
+  },
+  toast_retag_none: {
+    es: 'No había metadatos nuevos', en: 'No new metadata found', pt: 'Sem metadados novos', zh: '没有新的元数据', ja: '新しいメタデータはありません',
+    fr: 'Aucune nouvelle métadonnée', it: 'Nessun metadato nuovo', ru: 'Новых метаданных нет'
+  },
   settings_history: {
     es: 'Historial', en: 'History', pt: 'Histórico', zh: '历史记录', ja: '履歴',
     fr: 'Historique', it: 'Cronologia', ru: 'История'

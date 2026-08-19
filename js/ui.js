@@ -131,7 +131,7 @@ Object.assign(App, {
       g.addColorStop(1, cover.to);
       ctx.fillStyle = g; ctx.fillRect(0,0,size,size);
       ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.font = `900 ${size*0.45}px 'Space Grotesk', sans-serif`;
+      ctx.font = `900 ${size*0.45}px ui-rounded, -apple-system, sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText(track.title.charAt(0).toUpperCase(), size/2, size/2);
       return c.toDataURL('image/png');

@@ -175,6 +175,8 @@ Object.assign(App, {
     /* #4 Gapless: cambiar a la siguiente pista sin pausa */
     gaplessNext() {
       if (!this._gaplessEnabled || !this._preloadAudio) return false;
+      // El grafo Web Audio (EQ) está atado al <audio> original.
+      if (this.audioCtx) return false;
       const nextIdx = this.queueIdx + 1;
       if (nextIdx >= this.queue.length) return false;
       const nextTrackId = this.queue[nextIdx];
@@ -184,6 +186,10 @@ Object.assign(App, {
       const oldAudio = this.audio;
       this.audio = this._preloadAudio;
       this._preloadAudio = oldAudio;
+      try { this.audio.volume = this.volume; } catch (e) {}
+      if (this.playbackRate && this.playbackRate !== 1) {
+        try { this.audio.playbackRate = this.playbackRate; } catch (e) {}
+      }
       // Los listeners (ended, timeupdate…) estaban en el <audio> anterior.
       if (typeof this.bindAudioElement === 'function') this.bindAudioElement(this.audio);
       // Actualizar estado
@@ -296,6 +302,77 @@ Object.assign(App, {
         const t = this.tracks.find(x => x.id === row.dataset.track);
         if (cv && t) this.drawRowCover(cv, t);
       });
+    },
+
+    isPlaceholderAlbum(album) {
+      if (!album) return true;
+      const a = String(album).trim().toLowerCase();
+      const set = new Set(['sin álbum', 'sin album', 'no album', 'unknown album', 'unknown']);
+      const dict = window.I18N && window.I18N.no_album;
+      if (dict) Object.keys(dict).forEach(k => { if (dict[k]) set.add(String(dict[k]).toLowerCase()); });
+      return set.has(a);
+    },
+
+    isPlaceholderArtist(artist) {
+      if (!artist) return true;
+      const a = String(artist).trim().toLowerCase();
+      const set = new Set(['artista desconocido', 'unknown artist']);
+      const dict = window.I18N && window.I18N.unknown_artist;
+      if (dict) Object.keys(dict).forEach(k => { if (dict[k]) set.add(String(dict[k]).toLowerCase()); });
+      return set.has(a);
+    },
+
+    /* Relee tags de pistas ya guardadas (portada, artista, letras). */
+    async retagExistingTracks(opts) {
+      const silent = !!(opts && opts.silent);
+      const U = window.AuroraUploader;
+      if (!U || typeof U.processOne !== 'function') return 0;
+      let updated = 0;
+      for (const t of this.tracks) {
+        const file = t._file || t.fileBlob;
+        if (!file) continue;
+        try {
+          const fresh = await U.processOne(file, null);
+          let changed = false;
+          if (fresh.title && fresh.title !== t.title) { t.title = fresh.title; changed = true; }
+          if (fresh.artist && !this.isPlaceholderArtist(fresh.artist)) {
+            if (t.artist !== fresh.artist) { t.artist = fresh.artist; changed = true; }
+          }
+          if (fresh.album && !this.isPlaceholderAlbum(fresh.album)) {
+            if (t.album !== fresh.album) { t.album = fresh.album; changed = true; }
+          }
+          if (fresh.coverIsImage && fresh.cover) {
+            t.cover = fresh.cover;
+            t.coverIsImage = true;
+            changed = true;
+          }
+          if (fresh.lrc && (!t.lrc || (Array.isArray(t.lrc) && !t.lrc.length))) {
+            t.lrc = fresh.lrc;
+            t._lrcCache = null;
+            changed = true;
+          }
+          if (fresh.src && fresh.src.startsWith('blob:')) {
+            try { URL.revokeObjectURL(fresh.src); } catch (e) {}
+          }
+          if (changed) {
+            updated++;
+            await this.persistTrack(t);
+          }
+        } catch (e) {}
+      }
+      if (updated) {
+        this.renderLibrary();
+        this.renderPlaylists();
+        this.renderQueue();
+        this.renderFavorites();
+        if (this.currentTrack) this.renderCurrentTrack();
+      }
+      if (!silent) {
+        this.toast(updated
+          ? this.t('toast_retag_done').replace('X', String(updated))
+          : this.t('toast_retag_none'));
+      }
+      return updated;
     },
 
     /* #17 Exportar biblioteca a JSON (sin blobs) */

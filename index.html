@@ -415,10 +415,10 @@
           <div class="sheet-body">
             <div class="volume-row">
               <i class="fa-solid fa-volume-low"></i>
-              <input type="range" min="0" max="100" value="80" id="volumeSlider" class="slider" />
+              <input type="range" min="0" max="100" value="100" id="volumeSlider" class="slider" />
               <i class="fa-solid fa-volume-high"></i>
             </div>
-            <div class="volume-value" id="volumeValue">80%</div>
+            <div class="volume-value" id="volumeValue">100%</div>
           </div>
         </div>
       </div>
@@ -437,6 +437,8 @@
           <div class="sheet-body">
             <h4 class="section-title" data-i18n="playlists_section">Listas de reproducción</h4>
             <ul class="playlist-grid" id="libraryPlaylists"></ul>
+            <h4 class="section-title" data-i18n="all_tracks_section">Todas las pistas</h4>
+            <ul class="track-list" id="libraryTracks"></ul>
           </div>
         </div>
       </div>
@@ -627,6 +629,19 @@
             <button class="menu-row" id="menuLanguageSettings">
               <i class="fa-solid fa-language"></i>
               <span data-i18n="menu_language">Idioma de la aplicación</span>
+            </button>
+            <h4 class="section-title" data-i18n="settings_storage">Almacenamiento</h4>
+            <button class="menu-row" id="menuRetagTracks">
+              <i class="fa-solid fa-tags"></i>
+              <span data-i18n="settings_retag">Releer metadatos</span>
+            </button>
+            <button class="menu-row" id="menuExportLibrary">
+              <i class="fa-solid fa-file-export"></i>
+              <span data-i18n="settings_export">Exportar biblioteca</span>
+            </button>
+            <button class="menu-row" id="menuImportLibrary">
+              <i class="fa-solid fa-file-import"></i>
+              <span data-i18n="settings_import">Importar biblioteca</span>
             </button>
 
           </div>

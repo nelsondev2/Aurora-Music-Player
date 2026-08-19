@@ -244,6 +244,7 @@ Object.assign(App, {
         return;
       }
       this.audio.src = url;
+      try { this.audio.volume = this.volume; } catch (e) {}
       if (this.playbackRate && this.playbackRate !== 1) {
         try { this.audio.playbackRate = this.playbackRate; } catch (e) {}
       }
@@ -277,6 +278,7 @@ Object.assign(App, {
       const url = this.getTrackUrl(t);
       if (url) {
         this.audio.src = url;
+        try { this.audio.volume = this.volume; } catch (e) {}
         this.audio.load();
       }
       this.isPlaying = false;
