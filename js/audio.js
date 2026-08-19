@@ -244,37 +244,16 @@ Object.assign(App, {
         return;
       }
       this.audio.src = url;
-      this.audio.load();
       if (this.playbackRate && this.playbackRate !== 1) {
         try { this.audio.playbackRate = this.playbackRate; } catch (e) {}
       }
       if (typeof this.restoreLyricsPrefs === 'function') this.restoreLyricsPrefs();
-      // #6 Normalización de volumen
-      if (this._normalizeVolume) {
-        this.computeTrackGain(t).then(gain => {
-          if (this.gainNode && this.audioCtx) {
-            try {
-              this.gainNode.gain.setValueAtTime(gain, this.audioCtx.currentTime);
-            } catch (e) {}
-          }
-        });
-      }
-      // #11 Añadir al historial
       this.addToHistory(t.id);
-      // #15 Precargar siguiente pista
-      this.preloadNextTrack();
-      // Reproducir inmediatamente (el audio cargará en paralelo)
       this.togglePlay(true);
-      // Los renders se hacen DESPUÉS de iniciar la reproducción
-      // para no bloquear el inicio del audio.
       this.renderCurrentTrack();
       this.renderLyrics();
       this.updateMediaSession();
-      // Pre-analizar para visualizador (archivos locales blob:)
-      this.precomputeVisualizerData(t);
-      // Animar el cambio de portada con fundido
-      this.animateCoverTransition();
-      // Anunciar la acción de reproducción al canal realtime
+      this.preloadNextTrack();
       const selfName = (window.webxdc && window.webxdc.selfName) || 'Listener';
       this._rtBroadcastAction(selfName + ' played');
     },
@@ -344,11 +323,15 @@ Object.assign(App, {
         // Inicializar Web Audio al primer play (política iOS)
         // Pero NO esperar al resume antes de play() — llamar play() inmediatamente
         // para que el audio empiece a cargar/reproducir sin retardo.
-        if (!this.audioCtx) this.initAudioGraph();
-        // Llamar play() inmediatamente (sin await)
         const p = this.audio.play();
-        // Resume del audioCtx en paralelo (no bloquea el play)
-        if (this.audioCtx && this.audioCtx.state === 'suspended') {
+        if (!this.audioCtx) {
+          setTimeout(() => {
+            try { this.initAudioGraph(); } catch (e) {}
+            if (this.audioCtx && this.audioCtx.state === 'suspended') {
+              try { this.audioCtx.resume(); } catch (e) {}
+            }
+          }, 0);
+        } else if (this.audioCtx.state === 'suspended') {
           try { this.audioCtx.resume(); } catch (e) {}
         }
         if (p && p.then) {

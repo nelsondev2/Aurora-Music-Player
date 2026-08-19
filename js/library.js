@@ -85,9 +85,10 @@ Object.assign(App, {
           this.tracks.push(t);
         }
 
-        // Persistir en IndexedDB en lotes usando una sola transacción
-        // para evitar abrir N transacciones separadas (que es lento).
-        await this.persistTracksBatch(tracksToAdd);
+        // Guardar en IndexedDB en segundo plano para no bloquear la UI/reproducción
+        this.persistTracksBatch(tracksToAdd).catch((e) => {
+          console.warn('[Aurora] persistencia en segundo plano:', e);
+        });
 
         // Determinar playlist destino (default = Mi Música)
         const destId = targetPlaylistId || this.DEFAULT_PLAYLIST_ID;

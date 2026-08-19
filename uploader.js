@@ -74,7 +74,6 @@
       const baseName = file.name.replace(/\.[^.]+$/, '').toLowerCase();
       const id = 't-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
 
-      // Metadatos por defecto
       let meta = {
         title: this.cleanName(file.name),
         artist: 'Artista desconocido',
@@ -83,75 +82,43 @@
         lrc: null
       };
 
-      // Intentar leer ID3 tags
-      try {
-        const tags = await this.readTags(file);
-        if (tags) {
-          if (tags.title) meta.title = tags.title;
-          if (tags.artist) meta.artist = tags.artist;
-          if (tags.album) meta.album = tags.album;
-          if (tags.picture) {
-            meta.cover = this.pictureToDataURL(tags.picture);
-          }
-          // ─── Letras embebidas en metadatos ID3 ───
-          // USLT: Unsynchronized Lyrics (texto plano, posiblemente con timestamps LRC)
-          // SYLT: Synchronized Lyrics (binario con timestamps)
-          const usltLyrics = this.extractUslt(tags);
-          if (usltLyrics && !meta.lrc) {
-            meta.lrc = this.normalizeLyrics(usltLyrics);
-          }
+      // Tags + .lrc en paralelo. Sin probe de duración ni parser ID3 extra:
+      // eso duplicaba lecturas y podía tardar varios segundos por archivo.
+      const tagHead = file.size > 384 * 1024 ? file.slice(0, 384 * 1024) : file;
+      const lrcFile = lrcsMap && lrcsMap[baseName];
+      const [tags, lrcText] = await Promise.all([
+        this.readTags(tagHead).catch(() => null),
+        lrcFile ? this.readTextFile(lrcFile).catch(() => null) : Promise.resolve(null)
+      ]);
+
+      if (tags) {
+        if (tags.title) meta.title = tags.title;
+        if (tags.artist) meta.artist = tags.artist;
+        if (tags.album) meta.album = tags.album;
+        if (tags.picture) meta.cover = this.pictureToDataURL(tags.picture);
+        const usltLyrics = this.extractUslt(tags);
+        if (usltLyrics) meta.lrc = this.normalizeLyrics(usltLyrics);
+        if (!meta.lrc) {
           const syltLyrics = this.extractSylt(tags);
-          if (syltLyrics && !meta.lrc) {
-            meta.lrc = syltLyrics;
-          }
-        }
-      } catch (e) {
-        console.debug('[Aurora] ID3 (jsmediatags) falló:', e.message);
-      }
-
-      // ─── Parser ID3v2 propio para USLT/SYLT ───
-      // jsmediatags (CDN) NO parsea USLT por defecto. Lo hacemos a mano
-      // leyendo los frames binarios del header ID3v2.
-      if (!meta.lrc) {
-        try {
-          const customLyrics = await this.readLyricsFromId3v2(file);
-          if (customLyrics) {
-            const norm = this.normalizeLyrics(customLyrics);
-            if (norm && norm.length) meta.lrc = norm;
-          }
-        } catch (e) {
-          console.debug('[Aurora] ID3v2 own-parser falló:', e.message);
+          if (syltLyrics) meta.lrc = syltLyrics;
         }
       }
-
-      // Letra LRC de archivo .lrc acompañante (tiene prioridad si existe)
-      if (lrcsMap[baseName]) {
-        try {
-          const lrcText = await this.readTextFile(lrcsMap[baseName]);
-          meta.lrc = this.normalizeLyrics(lrcText);
-        } catch (e) {}
-      }
-
-      // Si no hay cover, generar uno dinámico
-      if (!meta.cover) {
-        meta.cover = this.randomCover();
-      }
-
-      const duration = await this.probeDuration(file);
+      if (lrcText) meta.lrc = this.normalizeLyrics(lrcText);
+      if (!meta.cover) meta.cover = this.randomCover();
 
       return {
         id,
         title: meta.title,
         artist: meta.artist,
         album: meta.album,
-        duration: duration,
-        src: URL.createObjectURL(file),  // objectURL temporal
-        cover: meta.cover,              // dataURL de artwork O {from,to,angle}
-        coverIsImage: typeof meta.cover === 'string' && meta.cover.startsWith('data:'),
+        duration: 0,
+        src: URL.createObjectURL(file),
+        cover: meta.cover,
+        coverIsImage: typeof meta.cover === 'string' && (meta.cover.startsWith('data:') || meta.cover.startsWith('blob:')),
         lrc: meta.lrc,
         fileSize: file.size,
         fileName: file.name,
-        _file: file            // referencia al File para guardarlo en IndexedDB
+        _file: file
       };
     },
 
@@ -175,10 +142,13 @@
     pictureToDataURL(picture) {
       try {
         const { data, format } = picture;
-        let bytes = '';
-        for (let i = 0; i < data.length; i++) bytes += String.fromCharCode(data[i]);
-        const b64 = btoa(bytes);
-        return `data:${format};base64,${b64}`;
+        const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+        let binary = '';
+        const chunk = 0x8000;
+        for (let i = 0; i < u8.length; i += chunk) {
+          binary += String.fromCharCode.apply(null, u8.subarray(i, i + chunk));
+        }
+        return `data:${format || 'image/jpeg'};base64,${btoa(binary)}`;
       } catch (e) { return null; }
     },
 
