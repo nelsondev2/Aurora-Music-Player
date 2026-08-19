@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <meta name="theme-color" content="#0a0a0f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <!-- Font Awesome 6 (embebido localmente, sin CDN) -->
+  <link rel="stylesheet" href="assets/css/fontawesome.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Contenedor tipo marco de móvil para mostrar en escritorio -->
+  <div class="device-frame">
+    <div class="device-screen" id="deviceScreen">
+
+      <!-- ============== PANTALLA: REPRODUCTOR ============== -->
+      <main class="view view-player active" id="viewPlayer" data-view="player">
+
+        <!-- Fondo dinámico con los colores de la portada -->
+        <div class="bg-blur" id="bgBlur">
+          <div class="bg-gradient" id="bgGradient"></div>
+        </div>
+
+        <!-- Barra superior -->
+        <header class="top-bar">
+          <button class="icon-btn icon-add" id="btnBack" data-i18n-aria="load_music" aria-label="Cargar música">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+          <div class="top-bar-title">
+            <span class="now-playing-label" data-i18n="now_playing_label">REPRODUCIENDO AHORA</span>
+            <span class="now-playing-context" id="nowPlayingContext" data-i18n="your_library">Tu biblioteca</span>
+          </div>
+          <!-- Botón Listeners (sincronización en tiempo real) -->
+          <button class="icon-btn sync-btn" id="btnSync" data-i18n-aria="show_listeners" aria-label="Mostrar oyentes">
+            <i class="fa-solid fa-users"></i>
+            <span class="sync-peer-count" id="syncPeerCount">1</span>
+          </button>
+          <button class="icon-btn" id="btnMore" data-i18n-aria="more_options" aria-label="Más opciones">
+            <i class="fa-solid fa-ellipsis-vertical"></i>
+          </button>
+        </header>
+
+        <!-- Portada del álbum -->
+        <section class="cover-section">
+          <div class="cover-art" id="coverArt">
+            <canvas id="coverCanvas" width="600" height="600"></canvas>
+            <div class="cover-vinyl" id="coverVinyl">
+              <div class="vinyl-inner"></div>
+            </div>
+            <div class="cover-overlay">
+              <button class="icon-btn-large" id="btnLike" data-i18n-aria="favorite" aria-label="Favorito">
+                <i class="fa-regular fa-heart"></i>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Info de la pista -->
+        <section class="track-info">
+          <div class="track-text">
+            <h1 class="track-title" id="trackTitle">—</h1>
+            <p class="track-artist" id="trackArtist">—</p>
+          </div>
+          <button class="icon-btn" id="btnLike2" data-i18n-aria="favorite" aria-label="Favorito">
+            <i class="fa-regular fa-heart"></i>
+          </button>
+        </section>
+
+        <!-- Barra de progreso -->
+        <section class="progress-section">
+          <div class="progress-track" id="progressTrack">
+            <div class="progress-buffer" id="progressBuffer"></div>
+            <div class="progress-fill" id="progressFill">
+              <div class="progress-thumb" id="progressThumb"></div>
+            </div>
+          </div>
+          <div class="time-row">
+            <span class="time-current" id="timeCurrent">0:00</span>
+            <span class="time-total" id="timeTotal">0:00</span>
+          </div>
+        </section>
+
+        <!-- Controles principales -->
+        <section class="controls-main">
+          <button class="ctrl-btn ctrl-shuffle" id="btnShuffle" data-i18n-aria="shuffle" aria-label="Aleatorio">
+            <i class="fa-solid fa-shuffle"></i>
+          </button>
+          <button class="ctrl-btn ctrl-prev" id="btnPrev" data-i18n-aria="previous" aria-label="Anterior">
+            <i class="fa-solid fa-backward-step"></i>
+          </button>
+          <button class="ctrl-btn ctrl-play" id="btnPlay" data-i18n-aria="play" aria-label="Reproducir">
+            <i class="fa-solid fa-play icon-play"></i>
+            <i class="fa-solid fa-pause icon-pause" style="display:none"></i>
+          </button>
+          <button class="ctrl-btn ctrl-next" id="btnNext" data-i18n-aria="next" aria-label="Siguiente">
+            <i class="fa-solid fa-forward-step"></i>
+          </button>
+          <button class="ctrl-btn ctrl-repeat" id="btnRepeat" data-i18n-aria="repeat" aria-label="Repetir">
+            <i class="fa-solid fa-repeat"></i>
+          </button>
+        </section>
+
+        <!-- Controles secundarios -->
+        <section class="controls-secondary">
+          <button class="sec-btn" id="btnLyrics" data-i18n-aria="lyrics" aria-label="Letras">
+            <i class="fa-solid fa-align-left"></i>
+            <span data-i18n="lyrics">Letras</span>
+          </button>
+          <button class="sec-btn" id="btnQueue" data-i18n-aria="queue" aria-label="Cola">
+            <i class="fa-solid fa-list-ul"></i>
+            <span data-i18n="queue">Cola</span>
+          </button>
+          <button class="sec-btn" id="btnVolume" data-i18n-aria="volume" aria-label="Volumen">
+            <i class="fa-solid fa-volume-high"></i>
+            <span data-i18n="volume">Volumen</span>
+          </button>
+          <button class="sec-btn" id="btnEqualizer" data-i18n-aria="equalizer" aria-label="Ecualizador">
+            <i class="fa-solid fa-sliders"></i>
+            <span>EQ</span>
+          </button>
+          <button class="sec-btn" id="btnSleep" data-i18n-aria="sleep" aria-label="Temporizador">
+            <i class="fa-solid fa-moon"></i>
+            <span data-i18n="sleep">Sleep</span>
+          </button>
+        </section>
+
+        <!-- Barra de navegación inferior -->
+        <nav class="bottom-nav">
+          <button class="nav-btn active" data-nav="home">
+            <i class="fa-solid fa-house"></i>
+            <span data-i18n="nav_home">Inicio</span>
+          </button>
+          <button class="nav-btn" data-nav="favorites">
+            <i class="fa-solid fa-heart"></i>
+            <span data-i18n="nav_favorites">Favoritos</span>
+          </button>
+          <button class="nav-btn" data-nav="search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span data-i18n="nav_search">Buscar</span>
+          </button>
+          <button class="nav-btn" data-nav="library">
+            <i class="fa-solid fa-grip"></i>
+            <span data-i18n="nav_library">Biblioteca</span>
+          </button>
+        </nav>
+
+      </main>
+
+      <!-- ============== PANTALLA: LETRAS LRC ============== -->
+      <section class="view view-lyrics" id="viewLyrics" data-view="lyrics">
+        <div class="bg-blur lyrics-bg">
+          <div class="bg-gradient" id="bgGradientLyrics"></div>
+        </div>
+
+        <header class="top-bar lyrics-top-bar">
+          <button class="icon-btn" id="btnBackFromLyrics" aria-label="Volver">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+          <div class="top-bar-title">
+            <span class="now-playing-label" data-i18n="synced_lyrics">LETRA SINCRONIZADA</span>
+            <span class="now-playing-context" id="lyricsTrackName">—</span>
+          </div>
+          <button class="icon-btn" id="btnLyricsMore" data-i18n-aria="more_options" aria-label="Más opciones">
+            <i class="fa-solid fa-ellipsis-vertical"></i>
+          </button>
+        </header>
+
+        <!-- Barra de herramientas de letras -->
+        <div class="lyrics-toolbar" id="lyricsToolbar">
+          <button class="lt-btn" id="btnLrcFontDec" aria-label="A-"><i class="fa-solid fa-font"></i><span class="lt-small">A</span></button>
+          <button class="lt-btn" id="btnLrcFontInc" aria-label="A+"><i class="fa-solid fa-font"></i><span class="lt-big">A</span></button>
+          <span class="lt-sep"></span>
+          <button class="lt-btn" id="btnLrcOffsetMinus" data-i18n-title="lrc_offset" title="Desfase"><i class="fa-solid fa-backward"></i><span>0.5s</span></button>
+          <button class="lt-btn" id="btnLrcOffsetReset" data-i18n-title="lrc_offset_reset" title="Resetear"><i class="fa-solid fa-rotate-left"></i></button>
+          <button class="lt-btn" id="btnLrcOffsetPlus" data-i18n-title="lrc_offset" title="Desfase"><i class="fa-solid fa-forward"></i><span>0.5s</span></button>
+          <span class="lt-sep"></span>
+          <button class="lt-btn" id="btnLrcLoop" data-i18n-title="lrc_loop_section" title="Repetir sección"><i class="fa-solid fa-repeat"></i></button>
+          <span class="lt-sep"></span>
+          <button class="lt-btn" id="btnLrcFullscreen" data-i18n-title="lrc_fullscreen" title="Pantalla completa"><i class="fa-solid fa-expand"></i></button>
+          <button class="lt-btn" id="btnLrcLoadFile" data-i18n-title="lrc_load_file" title="Cargar .lrc"><i class="fa-solid fa-file-arrow-up"></i></button>
+          <button class="lt-btn" id="btnLrcEdit" data-i18n-title="lrc_edit" title="Editar"><i class="fa-solid fa-pen"></i></button>
+        </div>
+
+        <!-- Botón salir de pantalla completa -->
+        <button class="icon-btn lyrics-exit-fs" id="btnLrcExitFs" aria-label="Salir"><i class="fa-solid fa-xmark"></i></button>
+
+        <!-- Mini portada + info -->
+        <section class="lyrics-mini" id="lyricsMini">
+          <div class="mini-cover" id="miniCover">
+            <canvas id="miniCoverCanvas" width="120" height="120"></canvas>
+          </div>
+          <div class="mini-info">
+            <h2 id="miniTitle">—</h2>
+            <p id="miniArtist">—</p>
+          </div>
+          <div class="lyrics-speed" id="lyricsSpeed">
+            <button class="lt-btn" id="btnLrcSpeedDown"><i class="fa-solid fa-minus"></i></button>
+            <span id="lrcSpeedLabel">1.0×</span>
+            <button class="lt-btn" id="btnLrcSpeedUp"><i class="fa-solid fa-plus"></i></button>
+          </div>
+        </section>
+
+        <!-- Letra scroll sincronizado -->
+        <section class="lyrics-scroll" id="lyricsScroll">
+          <div class="lyrics-content" id="lyricsContent">
+            <!-- Las líneas se inyectan dinámicamente -->
+          </div>
+        </section>
+
+        <!-- Indicador de loop activo -->
+        <div class="lyrics-loop-indicator" id="lyricsLoopIndicator" style="display:none">
+          <i class="fa-solid fa-repeat"></i>
+          <span id="lyricsLoopText">Loop activo</span>
+          <button class="lt-btn" id="btnLrcLoopClear"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- Controles compactos -->
+        <section class="lyrics-controls">
+          <button class="ctrl-btn ctrl-prev" id="btnPrevLyrics" data-i18n-aria="previous" aria-label="Anterior">
+            <i class="fa-solid fa-backward-step"></i>
+          </button>
+          <button class="ctrl-btn ctrl-play ctrl-play-sm" id="btnPlayLyrics" data-i18n-aria="play" aria-label="Reproducir">
+            <i class="fa-solid fa-play icon-play"></i>
+            <i class="fa-solid fa-pause icon-pause" style="display:none"></i>
+          </button>
+          <button class="ctrl-btn ctrl-next" id="btnNextLyrics" data-i18n-aria="next" aria-label="Siguiente">
+            <i class="fa-solid fa-forward-step"></i>
+          </button>
+        </section>
+      </section>
+
+      <!-- ============== HOJAS MODALES ============== -->
+      <!-- Cola de reproducción -->
+      <div class="sheet" id="sheetQueue">
+        <div class="sheet-backdrop" data-close-sheet="sheetQueue"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetQueue" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="queue_title">Cola de reproducción</h3>
+            <button class="text-btn" data-close-sheet="sheetQueue" data-i18n="close_btn">Cerrar</button>
+          </header>
+          <div class="sheet-body">
+            <p class="sheet-subtitle" id="queueContextLabel"></p>
+            <ul class="queue-list" id="queueList"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Listas de reproducción (pantalla completa) -->
+      <div class="sheet sheet-full" id="sheetPlaylists">
+        <div class="sheet-backdrop" data-close-sheet="sheetPlaylists"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetPlaylists" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="your_playlists">Tus listas</h3>
+            <button class="text-btn" id="btnNewPlaylist"><i class="fa-solid fa-plus"></i> <span data-i18n="new_playlist">Nueva</span></button>
+          </header>
+          <div class="sheet-body">
+            <p class="sheet-subtitle" id="playlistCount"></p>
+            <ul class="playlist-list" id="playlistList"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Crear playlist / Añadir a playlist existente -->
+      <div class="sheet" id="sheetCreatePlaylist">
+        <div class="sheet-backdrop" data-close-sheet="sheetCreatePlaylist"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetCreatePlaylist" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 id="createPlaylistTitle" data-i18n="create_playlist_title">Nueva lista</h3>
+            <button class="text-btn" data-close-sheet="sheetCreatePlaylist" data-i18n="close_btn">Cerrar</button>
+          </header>
+          <div class="sheet-body">
+            <div id="createPlaylistFields">
+              <label class="field">
+                <span data-i18n="name_label">Nombre</span>
+                <input type="text" id="playlistName" data-i18n-ph="my_new_playlist" placeholder="Mi nueva lista" maxlength="40" />
+              </label>
+              <label class="field">
+                <span data-i18n="description_label">Descripción</span>
+                <input type="text" id="playlistDesc" data-i18n-ph="optional" placeholder="Opcional" maxlength="80" />
+              </label>
+            </div>
+            <div id="pickTracksSection" style="display:none">
+              <h4 class="pick-tracks-title" id="pickTracksTitle" data-i18n="pick_tracks">Selecciona pistas</h4>
+              <p class="sheet-subtitle" id="pickTracksHint"></p>
+              <ul class="pick-tracks-list" id="pickTracksList"></ul>
+            </div>
+            <button class="primary-btn" id="btnSavePlaylist" data-i18n="save_playlist">Guardar lista</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Editar playlist existente -->
+      <div class="sheet sheet-full" id="sheetEditPlaylist">
+        <div class="sheet-backdrop" data-close-sheet="sheetEditPlaylist"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetEditPlaylist" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 id="editPlaylistTitle" data-i18n="edit_playlist_title">Editar lista</h3>
+            <button class="text-btn" data-close-sheet="sheetEditPlaylist" data-i18n="close_btn">Cerrar</button>
+          </header>
+          <div class="sheet-body">
+            <div class="edit-pl-header">
+              <div class="edit-pl-cover" id="editPlaylistCover"><i class="fa-solid fa-music"></i></div>
+              <div class="edit-pl-info">
+                <h4 id="editPlaylistName">—</h4>
+                <p id="editPlaylistMeta">—</p>
+              </div>
+            </div>
+            <div class="edit-pl-actions">
+              <button class="primary-btn compact" id="btnPlayPlaylistNow"><i class="fa-solid fa-play"></i> <span data-i18n="play_all_btn">Reproducir Todo</span></button>
+              <button class="primary-btn compact ghost" id="btnUploadToPlaylist"><i class="fa-solid fa-cloud-arrow-up"></i> <span data-i18n="upload_to_playlist_btn">Subir canciones</span></button>
+              <button class="primary-btn compact ghost danger" id="btnClearPlaylist"><i class="fa-solid fa-trash-can"></i> <span data-i18n="clear_playlist_btn">Borrar todo</span></button>
+              <button class="primary-btn compact ghost danger" id="btnDeletePlaylistFull" style="display:none"><i class="fa-solid fa-trash-can-arrow-up"></i> <span data-i18n="delete_playlist_btn">Eliminar lista</span></button>
+            </div>
+            <h4 class="section-title" data-i18n="all_tracks_section">Pistas</h4>
+            <ul class="track-list" id="editPlaylistTracks"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ecualizador -->
+      <div class="sheet" id="sheetEqualizer">
+        <div class="sheet-backdrop" data-close-sheet="sheetEqualizer"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetEqualizer" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="equalizer">Ecualizador</h3>
+            <button class="text-btn" data-close-sheet="sheetEqualizer" data-i18n="done_btn">Listo</button>
+          </header>
+          <div class="sheet-body">
+            <div class="eq-presets" id="eqPresets">
+              <button class="eq-preset active" data-preset="normal">Normal</button>
+              <button class="eq-preset" data-preset="flat" data-i18n="eq_flat">Plano</button>
+              <button class="eq-preset" data-preset="bass" data-i18n="eq_bass">Graves</button>
+              <button class="eq-preset" data-preset="vocal" data-i18n="eq_vocal">Voces</button>
+              <button class="eq-preset" data-preset="treble" data-i18n="eq_treble">Agudos</button>
+              <button class="eq-preset" data-preset="live" data-i18n="eq_live">En vivo</button>
+            </div>
+            <div class="eq-bands" id="eqBands">
+              <!-- Se generan dinámicamente -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sleep timer -->
+      <div class="sheet" id="sheetSleep">
+        <div class="sheet-backdrop" data-close-sheet="sheetSleep"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetSleep" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="sleep">Sleep</h3>
+            <button class="text-btn" data-close-sheet="sheetSleep" data-i18n="close_btn">Cerrar</button>
+          </header>
+          <div class="sheet-body">
+            <p class="sleep-hint" data-i18n="sleep_hint">La reproducción se detendrá automáticamente.</p>
+            <div class="sleep-grid" id="sleepGrid">
+              <button class="sleep-opt" data-min="5">5 min</button>
+              <button class="sleep-opt" data-min="10">10 min</button>
+              <button class="sleep-opt" data-min="15">15 min</button>
+              <button class="sleep-opt" data-min="30">30 min</button>
+              <button class="sleep-opt" data-min="45">45 min</button>
+              <button class="sleep-opt" data-min="60">1 h</button>
+            </div>
+            <button class="primary-btn ghost" id="btnCancelSleep" data-i18n="cancel_timer">Cancelar temporizador</button>
+            <p class="sleep-status" id="sleepStatus"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Volumen -->
+      <div class="sheet" id="sheetVolume">
+        <div class="sheet-backdrop" data-close-sheet="sheetVolume"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetVolume" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="volume">Volumen</h3>
+            <button class="text-btn" data-close-sheet="sheetVolume" data-i18n="done_btn">Listo</button>
+          </header>
+          <div class="sheet-body">
+            <div class="volume-row">
+              <i class="fa-solid fa-volume-low"></i>
+              <input type="range" min="0" max="100" value="80" id="volumeSlider" class="slider" />
+              <i class="fa-solid fa-volume-high"></i>
+            </div>
+            <div class="volume-value" id="volumeValue">80%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Biblioteca / Listas -->
+      <div class="sheet sheet-full" id="sheetLibrary">
+        <div class="sheet-backdrop" data-close-sheet="sheetLibrary"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetLibrary" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="library_title">Biblioteca</h3>
+            <button class="text-btn" id="btnOpenNewPlaylist"><i class="fa-solid fa-plus"></i> <span data-i18n="new_playlist">Nueva</span></button>
+            <button class="text-btn danger" id="btnDeleteAllTracks"><i class="fa-solid fa-trash-can"></i> <span data-i18n="delete_all_btn">Borrar todo</span></button>
+          </header>
+          <div class="sheet-body">
+            <h4 class="section-title" data-i18n="playlists_section">Listas de reproducción</h4>
+            <ul class="playlist-grid" id="libraryPlaylists"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Buscar -->
+      <div class="sheet sheet-full" id="sheetSearch">
+        <div class="sheet-backdrop" data-close-sheet="sheetSearch"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetSearch" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="search_title">Buscar</h3>
+            <button class="text-btn" data-close-sheet="sheetSearch" data-i18n="close_btn">Cerrar</button>
+          </header>
+          <div class="sheet-body">
+            <label class="field">
+              <input type="search" id="searchInput" data-i18n-ph="search_placeholder" placeholder="Canción, artista o ál…" />
+            </label>
+            <!-- #9 Filtros de búsqueda -->
+            <div class="search-filters" id="searchFilters">
+              <button class="search-filter active" data-filter="all" data-i18n="search_filter_all">Todo</button>
+              <button class="search-filter" data-filter="title" data-i18n="search_filter_title">Título</button>
+              <button class="search-filter" data-filter="artist" data-i18n="search_filter_artist">Artista</button>
+              <button class="search-filter" data-filter="album" data-i18n="search_filter_album">Álbum</button>
+            </div>
+            <ul class="track-list" id="searchResults"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Más opciones -->
+      <div class="sheet" id="sheetMore">
+        <div class="sheet-backdrop" data-close-sheet="sheetMore"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetMore" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="options_title">Opciones</h3>
+            <button class="text-btn" data-close-sheet="sheetMore" data-i18n="close_btn">Cerrar</button>
+          </header>
+          <div class="sheet-body">
+            <button class="menu-row" id="menuLoadMusic">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span data-i18n="menu_load_music">Cargar música del dispositivo</span>
+            </button>
+            <button class="menu-row" id="menuAddToPlaylist">
+              <i class="fa-solid fa-list-ul"></i>
+              <span data-i18n="menu_add_to_playlist">Añadir a una lista</span>
+            </button>
+            <button class="menu-row" id="menuGoToArtist">
+              <i class="fa-solid fa-user"></i>
+              <span data-i18n="menu_go_to_artist">Ir al artista</span>
+            </button>
+            <button class="menu-row" id="menuListeners">
+              <i class="fa-solid fa-users"></i>
+              <span data-i18n="listeners_title">Oyentes</span>
+            </button>
+            <button class="menu-row" id="menuShareTrack">
+              <i class="fa-solid fa-share-nodes"></i>
+              <span data-i18n="menu_share">Compartir</span>
+            </button>
+            <button class="menu-row" id="menuStats">
+              <i class="fa-solid fa-chart-simple"></i>
+              <span data-i18n="menu_stats">Estadísticas de reproducción</span>
+            </button>
+            <button class="menu-row" id="menuHistory">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              <span data-i18n="settings_history">Historial</span>
+            </button>
+            <button class="menu-row" id="menuSettings">
+              <i class="fa-solid fa-gear"></i>
+              <span data-i18n="settings_title">Ajustes</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Temas y acentos (#11) -->
+      <div class="sheet" id="sheetThemes">
+        <div class="sheet-backdrop" data-close-sheet="sheetThemes"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetThemes" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="themes_title">Temas y acentos</h3>
+            <button class="text-btn" data-close-sheet="sheetThemes" data-i18n="done_btn">Listo</button>
+          </header>
+          <div class="sheet-body">
+            <h4 class="section-title" data-i18n="themes_title">Tema</h4>
+            <div class="theme-grid" id="themeGrid">
+              <button class="theme-opt" data-theme="dark">
+                <div class="theme-preview theme-dark"><div class="tp-bar"></div><div class="tp-circle"></div></div>
+                <span data-i18n="theme_dark">Oscuro</span>
+              </button>
+              <button class="theme-opt" data-theme="light">
+                <div class="theme-preview theme-light"><div class="tp-bar"></div><div class="tp-circle"></div></div>
+                <span data-i18n="theme_light">Claro</span>
+              </button>
+              <button class="theme-opt" data-theme="amoled">
+                <div class="theme-preview theme-amoled"><div class="tp-bar"></div><div class="tp-circle"></div></div>
+                <span data-i18n="theme_amoled">AMOLED</span>
+              </button>
+            </div>
+
+            <h4 class="section-title" data-i18n="themes_title">Color de acento</h4>
+            <div class="accent-grid" id="accentGrid">
+              <button class="accent-opt" data-accent="purple" style="background:linear-gradient(135deg,#7C3AED,#EC4899)"><span data-i18n="accent_purple">Púrpura</span></button>
+              <button class="accent-opt" data-accent="blue" style="background:linear-gradient(135deg,#2563EB,#06B6D4)"><span data-i18n="accent_blue">Azul</span></button>
+              <button class="accent-opt" data-accent="green" style="background:linear-gradient(135deg,#059669,#10B981)"><span data-i18n="accent_green">Verde</span></button>
+              <button class="accent-opt" data-accent="orange" style="background:linear-gradient(135deg,#EA580C,#F59E0B)"><span data-i18n="accent_orange">Naranja</span></button>
+              <button class="accent-opt" data-accent="pink" style="background:linear-gradient(135deg,#DB2777,#EC4899)"><span data-i18n="accent_pink">Rosa</span></button>
+            </div>
+
+            <p class="stats-empty" style="margin-top:18px" data-i18n="theme_hint">El tema se aplica al instante y se guarda en el dispositivo.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estadísticas (#13) -->
+      <div class="sheet sheet-full" id="sheetStats">
+        <div class="sheet-backdrop" data-close-sheet="sheetStats"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetStats" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="stats_title">Estadísticas</h3>
+            <button class="text-btn" data-close-sheet="sheetStats" data-i18n="close_btn">Cerrar</button>
+          </header>
+          <div class="sheet-body">
+            <div id="statsContent"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Favoritos -->
+      <div class="sheet sheet-full" id="sheetFavorites">
+        <div class="sheet-backdrop" data-close-sheet="sheetFavorites"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetFavorites" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="favorites_title">Favoritos</h3>
+            <button class="text-btn" data-close-sheet="sheetFavorites" data-i18n="close_btn">Cerrar</button>
+          </header>
+          <div class="sheet-body">
+            <div class="edit-pl-actions" style="grid-template-columns:1fr;margin-bottom:14px">
+              <button class="primary-btn compact" id="btnPlayFavoritesNow"><i class="fa-solid fa-play"></i> <span data-i18n="play_all_btn">Reproducir Todo</span></button>
+            </div>
+            <p class="sheet-subtitle" id="favoritesCount"></p>
+            <ul class="track-list" id="favoritesList"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Idioma -->
+      <div class="sheet" id="sheetLanguage">
+        <div class="sheet-backdrop" data-close-sheet="sheetLanguage"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetLanguage" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="language_title">Idioma</h3>
+            <button class="text-btn" data-close-sheet="sheetLanguage" data-i18n="done_btn">Listo</button>
+          </header>
+          <div class="sheet-body">
+            <ul class="lang-list" id="langList"></ul>
+            <p class="stats-empty" style="margin-top:18px" data-i18n="lang_hint">El idioma se aplica al instante y se guarda en el dispositivo.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- #17 Panel de ajustes -->
+      <div class="sheet sheet-full" id="sheetSettings">
+        <div class="sheet-backdrop" data-close-sheet="sheetSettings"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetSettings" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="settings_title">Ajustes</h3>
+            <button class="text-btn" data-close-sheet="sheetSettings" data-i18n="close_btn">Cerrar</button>
+          </header>
+          <div class="sheet-body">
+            <h4 class="section-title" data-i18n="settings_interface">Interfaz</h4>
+            <button class="menu-row" id="menuThemesSettings">
+              <i class="fa-solid fa-palette"></i>
+              <span data-i18n="menu_themes">Temas y acentos</span>
+            </button>
+            <button class="menu-row" id="menuLanguageSettings">
+              <i class="fa-solid fa-language"></i>
+              <span data-i18n="menu_language">Idioma de la aplicación</span>
+            </button>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Editor de letras -->
+      <div class="sheet sheet-full" id="sheetLrcEditor">
+        <div class="sheet-backdrop" data-close-sheet="sheetLrcEditor"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetLrcEditor" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="lrc_edit">Editar letra</h3>
+            <button class="text-btn" id="btnLrcSave" data-i18n="lrc_save">Guardar</button>
+          </header>
+          <div class="sheet-body">
+            <p class="sheet-subtitle" data-i18n="lrc_edit_hint">Pega o edita la letra aquí. Usa [mm:ss.xx] para timestamps.</p>
+            <textarea id="lrcEditorText" class="lrc-editor-textarea" rows="20" placeholder="[00:12.50]Primera línea&#10;[00:15.30]Segunda línea"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sheet: Listeners (sincronización en tiempo real) -->
+      <div class="sheet" id="sheetListeners">
+        <div class="sheet-backdrop" data-close-sheet="sheetListeners"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetListeners" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="listeners_title">Oyentes</h3>
+            <button class="text-btn" data-close-sheet="sheetListeners" data-i18n="close_btn">Cerrar</button>
+          </header>
+          <div class="sheet-body">
+            <p class="sheet-subtitle" id="listenersSubtitle" data-i18n="listeners_subtitle">Conectados en tiempo real</p>
+            <div class="listeners-list" id="listenersList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast"></div>
+
+      <!-- Audio element oculto (sin crossorigin: rompería objectURLs locales) -->
+      <audio id="audioEl" preload="metadata"></audio>
+
+    </div>
+  </div>
+
+  <!-- jsmediatags para leer metadatos ID3 (embebido localmente, sin CDN) -->
+  <script src="assets/js/jsmediatags.min.js"></script>
+  <!-- webxdc.js — proporcionado por el mensajero (Delta Chat).
+       En navegador normal, se usa un stub que simula la API. -->
+  <script src="webxdc.js"></script>
+  <script src="data.js"></script>
+  <script src="storage.js"></script>
+  <script src="uploader.js"></script>
+  <!-- realtime.js — Sistema de compartir música en tiempo real (webxdc realtime channel) -->
+  <script src="realtime.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
