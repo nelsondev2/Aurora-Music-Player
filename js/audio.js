@@ -46,6 +46,7 @@ Object.assign(App, {
         this.gainNode.gain.value = 1;
         this.analyser.connect(this.gainNode);
         this.gainNode.connect(this.audioCtx.destination);
+        this.applySavedEq();
       } catch (e) {
         console.warn('[Aurora] Web Audio no disponible, visualizador en modo simulado:', e.message);
         this.audioCtx = null;
@@ -74,36 +75,63 @@ Object.assign(App, {
     /* ============================================================
      *  Ecualizador
      * ============================================================ */
+    getSavedEq() {
+      try {
+        const s = localStorage.getItem('aurora_eq');
+        if (s) {
+          const arr = JSON.parse(s);
+          if (Array.isArray(arr) && arr.length) return arr.map(n => Number(n) || 0);
+        }
+      } catch (e) {}
+      return [0, 0, 0, 0, 0];
+    },
+    applySavedEq() {
+      const saved = this.getSavedEq();
+      saved.forEach((g, i) => {
+        if (this.eqFilters[i]) this.eqFilters[i].gain.value = g;
+      });
+      document.querySelectorAll('#eqBands input[type="range"]').forEach((inp, i) => {
+        if (saved[i] == null) return;
+        inp.value = saved[i];
+        const val = inp.parentElement && inp.parentElement.querySelector('.eq-band-val');
+        if (val) val.textContent = (saved[i] > 0 ? '+' : '') + saved[i] + ' dB';
+      });
+    },
     buildEqualizer() {
       const c = document.getElementById('eqBands');
       if (!c) return;
       c.innerHTML = '';
       const labels = ['60Hz','230Hz','910Hz','3.6k','14k'];
-      // #5 Cargar valores guardados
-      let savedEq = [0,0,0,0,0];
-      try {
-        const s = localStorage.getItem('aurora_eq');
-        if (s) savedEq = JSON.parse(s);
-      } catch (e) {}
+      const savedEq = this.getSavedEq();
       labels.forEach((lbl, i) => {
         const wrap = document.createElement('div');
         wrap.className = 'eq-band';
-        const input = document.createElement('input');
-        input.type = 'range';
-        input.min = -12; input.max = 12; input.value = savedEq[i] || 0; input.step = 1;
-        input.addEventListener('input', () => {
-          if (this.eqFilters[i]) this.eqFilters[i].gain.value = parseFloat(input.value);
-          this.saveEqValues();
-        });
         const lab = document.createElement('span');
         lab.className = 'eq-band-label';
         lab.textContent = lbl;
-        wrap.appendChild(input);
+        const input = document.createElement('input');
+        input.type = 'range';
+        input.min = -12; input.max = 12; input.value = savedEq[i] || 0; input.step = 1;
+        const val = document.createElement('span');
+        val.className = 'eq-band-val';
+        const g = savedEq[i] || 0;
+        val.textContent = (g > 0 ? '+' : '') + g + ' dB';
+        input.addEventListener('input', () => {
+          const n = parseFloat(input.value) || 0;
+          if (this.eqFilters[i]) this.eqFilters[i].gain.value = n;
+          val.textContent = (n > 0 ? '+' : '') + n + ' dB';
+          this.saveEqValues();
+        });
         wrap.appendChild(lab);
+        wrap.appendChild(input);
+        wrap.appendChild(val);
         c.appendChild(wrap);
-        // Aplicar valor guardado al filtro
         if (this.eqFilters[i]) this.eqFilters[i].gain.value = savedEq[i] || 0;
       });
+      try {
+        const preset = localStorage.getItem('aurora_eq_preset') || 'normal';
+        document.querySelectorAll('.eq-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
+      } catch (e) {}
     },
     /* #5 Guardar valores del EQ */
     saveEqValues() {
@@ -135,7 +163,11 @@ Object.assign(App, {
       inputs.forEach((inp, i) => {
         inp.value = vals[i];
         if (this.eqFilters[i]) this.eqFilters[i].gain.value = vals[i];
+        const val = inp.parentElement && inp.parentElement.querySelector('.eq-band-val');
+        if (val) val.textContent = (vals[i] > 0 ? '+' : '') + vals[i] + ' dB';
       });
+      this.saveEqValues();
+      try { localStorage.setItem('aurora_eq_preset', preset); } catch (e) {}
       document.querySelectorAll('.eq-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
     },
 
@@ -213,6 +245,10 @@ Object.assign(App, {
       }
       this.audio.src = url;
       this.audio.load();
+      if (this.playbackRate && this.playbackRate !== 1) {
+        try { this.audio.playbackRate = this.playbackRate; } catch (e) {}
+      }
+      if (typeof this.restoreLyricsPrefs === 'function') this.restoreLyricsPrefs();
       // #6 Normalización de volumen
       if (this._normalizeVolume) {
         this.computeTrackGain(t).then(gain => {
@@ -518,6 +554,15 @@ Object.assign(App, {
       }
     },
 
+    seekToTime(sec) {
+      if (!this.audio) return;
+      const dur = this.audio.duration;
+      let t = Number(sec) || 0;
+      if (isFinite(dur) && dur > 0) t = Math.max(0, Math.min(dur - 0.05, t));
+      else t = Math.max(0, t);
+      try { this.audio.currentTime = t; } catch (e) {}
+      this.updateProgress();
+    },
     seekTo(ratio) {
       if (!this.audio || !this.audio.duration || isNaN(this.audio.duration)) return;
       this.audio.currentTime = ratio * this.audio.duration;

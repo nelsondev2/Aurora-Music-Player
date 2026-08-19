@@ -191,8 +191,8 @@ Object.assign(App, {
         // Tap en una línea con timestamp → saltar a ese punto (#11)
         if (l.timed && l.time >= 0) {
           div.addEventListener('click', () => {
-            this.seekTo(l.time / (this.audio.duration || 1));
-            if (navigator.vibrate) navigator.vibrate(10);  // #26 vibración
+            this.seekToTime(l.time + (this.lrcOffset || 0));
+            if (navigator.vibrate) navigator.vibrate(10);
           });
         }
         cont.appendChild(div);
@@ -212,7 +212,11 @@ Object.assign(App, {
       if (this.lrcRafId) cancelAnimationFrame(this.lrcRafId);
       if (!this.lrcHasTimed) return;
       const tick = () => {
-        // Solo actualizar si hay audio y está cargado
+        const lyricsView = document.getElementById('viewLyrics');
+        if (!lyricsView || !lyricsView.classList.contains('active')) {
+          this.lrcRafId = requestAnimationFrame(tick);
+          return;
+        }
         if (this.audio && this.currentTrack) {
           // cur = tiempo actual - offset (offset positivo = letra adelantada)
           const cur = (this.audio.currentTime || 0) - this.lrcOffset;
@@ -309,7 +313,7 @@ Object.assign(App, {
         // Usar caché de elementos DOM si existe, sino crearla
         if (!this._lrcLineEls) {
           const cont = document.getElementById('lyricsContent');
-          if (cont) this._lrcLineEls = Array.from(cont.children);
+          if (cont) this._lrcLineEls = Array.from(cont.querySelectorAll('.lrc-line'));
         }
 
         if (this._lrcLineEls) {

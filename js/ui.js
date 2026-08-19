@@ -158,31 +158,57 @@ Object.assign(App, {
      * ============================================================ */
     startSleep(minutes) {
       this.cancelSleep();
-      this.sleepEndAt = Date.now() + minutes * 60 * 1000;
-      this.sleepTimer = setTimeout(() => {
-        this.togglePlay(false);
-        this.sleepEndAt = null;
-        this.toast(this.t('toast_sleep_done'));
-        this.updateSleepStatus();
-      }, minutes * 60 * 1000);
+      const mins = Math.max(1, parseInt(minutes, 10) || 0);
+      this.sleepEndAt = Date.now() + mins * 60 * 1000;
+      this.sleepTick = setInterval(() => {
+        if (!this.sleepEndAt) return;
+        if (Date.now() >= this.sleepEndAt) this._fireSleep();
+        else this.updateSleepStatus();
+      }, 1000);
       this.updateSleepStatus();
-      this.toast(this.t('toast_sleep_started').replace('X', minutes));
+      this.toast(this.t('toast_sleep_started').replace('X', mins));
+    },
+    async _fireSleep() {
+      const endAt = this.sleepEndAt;
+      this.cancelSleep();
+      if (!endAt) return;
+      // Fundido corto y pausa (más fiable que un setTimeout largo en segundo plano)
+      try {
+        if (this.audio && this.isPlaying) {
+          const startVol = this.audio.volume;
+          const steps = 8;
+          for (let i = 1; i <= steps; i++) {
+            this.audio.volume = startVol * (1 - i / steps);
+            await new Promise(r => setTimeout(r, 80));
+          }
+          this.togglePlay(false);
+          this.audio.volume = this.volume;
+        }
+      } catch (e) {
+        this.togglePlay(false);
+      }
+      document.querySelectorAll('.sleep-opt').forEach(x => x.classList.remove('active'));
+      this.toast(this.t('toast_sleep_done'));
     },
     cancelSleep() {
       if (this.sleepTimer) { clearTimeout(this.sleepTimer); this.sleepTimer = null; }
+      if (this.sleepTick) { clearInterval(this.sleepTick); this.sleepTick = null; }
       this.sleepEndAt = null;
       this.updateSleepStatus();
     },
     updateSleepStatus() {
       const el = document.getElementById('sleepStatus');
-      if (!el) return;
+      const btn = document.getElementById('btnSleep');
       if (this.sleepEndAt) {
-        const ms = this.sleepEndAt - Date.now();
+        const ms = Math.max(0, this.sleepEndAt - Date.now());
         const m = Math.floor(ms / 60000);
         const s = Math.floor((ms % 60000) / 1000);
-        el.textContent = `${this.t('sleep_active_prefix')} ${m}:${String(s).padStart(2,'0')} ${this.t('sleep_remaining')}`;
+        const label = `${this.t('sleep_active_prefix')} ${m}:${String(s).padStart(2,'0')} ${this.t('sleep_remaining')}`;
+        if (el) el.textContent = label;
+        if (btn) btn.classList.add('active');
       } else {
-        el.textContent = '';
+        if (el) el.textContent = '';
+        if (btn) btn.classList.remove('active');
       }
     },
 

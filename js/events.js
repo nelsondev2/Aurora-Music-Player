@@ -159,7 +159,12 @@ Object.assign(App, {
       });
 
       // Cola
-      $('btnQueue').addEventListener('click', () => this.openSheet('sheetQueue'));
+      $('btnQueue').addEventListener('click', () => {
+        this.renderQueue();
+        this.openSheet('sheetQueue');
+      });
+      const btnClearQueue = document.getElementById('btnClearQueue');
+      if (btnClearQueue) btnClearQueue.addEventListener('click', () => this.clearUpcomingQueue());
 
       // Volumen
       $('btnVolume').addEventListener('click', () => this.openSheet('sheetVolume'));

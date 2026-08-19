@@ -235,6 +235,13 @@ Object.assign(App, {
           ctxLabel.style.display = 'none';
         }
       }
+      const cleaned = this.queue.filter(id => this.tracks.some(t => t.id === id));
+      if (cleaned.length !== this.queue.length) {
+        const curId = this.currentTrack && this.currentTrack.id;
+        this.queue = cleaned;
+        const nq = curId ? this.queue.indexOf(curId) : -1;
+        this.queueIdx = nq >= 0 ? nq : Math.min(this.queueIdx, Math.max(0, this.queue.length - 1));
+      }
       if (this.queue.length === 0) {
         ul.innerHTML = '<li class="track-row" style="justify-content:center;color:var(--text-3);font-size:13px;padding:24px">' + this.t('queue_empty') + '</li>';
         return;
@@ -289,8 +296,13 @@ Object.assign(App, {
           if (this.queueIdx < 0) this.queueIdx = 0;
           // Si era la pista en reproducción, detenerla
           if (wasCurrent) {
-            this.stopPlayback();
-            this.toast(this.t('toast_removed_from_queue_stopped'));
+            if (this.queue.length) {
+              this.playFromQueue(this.queueIdx);
+              this.toast(this.t('toast_removed_from_playlist'));
+            } else {
+              this.stopPlayback();
+              this.toast(this.t('toast_removed_from_queue_stopped'));
+            }
           }
           this.renderQueue();
         });
@@ -370,8 +382,30 @@ Object.assign(App, {
       handle.addEventListener('touchmove', onMove, { passive: false });
       handle.addEventListener('touchend', onEnd);
       handle.addEventListener('mousedown', onStart);
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup', onEnd);
+      const onWinMove = (e) => onMove(e);
+      const onWinUp = (e) => {
+        onEnd(e);
+        window.removeEventListener('mousemove', onWinMove);
+        window.removeEventListener('mouseup', onWinUp);
+      };
+      handle.addEventListener('mousedown', () => {
+        window.addEventListener('mousemove', onWinMove);
+        window.addEventListener('mouseup', onWinUp);
+      });
+    },
+
+    clearUpcomingQueue() {
+      if (!this.queue.length) return;
+      const keep = this.queue[this.queueIdx];
+      if (keep == null) {
+        this.queue = [];
+        this.queueIdx = 0;
+      } else {
+        this.queue = [keep];
+        this.queueIdx = 0;
+      }
+      this.renderQueue();
+      this.toast(this.t('toast_queue_cleared'));
     },
 
     renderLibrary() {
