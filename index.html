@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
   />
   <meta name="theme-color" content="#0a0a0f" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -630,6 +630,22 @@
           <div class="sheet-body">
             <p class="sheet-subtitle" data-i18n="lrc_edit_hint">Pega o edita la letra aquí. Usa [mm:ss.xx] para timestamps.</p>
             <textarea id="lrcEditorText" class="lrc-editor-textarea" rows="20" placeholder="[00:12.50]Primera línea&#10;[00:15.30]Segunda línea"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sheet: Confirmación genérica (sustituye a confirm() nativo) -->
+      <div class="sheet sheet-confirm" id="sheetConfirm">
+        <div class="sheet-backdrop" data-close-sheet="sheetConfirm"></div>
+        <div class="sheet-panel confirm-panel">
+          <div class="sheet-handle"></div>
+          <div class="sheet-body confirm-body">
+            <div class="confirm-icon" id="confirmIcon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <p class="confirm-msg" id="confirmMsg">¿Seguro?</p>
+            <div class="confirm-actions">
+              <button class="primary-btn ghost" id="btnConfirmCancel" data-i18n="cancel">Cancelar</button>
+              <button class="primary-btn confirm-ok" id="btnConfirmOk" data-i18n="confirm_delete">Eliminar</button>
+            </div>
           </div>
         </div>
       </div>

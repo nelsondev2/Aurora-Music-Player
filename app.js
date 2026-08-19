@@ -1195,7 +1195,11 @@
         this.toast(this.t('no_tracks_loaded'));
         return;
       }
-      if (!confirm(this.t('delete_all_confirm'))) return;
+      const okAll = await this.showConfirm({
+        message: this.t('delete_all_confirm'),
+        okLabel: this.t('confirm_delete')
+      });
+      if (!okAll) return;
 
       // 1. Detener reproducción si la hay
       if (this.isPlaying) this.stopPlayback();
@@ -3403,9 +3407,13 @@
           this.playTrack(t.id, { type: 'all' });
           this.closeSheet('sheetLibrary');
         });
-        li.querySelector('.delete-track').addEventListener('click', (e) => {
+        li.querySelector('.delete-track').addEventListener('click', async (e) => {
           e.stopPropagation();
-          if (confirm(this.t('delete_track_confirm').replace('X', t.title))) {
+          const ok = await this.showConfirm({
+            message: this.t('delete_track_confirm').replace('X', t.title),
+            okLabel: this.t('confirm_delete')
+          });
+          if (ok) {
             this.deleteTrack(t.id);
           }
         });
@@ -3500,14 +3508,18 @@
 
     /* Elimina una playlist. Rechaza la operación si es la predefinida
      * "Mi Música" (id === DEFAULT_PLAYLIST_ID o isDefault === true). */
-    deletePlaylist(playlistId) {
+    async deletePlaylist(playlistId) {
       const pl = this.playlists.find(p => p.id === playlistId);
       if (!pl) return;
       if (pl.isDefault || pl.id === this.DEFAULT_PLAYLIST_ID) {
         this.toast(this.t('toast_cannot_delete_default'));
         return;
       }
-      if (!confirm(this.t('delete_playlist_confirm').replace('X', pl.name))) return;
+      const ok = await this.showConfirm({
+        message: this.t('delete_playlist_confirm').replace('X', pl.name),
+        okLabel: this.t('confirm_delete')
+      });
+      if (!ok) return;
       this.playlists = this.playlists.filter(p => p.id !== playlistId);
       this.deletePlaylistFromStorage(playlistId);
       this.renderPlaylists();
@@ -3814,14 +3826,18 @@
     },
 
     /* Vacía una playlist (sin borrar las pistas de la biblioteca) */
-    clearPlaylist(playlistId) {
+    async clearPlaylist(playlistId) {
       const pl = this.playlists.find(p => p.id === playlistId);
       if (!pl) return;
       if (pl.trackIds.length === 0) {
         this.toast(this.t('toast_playlist_cleared'));
         return;
       }
-      if (!confirm(this.t('confirm_clear_playlist'))) return;
+      const ok = await this.showConfirm({
+        message: this.t('confirm_clear_playlist'),
+        okLabel: this.t('confirm_delete')
+      });
+      if (!ok) return;
       pl.trackIds = [];
       pl._coverCache = null;
       pl._coverCacheHash = null;
@@ -3868,6 +3884,44 @@
     /* ============================================================
      *  Sheets
      * ============================================================ */
+    /* ============================================================
+     *  Confirmación genérica (sustituye a confirm() nativo)
+     *  Devuelve una Promise<boolean>: true = aceptar, false = cancelar.
+     *  Si cierran el sheet por backdrop/X también resuelve false
+     *  (ver hook en closeSheet).
+     * ============================================================ */
+    showConfirm(opts = {}) {
+      return new Promise((resolve) => {
+        const sheet = document.getElementById('sheetConfirm');
+        if (!sheet) {
+          // Fallback extremo: sin markup, usar el nativo
+          resolve(window.confirm(opts.message || ''));
+          return;
+        }
+        const msg = document.getElementById('confirmMsg');
+        const icon = document.getElementById('confirmIcon');
+        const okBtn = document.getElementById('btnConfirmOk');
+        const cancelBtn = document.getElementById('btnConfirmCancel');
+        if (msg) msg.textContent = opts.message || '';
+        if (icon) icon.classList.toggle('hidden', opts.danger === false);
+        if (okBtn) {
+          okBtn.textContent = opts.okLabel || this.t('confirm_ok');
+          okBtn.classList.toggle('danger', opts.danger !== false);
+        }
+        let done = false;
+        this._confirmResolver = (val) => {
+          if (done) return;
+          done = true;
+          this._confirmResolver = null;
+          this.closeSheet('sheetConfirm');
+          resolve(val);
+        };
+        if (okBtn) okBtn.onclick = () => { if (this._confirmResolver) this._confirmResolver(true); };
+        if (cancelBtn) cancelBtn.onclick = () => { if (this._confirmResolver) this._confirmResolver(false); };
+        this.openSheet('sheetConfirm');
+      });
+    },
+
     openSheet(id) {
       const s = document.getElementById(id);
       if (s) s.classList.add('open');
@@ -3875,6 +3929,10 @@
     closeSheet(id) {
       const s = document.getElementById(id);
       if (s) s.classList.remove('open');
+      // Si se cierra el sheet de confirmación por backdrop/X, resolver false
+      if (id === 'sheetConfirm' && this._confirmResolver) {
+        this._confirmResolver(false);
+      }
       // Reset del flag de selección si se cierra el sheet de listas
       if (id === 'sheetPlaylists') {
         this._selectPlaylistForAdd = false;
@@ -4552,13 +4610,13 @@
       `;
       cont.appendChild(resetDiv);
       const btnRS = document.getElementById('btnResetStats');
-      if (btnRS) btnRS.addEventListener('click', () => {
-        if (confirm(this.t('stats_reset_confirm'))) this.resetStats();
-      });
-      const btnRH = document.getElementById('btnResetHistory');
-      if (btnRH) btnRH.addEventListener('click', () => {
-        if (confirm(this.t('history_reset_confirm'))) this.resetHistory();
-      });
+        if (btnRS) btnRS.addEventListener('click', async () => {
+          if (await this.showConfirm({ message: this.t('stats_reset_confirm'), danger: false })) this.resetStats();
+        });
+        const btnRH = document.getElementById('btnResetHistory');
+        if (btnRH) btnRH.addEventListener('click', async () => {
+          if (await this.showConfirm({ message: this.t('history_reset_confirm'), danger: false })) this.resetHistory();
+        });
 
       // Dibujar covers
       cont.querySelectorAll('.stats-row').forEach((row, i) => {

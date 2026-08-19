@@ -1844,6 +1844,36 @@ const I18N = {
     fr: 'Déjà dans cette liste',
     it: 'Già in questa lista',
     ru: 'Уже в этом списке'
+  },
+  cancel: {
+    es: 'Cancelar',
+    en: 'Cancel',
+    pt: 'Cancelar',
+    zh: '取消',
+    ja: 'キャンセル',
+    fr: 'Annuler',
+    it: 'Annulla',
+    ru: 'Отмена'
+  },
+  confirm_delete: {
+    es: 'Eliminar',
+    en: 'Delete',
+    pt: 'Excluir',
+    zh: '删除',
+    ja: '削除',
+    fr: 'Supprimer',
+    it: 'Elimina',
+    ru: 'Удалить'
+  },
+  confirm_ok: {
+    es: 'Aceptar',
+    en: 'OK',
+    pt: 'Aceitar',
+    zh: '确定',
+    ja: 'OK',
+    fr: 'OK',
+    it: 'OK',
+    ru: 'ОК'
   }
 };
 

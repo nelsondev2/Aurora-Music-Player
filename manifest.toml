@@ -1,2 +1,4 @@
 name = "Aurora Music Player"
-source_code_url = "https://github.com/webxdc/aurora-music-player"
+description = "Offline-first music player with synced lyrics, playlists, equalizer, stats and real-time group listening — all inside your chat."
+author = "Nelson"
+source_code_url = "https://github.com/nelsondev2/Aurora-Music-Player"

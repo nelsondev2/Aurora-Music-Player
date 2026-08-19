@@ -2226,3 +2226,63 @@ svg { display: block; }
   margin-left: 6px;
   vertical-align: middle;
 }
+
+/* =====================================================================
+ *  Sheet de confirmación (sustituye a confirm() nativo)
+ * ===================================================================== */
+.sheet-confirm .confirm-panel {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.confirm-body {
+  text-align: center;
+  padding: 20px 20px 22px;
+}
+
+.confirm-icon {
+  font-size: 32px;
+  color: var(--danger);
+  margin-bottom: 10px;
+}
+
+.confirm-icon.hidden { display: none; }
+
+.confirm-msg {
+  color: var(--text-1);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 14px;
+  overflow-wrap: anywhere;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-actions .primary-btn {
+  flex: 1;
+  margin-top: 0;
+}
+
+.confirm-actions .primary-btn.confirm-ok.danger {
+  background: var(--danger);
+  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.30);
+}
+
+.confirm-actions .primary-btn.confirm-ok.danger:active {
+  background: #dc2626;
+}
+
+/* Accesibilidad: sin doble-tap zoom en controles (el pinch-zoom sigue
+ * disponible — el viewport ya no bloquea el escalado). */
+button,
+.icon-btn,
+.icon-btn-sm,
+.ctrl-btn,
+.track-row,
+.sleep-opt {
+  touch-action: manipulation;
+}
