@@ -81,7 +81,7 @@ Object.assign(App, {
 
       // #4 #6 Gapless y normalización siempre activos
       this._gaplessEnabled = true;
-      this._normalizeVolume = true;
+      this._normalizeVolume = false;
       // #11 Cargar historial
       this.loadHistory();
 

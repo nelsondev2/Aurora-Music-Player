@@ -56,7 +56,7 @@
     _urlCache: new Map(),     // trackId → objectURL (cache para reutilizar)
     _preloadAudio: null,      // elemento audio para precargar siguiente pista
     _gaplessEnabled: true,    // #4 reproducción sin pausa (siempre activo)
-    _normalizeVolume: true,   // #6 normalización de volumen (siempre activo)
+    _normalizeVolume: false,  // no atenuar pistas ya masterizadas
     _trackGainCache: new Map(), // trackId → gain normalizado
     _playHistory: [],         // #11 historial de reproducción
 

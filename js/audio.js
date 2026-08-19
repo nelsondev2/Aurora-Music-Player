@@ -589,7 +589,7 @@ Object.assign(App, {
     setVolume(v) {
       this.volume = Math.max(0, Math.min(1, v));
       this.audio.volume = this.volume;
-      if (this.gainNode) this.gainNode.gain.value = 1;
+      // No pisar la ganancia del grafo: el volumen del usuario va en <audio>
       const sv = document.getElementById('volumeSlider');
       const vv = document.getElementById('volumeValue');
       if (sv) sv.value = Math.round(this.volume * 100);

@@ -222,9 +222,13 @@ Object.assign(App, {
           count++;
         }
         const rms = Math.sqrt(sum / count);
-        // Gain objetivo: normalizar a RMS ~0.1
-        const targetRms = 0.1;
-        const gain = rms > 0.001 ? Math.min(2.0, Math.max(0.5, targetRms / rms)) : 1.0;
+        // Solo subir pistas muy bajas. Nunca atenuar: el target 0.1
+        // dejaba la música comercial a la mitad de volumen.
+        const targetRms = 0.22;
+        let gain = 1.0;
+        if (rms > 0.001 && rms < targetRms) {
+          gain = Math.min(1.8, targetRms / rms);
+        }
         this._trackGainCache.set(track.id, gain);
         return gain;
       } catch (e) {

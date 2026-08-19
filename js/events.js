@@ -354,8 +354,10 @@ Object.assign(App, {
 
       // Restore volume
       const savedVol = localStorage.getItem('aurora_volume');
-      if (savedVol) this.setVolume(parseFloat(savedVol));
-      else this.setVolume(0.8);
+      const savedN = savedVol != null ? parseFloat(savedVol) : NaN;
+      // 0.8 era el default antiguo; al subirlo a 1 no pisar un volumen elegido a propósito
+      if (isFinite(savedN) && savedN > 0 && Math.abs(savedN - 0.8) > 0.001) this.setVolume(savedN);
+      else this.setVolume(1);
 
       // Botón estadísticas (si existe)
       const btnStats = document.getElementById('menuStats');
