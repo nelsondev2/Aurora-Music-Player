@@ -182,7 +182,7 @@ svg { display: block; }
     --pad: 10px;
     --bottom-nav-h: 46px;
   }
-  .cover-art { width: min(40vw, 160px); }
+  .cover-art { width: min(42vw, 180px); }
   .track-title { font-size: 16px; }
   .ctrl-play { width: 50px; height: 50px; }
   .controls-secondary { padding: 2px 0; }
@@ -196,7 +196,7 @@ svg { display: block; }
 /* Altura media-baja */
 @media (max-height: 700px) and (min-height: 601px) {
   :root { --pad: 14px; }
-  .cover-art { width: min(58vw, 260px); }
+  .cover-art { width: min(62vw, 280px); }
   .track-title { font-size: 19px; }
   .ctrl-play { width: 58px; height: 58px; }
   .controls-secondary { padding: 4px 0; }
@@ -319,14 +319,14 @@ svg { display: block; }
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 10px 0 8px;
+  padding: 6px 0 10px;
   perspective: 1000px;
-  flex-shrink: 1;
-  min-height: 0;
+  flex: 1 1 auto;
+  min-height: 200px;
 }
 .cover-glow {
   position: absolute;
-  width: min(78vw, 340px);
+  width: min(90vw, 52vh, 400px);
   aspect-ratio: 1;
   border-radius: 40%;
   background: radial-gradient(circle, var(--cover-from) 0%, transparent 68%);
@@ -338,8 +338,8 @@ svg { display: block; }
 .cover-art {
   position: relative;
   z-index: 1;
-  width: clamp(200px, 74vw, 340px);
-  aspect-ratio: 4 / 5;
+  width: min(90vw, 52vh, 400px);
+  aspect-ratio: 1;
   border-radius: 28px;
   overflow: hidden;
   box-shadow:
