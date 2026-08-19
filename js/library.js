@@ -38,23 +38,46 @@ Object.assign(App, {
         // #10 Detección de duplicados: comparar por fileName + fileSize
         let dupCount = 0;
         const uniqueTracks = [];
+        const existingForPlaylist = [];
         for (const t of newTracks) {
-          const isDup = this.tracks.some(existing =>
-            existing.fileName === t.fileName &&
-            existing.fileSize === t.fileSize
+          const existing = this.tracks.find(ex =>
+            ex.fileName === t.fileName &&
+            ex.fileSize === t.fileSize
           );
-          if (isDup) {
+          if (existing) {
             dupCount++;
-            // Liberar objectURL del duplicado
             if (t.src && t.src.startsWith('blob:')) URL.revokeObjectURL(t.src);
+            // Si se sube a una lista, reutilizar la pista de la biblioteca
+            // (p. ej. se quitó de la lista y se vuelve a añadir el mismo archivo).
+            existingForPlaylist.push(existing);
           } else {
             uniqueTracks.push(t);
           }
         }
-        if (dupCount > 0) {
+        const destIdEarly = targetPlaylistId || this.DEFAULT_PLAYLIST_ID;
+        const destPlEarly = this.playlists.find(p => p.id === destIdEarly);
+        let readded = 0;
+        if (destPlEarly && existingForPlaylist.length) {
+          existingForPlaylist.forEach(ex => {
+            if (!destPlEarly.trackIds.includes(ex.id)) {
+              destPlEarly.trackIds.push(ex.id);
+              readded++;
+            }
+          });
+          if (readded > 0) this.persistPlaylist(destPlEarly);
+        }
+        if (dupCount > 0 && readded === 0 && uniqueTracks.length === 0) {
           this.toast(dupCount + ' ' + this.t('toast_duplicate_found'));
         }
-        if (uniqueTracks.length === 0) return;
+        if (uniqueTracks.length === 0) {
+          if (readded > 0) {
+            this.renderPlaylists();
+            if (this._editingPlaylistId === destIdEarly) this.renderEditPlaylist();
+            const destName = destPlEarly ? destPlEarly.name : this.t('my_music_playlist');
+            this.toast(readded + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destName);
+          }
+          return;
+        }
         const tracksToAdd = uniqueTracks;
 
         // Añadir todas las pistas a memoria primero (rápido)

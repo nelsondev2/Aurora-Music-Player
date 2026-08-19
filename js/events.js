@@ -243,12 +243,6 @@ Object.assign(App, {
           this.closeSheet('sheetEditPlaylist');
         }
       });
-      // Añadir pistas existentes de la biblioteca a esta playlist (picker)
-      const btnAddTracks = document.getElementById('btnAddTracks');
-      if (btnAddTracks) btnAddTracks.addEventListener('click', () => {
-        if (!this._editingPlaylistId) return;
-        this.openAddTracksSheet(this._editingPlaylistId);
-      });
       // Subir canciones directamente a la playlist desde el almacenamiento
       const btnUploadToPl = document.getElementById('btnUploadToPlaylist');
       if (btnUploadToPl) btnUploadToPl.addEventListener('click', () => {

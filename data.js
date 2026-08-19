@@ -1333,8 +1333,8 @@ const I18N = {
     ru: 'Играть'
   },
   no_tracks_in_playlist: {
-    es: 'Esta lista está vacía. Pulsa "Añadir pistas" para agregar canciones.',
-    en: 'This playlist is empty. Tap "Add tracks" to add songs.',
+    es: 'Esta lista está vacía. Pulsa "Subir canciones" para agregar canciones.',
+    en: 'This playlist is empty. Tap "Upload songs" to add songs.',
     pt: 'Esta lista está vazia. Toque em "Adicionar faixas" para adicionar músicas.',
     zh: '此歌单为空。点击"添加音轨"添加歌曲。',
     ja: 'このプレイリストは空です。「トラックを追加」をタップして曲を追加してください。',
