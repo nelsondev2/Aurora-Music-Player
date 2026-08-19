@@ -39,7 +39,7 @@
       // Procesar en paralelo con límite de concurrencia para no bloquear.
       // jsmediatags y el parser ID3v2 son asíncronos y pueden ejecutarse
       // concurrentemente; el límite evita saturar la CPU/memoria con muchos archivos.
-      const CONCURRENCY = Math.min(6, Math.max(2, navigator.hardwareConcurrency || 4));
+      const CONCURRENCY = 3;
       let index = 0;
       const results = new Array(audios.length);
 
@@ -73,28 +73,29 @@
     async processOne(file, lrcsMap) {
       const baseName = file.name.replace(/\.[^.]+$/, '').toLowerCase();
       const id = 't-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+      const fromName = this.parseFilename(file.name);
 
       let meta = {
-        title: this.cleanName(file.name),
-        artist: 'Artista desconocido',
+        title: fromName.title || this.cleanName(file.name),
+        artist: fromName.artist || 'Artista desconocido',
         album: 'Sin álbum',
         cover: null,
         lrc: null
       };
 
-      // Tags + .lrc en paralelo. Sin probe de duración ni parser ID3 extra:
-      // eso duplicaba lecturas y podía tardar varios segundos por archivo.
-      const tagHead = file.size > 384 * 1024 ? file.slice(0, 384 * 1024) : file;
       const lrcFile = lrcsMap && lrcsMap[baseName];
       const [tags, lrcText] = await Promise.all([
-        this.readTags(tagHead).catch(() => null),
+        this.readTags(file).catch(() => null),
         lrcFile ? this.readTextFile(lrcFile).catch(() => null) : Promise.resolve(null)
       ]);
 
       if (tags) {
-        if (tags.title) meta.title = tags.title;
-        if (tags.artist) meta.artist = tags.artist;
-        if (tags.album) meta.album = tags.album;
+        const title = this.tagText(tags.title);
+        const artist = this.tagText(tags.artist) || this.tagText(tags.albumartist);
+        const album = this.tagText(tags.album);
+        if (title) meta.title = title;
+        if (artist) meta.artist = artist;
+        if (album) meta.album = album;
         if (tags.picture) meta.cover = this.pictureToDataURL(tags.picture);
         const usltLyrics = this.extractUslt(tags);
         if (usltLyrics) meta.lrc = this.normalizeLyrics(usltLyrics);
@@ -103,6 +104,17 @@
           if (syltLyrics) meta.lrc = syltLyrics;
         }
       }
+
+      if (!meta.lrc) {
+        try {
+          const customLyrics = await this.readLyricsFromId3v2(file);
+          if (customLyrics) {
+            const norm = this.normalizeLyrics(customLyrics);
+            if (norm && norm.length) meta.lrc = norm;
+          }
+        } catch (e) {}
+      }
+
       if (lrcText) meta.lrc = this.normalizeLyrics(lrcText);
       if (!meta.cover) meta.cover = this.randomCover();
 
@@ -120,6 +132,28 @@
         fileName: file.name,
         _file: file
       };
+    },
+
+    tagText(v) {
+      if (v == null) return '';
+      if (typeof v === 'string') return v.trim();
+      if (typeof v === 'number') return String(v);
+      if (typeof v === 'object') {
+        if (typeof v.data === 'string') return v.data.trim();
+        if (Array.isArray(v.data)) {
+          return v.data.map((x) => (typeof x === 'string' ? x : '')).join('').trim();
+        }
+        if (typeof v.text === 'string') return v.text.trim();
+        if (typeof v.description === 'string' && typeof v.text !== 'string') return '';
+      }
+      return '';
+    },
+
+    parseFilename(name) {
+      const base = name.replace(/\.[^.]+$/, '').replace(/_/g, ' ').trim();
+      const m = base.match(/^(?:\d+[\s._-]+)?(.+?)\s[-–—]\s+(.+)$/);
+      if (m) return { artist: m[1].trim(), title: m[2].trim() };
+      return { artist: '', title: this.cleanName(name) };
     },
 
     /* ---------- Lee tags ID3 con jsmediatags (cargado desde CDN) ---------- */
