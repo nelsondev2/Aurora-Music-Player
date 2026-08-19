@@ -639,7 +639,7 @@ Object.assign(App, {
 
     updateFavoriteUI() {
       const liked = this.currentTrack && this.favorites.has(this.currentTrack.id);
-      ['btnLike','btnLike2'].forEach(id => {
+      ['btnLike'].forEach(id => {
         const b = document.getElementById(id);
         if (!b) return;
         b.classList.toggle('liked', liked);

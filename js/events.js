@@ -59,7 +59,6 @@ Object.assign(App, {
 
       // Like
       $('btnLike').addEventListener('click', () => this.toggleFavorite());
-      $('btnLike2').addEventListener('click', () => this.toggleFavorite());
 
       // Letras
       $('btnLyrics').addEventListener('click', () => {
