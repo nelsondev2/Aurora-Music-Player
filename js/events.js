@@ -26,6 +26,18 @@ Object.assign(App, {
       // Play / pause
       $('btnPlay').addEventListener('click', () => this.togglePlay());
       $('btnPlayLyrics').addEventListener('click', () => this.togglePlay());
+      const coverArt = document.getElementById('coverArt');
+      if (coverArt) {
+        coverArt.addEventListener('click', () => {
+          if (this.currentTrack) this.togglePlay();
+        });
+        coverArt.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (this.currentTrack) this.togglePlay();
+          }
+        });
+      }
 
       // Menú de 3 puntos ( Más opciones ) — cableado lo antes posible para
       // garantizar que funcione en cualquier estado de la app, incluido el
@@ -474,17 +486,7 @@ Object.assign(App, {
         // Doble tap en portada → like
       });
 
-      // Doble tap en la portada → favorito
-      const cover = document.getElementById('coverArt');
-      let lastTap = 0;
-      cover.addEventListener('touchend', () => {
-        const now = Date.now();
-        if (now - lastTap < 300) {
-          this.toggleFavorite();
-          if (navigator.vibrate) navigator.vibrate(15);
-        }
-        lastTap = now;
-      });
+      // El like está en el botón del título; la portada hace play/pausa.
 
       this._wired.gestures = true;
     },

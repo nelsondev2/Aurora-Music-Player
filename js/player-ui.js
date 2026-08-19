@@ -19,13 +19,21 @@ Object.assign(App, {
         // Limpiar UI
         document.getElementById('trackTitle').textContent = '—';
         document.getElementById('trackArtist').textContent = this.t('load_track_to_start');
+        const albumEmpty = document.getElementById('trackAlbum');
+        if (albumEmpty) { albumEmpty.textContent = ''; albumEmpty.style.display = 'none'; }
         document.getElementById('timeTotal').textContent = '0:00';
         document.getElementById('timeCurrent').textContent = '0:00';
         document.getElementById('progressFill').style.width = '0%';
         return;
       }
       document.getElementById('trackTitle').textContent = t.title;
-      document.getElementById('trackArtist').textContent = t.artist + (t.album && t.album !== this.t('no_album') ? ' · ' + t.album : '');
+      document.getElementById('trackArtist').textContent = t.artist || this.t('unknown_artist');
+      const albumEl = document.getElementById('trackAlbum');
+      if (albumEl) {
+        const hasAlbum = t.album && t.album !== this.t('no_album');
+        albumEl.textContent = hasAlbum ? t.album : '';
+        albumEl.style.display = hasAlbum ? '' : 'none';
+      }
       document.getElementById('timeTotal').textContent = this.fmtTime(t.duration);
       document.getElementById('miniTitle').textContent = t.title;
       document.getElementById('miniArtist').textContent = t.artist;

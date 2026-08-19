@@ -51,15 +51,14 @@
 
         <!-- Portada del álbum -->
         <section class="cover-section">
-          <div class="cover-art" id="coverArt">
+          <div class="cover-glow" id="coverGlow" aria-hidden="true"></div>
+          <div class="cover-art" id="coverArt" role="button" tabindex="0">
             <canvas id="coverCanvas" width="600" height="600"></canvas>
             <div class="cover-vinyl" id="coverVinyl">
               <div class="vinyl-inner"></div>
             </div>
-            <div class="cover-overlay">
-              <button class="icon-btn-large" id="btnLike" data-i18n-aria="favorite" aria-label="Favorito">
-                <i class="fa-regular fa-heart"></i>
-              </button>
+            <div class="cover-play-hint" id="coverPlayHint" aria-hidden="true">
+              <i class="fa-solid fa-play"></i>
             </div>
           </div>
         </section>
@@ -69,8 +68,12 @@
           <div class="track-text">
             <h1 class="track-title" id="trackTitle">—</h1>
             <p class="track-artist" id="trackArtist">—</p>
+            <p class="track-album" id="trackAlbum"></p>
           </div>
-          <button class="icon-btn" id="btnLike2" data-i18n-aria="favorite" aria-label="Favorito">
+          <button class="icon-btn like-btn" id="btnLike" data-i18n-aria="favorite" aria-label="Favorito">
+            <i class="fa-regular fa-heart"></i>
+          </button>
+          <button class="icon-btn like-btn" id="btnLike2" data-i18n-aria="favorite" aria-label="Favorito" hidden>
             <i class="fa-regular fa-heart"></i>
           </button>
         </section>
