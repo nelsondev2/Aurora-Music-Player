@@ -423,11 +423,43 @@ Object.assign(App, {
       });
     },
 
+    playlistDuration(pl) {
+      if (!pl || !pl.trackIds) return 0;
+      let sum = 0;
+      for (const id of pl.trackIds) {
+        const t = this.tracks.find(x => x.id === id);
+        if (t && t.duration) sum += t.duration;
+      }
+      return sum;
+    },
+
+    fmtDurationLabel(sec) {
+      sec = Math.floor(sec || 0);
+      if (sec <= 0) return '';
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      if (h > 0) return h + ' h ' + m + ' ' + this.t('min_short');
+      if (m > 0) return m + ' ' + this.t('min_short');
+      return this.fmtTime(sec);
+    },
+
+    isPlaylistPlaying(pl) {
+      return !!(this.playContext && this.playContext.type === 'playlist' && this.playContext.id === pl.id);
+    },
+
+    playlistMetaLabel(pl) {
+      const n = (pl.trackIds || []).length;
+      const dur = this.fmtDurationLabel(this.playlistDuration(pl));
+      let s = n + ' ' + this.t('tracks_count');
+      if (dur) s += ' · ' + dur;
+      if (pl.description) s += ' · ' + pl.description;
+      return s;
+    },
+
     renderPlaylists() {
       const ul = document.getElementById('playlistList');
       const grid = document.getElementById('libraryPlaylists');
       const countEl = document.getElementById('playlistCount');
-      // Subtítulo con conteo de listas (sólo en el sheet principal de listas)
       if (countEl) {
         const n = this.playlists.length;
         countEl.textContent = n === 0
@@ -439,9 +471,9 @@ Object.assign(App, {
         target.innerHTML = '';
         if (this.playlists.length === 0 && target === ul) {
           const li = document.createElement('li');
-          li.className = 'empty-state';
+          li.className = 'empty-state pl-empty';
           li.innerHTML = `
-            <div class="empty-icon"><i class="fa-solid fa-list-ul"></i></div>
+            <div class="empty-icon"><i class="fa-solid fa-compact-disc"></i></div>
             <h4>${this.t('no_playlists_yet')}</h4>
             <p>${this.t('no_playlists_hint')}</p>
             <button class="primary-btn" id="btnEmptyNewPlaylist"><i class="fa-solid fa-plus"></i> ${this.t('create_new_playlist')}</button>
@@ -453,34 +485,41 @@ Object.assign(App, {
         }
         this.playlists.forEach(pl => {
           const li = document.createElement('li');
-          li.className = target === grid ? 'pl-card' : 'pl-row';
-          // Cover: priorizar el cover generado (collage o dataURL); si no, gradiente
+          const playing = this.isPlaylistPlaying(pl);
+          li.className = (target === grid ? 'pl-card' : 'pl-row') + (playing ? ' is-playing' : '');
           const cover = this.getPlaylistCover(pl);
-          const coverBg = (typeof cover === 'string' && cover.startsWith('data:'))
+          const hasArt = (typeof cover === 'string' && cover.startsWith('data:'));
+          const coverBg = hasArt
             ? `background-image:url('${cover}');background-size:cover;background-position:center;`
             : `background:linear-gradient(135deg, ${cover.from}, ${cover.to});`;
-          // Icono diferenciador para Mi Música y Favoritos
-          const coverIcon = pl.id === this.DEFAULT_PLAYLIST_ID
-            ? '<i class="fa-solid fa-music"></i>'
-            : (pl.id === 'favoritos' ? '<i class="fa-solid fa-heart"></i>' : '<i class="fa-solid fa-play"></i>');
+          const fallbackIcon = pl.id === this.DEFAULT_PLAYLIST_ID
+            ? 'fa-solid fa-music'
+            : (pl.id === 'favoritos' ? 'fa-solid fa-heart' : 'fa-solid fa-list-ul');
+          const tracksLabel = this.playlistMetaLabel(pl);
+          const badge = pl.isDefault
+            ? '<span class="pl-badge">' + this.esc(this.t('my_music_playlist')) + '</span>'
+            : '';
+          const live = playing
+            ? '<span class="pl-live"><span class="pl-bars"><i></i><i></i><i></i></span></span>'
+            : '';
           const coverHtml = `
-            <div class="pl-cover">
+            <div class="pl-cover${hasArt ? ' has-art' : ''}">
               <div class="pl-cover-grad" style="${coverBg}"></div>
-              ${coverIcon}
+              ${hasArt ? '' : '<i class="pl-cover-icon ' + fallbackIcon + '"></i>'}
+              ${live}
+              <button class="pl-play-fab" type="button" aria-label="${this.esc(this.t('play_all_btn'))}">
+                <i class="fa-solid fa-play"></i>
+              </button>
             </div>
           `;
-          const tracksLabel = pl.trackIds.length + ' ' + this.t('tracks_count');
-          // Etiqueta "Mi Música" / "Favoritos" como badge si es especial
-          const badge = pl.isDefault ? '<span class="pl-badge">' + this.esc(this.t('my_music_playlist')) + '</span>' : '';
           if (target === grid) {
-            li.innerHTML = coverHtml + `<div class="pl-card-info"><h4>${this.esc(pl.name)}</h4><p>${tracksLabel}</p>${badge}</div>`;
+            li.innerHTML = coverHtml + `<div class="pl-card-info"><h4>${this.esc(pl.name)}</h4><p>${this.esc(tracksLabel)}</p>${badge}</div>`;
           } else {
-            li.innerHTML = coverHtml + `<div class="pl-info"><h4>${this.esc(pl.name)}</h4><p>${tracksLabel}${pl.description ? ' · ' + this.esc(pl.description) : ''}</p></div>`;
-            // Botón eliminar — oculto para Mi Música (no se puede eliminar)
+            li.innerHTML = coverHtml + `<div class="pl-info"><h4>${this.esc(pl.name)}</h4><p>${this.esc(tracksLabel)}</p></div>`;
             if (!pl.isDefault) {
               const delBtn = document.createElement('button');
               delBtn.className = 'row-action';
-              delBtn.setAttribute('aria-label', this.t('clear_btn'));
+              delBtn.setAttribute('aria-label', this.t('delete_playlist_btn'));
               delBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
               delBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -489,20 +528,21 @@ Object.assign(App, {
               li.appendChild(delBtn);
             }
           }
+          const fab = li.querySelector('.pl-play-fab');
+          if (fab) fab.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.playPlaylist(pl.id);
+          });
           li.addEventListener('click', (e) => {
-            if (e.target.closest('.row-action')) return;
-            // Modo "seleccionar playlist para añadir una pista"
+            if (e.target.closest('.row-action, .pl-play-fab')) return;
             if (this._selectPlaylistForAdd) {
               this._selectPlaylistForAdd = false;
-              // Prioridad: pista concreta elegida desde una fila de la
-              // biblioteca; si no, la pista que está sonando
               const tid = this._trackToAddId || (this.currentTrack && this.currentTrack.id) || null;
               this._trackToAddId = null;
               this.closeSheet('sheetPlaylists');
               if (tid) this.addTrackToPlaylist(tid, pl.id);
               return;
             }
-            // Modo normal: abrir editor de la playlist
             this.openEditPlaylist(pl.id);
           });
           target.appendChild(li);

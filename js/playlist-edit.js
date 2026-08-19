@@ -94,14 +94,12 @@ Object.assign(App, {
       const ul = document.getElementById('editPlaylistTracks');
       const coverEl = document.getElementById('editPlaylistCover');
       if (nameEl) nameEl.textContent = pl.name;
-      if (metaEl) {
-        const n = pl.trackIds.length;
-        metaEl.textContent = n + ' ' + this.t('tracks_count') + (pl.description ? ' · ' + pl.description : '');
-      }
-      // Cover del sheet de edición: usar collage o gradiente
+      if (metaEl) metaEl.textContent = this.playlistMetaLabel(pl);
       if (coverEl) {
         const cover = this.getPlaylistCover(pl);
+        coverEl.classList.toggle('is-playing', this.isPlaylistPlaying(pl));
         if (typeof cover === 'string' && cover.startsWith('data:')) {
+          coverEl.style.background = '';
           coverEl.innerHTML = '<img src="' + cover + '" alt="">';
         } else {
           const from = (cover && cover.from) || '#7C3AED';
@@ -117,29 +115,25 @@ Object.assign(App, {
       ul.innerHTML = '';
       if (pl.trackIds.length === 0) {
         const li = document.createElement('li');
-        li.className = 'track-row';
-        li.style.justifyContent = 'center';
-        li.style.color = 'var(--text-3)';
-        li.style.fontSize = '13px';
-        li.style.padding = '24px';
-        li.style.textAlign = 'center';
-        li.textContent = this.t('no_tracks_in_playlist');
+        li.className = 'pl-empty-tracks';
+        li.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i><p>' + this.esc(this.t('no_tracks_in_playlist')) + '</p>';
         ul.appendChild(li);
         return;
       }
       pl.trackIds.forEach(id => {
         const t = this.tracks.find(x => x.id === id);
         if (!t) return;
+        const isCurrent = this.currentTrack && this.currentTrack.id === id;
         const li = document.createElement('li');
-        li.className = 'track-row';
-        li.dataset.trackId = id;   // identificación robusta para _removeTrackFromEditView
+        li.className = 'track-row' + (isCurrent ? ' current' : '');
+        li.dataset.trackId = id;
         li.innerHTML = `
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)}</div>
           </div>
-          <div class="row-duration">${this.fmtTime(t.duration)}</div>
+          <div class="row-duration">${isCurrent ? '<i class="fa-solid fa-volume-high now-eq"></i> ' : ''}${this.fmtTime(t.duration)}</div>
           <button class="row-action remove-from-pl" aria-label="${this.esc(this.t('remove_from_playlist'))}"><i class="fa-solid fa-xmark"></i></button>
         `;
         li.addEventListener('click', (e) => {
@@ -200,10 +194,7 @@ Object.assign(App, {
     /* Actualizar solo el contador de una playlist sin re-render completo */
     _updatePlaylistMeta(pl) {
       const meta = document.getElementById('editPlaylistMeta');
-      if (meta) {
-        const n = pl.trackIds.length;
-        meta.textContent = n + ' ' + this.t('tracks_count') + (pl.description ? ' · ' + pl.description : '');
-      }
+      if (meta) meta.textContent = this.playlistMetaLabel(pl);
     },
 
     /* Eliminar una pista de la vista de edición sin re-render completo */
