@@ -198,6 +198,7 @@ Object.assign(App, {
       this.queueIdx = nextIdx;
       this.isPlaying = true;
       this.audio.play();
+      if (!this._rtSuppressBroadcast) this._rtBroadcastAction(null, 'next');
       this.renderCurrentTrack();
       this.renderLyrics();
       this.updateMediaSession();

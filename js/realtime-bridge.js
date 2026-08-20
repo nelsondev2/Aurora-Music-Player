@@ -52,8 +52,14 @@ Object.assign(App, {
         });
       }
 
-      // Actualizar badge inicial
       this._rtUpdatePeerCountBadge();
+      if (this._rtTickTimer) clearInterval(this._rtTickTimer);
+      this._rtTickTimer = setInterval(() => {
+        if (this._rtSuppressBroadcast || !this.isPlaying || !this.currentTrack) return;
+        const peers = window.AuroraRealtime.getPeers() || [];
+        if (!peers.length) return;
+        this._rtBroadcastAction(null, 'tick');
+      }, 2500);
     },
 
     /* Anuncia TODAS las pistas locales al sistema realtime.
@@ -85,16 +91,25 @@ Object.assign(App, {
       } catch (e) {}
     },
 
-    /* Difunde una acción de reproducción al canal realtime. */
-    _rtBroadcastAction(alert) {
-      if (!window.AuroraRealtime || !this.currentTrack) return;
+    _rtBroadcastAction(alert, kind) {
+      if (this._rtSuppressBroadcast || !window.AuroraRealtime || !this.currentTrack) return;
+      const k = kind || 'state';
       try {
-        window.AuroraRealtime.broadcastLastAction({
+        const snap = {
+          kind: k,
           trackId: this.currentTrack.id,
           isPlaying: this.isPlaying,
-          currentTime: this.audio?.currentTime || 0,
+          currentTime: this.audio ? (this.audio.currentTime || 0) : 0,
+          shuffle: this.shuffle,
+          repeat: this.repeat,
+          volume: this.volume,
+          playbackRate: this.playbackRate || 1,
+          queueIdx: this.queueIdx,
+          playContext: this.playContext || null,
           alert: alert || null
-        });
+        };
+        if (k !== 'tick') snap.queue = (this.queue || []).slice();
+        window.AuroraRealtime.broadcastLastAction(snap);
       } catch (e) {}
     },
 
@@ -117,8 +132,7 @@ Object.assign(App, {
       }
       // Añadirla a la biblioteca
       this.tracks.push(track);
-      // Persistirla como cualquier otra pista
-      await this.persistTrack(track);
+      this.persistTrack(track).catch(() => {});
       // Añadirla a la playlist "Mi Música" si existe
       const destPl = this.playlists.find(p => p.id === this.DEFAULT_PLAYLIST_ID);
       if (destPl && !destPl.trackIds.includes(track.id)) {
@@ -141,20 +155,53 @@ Object.assign(App, {
     /* Callback: un peer hizo una acción de reproducción y debo sincronizar. */
     async _rtOnPlaybackSync(action) {
       if (!action || !action.trackId) return;
-      // ¿Tenemos la pista?
       const idx = this.tracks.findIndex(t => t.id === action.trackId);
       if (idx < 0) return;
-      // ¿Es la pista actualmente cargada?
+      const isTick = action.kind === 'tick';
       const isCurrent = this.currentTrack && this.currentTrack.id === action.trackId;
-      // Evitar re-broadcast: este evento vino de un peer, no debemos
-      // reenviarlo al canal realtime (evita bucle infinito).
       this._rtSuppressBroadcast = true;
       try {
+        if (action.shuffle != null && action.shuffle !== this.shuffle) {
+          this.shuffle = !!action.shuffle;
+          const b = document.getElementById('btnShuffle');
+          if (b) b.classList.toggle('active', this.shuffle);
+        }
+        if (action.repeat && action.repeat !== this.repeat) {
+          this.repeat = action.repeat;
+          const btn = document.getElementById('btnRepeat');
+          if (btn) {
+            btn.classList.toggle('active', this.repeat !== 'off');
+            btn.dataset.mode = this.repeat;
+            const badge = btn.querySelector('.repeat-badge');
+            if (this.repeat === 'one' && !badge) {
+              const sp = document.createElement('span');
+              sp.className = 'repeat-badge';
+              sp.textContent = '1';
+              sp.style.cssText = 'position:absolute;top:4px;right:4px;font-size:9px;font-weight:700;color:var(--accent);background:var(--bg-1);border-radius:50%;width:12px;height:12px;display:flex;align-items:center;justify-content:center;';
+              btn.style.position = 'relative';
+              btn.appendChild(sp);
+            } else if (this.repeat !== 'one' && badge) badge.remove();
+          }
+        }
+        if (typeof action.volume === 'number' && Math.abs(action.volume - this.volume) > 0.03) {
+          this.setVolume(action.volume);
+        }
+        if (action.playbackRate && this.audio && Math.abs((this.playbackRate || 1) - action.playbackRate) > 0.05) {
+          this.playbackRate = action.playbackRate;
+          try { this.audio.playbackRate = action.playbackRate; } catch (e) {}
+        }
+        if (action.playContext) this.playContext = action.playContext;
+        if (Array.isArray(action.queue) && action.queue.length) {
+          const valid = action.queue.filter(id => this.tracks.some(t => t.id === id));
+          if (valid.length) {
+            this.queue = valid;
+            const q = valid.indexOf(action.trackId);
+            this.queueIdx = q >= 0 ? q : Math.min(action.queueIdx || 0, valid.length - 1);
+          }
+        }
         if (!isCurrent) {
-          // Cambiar a esa pista sin contexto de playlist
           this.currentTrackIdx = idx;
           this.currentTrack = this.tracks[idx];
-          // Cargar el audio sin autoplay todavía
           const url = this.getTrackUrl(this.currentTrack);
           if (url) {
             this.audio.src = url;
@@ -164,52 +211,37 @@ Object.assign(App, {
           this.renderLyrics();
           this.updateMediaSession();
         }
-        // Calcular posición objetivo (compensar el tiempo transcurrido desde actionTime)
-        const elapsed = action.isPlaying ? (Date.now() - action.actionTime) / 1000 : 0;
+        const elapsed = action.isPlaying && action.actionTime ? (Date.now() - action.actionTime) / 1000 : 0;
         const targetTime = (action.currentTime || 0) + elapsed;
-        // Esperar a que el audio tenga metadata para hacer seek
-        const trySeek = () => {
-          if (isFinite(this.audio.duration) && this.audio.duration > 0) {
-            let t = targetTime;
-            // Si pasó del final, saltar a la siguiente pista (lo maneja 'ended')
-            if (t >= this.audio.duration) {
-              t = this.audio.duration - 0.1;
-            }
-            try { this.audio.currentTime = Math.max(0, t); } catch (e) {}
-            if (action.isPlaying) {
-              this.togglePlay(true);
-            } else {
-              this.togglePlay(false);
-            }
-            this.updateProgress();
-          } else {
-            // Aún no cargó la metadata; reintentar
-            setTimeout(trySeek, 100);
+        const applyPos = () => {
+          if (!this.audio) return;
+          const dur = this.audio.duration;
+          if (!isFinite(dur) || dur <= 0) return false;
+          let t = Math.max(0, Math.min(dur - 0.05, targetTime));
+          const drift = Math.abs((this.audio.currentTime || 0) - t);
+          if (!isTick || drift > 0.85) {
+            try { this.audio.currentTime = t; } catch (e) {}
           }
+          if (action.isPlaying) this.togglePlay(true);
+          else this.togglePlay(false);
+          this.updateProgress();
+          return true;
         };
-        // Si ya está cargada, intentar de inmediato; si no, esperar metadata
-        if (isCurrent && isFinite(this.audio.duration) && this.audio.duration > 0) {
-          trySeek();
-        } else {
-          const onMeta = () => {
-            this.audio.removeEventListener('loadedmetadata', onMeta);
-            trySeek();
+        if (!applyPos()) {
+          let n = 0;
+          const wait = () => {
+            if (applyPos() || ++n > 15) return;
+            setTimeout(wait, 120);
           };
-          this.audio.addEventListener('loadedmetadata', onMeta);
-          // Fallback por si metadata ya cargó
-          setTimeout(() => {
-            this.audio.removeEventListener('loadedmetadata', onMeta);
-            if (isFinite(this.audio.duration) && this.audio.duration > 0) trySeek();
-          }, 500);
+          this.audio.addEventListener('loadedmetadata', function once() {
+            this.removeEventListener('loadedmetadata', once);
+            applyPos();
+          });
+          setTimeout(wait, 120);
         }
-        // Mostrar toast si hay alerta
-        if (action.alert) {
-          this.toast(action.alert, 2000);
-        }
+        if (action.alert && !isTick) this.toast(action.alert, 1800);
       } finally {
-        // Liberar el flag tras un breve delay (para que el togglePlay que
-        // acabamos de llamar no rebrote el broadcast).
-        setTimeout(() => { this._rtSuppressBroadcast = false; }, 600);
+        setTimeout(() => { this._rtSuppressBroadcast = false; }, 450);
       }
     },
 

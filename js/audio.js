@@ -255,8 +255,6 @@ Object.assign(App, {
       this.renderLyrics();
       this.updateMediaSession();
       this.preloadNextTrack();
-      const selfName = (window.webxdc && window.webxdc.selfName) || 'Listener';
-      this._rtBroadcastAction(selfName + ' played');
     },
 
     /* Carga la pista actual en el elemento <audio> pero SIN reproducir.
@@ -514,10 +512,8 @@ Object.assign(App, {
         }
       }
       this.playFromQueue(nextIdx);
-      // Anunciar salto al realtime (solo si fue manual)
-      if (!this._rtSuppressBroadcast && !auto) {
-        const sn = (window.webxdc && window.webxdc.selfName) || 'Listener';
-        this._rtBroadcastAction(sn + ' skipped');
+      if (!this._rtSuppressBroadcast) {
+        this._rtBroadcastAction(auto ? null : 'skipped', auto ? 'next' : 'skip');
       }
     },
 
@@ -547,6 +543,7 @@ Object.assign(App, {
       else t = Math.max(0, t);
       try { this.audio.currentTime = t; } catch (e) {}
       this.updateProgress();
+      if (!this._rtSuppressBroadcast) this._rtBroadcastAction(null, 'seek');
     },
     seekTo(ratio) {
       if (!this.audio || !this.audio.duration || isNaN(this.audio.duration)) return;
@@ -580,12 +577,25 @@ Object.assign(App, {
       if (sv) sv.value = Math.round(this.volume * 100);
       if (vv) vv.textContent = Math.round(this.volume * 100) + '%';
       try { localStorage.setItem('aurora_volume', String(this.volume)); } catch(e){}
+      if (!this._rtSuppressBroadcast) {
+        if (!this._rtVolThrottle) {
+          this._rtVolThrottle = (() => {
+            let t = null;
+            return () => {
+              if (t) return;
+              t = setTimeout(() => { t = null; this._rtBroadcastAction(null, 'volume'); }, 280);
+            };
+          })();
+        }
+        this._rtVolThrottle();
+      }
     },
 
     toggleShuffle() {
       this.shuffle = !this.shuffle;
       document.getElementById('btnShuffle').classList.toggle('active', this.shuffle);
       this.toast(this.shuffle ? this.t('toast_shuffle_on') : this.t('toast_shuffle_off'));
+      if (!this._rtSuppressBroadcast) this._rtBroadcastAction(null, 'shuffle');
     },
 
     cycleRepeat() {
@@ -609,6 +619,7 @@ Object.assign(App, {
                      : this.repeat === 'all' ? this.t('toast_repeat_all')
                      : this.t('toast_repeat_one');
       this.toast(this.t('repeat') + ': ' + repLabel);
+      if (!this._rtSuppressBroadcast) this._rtBroadcastAction(null, 'repeat');
     },
 
     toggleFavorite() {

@@ -172,14 +172,14 @@
   /* ============================================================
    *  Constantes del protocolo
    * ============================================================ */
-  const MAX_PACKET_BYTES = 126 * 1000;       // 126 KB por paquete (igual que app.xdc)
-  const CHUNK_SIZE = 1024 * 1024;            // 1 MB por chunk de audio
+  const MAX_PACKET_BYTES = 48 * 1000;        // paquetes chicos: redes lentas + no bloquear UI
+  const CHUNK_SIZE = 256 * 1024;             // 256 KB por chunk de audio
   const MESSAGE_PRESENCE = 0;
   const MESSAGE_PAYLOAD = 1;
   const STATUS_OFFLINE = 0;
   const STATUS_ONLINE = 1;
-  const PRESENCE_TIMEOUT = 60;               // segundos sin señal antes de eliminar peer
-  const PRESENCE_INTERVAL = 2;               // cada cuánto enviar presence
+  const PRESENCE_TIMEOUT = 75;
+  const PRESENCE_INTERVAL = 3;
 
   /* ============================================================
    *  Almacenamiento de chunks (separado del Storage principal)
@@ -287,12 +287,10 @@
    */
   function getDeviceId() {
     const KEY = '__realtime__.deviceId';
-    // Probar sessionStorage primero (cada pestaña = un peer en dev)
     let v = null;
-    try { v = sessionStorage.getItem(KEY); } catch (e) {}
-    if (v) return v;
-    // Fallback a localStorage (para entornos sin sessionStorage)
     try { v = localStorage.getItem(KEY); } catch (e) {}
+    if (v) return v;
+    try { v = sessionStorage.getItem(KEY); } catch (e) {}
     if (v) return v;
     // Generar nuevo
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -301,8 +299,8 @@
       const r = () => Math.floor((1 + Math.random()) * 65536).toString(16).substring(1);
       v = r() + r() + '-' + r() + '-' + r() + '-' + r() + '-' + r() + r() + r();
     }
-    try { sessionStorage.setItem(KEY, v); } catch (e) {
-      try { localStorage.setItem(KEY, v); } catch (e2) {}
+    try { localStorage.setItem(KEY, v); } catch (e) {
+      try { sessionStorage.setItem(KEY, v); } catch (e2) {}
     }
     return v;
   }
@@ -496,25 +494,80 @@
 
   RealtimeChannel.prototype._sendToChannel = function (bytes) {
     if (!this.channel) return;
-    const pid = ++this.packetId;
-    const total = Math.ceil(bytes.length / MAX_PACKET_BYTES);
-    for (let i = 0; i < total; i++) {
-      const start = i * MAX_PACKET_BYTES;
-      const end = Math.min(start + MAX_PACKET_BYTES, bytes.length);
-      const slice = bytes.subarray(start, end);
-      const w = new ByteWriter();
-      w.str(this.deviceId);
-      w.u32(pid);
-      w.u32(i);
-      w.u32(total);
-      w.bytes(slice);
-      try {
-        this.channel.send(w.toArray());
-      } catch (e) {
-        console.warn('[Realtime] Error enviando paquete:', e);
-        break;
+    this._outbox.push(bytes);
+    if (this._outbox.length > 24) this._outbox.splice(0, this._outbox.length - 24);
+    this._drainOutbox();
+  };
+
+  RealtimeChannel.prototype._drainOutbox = function () {
+    if (this._draining) return;
+    this._draining = true;
+    const self = this;
+    const pump = function () {
+      if (!self.channel || !self._outbox.length) {
+        self._draining = false;
+        return;
       }
-    }
+      const bytes = self._outbox.shift();
+      const pid = ++self.packetId;
+      const total = Math.ceil(bytes.length / MAX_PACKET_BYTES) || 1;
+      let i = 0;
+      const sendSlice = function () {
+        if (!self.channel || i >= total) {
+          setTimeout(pump, 12);
+          return;
+        }
+        const start = i * MAX_PACKET_BYTES;
+        const end = Math.min(start + MAX_PACKET_BYTES, bytes.length);
+        const slice = bytes.subarray(start, end);
+        const w = new ByteWriter();
+        w.str(self.deviceId);
+        w.u32(pid);
+        w.u32(i);
+        w.u32(total);
+        w.bytes(slice);
+        i++;
+        try { self.channel.send(w.toArray()); } catch (e) {
+          console.warn('[Realtime] Error enviando paquete:', e);
+          self._draining = false;
+          return;
+        }
+        if (i < total) setTimeout(sendSlice, 8);
+        else setTimeout(pump, 12);
+      };
+      sendSlice();
+    };
+    pump();
+  };
+
+  RealtimeChannel.prototype._slimState = function (s) {
+    if (!s) return null;
+    const files = (s.files || []).map(function (f) {
+      return {
+        id: f.id,
+        name: f.name,
+        size: f.size,
+        lastModified: f.lastModified,
+        uploadedBy: f.uploadedBy,
+        meta: f.meta || null
+      };
+    });
+    const a = s.lastAction;
+    const lastAction = a ? {
+      kind: a.kind || 'state',
+      trackId: a.trackId,
+      isPlaying: !!a.isPlaying,
+      currentTime: a.currentTime || 0,
+      actionTime: a.actionTime,
+      seq: a.seq || 0,
+      shuffle: !!a.shuffle,
+      repeat: a.repeat || 'off',
+      volume: typeof a.volume === 'number' ? a.volume : 1,
+      playbackRate: a.playbackRate || 1,
+      queueIdx: a.queueIdx || 0,
+      playContext: a.playContext || null
+    } : null;
+    return { selfName: s.selfName, lastAction: lastAction, files: files };
   };
 
   RealtimeChannel.prototype._sendPresence = function () {
@@ -523,7 +576,7 @@
     w.str(this.deviceId);
     w.u32(this.status);
     if (this.status !== STATUS_OFFLINE) {
-      w.json(this.state);
+      w.json(this._slimState(this.state));
     }
     this._sendToChannel(w.toArray());
   };
@@ -606,10 +659,12 @@
     _state: null,
     _knownFiles: {},        // fileId → { id, name, size, type, lastModified, pending, uploadedBy }
     _activeRequest: null,   // { file, chunk, peer, time }
-    _requestCooldownMs: 10000,
-    _requestPollFastMs: 50,
-    _requestPollSlowMs: 1000,
+    _requestCooldownMs: 4000,
+    _requestPollFastMs: 180,
+    _requestPollSlowMs: 1200,
     _lastSyncedActionTime: 0,
+    _lastSyncedSeq: 0,
+    _playerSeq: 0,
     _lastAnnouncedJam: false,
     _summaryDebouncer: null,
     _initDone: false,
@@ -677,14 +732,22 @@
     /* ---------- Acciones de reproducción ---------- */
     broadcastLastAction(action) {
       if (!this._channel) return;
-      const a = Object.assign({}, action, { actionTime: Date.now() });
+      const isTick = action && action.kind === 'tick';
+      if (!isTick) this._playerSeq = (this._playerSeq || 0) + 1;
+      const a = Object.assign({}, action, {
+        actionTime: Date.now(),
+        seq: this._playerSeq || 1
+      });
+      if (isTick) delete a.queue;
       this._state.lastAction = a;
       this._channel.setState(this._state);
       try { this._channel.sendPayload({ playback: a }); } catch (e) {}
-      try { this._channel._sendPresence(); } catch (e) {}
+      if (!isTick) {
+        try { this._channel._sendPresence(); } catch (e) {}
+        this._maybeAnnounceJam();
+        this._summaryDebouncer && this._summaryDebouncer();
+      }
       this._emit('state', this._state);
-      this._maybeAnnounceJam();
-      this._summaryDebouncer && this._summaryDebouncer();
     },
 
     _maybeAnnounceJam() {
@@ -805,17 +868,23 @@
 
     _applyPlaybackAction(a) {
       if (!a || !a.trackId) return;
-      if (a.actionTime && a.actionTime <= this._lastSyncedActionTime) return;
+      const seq = a.seq || 0;
+      const isTick = a.kind === 'tick';
+      if (isTick) {
+        if (this._lastSyncedSeq && seq < this._lastSyncedSeq) return;
+      } else if (seq && seq <= this._lastSyncedSeq) {
+        return;
+      }
       if (!this._hasLocalTrack(a.trackId)) {
         this._pendingPlayback = a;
         return;
       }
       this._pendingPlayback = null;
+      if (!isTick && seq) this._lastSyncedSeq = seq;
       this._lastSyncedActionTime = a.actionTime || Date.now();
       this._state.lastAction = a;
       if (this._channel) this._channel.setState(this._state);
       this._emit('playback', a);
-      if (a.alert) this._emit('state', this._state);
     },
 
     _hasLocalTrack(trackId) {
@@ -941,34 +1010,16 @@
         const chunks = await ChunksStore.getAllChunks(meta.id);
         if (!chunks.length) return;
         const blob = new Blob(chunks.map(c => c.blob), { type: 'audio/mpeg' });
-
-        // Re-leer tags ID3 del blob descargado para obtener cover y lrc
-        // (no se envían por presence para mantener los mensajes pequeños).
-        let parsedMeta = null;
-        if (window.AuroraUploader && typeof window.AuroraUploader.processOne === 'function') {
-          try {
-            const file = new File([blob], meta.name || 'shared.mp3', { type: 'audio/mpeg' });
-            const parsed = await window.AuroraUploader.processOne(file, {});
-            if (parsed) {
-              parsedMeta = parsed;
-            }
-          } catch (e) {
-            console.warn('[Realtime] Error re-parseando ID3:', e);
-          }
-        }
-
-        // Construir el track final: ID del anuncio + metadatos parseados
-        // (con cover y lrc) o fallback a los metadatos del anuncio.
         const track = {
           id: meta.id,
-          title: (parsedMeta && parsedMeta.title) || (meta.meta && meta.meta.title) || meta.name || 'Shared track',
-          artist: (parsedMeta && parsedMeta.artist) || (meta.meta && meta.meta.artist) || 'Unknown artist',
-          album: (parsedMeta && parsedMeta.album) || (meta.meta && meta.meta.album) || '',
+          title: (meta.meta && meta.meta.title) || meta.name || 'Shared track',
+          artist: (meta.meta && meta.meta.artist) || 'Unknown artist',
+          album: (meta.meta && meta.meta.album) || '',
           duration: 0,
-          src: (parsedMeta && parsedMeta.src) || URL.createObjectURL(blob),
-          cover: (parsedMeta && parsedMeta.cover) || null,
-          coverIsImage: (parsedMeta && parsedMeta.coverIsImage) || false,
-          lrc: (parsedMeta && parsedMeta.lrc) || null,
+          src: URL.createObjectURL(blob),
+          cover: null,
+          coverIsImage: false,
+          lrc: null,
           fileSize: meta.size,
           fileName: meta.name,
           fileBlob: blob,
