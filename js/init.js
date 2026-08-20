@@ -85,12 +85,6 @@ Object.assign(App, {
       // #11 Cargar historial
       this.loadHistory();
 
-      // Primer arranque: si no hay idioma guardado, pedir al usuario que lo elija.
-      // El sheet de idioma es modal (no se puede cerrar sin elegir).
-      if (!this._langAlreadyChosen) {
-        setTimeout(() => this.showLanguageOnboarding(), 300);
-      }
-
       // === Sistema de tiempo real (compartir música) ===
       this.initRealtime();
 

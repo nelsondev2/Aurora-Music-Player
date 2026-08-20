@@ -62,6 +62,8 @@ Object.assign(App, {
       if (!window.AuroraRealtime) return;
       try {
         window.AuroraRealtime.refreshKnownFiles(this.tracks);
+        const pend = window.AuroraRealtime._pendingPlayback;
+        if (pend) window.AuroraRealtime._applyPlaybackAction(pend);
       } catch (e) {
         console.warn('[Aurora] Error anunciando pistas al realtime:', e);
       }
@@ -153,8 +155,11 @@ Object.assign(App, {
           this.currentTrackIdx = idx;
           this.currentTrack = this.tracks[idx];
           // Cargar el audio sin autoplay todavía
-          this.audio.src = this.currentTrack.src;
-          this.audio.load();
+          const url = this.getTrackUrl(this.currentTrack);
+          if (url) {
+            this.audio.src = url;
+            try { this.audio.volume = this.volume; } catch (e2) {}
+          }
           this.renderCurrentTrack();
           this.renderLyrics();
           this.updateMediaSession();
@@ -276,6 +281,8 @@ Object.assign(App, {
         const row = document.createElement('div');
         row.className = 'listener-row';
         const name = (peer.state && peer.state.selfName) || 'Unknown';
+        const sameAsMe = name === myName;
+        const label = sameAsMe ? (name + ' · 2') : name;
         const initial = (name || '?').charAt(0).toUpperCase();
         const last = peer.state && peer.state.lastAction;
         let trackLabel = this.t('listeners_not_playing');
@@ -290,7 +297,7 @@ Object.assign(App, {
         row.innerHTML = `
           <div class="listener-avatar">${this.esc(initial)}</div>
           <div class="listener-info">
-            <div class="listener-name">${this.esc(name)}</div>
+            <div class="listener-name">${this.esc(peerLabel)}</div>
             <div class="listener-track ${trackClass}">${this.esc(trackLabel)}</div>
           </div>
           <div class="listener-status-dot"></div>

@@ -305,16 +305,17 @@ Object.assign(App, {
         const saved = localStorage.getItem('aurora_lang');
         if (saved && this._isValidLang(saved)) {
           this.lang = saved;
-          this._langAlreadyChosen = true;  // ya hay idioma guardado
-        } else {
-          // Primer arranque: no hay idioma guardado.
-          // Detectar idioma del navegador como sugerencia inicial,
-          // pero pedir al usuario que confirme.
-          const nav = (navigator.language || 'es').slice(0, 2).toLowerCase();
-          if (this._isValidLang(nav)) this.lang = nav;
-          this._langAlreadyChosen = false;
+          this._langAlreadyChosen = true;
+          return;
         }
-      } catch (e) {}
+        const nav = (navigator.language || navigator.userLanguage || 'es').slice(0, 2).toLowerCase();
+        this.lang = this._isValidLang(nav) ? nav : 'es';
+        this._langAlreadyChosen = true;
+        try { localStorage.setItem('aurora_lang', this.lang); } catch (e2) {}
+      } catch (e) {
+        this.lang = 'es';
+        this._langAlreadyChosen = true;
+      }
     },
 
     _isValidLang(code) {

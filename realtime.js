@@ -178,7 +178,7 @@
   const MESSAGE_PAYLOAD = 1;
   const STATUS_OFFLINE = 0;
   const STATUS_ONLINE = 1;
-  const PRESENCE_TIMEOUT = 5;                // segundos sin señal antes de eliminar peer
+  const PRESENCE_TIMEOUT = 60;               // segundos sin señal antes de eliminar peer
   const PRESENCE_INTERVAL = 2;               // cada cuánto enviar presence
 
   /* ============================================================
@@ -403,8 +403,10 @@
     });
     // Enviar presence cada N segundos
     this.interval = window.setInterval(() => this._sync(), this.tick * 1000);
-    // Enviar presence inicial
     this._sendPresence();
+    // El canal de Delta a veces no está listo al instante
+    setTimeout(() => this._sendPresence(), 400);
+    setTimeout(() => this._sendPresence(), 1500);
   };
 
   RealtimeChannel.prototype.disconnect = function () {
@@ -475,6 +477,10 @@
     } else if (msgType === MESSAGE_PAYLOAD) {
       let payload = null;
       try { payload = r.json(); } catch (e) {}
+      if (payload && payload.playback) {
+        this.onPayload(deviceId, payload);
+        return;
+      }
       // Si el payload tiene response.dataLength, leer los bytes crudos
       // que se adjuntaron después del JSON.
       if (payload && payload.response && payload.response.dataLength) {
@@ -643,6 +649,11 @@
       this._channel.setState(this._state);
       this._channel.connect();
       window.addEventListener('beforeunload', () => this.disconnect());
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && this._channel) {
+          try { this._channel._sendPresence(); } catch (e) {}
+        }
+      });
       // Iniciar bucle de solicitud de chunks
       setTimeout(() => this._requestLoop(), 200);
       // Resumen periódico (similar a app.xdc)
@@ -669,9 +680,9 @@
       const a = Object.assign({}, action, { actionTime: Date.now() });
       this._state.lastAction = a;
       this._channel.setState(this._state);
-      // Avanzar el estado del peer local; el presence lo difunde automáticamente.
+      try { this._channel.sendPayload({ playback: a }); } catch (e) {}
+      try { this._channel._sendPresence(); } catch (e) {}
       this._emit('state', this._state);
-      // Anunciar "jam" al chat la primera vez
       this._maybeAnnounceJam();
       this._summaryDebouncer && this._summaryDebouncer();
     },
@@ -783,20 +794,28 @@
         const a = peer.state && peer.state.lastAction;
         if (!a) continue;
         if (a.actionTime <= myLast) continue;
-        // Solo aplicar si tenemos la pista localmente
-        const haveIt = this._hasLocalTrack(a.trackId);
-        if (!haveIt) continue;
+        if (!this._hasLocalTrack(a.trackId)) {
+          this._pendingPlayback = a;
+          continue;
+        }
         if (!best || a.actionTime > best.actionTime) best = a;
       }
-      if (!best) return;
-      if (best.actionTime <= this._lastSyncedActionTime) return;
-      this._lastSyncedActionTime = best.actionTime;
-      // Actualizar nuestro lastAction con el del peer
-      this._state.lastAction = best;
-      this._channel.setState(this._state);
-      // Notificar a la app para que salte a esa pista/posición
-      this._emit('playback', best);
-      if (best.alert) this._emit('state', this._state);
+      if (best) this._applyPlaybackAction(best);
+    },
+
+    _applyPlaybackAction(a) {
+      if (!a || !a.trackId) return;
+      if (a.actionTime && a.actionTime <= this._lastSyncedActionTime) return;
+      if (!this._hasLocalTrack(a.trackId)) {
+        this._pendingPlayback = a;
+        return;
+      }
+      this._pendingPlayback = null;
+      this._lastSyncedActionTime = a.actionTime || Date.now();
+      this._state.lastAction = a;
+      if (this._channel) this._channel.setState(this._state);
+      this._emit('playback', a);
+      if (a.alert) this._emit('state', this._state);
     },
 
     _hasLocalTrack(trackId) {
@@ -806,6 +825,10 @@
 
     /* ---------- Recepción de payload (request/response) ---------- */
     async _onPayload(fromDeviceId, payload) {
+      if (payload && payload.playback) {
+        this._applyPlaybackAction(payload.playback);
+        return;
+      }
       if (isRequestPayload(payload)) {
         const req = payload.request;
         // Solo responder si el request es para mí
