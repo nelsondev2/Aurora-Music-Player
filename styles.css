@@ -182,7 +182,7 @@ svg { display: block; }
     --pad: 10px;
     --bottom-nav-h: 46px;
   }
-  .cover-art { width: min(48vw, 220px); }
+  .cover-art canvas { object-fit: cover; }
   .track-title { font-size: 16px; }
   .ctrl-play { width: 50px; height: 50px; }
   .controls-secondary { padding: 2px 0; }
@@ -196,7 +196,6 @@ svg { display: block; }
 /* Altura media-baja */
 @media (max-height: 700px) and (min-height: 601px) {
   :root { --pad: 14px; }
-  .cover-art, .cover-glow { width: min(48vw, 220px); }
   .track-title { font-size: 19px; }
   .ctrl-play { width: 58px; height: 58px; }
   .controls-secondary { padding: 4px 0; }
@@ -314,21 +313,23 @@ svg { display: block; }
 .icon-btn:active { background: var(--surface); transform: scale(0.92); }
 
 /* ---------- Portada ---------- */
+/* ---------- Portada: llena el hueco libre, cuadrada, sin pisar controles ---------- */
 .cover-section {
   position: relative;
   z-index: 5;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 4px 0 6px;
+  display: grid;
+  place-items: center;
+  padding: 6px 0;
   perspective: 1000px;
   flex: 1 1 0;
   min-height: 0;
   overflow: hidden;
+  container-type: size;
+  container-name: coverslot;
 }
 .cover-glow {
   position: absolute;
-  width: min(86vw, 36dvh, 320px);
+  width: min(92%, 380px);
   aspect-ratio: 1;
   max-height: 100%;
   border-radius: 40%;
@@ -341,18 +342,28 @@ svg { display: block; }
 .cover-art {
   position: relative;
   z-index: 1;
-  width: min(86vw, 36dvh, 320px);
+  width: min(92%, 380px);
   aspect-ratio: 1;
-  border-radius: 28px;
+  max-width: 100%;
+  max-height: 100%;
+  height: auto;
+  border-radius: 24px;
   overflow: hidden;
   box-shadow:
     0 28px 56px rgba(0,0,0,0.5),
     0 0 0 1px rgba(255,255,255,0.08) inset;
   transform-style: preserve-3d;
   transition: transform .35s ease, box-shadow .35s ease;
-  max-width: 100%;
-  max-height: 100%;
   cursor: pointer;
+}
+@supports (width: 1cqmin) {
+  .cover-art,
+  .cover-glow {
+    width: min(100cqmin, 400px);
+    height: min(100cqmin, 400px);
+    max-width: none;
+    max-height: none;
+  }
 }
 .cover-art.playing {
   animation: coverFloat 6s ease-in-out infinite;
@@ -1301,6 +1312,9 @@ svg { display: block; }
 }
 
 /* ---------- Library grid ---------- */
+.playlist-grid {
+  display: grid;
+  grid-template-columns: repeat(2----- */
 .playlist-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
