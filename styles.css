@@ -196,7 +196,7 @@ svg { display: block; }
 /* Altura media-baja */
 @media (max-height: 700px) and (min-height: 601px) {
   :root { --pad: 14px; }
-  .cover-art { width: min(62vw, 280px); }
+  .cover-art, .cover-glow { width: min(48vw, 220px); }
   .track-title { font-size: 19px; }
   .ctrl-play { width: 58px; height: 58px; }
   .controls-secondary { padding: 4px 0; }
@@ -219,7 +219,8 @@ svg { display: block; }
   inset: 0;
   display: flex;
   flex-direction: column;
-  padding: calc(var(--safe-top) + 8px) var(--pad) calc(var(--safe-bottom) + var(--bottom-nav-h) + 8px);
+  padding: calc(var(--safe-top) + 8px) var(--pad) calc(var(--safe-bottom) + var(--bottom-nav-h) + 14px);
+  overflow: hidden;
   opacity: 0;
   transform: translateX(40px);
   pointer-events: none;
@@ -319,15 +320,17 @@ svg { display: block; }
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 6px 0 10px;
+  padding: 4px 0 6px;
   perspective: 1000px;
-  flex: 1 1 auto;
-  min-height: 200px;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
 }
 .cover-glow {
   position: absolute;
-  width: min(90vw, 52vh, 400px);
+  width: min(86vw, 36dvh, 320px);
   aspect-ratio: 1;
+  max-height: 100%;
   border-radius: 40%;
   background: radial-gradient(circle, var(--cover-from) 0%, transparent 68%);
   filter: blur(28px);
@@ -338,7 +341,7 @@ svg { display: block; }
 .cover-art {
   position: relative;
   z-index: 1;
-  width: min(90vw, 52vh, 400px);
+  width: min(86vw, 36dvh, 320px);
   aspect-ratio: 1;
   border-radius: 28px;
   overflow: hidden;
@@ -347,6 +350,7 @@ svg { display: block; }
     0 0 0 1px rgba(255,255,255,0.08) inset;
   transform-style: preserve-3d;
   transition: transform .35s ease, box-shadow .35s ease;
+  max-width: 100%;
   max-height: 100%;
   cursor: pointer;
 }
@@ -594,10 +598,10 @@ svg { display: block; }
   display: flex;
   justify-content: space-around;
   gap: 4px;
-  padding: 8px 2px 4px;
-  flex-shrink: 0;  /* NUNCA se comprimen — siempre visibles */
+  padding: 6px 2px 8px;
+  flex: 0 0 auto;
   overflow: visible;
-  min-height: 52px;  /* asegurar altura mínima */
+  min-height: 64px;
 }
 .sec-btn {
   display: flex;
