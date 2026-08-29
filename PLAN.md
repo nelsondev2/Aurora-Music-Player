@@ -52,8 +52,8 @@ Hallazgos que el plan debe cerrar. No son opiniones: están en el repo.
 | B1 | ~~Listeners / `peerLabel`~~ — **obsoleto** (P2P eliminado) | — |
 | B2 | ~~Historial y stats compartían sheet~~ — **cerrado** (`sheetHistory`) | — |
 | B3 | ~~“Ir al artista” abre búsqueda~~ — **cerrado** (vistas Álbum/Artista) | — |
-| B4 | Shuffle elige un índice al azar; no es una cola barajada (puede repetir, no es predecible) | `js/audio.js` `next()` |
-| B5 | Gapless se desactiva en cuanto existe el grafo Web Audio (EQ). En la práctica **nunca** hay gapless | `js/library.js` `gaplessNext()` |
+| B4 | ~~Shuffle elige un índice al azar~~ — **cerrado** (Fisher–Yates + `originalQueue`) | `js/audio.js` |
+| B5 | ~~Gapless se desactiva con EQ~~ — **cerrado** (swap de `src` en el `<audio>` conectado) | `js/library.js` `gaplessNext()` |
 | B6 | Collage de playlist llama `renderPlaylists()` al terminar → riesgo de re-renders en cascada | `js/playlist-ui.js` `getPlaylistCover` |
 | B7 | ~~Textos hardcodeados de reset~~ — **cerrado** (i18n) | — |
 | B8 | Onboarding de idioma existe (`showLanguageOnboarding`) pero **nunca se llama** | `js/init.js` |
@@ -287,7 +287,7 @@ La app se considera pulida cuando se cumplen **todos**:
 - [ ] Ningún botón del menú hace “nada” o un toast de placeholder.
 - [ ] Hay mini-player en toda navegación secundaria.
 - [ ] Hay vistas Artista y Álbum, y se llega a ellas desde la pista.
-- [ ] Shuffle produce una cola visible y estable.
+- [x] Shuffle produce una cola visible y estable.
 - [ ] Importar 50 archivos muestra progreso y no bloquea play.
 - [ ] Un archivo corrupto no detiene la sesión.
 - [x] Historial y estadísticas son pantallas distintas (o pestañas).

@@ -113,7 +113,10 @@ Object.assign(App, {
           this.loadTrackPaused();
         } else if (!this.playContext || this.playContext.type === 'all') {
           // Solo añadir a la cola si NO hay un contexto de playlist/favoritos activo.
-          tracksToAdd.forEach(t => this.queue.push(t.id));
+          tracksToAdd.forEach(t => {
+            this.queue.push(t.id);
+            if (this.shuffle && this._originalQueue) this._originalQueue.push(t.id);
+          });
         }
         this.renderLibrary();
         this.renderPlaylists();
@@ -151,18 +154,20 @@ Object.assign(App, {
       return url;
     },
 
-    /* #15 Precargar la siguiente pista para gapless playback */
+    /* Precarga la siguiente pista en un <audio> NO conectado al grafo EQ. */
     preloadNextTrack() {
-      if (!this._gaplessEnabled) return;
-      const nextIdx = this.queueIdx + 1;
-      if (nextIdx >= this.queue.length) return;
+      if (!this._gaplessEnabled && !(this.crossfadeEnabled && this.crossfadeDuration > 0)) return;
+      let nextIdx = this.queueIdx + 1;
+      if (nextIdx >= this.queue.length) {
+        if (this.repeat === 'all' && this.queue.length) nextIdx = 0;
+        else return;
+      }
+      if (nextIdx === this.queueIdx) return;
       const nextTrackId = this.queue[nextIdx];
       const nextTrack = this.tracks.find(t => t.id === nextTrackId);
       if (!nextTrack) return;
-      // Usar el URL cacheado
       const url = this.getTrackUrl(nextTrack);
       if (!url) return;
-      // Crear o reutilizar elemento de preload
       if (!this._preloadAudio) {
         this._preloadAudio = new Audio();
         this._preloadAudio.preload = 'auto';
@@ -173,38 +178,41 @@ Object.assign(App, {
       }
     },
 
-    /* #4 Gapless: cambiar a la siguiente pista sin pausa */
+    /* Gapless con EQ: mismo <audio> conectado; swap de src ~80 ms antes de ended. */
     gaplessNext() {
-      if (!this._gaplessEnabled || !this._preloadAudio) return false;
-      // El grafo Web Audio (EQ) está atado al <audio> original.
-      if (this.audioCtx) return false;
-      const nextIdx = this.queueIdx + 1;
-      if (nextIdx >= this.queue.length) return false;
+      if (!this._gaplessEnabled) return false;
+      if (this._sleepEndOfTrack || this._sleepFading) return false;
+      if (this.crossfadeEnabled && this.crossfadeDuration > 0) return false;
+      if (this.repeat === 'one') return false;
+      const nextIdx = this._nextQueueIndex(true);
+      if (nextIdx == null) return false;
       const nextTrackId = this.queue[nextIdx];
       const nextTrack = this.tracks.find(t => t.id === nextTrackId);
       if (!nextTrack) return false;
-      // Intercambiar: el preload se vuelve el principal
-      const oldAudio = this.audio;
-      this.audio = this._preloadAudio;
-      this._preloadAudio = oldAudio;
+      const url = this.getTrackUrl(nextTrack);
+      if (!url || !this.audio) return false;
+      this._gaplessConsumed = true;
+      this._ignoreEndedUntil = Date.now() + 500;
+      this._gaplessArmed = false;
+      this.currentTrack = nextTrack;
+      this.currentTrackIdx = this.tracks.findIndex(t => t.id === nextTrackId);
+      this.queueIdx = nextIdx;
+      this.audio.src = url;
       try { this.audio.volume = this.volume; } catch (e) {}
       if (this.playbackRate && this.playbackRate !== 1) {
         try { this.audio.playbackRate = this.playbackRate; } catch (e) {}
       }
-      // Los listeners (ended, timeupdate…) estaban en el <audio> anterior.
-      if (typeof this.bindAudioElement === 'function') this.bindAudioElement(this.audio);
-      // Actualizar estado
-      this.currentTrack = nextTrack;
-      this.currentTrackIdx = this.tracks.findIndex(t => t.id === nextTrackId);
-      this.queueIdx = nextIdx;
+      const p = this.audio.play();
+      if (p && p.catch) p.catch(() => {});
       this.isPlaying = true;
-      this.audio.play();
+      this.addToHistory(nextTrack.id);
       this.renderCurrentTrack();
       this.renderLyrics();
       this.updateMediaSession();
       this.updatePlayUI();
-      // Precargar la siguiente
       this.preloadNextTrack();
+      this.applyNormalization(nextTrack);
+      if (typeof this.updateChrome === 'function') this.updateChrome();
       return true;
     },
 
@@ -524,6 +532,7 @@ Object.assign(App, {
         if (qIdx < this.queueIdx) this.queueIdx--;
         else if (qIdx === this.queueIdx) this.queueIdx = Math.min(this.queueIdx, this.queue.length - 1);
       }
+      if (typeof this._removeFromOriginalQueue === 'function') this._removeFromOriginalQueue(trackId);
       // Quitar de playlists
       this.playlists.forEach(pl => {
         const i = pl.trackIds.indexOf(trackId);
@@ -585,6 +594,7 @@ Object.assign(App, {
       this.tracks = [];
       this.queue = [];
       this.queueIdx = 0;
+      this._originalQueue = null;
       this.currentTrackIdx = 0;
       this.currentTrack = null;
       this.favorites = new Set();
@@ -668,7 +678,7 @@ Object.assign(App, {
       document.getElementById('btnEmptyLoad').addEventListener('click', () => this.openFilePicker());
       empty.style.display = 'flex';
       // Ocultar secciones habituales
-      ['.cover-section','.visualizer','.track-info','.progress-section','.controls-main','.controls-secondary']
+      ['.cover-section','.visualizer','.track-info','.progress-section','.np-volume','.controls-main','.controls-secondary']
         .forEach(sel => { const e = v.querySelector(sel); if (e) e.style.display = 'none'; });
     },
 

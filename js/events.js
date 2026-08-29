@@ -45,7 +45,34 @@ Object.assign(App, {
       if (btnHomeAdd) btnHomeAdd.addEventListener('click', () => this.openFilePicker());
       const coverArt = document.getElementById('coverArt');
       if (coverArt) {
-        coverArt.addEventListener('click', () => {
+        let cvY = 0, cvVol = 1, cvMoved = false;
+        coverArt.addEventListener('touchstart', (e) => {
+          if (e.touches.length !== 1) return;
+          cvY = e.touches[0].clientY;
+          cvVol = this.volume;
+          cvMoved = false;
+          this._coverVolMoved = false;
+        }, { passive: true });
+        coverArt.addEventListener('touchmove', (e) => {
+          if (e.touches.length !== 1) return;
+          const dy = cvY - e.touches[0].clientY;
+          if (!cvMoved && Math.abs(dy) < 12) return;
+          cvMoved = true;
+          this._coverVolMoved = true;
+          coverArt.classList.add('vol-adjusting');
+          const h = Math.max(120, coverArt.getBoundingClientRect().height);
+          this.setVolume(cvVol + dy / h);
+          this.showNpVolume(true);
+        }, { passive: true });
+        coverArt.addEventListener('touchend', () => {
+          coverArt.classList.remove('vol-adjusting');
+        });
+        coverArt.addEventListener('click', (e) => {
+          if (this._coverVolMoved) {
+            this._coverVolMoved = false;
+            e.preventDefault();
+            return;
+          }
           if (this.currentTrack) this.togglePlay();
         });
         coverArt.addEventListener('keydown', (e) => {
@@ -166,6 +193,27 @@ Object.assign(App, {
       if (btnImport) btnImport.addEventListener('click', () => {
         this.importLibrary();
       });
+      const toggleGapless = document.getElementById('toggleGapless');
+      if (toggleGapless) toggleGapless.addEventListener('change', () => {
+        this._gaplessEnabled = !!toggleGapless.checked;
+        this.savePlaybackSettings();
+        if (this._gaplessEnabled) this.preloadNextTrack();
+      });
+      const toggleNormalize = document.getElementById('toggleNormalize');
+      if (toggleNormalize) toggleNormalize.addEventListener('change', () => {
+        this._normalizeVolume = !!toggleNormalize.checked;
+        this.savePlaybackSettings();
+        this.applyNormalization(this.currentTrack);
+      });
+      document.querySelectorAll('.xfade-opt').forEach(b => {
+        b.addEventListener('click', () => {
+          const n = parseInt(b.dataset.xfade, 10) || 0;
+          this.crossfadeDuration = n;
+          this.crossfadeEnabled = n > 0;
+          document.querySelectorAll('.xfade-opt').forEach(x => x.classList.toggle('active', x === b));
+          this.savePlaybackSettings();
+        });
+      });
 
       // Volver / cargar música
       $('btnBack').addEventListener('click', () => this.openFilePicker());
@@ -185,15 +233,42 @@ Object.assign(App, {
       const btnClearQueue = document.getElementById('btnClearQueue');
       if (btnClearQueue) btnClearQueue.addEventListener('click', () => this.clearUpcomingQueue());
 
-      // Volumen
-      $('btnVolume').addEventListener('click', () => this.openSheet('sheetVolume'));
-      $('volumeSlider').addEventListener('input', (e) => this.setVolume(parseInt(e.target.value)/100));
+      // Volumen: tap / long-press abre slider compacto; el sheet queda como respaldo
+      const btnVol = document.getElementById('btnVolume');
+      if (btnVol) {
+        let lpTimer = null, lpFired = false;
+        btnVol.addEventListener('pointerdown', () => {
+          lpFired = false;
+          lpTimer = setTimeout(() => {
+            lpFired = true;
+            this.showNpVolume(true);
+          }, 420);
+        });
+        const cancelLp = () => { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } };
+        btnVol.addEventListener('pointerup', cancelLp);
+        btnVol.addEventListener('pointerleave', cancelLp);
+        btnVol.addEventListener('pointercancel', cancelLp);
+        btnVol.addEventListener('click', (e) => {
+          if (lpFired) { e.preventDefault(); e.stopPropagation(); lpFired = false; return; }
+          this.showNpVolume();
+        });
+      }
+      $('volumeSlider').addEventListener('input', (e) => this.setVolume(parseInt(e.target.value, 10)/100));
+      const slNp = document.getElementById('volumeSliderNp');
+      if (slNp) {
+        slNp.addEventListener('input', (e) => {
+          this.setVolume(parseInt(e.target.value, 10)/100);
+          this.showNpVolume(true);
+        });
+      }
 
       // EQ
       $('btnEqualizer').addEventListener('click', () => this.openSheet('sheetEqualizer'));
       document.querySelectorAll('.eq-preset').forEach(b => {
         b.addEventListener('click', () => this.applyEqPreset(b.dataset.preset));
       });
+      const btnResetEq = document.getElementById('btnResetEq');
+      if (btnResetEq) btnResetEq.addEventListener('click', () => this.resetEqValues());
 
       // Sleep
       $('btnSleep').addEventListener('click', () => this.openSheet('sheetSleep'));
@@ -201,7 +276,8 @@ Object.assign(App, {
         b.addEventListener('click', () => {
           document.querySelectorAll('.sleep-opt').forEach(x => x.classList.remove('active'));
           b.classList.add('active');
-          this.startSleep(parseInt(b.dataset.min));
+          if (b.dataset.sleep === 'eot') this.startSleepEndOfTrack();
+          else this.startSleep(parseInt(b.dataset.min, 10));
         });
       });
       $('btnCancelSleep').addEventListener('click', () => {
@@ -508,15 +584,19 @@ Object.assign(App, {
     },
 
     /* Cablea timeupdate / ended / metadata en el <audio> activo.
-     * Se vuelve a llamar tras un swap gapless (otro elemento Audio). */
+     * El grafo EQ queda atado a este elemento: no se intercambia. */
     bindAudioElement(el) {
       if (!el) return;
       if (!this._onAudioTimeUpdate) {
-        this._onAudioTimeUpdate = () => this.updateProgress();
+        this._onAudioTimeUpdate = () => {
+          this.updateProgress();
+          if (typeof this.tickPlaybackAdvance === 'function') this.tickPlaybackAdvance();
+        };
         this._onAudioLoadedMeta = () => {
           const dur = this.audio && this.audio.duration;
           const totalEl = document.getElementById('timeTotal');
           if (totalEl) totalEl.textContent = this.fmtTime(dur);
+          this.updateMediaPosition(true);
           if (this.currentTrack && isFinite(dur) && dur > 0 &&
               (!this.currentTrack.duration || this.currentTrack.duration === 0)) {
             this.currentTrack.duration = Math.floor(dur);
@@ -527,12 +607,29 @@ Object.assign(App, {
           }
         };
         this._onAudioEnded = () => {
+          if (this._ignoreEndedUntil && Date.now() < this._ignoreEndedUntil) return;
+          if (this._gaplessConsumed) { this._gaplessConsumed = false; return; }
+          if (this._xfadeIncoming) { this._xfadeIncoming = false; return; }
+          if (this._sleepEndOfTrack) { this._fireSleep(); return; }
           this.next(true);
         };
         this._onAudioError = (e) => {
           const msg = (e && e.message) || (this.audio && this.audio.error && this.audio.error.message) || 'unknown';
           this._lastError = { msg: 'audio error: ' + msg, ts: Date.now() };
+          this._decodeSkipCount = (this._decodeSkipCount || 0) + 1;
           this.toast(this.t('toast_audio_error'));
+          if (this._decodeSkipCount >= 3) {
+            this.toast(this.t('toast_skipped_give_up').replace('X', String(this._decodeSkipCount)));
+            this._decodeSkipCount = 0;
+            this.togglePlay(false);
+            return;
+          }
+          this.next(true);
+        };
+        this._onAudioPlaying = () => {
+          this._decodeSkipCount = 0;
+          this._gaplessConsumed = false;
+          this.updateMediaPosition(true);
         };
       }
       if (this._boundAudioEl && this._boundAudioEl !== el) {
@@ -540,12 +637,14 @@ Object.assign(App, {
         this._boundAudioEl.removeEventListener('loadedmetadata', this._onAudioLoadedMeta);
         this._boundAudioEl.removeEventListener('ended', this._onAudioEnded);
         this._boundAudioEl.removeEventListener('error', this._onAudioError);
+        this._boundAudioEl.removeEventListener('playing', this._onAudioPlaying);
       }
       if (this._boundAudioEl === el) return;
       el.addEventListener('timeupdate', this._onAudioTimeUpdate);
       el.addEventListener('loadedmetadata', this._onAudioLoadedMeta);
       el.addEventListener('ended', this._onAudioEnded);
       el.addEventListener('error', this._onAudioError);
+      el.addEventListener('playing', this._onAudioPlaying);
       this._boundAudioEl = el;
     },
 

@@ -71,9 +71,8 @@ Object.assign(App, {
       // según haya o no pista cargada (estado vacío inicial).
       this.updatePlayUI();
 
-      // #4 #6 Gapless y normalización siempre activos
-      this._gaplessEnabled = true;
-      this._normalizeVolume = false;
+      this.loadPlaybackSettings();
+      this.syncPlaybackSettingsUI();
       // #11 Cargar historial
       this.loadHistory();
 

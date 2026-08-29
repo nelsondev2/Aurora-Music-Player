@@ -207,8 +207,7 @@ Object.assign(App, {
         } catch (e) {}
       }
 
-      // Letras: el RAF loop (startLrcRafSync) ya llama a updateLyricsHighlight
-      // en cada frame, no necesitamos llamarlo también desde aquí.
+      if (typeof this.updateMediaPosition === 'function') this.updateMediaPosition();
     },
 
     fmtTime(s) {

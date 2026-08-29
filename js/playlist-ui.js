@@ -291,6 +291,7 @@ Object.assign(App, {
           const removedId = this.queue[i];
           const wasCurrent = (i === this.queueIdx) && this.currentTrack && this.currentTrack.id === removedId;
           this.queue.splice(i, 1);
+          if (typeof this._removeFromOriginalQueue === 'function') this._removeFromOriginalQueue(removedId);
           if (i < this.queueIdx) this.queueIdx--;
           else if (i === this.queueIdx) this.queueIdx = Math.min(this.queueIdx, this.queue.length - 1);
           if (this.queueIdx < 0) this.queueIdx = 0;
@@ -400,9 +401,11 @@ Object.assign(App, {
       if (keep == null) {
         this.queue = [];
         this.queueIdx = 0;
+        this._originalQueue = null;
       } else {
         this.queue = [keep];
         this.queueIdx = 0;
+        if (this._originalQueue) this._originalQueue = [keep];
       }
       this.renderQueue();
       this.toast(this.t('toast_queue_cleared'));
@@ -609,7 +612,9 @@ Object.assign(App, {
       this.queueIdx = 0;
       // Establecer contexto de reproducción: "Reproduciendo desde <playlist>"
       this.playContext = { type: 'playlist', id: pl.id, name: pl.name };
-      this.playFromQueue(0);
+      if (this.shuffle) this._applyShuffle();
+      else this._originalQueue = null;
+      this.playFromQueue(this.queueIdx);
       this.renderCurrentTrack();  // refresca la barra superior con el contexto
       this.renderQueue();  // refrescar la cola con las pistas de la playlist
       this.toast(this.t('toast_now_playing') + ' ' + pl.name);

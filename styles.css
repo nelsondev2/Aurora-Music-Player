@@ -2771,3 +2771,71 @@ button,
 @media (prefers-reduced-motion: reduce) {
   .mini-title.marquee { animation: none; }
 }
+
+/* =====================================================================
+ *  Fase 2 — Volumen compacto, sleep EOT, ajustes de reproducción
+ * ===================================================================== */
+.np-volume {
+  position: relative;
+  z-index: 5;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 8px;
+  flex-shrink: 0;
+}
+.np-volume.open,
+.np-volume:not([hidden]) {
+  display: flex;
+}
+.np-volume[hidden] { display: none !important; }
+.np-volume i { font-size: 16px; color: var(--text-2); flex-shrink: 0; width: 22px; text-align: center; }
+.np-volume .slider { flex: 1; }
+.np-volume-val {
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  min-width: 40px;
+  text-align: right;
+}
+.cover-art.vol-adjusting { cursor: ns-resize; }
+.cover-art.vol-adjusting .cover-play-hint { opacity: 0 !important; }
+
+.sleep-opt.sleep-eot {
+  grid-column: 1 / -1;
+  letter-spacing: 0.02em;
+}
+
+.settings-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 8px 12px 6px;
+}
+.xfade-opts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 0 0 8px;
+}
+.xfade-opt {
+  padding: 10px 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-1);
+  transition: background .2s, transform .15s;
+}
+.xfade-opt:active { transform: scale(0.95); }
+.xfade-opt.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border-color: transparent;
+  color: #fff;
+}
+
+#sheetEqualizer .primary-btn.ghost { margin-top: 16px; }

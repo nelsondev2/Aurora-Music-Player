@@ -31,6 +31,7 @@ Object.assign(App, {
           shuffle: this.shuffle,
           repeat: this.repeat,
           playContext: this.playContext,
+          originalQueue: this._originalQueue,
           ts: Date.now()
         };
         await window.AuroraStorage.setSetting('session', session);
@@ -57,6 +58,11 @@ Object.assign(App, {
         this.queueIdx = qIdx >= 0 ? qIdx : 0;
         this.shuffle = !!session.shuffle;
         this.repeat = session.repeat || 'off';
+        if (this.shuffle && Array.isArray(session.originalQueue) && session.originalQueue.length) {
+          this._originalQueue = session.originalQueue.filter(id => this.tracks.some(t => t.id === id));
+        } else {
+          this._originalQueue = null;
+        }
         if (session.playContext && typeof session.playContext === 'object') {
           this.playContext = session.playContext;
         }
@@ -399,6 +405,40 @@ Object.assign(App, {
       // Restaurar título
       const h3 = sheet.querySelector('.sheet-header h3');
       if (h3) h3.textContent = this.t('language_title');
+    },
+
+    loadPlaybackSettings() {
+      try {
+        const raw = localStorage.getItem('aurora_playback');
+        if (raw) {
+          const s = JSON.parse(raw);
+          if (typeof s.gapless === 'boolean') this._gaplessEnabled = s.gapless;
+          if (typeof s.normalize === 'boolean') this._normalizeVolume = s.normalize;
+          if (typeof s.crossfade === 'number') {
+            this.crossfadeDuration = s.crossfade;
+            this.crossfadeEnabled = s.crossfade > 0;
+          }
+        }
+      } catch (e) {}
+    },
+    savePlaybackSettings() {
+      try {
+        localStorage.setItem('aurora_playback', JSON.stringify({
+          gapless: !!this._gaplessEnabled,
+          normalize: !!this._normalizeVolume,
+          crossfade: this.crossfadeDuration || 0
+        }));
+      } catch (e) {}
+    },
+    syncPlaybackSettingsUI() {
+      const g = document.getElementById('toggleGapless');
+      if (g) g.checked = !!this._gaplessEnabled;
+      const n = document.getElementById('toggleNormalize');
+      if (n) n.checked = !!this._normalizeVolume;
+      const xf = this.crossfadeDuration || 0;
+      document.querySelectorAll('.xfade-opt').forEach(b => {
+        b.classList.toggle('active', Number(b.dataset.xfade) === xf);
+      });
     },
 
     buildLangList() {

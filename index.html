@@ -84,6 +84,13 @@
           </div>
         </section>
 
+        <!-- Volumen compacto (gesto / long-press) -->
+        <div class="np-volume" id="npVolume" hidden>
+          <i class="fa-solid fa-volume-high" id="npVolIcon" aria-hidden="true"></i>
+          <input type="range" min="0" max="100" value="100" id="volumeSliderNp" class="slider" data-i18n-aria="volume" aria-label="Volumen" />
+          <span class="np-volume-val" id="volumeValueNp">100%</span>
+        </div>
+
         <!-- Controles principales -->
         <section class="controls-main">
           <button class="ctrl-btn ctrl-shuffle" id="btnShuffle" data-i18n-aria="shuffle" aria-label="Aleatorio" aria-pressed="false">
@@ -352,8 +359,7 @@
           </header>
           <div class="sheet-body">
             <div class="eq-presets" id="eqPresets">
-              <button class="eq-preset active" data-preset="normal">Normal</button>
-              <button class="eq-preset" data-preset="flat" data-i18n="eq_flat">Plano</button>
+              <button class="eq-preset active" data-preset="normal" data-i18n="eq_normal">Normal</button>
               <button class="eq-preset" data-preset="bass" data-i18n="eq_bass">Graves</button>
               <button class="eq-preset" data-preset="vocal" data-i18n="eq_vocal">Voces</button>
               <button class="eq-preset" data-preset="treble" data-i18n="eq_treble">Agudos</button>
@@ -362,6 +368,7 @@
             <div class="eq-bands" id="eqBands">
               <!-- Se generan dinámicamente -->
             </div>
+            <button class="primary-btn ghost" id="btnResetEq" type="button" data-i18n="settings_reset_eq">Resetear EQ</button>
           </div>
         </div>
       </div>
@@ -379,6 +386,7 @@
           <div class="sheet-body">
             <p class="sleep-hint" data-i18n="sleep_hint">La reproducción se detendrá automáticamente.</p>
             <div class="sleep-grid" id="sleepGrid">
+              <button class="sleep-opt sleep-eot" data-sleep="eot" data-i18n="sleep_end_of_track">Fin de la canción</button>
               <button class="sleep-opt" data-min="5">5 min</button>
               <button class="sleep-opt" data-min="10">10 min</button>
               <button class="sleep-opt" data-min="15">15 min</button>
@@ -643,6 +651,22 @@
             <button class="text-btn" data-close-sheet="sheetSettings" data-i18n="close_btn">Cerrar</button>
           </header>
           <div class="sheet-body">
+            <h4 class="section-title" data-i18n="settings_playback">Reproducción</h4>
+            <label class="settings-row" for="toggleGapless">
+              <span data-i18n="settings_gapless">Reproducción sin pausa</span>
+              <input type="checkbox" id="toggleGapless" checked />
+            </label>
+            <label class="settings-row" for="toggleNormalize">
+              <span data-i18n="settings_norm_volume">Normalizar volumen</span>
+              <input type="checkbox" id="toggleNormalize" />
+            </label>
+            <p class="settings-label" data-i18n="settings_crossfade">Fundido cruzado</p>
+            <div class="xfade-opts" id="xfadeOpts">
+              <button class="xfade-opt active" type="button" data-xfade="0" data-i18n="settings_crossfade_off">Off</button>
+              <button class="xfade-opt" type="button" data-xfade="3">3s</button>
+              <button class="xfade-opt" type="button" data-xfade="6">6s</button>
+              <button class="xfade-opt" type="button" data-xfade="12">12s</button>
+            </div>
             <h4 class="section-title" data-i18n="settings_interface">Interfaz</h4>
             <button class="menu-row" id="menuThemesSettings">
               <i class="fa-solid fa-palette"></i>

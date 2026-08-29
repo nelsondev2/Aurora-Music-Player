@@ -162,8 +162,9 @@ Object.assign(App, {
         navigator.mediaSession.setActionHandler('previoustrack', () => this.prev());
         navigator.mediaSession.setActionHandler('nexttrack', () => this.next());
         navigator.mediaSession.setActionHandler('seekto', (d) => {
-          if (d.seekTime != null) { this.audio.currentTime = d.seekTime; this.updateProgress(); }
+          if (d.seekTime != null) { this.seekToTime(d.seekTime); }
         });
+        this.updateMediaPosition(true);
       } catch (e) {}
     },
 
@@ -219,25 +220,52 @@ Object.assign(App, {
       this.updateSleepStatus();
       this.toast(this.t('toast_sleep_started').replace('X', mins));
     },
-    async _fireSleep() {
-      const endAt = this.sleepEndAt;
+    startSleepEndOfTrack() {
       this.cancelSleep();
-      if (!endAt) return;
-      // Fundido corto y pausa (más fiable que un setTimeout largo en segundo plano)
+      this._sleepEndOfTrack = true;
+      this.updateSleepStatus();
+      this.toast(this.t('toast_sleep_eot'));
+    },
+    async _fireSleep() {
+      if (this._sleepFading) return;
+      this._sleepFading = true;
+      const hadTimer = !!this.sleepEndAt || this._sleepEndOfTrack;
+      if (this.sleepTimer) { clearTimeout(this.sleepTimer); this.sleepTimer = null; }
+      if (this.sleepTick) { clearInterval(this.sleepTick); this.sleepTick = null; }
+      this.sleepEndAt = null;
+      this._sleepEndOfTrack = false;
+      this.updateSleepStatus();
+      if (!hadTimer && !this.isPlaying) {
+        this._sleepFading = false;
+        return;
+      }
+      const fadeSec = 10;
       try {
         if (this.audio && this.isPlaying) {
-          const startVol = this.audio.volume;
-          const steps = 8;
-          for (let i = 1; i <= steps; i++) {
-            this.audio.volume = startVol * (1 - i / steps);
-            await new Promise(r => setTimeout(r, 80));
+          if (this.gainNode && this.audioCtx) {
+            const now = this.audioCtx.currentTime;
+            const g = this.gainNode.gain;
+            g.cancelScheduledValues(now);
+            g.setValueAtTime(g.value, now);
+            g.linearRampToValueAtTime(0.001, now + fadeSec);
+            await new Promise(r => setTimeout(r, fadeSec * 1000));
+          } else {
+            const startVol = this.audio.volume;
+            const steps = 20;
+            for (let i = 1; i <= steps; i++) {
+              if (!this._sleepFading) break;
+              this.audio.volume = startVol * (1 - i / steps);
+              await new Promise(r => setTimeout(r, fadeSec * 1000 / steps));
+            }
           }
           this.togglePlay(false);
-          this.audio.volume = this.volume;
+          try { this.audio.volume = this.volume; } catch (e) {}
+          this._setPlaybackGain(this._normGain || 1, true);
         }
       } catch (e) {
         this.togglePlay(false);
       }
+      this._sleepFading = false;
       document.querySelectorAll('.sleep-opt').forEach(x => x.classList.remove('active'));
       this.toast(this.t('toast_sleep_done'));
     },
@@ -245,11 +273,22 @@ Object.assign(App, {
       if (this.sleepTimer) { clearTimeout(this.sleepTimer); this.sleepTimer = null; }
       if (this.sleepTick) { clearInterval(this.sleepTick); this.sleepTick = null; }
       this.sleepEndAt = null;
+      this._sleepEndOfTrack = false;
+      if (this._sleepFading) {
+        this._sleepFading = false;
+        try { if (this.audio) this.audio.volume = this.volume; } catch (e) {}
+        this._setPlaybackGain(this._normGain || 1, true);
+      }
       this.updateSleepStatus();
     },
     updateSleepStatus() {
       const el = document.getElementById('sleepStatus');
       const btn = document.getElementById('btnSleep');
+      if (this._sleepEndOfTrack) {
+        if (el) el.textContent = this.t('sleep_eot_status');
+        if (btn) btn.classList.add('active');
+        return;
+      }
       if (this.sleepEndAt) {
         const ms = Math.max(0, this.sleepEndAt - Date.now());
         const m = Math.floor(ms / 60000);

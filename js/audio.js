@@ -112,6 +112,8 @@ Object.assign(App, {
           if (this.eqFilters[i]) this.eqFilters[i].gain.value = n;
           val.textContent = (n > 0 ? '+' : '') + n + ' dB';
           this.saveEqValues();
+          try { localStorage.setItem('aurora_eq_preset', 'custom'); } catch (e) {}
+          document.querySelectorAll('.eq-preset').forEach(b => b.classList.remove('active'));
         });
         wrap.appendChild(lab);
         wrap.appendChild(input);
@@ -120,7 +122,8 @@ Object.assign(App, {
         if (this.eqFilters[i]) this.eqFilters[i].gain.value = savedEq[i] || 0;
       });
       try {
-        const preset = localStorage.getItem('aurora_eq_preset') || 'normal';
+        let preset = localStorage.getItem('aurora_eq_preset') || 'normal';
+        if (preset === 'flat') preset = 'normal';
         document.querySelectorAll('.eq-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
       } catch (e) {}
     },
@@ -132,24 +135,20 @@ Object.assign(App, {
     },
     /* #5 Resetear EQ */
     resetEqValues() {
-      const inputs = document.querySelectorAll('#eqBands input[type="range"]');
-      inputs.forEach((inp, i) => {
-        inp.value = 0;
-        if (this.eqFilters[i]) this.eqFilters[i].gain.value = 0;
-      });
-      this.saveEqValues();
+      this.applyEqPreset('normal');
+      this.toast(this.t('toast_eq_reset'));
     },
 
     applyEqPreset(preset) {
+      if (preset === 'flat') preset = 'normal';
       const presets = {
         normal:[0, 0, 0, 0, 0],
-        flat:  [0, 0, 0, 0, 0],
         bass:  [6, 4, 0, -2, -3],
         vocal: [-2, 0, 4, 3, 1],
         treble:[-2, -1, 0, 4, 6],
         live:  [3, 1, 0, 2, 4]
       };
-      const vals = presets[preset] || presets.flat;
+      const vals = presets[preset] || presets.normal;
       const inputs = document.querySelectorAll('#eqBands input[type="range"]');
       inputs.forEach((inp, i) => {
         inp.value = vals[i];
@@ -213,6 +212,8 @@ Object.assign(App, {
 
       // Si se pasa contexto, usarlo; si no, mantener el actual
       if (context) this.playContext = context;
+      if (this.shuffle) this._applyShuffle();
+      else this._originalQueue = null;
       this.loadAndPlay();
     },
 
@@ -230,16 +231,22 @@ Object.assign(App, {
     loadAndPlay() {
       const t = this.currentTrack;
       if (!t) return;
-      // Asegurar que el gain está a 1 inmediatamente (sin crossfade que retrase)
+      this._gaplessArmed = false;
+      if (!this._xfadeIncoming) this._cancelCrossfade();
+      const targetGain = this._normGain || 1;
       if (this.gainNode && this.audioCtx) {
         try {
           const now = this.audioCtx.currentTime;
           this.gainNode.gain.cancelScheduledValues(now);
-          this.gainNode.gain.setValueAtTime(1, now);
+          if (this._xfadeIncoming && this.crossfadeEnabled && this.crossfadeDuration > 0) {
+            this.gainNode.gain.setValueAtTime(0.001, now);
+            this.gainNode.gain.linearRampToValueAtTime(targetGain, now + 0.25);
+          } else {
+            this.gainNode.gain.setValueAtTime(targetGain, now);
+          }
         } catch (e) {}
       }
-      // Asignar src SIEMPRE (no comparar) y reproducir inmediatamente.
-      // audio.load() fuerza al navegador a empezar a cargar el nuevo src.
+      this._xfadeIncoming = false;
       const url = this.getTrackUrl(t);
       if (!url) {
         console.warn('[Aurora] Sin URL de audio para', t.id);
@@ -257,6 +264,7 @@ Object.assign(App, {
       this.renderLyrics();
       this.updateMediaSession();
       this.preloadNextTrack();
+      this.applyNormalization(t);
       if (typeof this.updateChrome === 'function') this.updateChrome();
     },
 
@@ -334,18 +342,18 @@ Object.assign(App, {
         if (p && p.then) {
           p.then(() => {
             this.isPlaying = true;
-            // Setear gain a 1 inmediatamente (sin fundido de entrada que retrase)
-            if (this.gainNode && this.audioCtx) {
+            if (this.gainNode && this.audioCtx && !this._xfadeIncoming && !this._xfadeStarted) {
               try {
                 const now = this.audioCtx.currentTime;
                 this.gainNode.gain.cancelScheduledValues(now);
-                this.gainNode.gain.setValueAtTime(1, now);
+                this.gainNode.gain.setValueAtTime(this._normGain || 1, now);
               } catch (e) {}
             }
             this.updatePlayUI();
             this.ensureAudioGraph();
             this.requestWakeLock();
             this.trackPlayStarted();
+            this.updateMediaPosition(true);
           }).catch((e) => {
             console.warn('[Aurora] play() rechazado:', e.message);
             this._lastError = { msg: 'play() rechazado: ' + e.message, ts: Date.now() };
@@ -355,27 +363,13 @@ Object.assign(App, {
           });
         }
       } else {
-        // Fundido de salida si crossfade activo
-        if (this.crossfadeEnabled && this.gainNode && this.audioCtx) {
-          try {
-            const now = this.audioCtx.currentTime;
-            this.gainNode.gain.cancelScheduledValues(now);
-            this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
-            this.gainNode.gain.linearRampToValueAtTime(0, now + 0.3);
-            setTimeout(() => {
-              this.audio.pause();
-              if (this.gainNode) this.gainNode.gain.value = 1;
-            }, 300);
-          } catch (e) {
-            this.audio.pause();
-          }
-        } else {
-          this.audio.pause();
-        }
+        this._cancelCrossfade();
+        this.audio.pause();
         this.isPlaying = false;
         this.updatePlayUI();
         this.releaseWakeLock();
         this.trackPlayStopped();
+        this.updateMediaPosition(true);
       }
     },
 
@@ -460,8 +454,17 @@ Object.assign(App, {
     },
 
     next(auto) {
-      // Si la cola se quedó vacía o desfasada, reconstruirla desde la lista
-      if (this.playContext && this.playContext.type === 'playlist' && this.playContext.id) {
+      if (auto && this._sleepFading) return;
+      if (!auto) {
+        this._cancelCrossfade();
+        this._gaplessArmed = false;
+      }
+      if (auto && this._sleepEndOfTrack) {
+        this._fireSleep();
+        return;
+      }
+      // Reconstruir cola de playlist solo si shuffle está off (si no, pisaría la cola barajada)
+      if (!this.shuffle && this.playContext && this.playContext.type === 'playlist' && this.playContext.id) {
         const pl = this.playlists.find(p => p.id === this.playContext.id);
         if (pl && pl.trackIds.length) {
           const ids = pl.trackIds.filter(id => this.tracks.some(t => t.id === id));
@@ -473,8 +476,8 @@ Object.assign(App, {
           }
         }
       }
-      // #4 Intentar gapless si es auto-advance y está habilitado
-      if (auto && this._gaplessEnabled && this.gaplessNext()) {
+      const xfadeOn = this.crossfadeEnabled && this.crossfadeDuration > 0;
+      if (auto && !this._xfadeIncoming && !xfadeOn && this._gaplessEnabled && this.gaplessNext()) {
         return;
       }
       if (this.repeat === 'one' && auto) {
@@ -482,29 +485,20 @@ Object.assign(App, {
         this.togglePlay(true);
         return;
       }
-      let nextIdx;
-      if (this.shuffle) {
-        if (this.queue.length > 1) {
-          do { nextIdx = Math.floor(Math.random() * this.queue.length); }
-          while (nextIdx === this.queueIdx);
-        } else nextIdx = 0;
-      } else {
-        nextIdx = this.queueIdx + 1;
-        if (nextIdx >= this.queue.length) {
-          if (this.repeat === 'all' || !auto) {
-            nextIdx = 0;
-          } else {
-            this.togglePlay(false);
-            return;
-          }
-        }
+      const nextIdx = this._nextQueueIndex(!!auto);
+      if (nextIdx == null) {
+        this.togglePlay(false);
+        return;
       }
       this.playFromQueue(nextIdx);
     },
 
     prev() {
+      this._cancelCrossfade();
+      this._gaplessArmed = false;
       if (this.audio.currentTime > 3) {
         this.audio.currentTime = 0;
+        this.updateMediaPosition(true);
         return;
       }
       let prev = this.queueIdx - 1;
@@ -512,34 +506,243 @@ Object.assign(App, {
       this.playFromQueue(prev);
     },
 
+    _nextQueueIndex(auto) {
+      if (!this.queue.length) return null;
+      let nextIdx = this.queueIdx + 1;
+      if (nextIdx >= this.queue.length) {
+        if (this.repeat === 'all' || !auto) return 0;
+        return null;
+      }
+      return nextIdx;
+    },
+
+    _fisherYates(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+      }
+      return arr;
+    },
+
+    _applyShuffle() {
+      const cur = this.currentTrack && this.currentTrack.id;
+      this._originalQueue = this.queue.slice();
+      const rest = [];
+      this.queue.forEach((id, i) => {
+        if (i !== this.queueIdx) rest.push(id);
+      });
+      this._fisherYates(rest);
+      this.queue = cur ? [cur, ...rest] : rest;
+      this.queueIdx = 0;
+    },
+
+    _restoreShuffle() {
+      if (!this._originalQueue || !this._originalQueue.length) {
+        this._originalQueue = null;
+        return;
+      }
+      const cur = this.currentTrack && this.currentTrack.id;
+      const restored = this._originalQueue.filter(id => this.tracks.some(t => t.id === id));
+      this._originalQueue = null;
+      if (!restored.length) return;
+      this.queue = restored;
+      const idx = cur ? this.queue.indexOf(cur) : 0;
+      this.queueIdx = idx >= 0 ? idx : 0;
+    },
+
+    _removeFromOriginalQueue(trackId) {
+      if (!this._originalQueue || !trackId) return;
+      const i = this._originalQueue.indexOf(trackId);
+      if (i >= 0) this._originalQueue.splice(i, 1);
+    },
+
+    _setPlaybackGain(g, immediate) {
+      if (!this.gainNode || !this.audioCtx) return;
+      const v = (typeof g === 'number' && isFinite(g)) ? g : 1;
+      try {
+        const now = this.audioCtx.currentTime;
+        this.gainNode.gain.cancelScheduledValues(now);
+        if (immediate) this.gainNode.gain.setValueAtTime(v, now);
+        else {
+          this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
+          this.gainNode.gain.linearRampToValueAtTime(v, now + 0.12);
+        }
+      } catch (e) {}
+    },
+
+    async applyNormalization(track) {
+      const t = track || this.currentTrack;
+      if (!this._normalizeVolume) {
+        this._normGain = 1;
+        this._setPlaybackGain(1, true);
+        return;
+      }
+      if (!t) return;
+      const g = await this.computeTrackGain(t);
+      if (this.currentTrack && t.id !== this.currentTrack.id) return;
+      this._normGain = g;
+      this._setPlaybackGain(g, false);
+    },
+
+    _cancelCrossfade() {
+      if (this._xfadeTimer) {
+        clearTimeout(this._xfadeTimer);
+        this._xfadeTimer = null;
+      }
+      this._xfadeStarted = false;
+      if (this.gainNode && this.audioCtx && !this._xfadeIncoming && !this._sleepFading) {
+        this._setPlaybackGain(this._normGain || 1, true);
+      }
+    },
+
+    _startCrossfadeOut(remain) {
+      this._xfadeStarted = true;
+      const dur = Math.max(0.05, remain);
+      if (this.gainNode && this.audioCtx) {
+        try {
+          const now = this.audioCtx.currentTime;
+          const g = this.gainNode.gain;
+          g.cancelScheduledValues(now);
+          g.setValueAtTime(g.value, now);
+          g.linearRampToValueAtTime(0.001, now + dur);
+        } catch (e) {}
+      }
+      const ms = Math.max(40, dur * 1000 - 50);
+      this._xfadeTimer = setTimeout(() => {
+        this._xfadeTimer = null;
+        this._xfadeStarted = false;
+        this._xfadeIncoming = true;
+        this.next(true);
+      }, ms);
+    },
+
+    /* timeupdate: gapless ~80 ms antes del corte, o arranque de crossfade. */
+    tickPlaybackAdvance() {
+      if (!this.isPlaying || !this.audio || this._sleepFading) return;
+      const dur = this.audio.duration;
+      const cur = this.audio.currentTime;
+      if (!isFinite(dur) || dur <= 0) return;
+      const remain = dur - cur;
+      if (remain > 12) {
+        this._gaplessArmed = false;
+        if (this._xfadeStarted && remain > (this.crossfadeDuration || 0) + 0.5) {
+          this._cancelCrossfade();
+        }
+        return;
+      }
+      if (this._sleepEndOfTrack && remain <= 10.05 && remain > 0) {
+        this._fireSleep();
+        return;
+      }
+      if (this.repeat === 'one') return;
+      const xfade = this.crossfadeEnabled && this.crossfadeDuration > 0;
+      if (xfade) {
+        if (remain <= this.crossfadeDuration && remain > 0.02 && !this._xfadeStarted) {
+          if (this._nextQueueIndex(true) == null) return;
+          this._startCrossfadeOut(remain);
+        }
+        return;
+      }
+      if (this._gaplessEnabled && remain <= 0.08 && remain > 0 && !this._gaplessArmed) {
+        this._gaplessArmed = true;
+        if (!this.gaplessNext()) this._gaplessArmed = false;
+      }
+    },
+
+    updateMediaPosition(force) {
+      if (!('mediaSession' in navigator) || !this.audio) return;
+      const now = Date.now();
+      if (!force && this._lastPosState && now - this._lastPosState < 1000) return;
+      this._lastPosState = now;
+      try {
+        const dur = this.audio.duration;
+        if (!isFinite(dur) || dur <= 0) return;
+        const pos = Math.max(0, Math.min(this.audio.currentTime || 0, dur));
+        navigator.mediaSession.setPositionState({
+          duration: dur,
+          playbackRate: this.audio.playbackRate || 1,
+          position: pos
+        });
+        navigator.mediaSession.playbackState = this.isPlaying ? 'playing' : 'paused';
+      } catch (e) {}
+    },
+
     seekToTime(sec) {
       if (!this.audio) return;
+      this._gaplessArmed = false;
+      if (this._xfadeStarted) this._cancelCrossfade();
       const dur = this.audio.duration;
       let t = Number(sec) || 0;
       if (isFinite(dur) && dur > 0) t = Math.max(0, Math.min(dur - 0.05, t));
       else t = Math.max(0, t);
       try { this.audio.currentTime = t; } catch (e) {}
       this.updateProgress();
+      this.updateMediaPosition(true);
     },
     seekTo(ratio) {
       if (!this.audio || !this.audio.duration || isNaN(this.audio.duration)) return;
+      this._gaplessArmed = false;
+      if (this._xfadeStarted) this._cancelCrossfade();
       this.audio.currentTime = ratio * this.audio.duration;
       this.updateProgress();
+      this.updateMediaPosition(true);
     },
 
     setVolume(v) {
       this.volume = Math.max(0, Math.min(1, v));
-      this.audio.volume = this.volume;
+      if (this.audio) this.audio.volume = this.volume;
+      const pct = Math.round(this.volume * 100);
       const sv = document.getElementById('volumeSlider');
       const vv = document.getElementById('volumeValue');
-      if (sv) sv.value = Math.round(this.volume * 100);
-      if (vv) vv.textContent = Math.round(this.volume * 100) + '%';
+      const sv2 = document.getElementById('volumeSliderNp');
+      const vv2 = document.getElementById('volumeValueNp');
+      if (sv) sv.value = pct;
+      if (vv) vv.textContent = pct + '%';
+      if (sv2) sv2.value = pct;
+      if (vv2) vv2.textContent = pct + '%';
+      this._updateVolumeIcon();
       try { localStorage.setItem('aurora_volume', String(this.volume)); } catch(e){}
+    },
+
+    _updateVolumeIcon() {
+      const cls = this.volume <= 0.001 ? 'fa-volume-xmark'
+                : this.volume < 0.4 ? 'fa-volume-low'
+                : 'fa-volume-high';
+      ['btnVolume', 'npVolIcon'].forEach(id => {
+        const root = document.getElementById(id);
+        const icon = root && (root.tagName === 'I' ? root : root.querySelector('i'));
+        if (!icon) return;
+        icon.classList.remove('fa-volume-xmark', 'fa-volume-low', 'fa-volume-high');
+        icon.classList.add('fa-solid', cls);
+      });
+    },
+
+    showNpVolume(show) {
+      const el = document.getElementById('npVolume');
+      if (!el) return;
+      const on = show === undefined ? el.hasAttribute('hidden') : !!show;
+      if (on) {
+        el.removeAttribute('hidden');
+        el.classList.add('open');
+        const sl = document.getElementById('volumeSliderNp');
+        if (sl) sl.value = Math.round(this.volume * 100);
+      } else {
+        el.setAttribute('hidden', '');
+        el.classList.remove('open');
+      }
+      clearTimeout(this._npVolHide);
+      if (on) {
+        this._npVolHide = setTimeout(() => this.showNpVolume(false), 4000);
+      }
     },
 
     toggleShuffle() {
       this.shuffle = !this.shuffle;
+      if (this.shuffle) this._applyShuffle();
+      else this._restoreShuffle();
       this.setShuffleUI();
+      this.renderQueue();
+      this.saveSession();
       this.toast(this.shuffle ? this.t('toast_shuffle_on') : this.t('toast_shuffle_off'));
     },
 

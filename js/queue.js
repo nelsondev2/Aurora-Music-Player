@@ -85,7 +85,9 @@ Object.assign(App, {
     /* Añadir pista al final de la cola */
     addToQueue(trackId) {
       this.queue.push(trackId);
+      if (this.shuffle && this._originalQueue) this._originalQueue.push(trackId);
       this.renderQueue();
+      this.preloadNextTrack();
       this.toast(this.t('toast_added_to_queue'));
     },
 
@@ -95,7 +97,13 @@ Object.assign(App, {
       if (!this.queue.length && this.currentTrack) this.queue = [this.currentTrack.id];
       const insertAt = Math.min(this.queue.length, (this.queueIdx || 0) + 1);
       this.queue.splice(insertAt, 0, trackId);
+      if (this.shuffle && this._originalQueue) {
+        const origIdx = this.currentTrack ? this._originalQueue.indexOf(this.currentTrack.id) : -1;
+        const at = origIdx >= 0 ? origIdx + 1 : this._originalQueue.length;
+        this._originalQueue.splice(at, 0, trackId);
+      }
       this.renderQueue();
+      this.preloadNextTrack();
       this.toast(this.t('toast_play_next'));
     },
 

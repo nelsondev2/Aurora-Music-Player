@@ -52,15 +52,20 @@
 
     /* #15 #16 Cache de objectURLs y preload */
     _urlCache: new Map(),     // trackId → objectURL (cache para reutilizar)
-    _preloadAudio: null,      // elemento audio para precargar siguiente pista
-    _gaplessEnabled: true,    // #4 reproducción sin pausa (siempre activo)
-    _normalizeVolume: false,  // no atenuar pistas ya masterizadas
+    _preloadAudio: null,      // elemento audio para precargar siguiente pista (NO conectado al grafo)
+    _gaplessEnabled: true,    // reproducción continua; no intercambia <audio>
+    _normalizeVolume: false,  // RMS opt-in
     _trackGainCache: new Map(), // trackId → gain normalizado
     _playHistory: [],         // #11 historial de reproducción
+    _originalQueue: null,     // cola sin barajar (para deshacer shuffle)
+    _normGain: 1,
+    _decodeSkipCount: 0,
 
     /* Sleep timer */
     sleepTimer: null,
     sleepEndAt: null,
+    _sleepEndOfTrack: false,
+    _sleepFading: false,
 
     /* Wake Lock */
     wakeLock: null,
@@ -79,10 +84,9 @@
     _currentPlayStart: null,
     _currentPlayBaseTime: 0,
 
-    /* Crossfade / transición entre pistas — desactivado por defecto porque
-     * causa retardo perceptible al cambiar de canción (1.6s de fundido). */
+    /* Crossfade opt-in (0 / 3 / 6 / 12 s). 0 = off; no retrasa el next manual. */
     crossfadeEnabled: false,
-    crossfadeDuration: 0.3,  // segundos (solo si se activa manualmente)
+    crossfadeDuration: 0,
 
     /* Tema */
     theme: 'dark',  // 'dark' | 'light' | 'amoled'

@@ -528,6 +528,16 @@ const I18N = {
   },
 
   /* ---------- EQ presets ---------- */
+  eq_normal: {
+    es: 'Normal',
+    en: 'Normal',
+    pt: 'Normal',
+    zh: '正常',
+    ja: 'ノーマル',
+    fr: 'Normal',
+    it: 'Normale',
+    ru: 'Обычный'
+  },
   eq_flat: {
     es: 'Plano',
     en: 'Flat',
@@ -599,6 +609,36 @@ const I18N = {
     fr: 'Annuler la minuterie',
     it: 'Annulla timer',
     ru: 'Отменить таймер'
+  },
+  sleep_end_of_track: {
+    es: 'Fin de la canción',
+    en: 'End of track',
+    pt: 'Fim da faixa',
+    zh: '本曲结束',
+    ja: '曲の終わり',
+    fr: 'Fin du morceau',
+    it: 'Fine brano',
+    ru: 'Конец трека'
+  },
+  sleep_eot_status: {
+    es: 'Activo · al final de la canción',
+    en: 'Active · end of track',
+    pt: 'Ativo · fim da faixa',
+    zh: '进行中 · 本曲结束',
+    ja: '実行中 · 曲の終わり',
+    fr: 'Actif · fin du morceau',
+    it: 'Attivo · fine brano',
+    ru: 'Активен · конец трека'
+  },
+  toast_sleep_eot: {
+    es: 'Sleep al final de la canción',
+    en: 'Sleep at end of track',
+    pt: 'Sleep no fim da faixa',
+    zh: '本曲结束后休眠',
+    ja: '曲の終わりにスリープ',
+    fr: 'Sommeil à la fin du morceau',
+    it: 'Sleep a fine brano',
+    ru: 'Сон в конце трека'
   },
 
   /* ---------- More options menu ---------- */
@@ -2001,6 +2041,34 @@ const I18N = {
     zh: '查看专辑', ja: 'アルバムへ', fr: 'Aller à l\'album',
     it: 'Vai all\'album', ru: 'К альбому'
   },
+
+  /* ---------- Fase 2: motor de audio ---------- */
+  settings_crossfade: {
+    es: 'Fundido cruzado', en: 'Crossfade', pt: 'Crossfade',
+    zh: '交叉淡化', ja: 'クロスフェード', fr: 'Fondu enchaîné',
+    it: 'Dissolvenza', ru: 'Кроссфейд'
+  },
+  settings_crossfade_off: {
+    es: 'Off', en: 'Off', pt: 'Off',
+    zh: '关', ja: 'オフ', fr: 'Off',
+    it: 'Off', ru: 'Выкл'
+  },
+  toast_skipped_give_up: {
+    es: 'X pistas omitidas. Reproducción pausada.',
+    en: 'X tracks skipped. Playback paused.',
+    pt: 'X faixas omitidas. Reprodução pausada.',
+    zh: '已跳过 X 首。播放已暂停。',
+    ja: 'X 曲をスキップしました。再生を一時停止。',
+    fr: 'X pistes ignorées. Lecture en pause.',
+    it: 'X tracce saltate. Riproduzione in pausa.',
+    ru: 'Пропущено треков: X. Воспроизведение на паузе.'
+  },
+  toast_eq_reset: {
+    es: 'EQ restablecido', en: 'EQ reset', pt: 'EQ redefinido',
+    zh: '均衡器已重置', ja: 'EQをリセットしました', fr: 'Égaliseur réinitialisé',
+    it: 'EQ reimpostato', ru: 'Эквалайзер сброшен'
+  },
+
 
 };
 
