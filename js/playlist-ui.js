@@ -60,7 +60,7 @@ Object.assign(App, {
     },
 
     _paintLetterCover(ctx, W, H, track) {
-      const cover = (typeof track.cover === 'object' && track.cover.from) ? track.cover : { from: '#7C3AED', to: '#EC4899' };
+      const cover = (typeof track.cover === 'object' && track.cover.from) ? track.cover : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6' });
       const g = ctx.createLinearGradient(0,0,W,H);
       g.addColorStop(0, cover.from); g.addColorStop(1, cover.to);
       ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
@@ -119,7 +119,7 @@ Object.assign(App, {
 
       // Si no hay ninguna con imagen, devolver el gradiente por defecto
       if (withImage.length === 0) {
-        return pl.cover || { from: '#7C3AED', to: '#EC4899', angle: 135 };
+        return pl.cover || (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 });
       }
 
       // Hash de trackIds (orden de la lista) para invalidar solo si cambia el contenido
@@ -128,7 +128,7 @@ Object.assign(App, {
         return pl._coverCache;
       }
       if (pl._coverPending === hash) {
-        return pl.cover || { from: '#7C3AED', to: '#EC4899', angle: 135 };
+        return pl.cover || (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 });
       }
       pl._coverPending = hash;
 
@@ -264,7 +264,7 @@ Object.assign(App, {
         this._applyPlaylistCover(pl, dataUrl);
       }).catch(() => { if (pl._coverPending === hash) pl._coverPending = null; });
 
-      return pl.cover || { from: '#7C3AED', to: '#EC4899', angle: 135 };
+      return pl.cover || (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 });
     },
 
     _applyPlaylistCover(pl, dataUrl) {

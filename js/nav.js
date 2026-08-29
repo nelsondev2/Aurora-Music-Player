@@ -232,8 +232,8 @@ Object.assign(App, {
               coverEl.style.backgroundImage = 'url(' + cover + ')';
               coverEl.style.backgroundSize = 'cover';
             } else {
-              const from = (cover && cover.from) || '#7C3AED';
-              const to = (cover && cover.to) || '#EC4899';
+              const from = (cover && cover.from) || ((this.coverFallback && this.coverFallback().from) || '#6E5CFF');
+              const to = (cover && cover.to) || ((this.coverFallback && this.coverFallback().to) || '#FF7AB6');
               coverEl.style.background = 'linear-gradient(135deg,' + from + ',' + to + ')';
             }
           }

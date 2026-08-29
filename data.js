@@ -16,13 +16,13 @@ const DEFAULT_PLAYLISTS = [];
 /* Paleta para generar portadas dinámicas cuando una pista no trae
  * artwork en sus metadatos ID3. */
 const COVER_PALETTE = [
-  { from: '#7C3AED', to: '#EC4899', angle: 135 },
+  { from: '#6E5CFF', to: '#FF7AB6', angle: 135 },
   { from: '#F59E0B', to: '#EF4444', angle: 135 },
   { from: '#06B6D4', to: '#3B82F6', angle: 135 },
   { from: '#10B981', to: '#06B6D4', angle: 135 },
   { from: '#F97316', to: '#DC2626', angle: 135 },
   { from: '#1E40AF', to: '#6366F1', angle: 135 },
-  { from: '#EC4899', to: '#8B5CF6', angle: 135 },
+  { from: '#FF7AB6', to: '#8B7CFF', angle: 135 },
   { from: '#6366F1', to: '#06B6D4', angle: 135 },
   { from: '#F59E0B', to: '#EF4444', angle: 135 },
   { from: '#14B8A6', to: '#0EA5E9', angle: 135 },
@@ -948,11 +948,11 @@ const I18N = {
   theme_dark: { es: 'Oscuro', en: 'Dark', pt: 'Escuro', zh: '深色', ja: 'ダーク', fr: 'Sombre', it: 'Scuro', ru: 'Тёмная' },
   theme_light: { es: 'Claro', en: 'Light', pt: 'Claro', zh: '浅色', ja: 'ライト', fr: 'Clair', it: 'Chiaro', ru: 'Светлая' },
   theme_amoled: { es: 'AMOLED', en: 'AMOLED', pt: 'AMOLED', zh: 'AMOLED', ja: 'AMOLED', fr: 'AMOLED', it: 'AMOLED', ru: 'AMOLED' },
-  accent_purple: { es: 'Púrpura', en: 'Purple', pt: 'Roxo', zh: '紫色', ja: 'パープル', fr: 'Violet', it: 'Viola', ru: 'Фиолетовый' },
-  accent_blue: { es: 'Azul', en: 'Blue', pt: 'Azul', zh: '蓝色', ja: 'ブルー', fr: 'Bleu', it: 'Blu', ru: 'Синий' },
-  accent_green: { es: 'Verde', en: 'Green', pt: 'Verde', zh: '绿色', ja: 'グリーン', fr: 'Vert', it: 'Verde', ru: 'Зелёный' },
-  accent_orange: { es: 'Naranja', en: 'Orange', pt: 'Laranja', zh: '橙色', ja: 'オレンジ', fr: 'Orange', it: 'Arancione', ru: 'Оранжевый' },
-  accent_pink: { es: 'Rosa', en: 'Pink', pt: 'Rosa', zh: '粉色', ja: 'ピンク', fr: 'Rose', it: 'Rosa', ru: 'Розовый' },
+  accent_aurora: { es: 'Aurora', en: 'Aurora', pt: 'Aurora', zh: '极光', ja: 'オーロラ', fr: 'Aurore', it: 'Aurora', ru: 'Сияние' },
+  accent_ocean: { es: 'Océano', en: 'Ocean', pt: 'Oceano', zh: '海洋', ja: 'オーシャン', fr: 'Océan', it: 'Oceano', ru: 'Океан' },
+  accent_moss: { es: 'Musgo', en: 'Moss', pt: 'Musgo', zh: '苔绿', ja: 'モス', fr: 'Mousse', it: 'Muschio', ru: 'Мох' },
+  accent_amber: { es: 'Ámbar', en: 'Amber', pt: 'Âmbar', zh: '琥珀', ja: 'アンバー', fr: 'Ambre', it: 'Ambra', ru: 'Янтарь' },
+  accent_cherry: { es: 'Cereza', en: 'Cherry', pt: 'Cereja', zh: '樱桃', ja: 'チェリー', fr: 'Cerise', it: 'Ciliegia', ru: 'Вишня' },
 
   /* ---------- Misc ---------- */
   theme_hint: {

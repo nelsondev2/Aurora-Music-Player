@@ -90,7 +90,7 @@
 
     /* Tema */
     theme: 'dark',  // 'dark' | 'light' | 'amoled'
-    accent: 'purple',  // 'purple' | 'blue' | 'green' | 'orange' | 'pink'
+    accent: 'aurora',  // 'aurora' | 'ocean' | 'moss' | 'amber' | 'cherry'
 
     /* Idioma */
     lang: 'es',  // código ISO 639-1: 'es' | 'en' | 'pt' | 'zh' | 'ja' | 'fr' | 'it' | 'ru'

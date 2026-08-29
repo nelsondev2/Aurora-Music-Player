@@ -217,67 +217,123 @@ Object.assign(App, {
      *  Temas personalizables (#11)
      * ============================================================ */
     THEMES: {
-      dark:   { bg0: '#050509', bg1: '#0a0a12', bg2: '#14141f', bg3: '#1d1d2b', text1: '#ffffff' },
-      light:  { bg0: '#f5f5f8', bg1: '#ffffff', bg2: '#f0f0f5', bg3: '#e8e8f0', text1: '#0a0a12' },
-      amoled: { bg0: '#000000', bg1: '#000000', bg2: '#0a0a0a', bg3: '#141414', text1: '#ffffff' }
+      dark: {
+        bg0: '#050509', bg1: '#0a0a12', bg2: '#14141f', bg3: '#1d1d2b',
+        text1: '#ffffff',
+        text2: 'rgba(255,255,255,0.72)',
+        text3: 'rgba(255,255,255,0.48)',
+        text4: 'rgba(255,255,255,0.30)',
+        surface: 'rgba(255,255,255,0.05)',
+        surface2: 'rgba(255,255,255,0.08)',
+        surfaceHi: 'rgba(255,255,255,0.12)',
+        border: 'rgba(255,255,255,0.08)',
+        blurBg: 'rgba(10, 10, 18, 0.85)',
+        toastBg: 'rgba(20, 20, 30, 0.95)',
+        toastText: '#ffffff'
+      },
+      light: {
+        bg0: '#F4F1EA', bg1: '#FFFCF7', bg2: '#EBE6DC', bg3: '#E0D9CC',
+        text1: '#1A1612',
+        text2: 'rgba(26,22,18,0.72)',
+        text3: 'rgba(26,22,18,0.52)',
+        text4: 'rgba(26,22,18,0.40)',
+        surface: 'rgba(20,16,12,0.05)',
+        surface2: 'rgba(20,16,12,0.08)',
+        surfaceHi: 'rgba(20,16,12,0.12)',
+        border: 'rgba(20,16,12,0.10)',
+        blurBg: 'rgba(255, 250, 244, 0.92)',
+        toastBg: 'rgba(244, 241, 234, 0.96)',
+        toastText: '#1A1612'
+      },
+      amoled: {
+        bg0: '#000000', bg1: '#000000', bg2: '#0a0a0a', bg3: '#141414',
+        text1: '#ffffff',
+        text2: 'rgba(255,255,255,0.72)',
+        text3: 'rgba(255,255,255,0.50)',
+        text4: 'rgba(255,255,255,0.34)',
+        surface: 'rgba(255,255,255,0.06)',
+        surface2: 'rgba(255,255,255,0.09)',
+        surfaceHi: 'rgba(255,255,255,0.14)',
+        border: 'rgba(255,255,255,0.08)',
+        blurBg: 'rgba(0, 0, 0, 0.92)',
+        toastBg: 'rgba(12, 12, 12, 0.96)',
+        toastText: '#ffffff'
+      }
     },
     ACCENTS: {
-      purple: { from: '#7C3AED', to: '#EC4899', accent: '#a855f7', accent2: '#ec4899' },
-      blue:   { from: '#2563EB', to: '#06B6D4', accent: '#3b82f6', accent2: '#06b6d4' },
-      green:  { from: '#059669', to: '#10B981', accent: '#10b981', accent2: '#84cc16' },
-      orange: { from: '#EA580C', to: '#F59E0B', accent: '#f97316', accent2: '#f59e0b' },
-      pink:   { from: '#DB2777', to: '#EC4899', accent: '#ec4899', accent2: '#f472b6' }
+      aurora: { from: '#6E5CFF', to: '#FF7AB6', accent: '#8B7CFF', accent2: '#FF7AB6', fill: '#6B5AE8', fillLight: '#5344C9' },
+      ocean:  { from: '#1A6A88', to: '#3EC8B8', accent: '#3AA8C0', accent2: '#5ED4C4', fill: '#1F7A92', fillLight: '#186878' },
+      moss:   { from: '#2A6B48', to: '#A8C86A', accent: '#5A9A68', accent2: '#B4D07A', fill: '#3D7A52', fillLight: '#2F6844' },
+      amber:  { from: '#C45C18', to: '#E8B84A', accent: '#E09438', accent2: '#F0C46A', fill: '#C87820', fillLight: '#A86218' },
+      cherry: { from: '#A61B3A', to: '#E85A7A', accent: '#D44A68', accent2: '#F090A0', fill: '#B83852', fillLight: '#9A2E44' }
+    },
+    _ACCENT_ALIASES: { purple: 'aurora', blue: 'ocean', green: 'moss', orange: 'amber', pink: 'cherry' },
+
+    _migrateAccent(id) {
+      const mapped = (this._ACCENT_ALIASES && this._ACCENT_ALIASES[id]) || id;
+      return (this.ACCENTS && this.ACCENTS[mapped]) ? mapped : 'aurora';
+    },
+
+    _hexToRgb(hex) {
+      let h = String(hex || '').replace('#', '');
+      if (h.length === 3) h = h.split('').map(c => c + c).join('');
+      const n = parseInt(h, 16);
+      if (!isFinite(n)) return '139, 124, 255';
+      return ((n >> 16) & 255) + ', ' + ((n >> 8) & 255) + ', ' + (n & 255);
+    },
+
+    coverFallback() {
+      const a = this.ACCENTS[this._migrateAccent(this.accent)] || this.ACCENTS.aurora;
+      return { from: a.from, to: a.to, angle: 135 };
     },
 
     loadTheme() {
       try {
         this.theme = localStorage.getItem('aurora_theme') || 'dark';
-        this.accent = localStorage.getItem('aurora_accent') || 'purple';
-      } catch (e) {}
+        if (!this.THEMES[this.theme]) this.theme = 'dark';
+        this.accent = this._migrateAccent(localStorage.getItem('aurora_accent') || 'aurora');
+      } catch (e) {
+        this.theme = 'dark';
+        this.accent = 'aurora';
+      }
       this.applyTheme();
     },
 
     applyTheme() {
       const root = document.documentElement;
       const t = this.THEMES[this.theme] || this.THEMES.dark;
-      const a = this.ACCENTS[this.accent] || this.ACCENTS.purple;
+      this.accent = this._migrateAccent(this.accent);
+      const a = this.ACCENTS[this.accent] || this.ACCENTS.aurora;
+      const light = this.theme === 'light';
+      const accent = light ? (a.fillLight || a.fill || a.accent) : a.accent;
+      const fill = light ? (a.fillLight || a.fill || a.accent) : (a.fill || a.accent);
+
       root.style.setProperty('--bg-0', t.bg0);
       root.style.setProperty('--bg-1', t.bg1);
       root.style.setProperty('--bg-2', t.bg2);
       root.style.setProperty('--bg-3', t.bg3);
       root.style.setProperty('--text-1', t.text1);
-      root.style.setProperty('--accent', a.accent);
+      root.style.setProperty('--text-2', t.text2);
+      root.style.setProperty('--text-3', t.text3);
+      root.style.setProperty('--text-4', t.text4);
+      root.style.setProperty('--surface', t.surface);
+      root.style.setProperty('--surface-2', t.surface2);
+      root.style.setProperty('--surface-hi', t.surfaceHi);
+      root.style.setProperty('--border', t.border);
+      root.style.setProperty('--blur-bg', t.blurBg);
+      root.style.setProperty('--toast-bg', t.toastBg);
+      root.style.setProperty('--toast-text', t.toastText);
+      root.style.setProperty('--accent', accent);
       root.style.setProperty('--accent-2', a.accent2);
-      // Para el tema claro, ajustar variables derivadas
-      if (this.theme === 'light') {
-        root.style.setProperty('--surface', 'rgba(0,0,0,0.05)');
-        root.style.setProperty('--surface-2', 'rgba(0,0,0,0.08)');
-        root.style.setProperty('--surface-hi', 'rgba(0,0,0,0.12)');
-        root.style.setProperty('--border', 'rgba(0,0,0,0.10)');
-        root.style.setProperty('--text-2', 'rgba(0,0,0,0.72)');
-        root.style.setProperty('--text-3', 'rgba(0,0,0,0.48)');
-        root.style.setProperty('--text-4', 'rgba(0,0,0,0.40)');
-        // Nav inferior y toast: fondo claro, texto oscuro
-        root.style.setProperty('--blur-bg', 'rgba(255, 255, 255, 0.92)');
-        root.style.setProperty('--toast-bg', 'rgba(245, 245, 248, 0.96)');
-        root.style.setProperty('--toast-text', '#0a0a12');
-        // Marcar el tema en el <html> para reglas CSS específicas
-        root.setAttribute('data-theme', 'light');
-      } else {
-        root.style.setProperty('--surface', 'rgba(255,255,255,0.05)');
-        root.style.setProperty('--surface-2', 'rgba(255,255,255,0.08)');
-        root.style.setProperty('--surface-hi', 'rgba(255,255,255,0.12)');
-        root.style.setProperty('--border', 'rgba(255,255,255,0.08)');
-        root.style.setProperty('--text-2', 'rgba(255,255,255,0.72)');
-        root.style.setProperty('--text-3', 'rgba(255,255,255,0.48)');
-        root.style.setProperty('--text-4', 'rgba(255,255,255,0.30)');
-        // Nav inferior y toast: fondo oscuro, texto claro
-        root.style.setProperty('--blur-bg', 'rgba(10, 10, 18, 0.85)');
-        root.style.setProperty('--toast-bg', 'rgba(20, 20, 30, 0.95)');
-        root.style.setProperty('--toast-text', '#ffffff');
-        root.setAttribute('data-theme', this.theme);
+      root.style.setProperty('--accent-fill', fill);
+      root.style.setProperty('--accent-on-fill', '#ffffff');
+      root.style.setProperty('--accent-rgb', this._hexToRgb(fill));
+      if (!this.currentTrack) {
+        root.style.setProperty('--cover-from', a.from);
+        root.style.setProperty('--cover-to', a.to);
       }
-      // Actualizar meta theme-color
+      root.setAttribute('data-theme', this.theme);
+
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta) meta.setAttribute('content', t.bg0);
     },
@@ -290,10 +346,11 @@ Object.assign(App, {
     },
 
     setAccent(accent) {
-      this.accent = accent;
-      try { localStorage.setItem('aurora_accent', accent); } catch (e) {}
+      this.accent = this._migrateAccent(accent);
+      try { localStorage.setItem('aurora_accent', this.accent); } catch (e) {}
       this.applyTheme();
-      this.toast(this.t('toast_accent') + ' ' + accent);
+      const label = this.t('accent_' + this.accent);
+      this.toast(this.t('toast_accent') + ' ' + (label && label !== 'accent_' + this.accent ? label : this.accent));
     },
 
     /* ============================================================

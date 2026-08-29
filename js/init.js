@@ -171,7 +171,7 @@ Object.assign(App, {
           name: this.t('my_music_playlist'),
           description: this.t('my_music_desc'),
           trackIds: [],
-          cover: { from: '#7C3AED', to: '#EC4899', angle: 135 },
+          cover: (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 }),
           isDefault: true
         };
         this.playlists.unshift(pl);  // Al principio de la lista

@@ -106,8 +106,8 @@ Object.assign(App, {
           coverEl.style.background = '';
           coverEl.innerHTML = '<img src="' + cover + '" alt="">';
         } else {
-          const from = (cover && cover.from) || '#7C3AED';
-          const to = (cover && cover.to) || '#EC4899';
+          const from = (cover && cover.from) || ((this.coverFallback && this.coverFallback().from) || '#6E5CFF');
+          const to = (cover && cover.to) || ((this.coverFallback && this.coverFallback().to) || '#FF7AB6');
           coverEl.style.background = 'linear-gradient(135deg, ' + from + ', ' + to + ')';
           const iconClass = pl.id === this.DEFAULT_PLAYLIST_ID
             ? 'fa-solid fa-music'
@@ -312,7 +312,7 @@ Object.assign(App, {
 
     createPlaylist(name, desc, trackIds) {
       const id = 'pl-' + Date.now();
-      const colors = ['#7C3AED','#EC4899','#F59E0B','#10B981','#06B6D4','#1E40AF','#F97316','#DC2626','#6366F1','#3B82F6'];
+      const colors = ['#6E5CFF','#FF7AB6','#1A6A88','#3EC8B8','#2A6B48','#A8C86A','#C45C18','#E8B84A','#A61B3A','#E85A7A'];
       const from = colors[Math.floor(Math.random() * colors.length)];
       const to = colors[Math.floor(Math.random() * colors.length)];
       const pl = {

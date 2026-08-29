@@ -52,7 +52,7 @@ Object.assign(App, {
       }
 
       // Colores dinámicos (para el fondo y visualizador)
-      const cover = (typeof t.cover === 'object' && t.cover.from) ? t.cover : { from: '#7C3AED', to: '#EC4899', angle: 135 };
+      const cover = (typeof t.cover === 'object' && t.cover.from) ? t.cover : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 });
       document.documentElement.style.setProperty('--cover-from', cover.from);
       document.documentElement.style.setProperty('--cover-to', cover.to);
       document.documentElement.style.setProperty('--cover-angle', (cover.angle || 135) + 'deg');
@@ -101,7 +101,7 @@ Object.assign(App, {
       }
 
       // Generar gradiente dinámico
-      const cover = (typeof track.cover === 'object' && track.cover.from) ? track.cover : { from: '#7C3AED', to: '#EC4899' };
+      const cover = (typeof track.cover === 'object' && track.cover.from) ? track.cover : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6' });
       const grad = ctx.createLinearGradient(0, 0, w, h);
       grad.addColorStop(0, cover.from);
       grad.addColorStop(1, cover.to);

@@ -325,3 +325,9 @@ No es un panel de tests de demo; es instrumentación de producto.
 ---
 
 *Documento vivo. Actualizar la tabla de bugs al ir cerrándolos. El producto no es la lista: es que Aurora se abra y se quiera dejar sonando.*
+
+---
+
+## 11. Siguiente: interfaz y estilo
+
+Las fases 0–6 cierran *producto*. El look sigue en ~78/100 (tipo de sistema, acentos Tailwind, FA, desktop = teléfono partido). El plan de piel, marca y temas está en [`PLAN-UI.md`](PLAN-UI.md).

@@ -198,7 +198,7 @@ Object.assign(App, {
       const c = document.createElement('canvas');
       c.width = size; c.height = size;
       const ctx = c.getContext('2d');
-      const cover = (typeof track.cover === 'object' && track.cover.from) ? track.cover : { from: '#7C3AED', to: '#EC4899' };
+      const cover = (typeof track.cover === 'object' && track.cover.from) ? track.cover : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6' });
       const g = ctx.createLinearGradient(0,0,size,size);
       g.addColorStop(0, cover.from);
       g.addColorStop(1, cover.to);
