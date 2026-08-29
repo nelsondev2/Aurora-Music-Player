@@ -19,7 +19,7 @@ Abre `index.html` en el navegador. No hace falta build.
 - Letras sincronizadas (LRC), editor, offset, loop y karaoke si el archivo trae tags de palabra
 - Temas oscuro / claro / AMOLED, acentos e i18n (es, en, pt, zh, ja, fr, it, ru)
 - Estadísticas, historial y restauración de sesión
-- En escritorio (≥ 900 px): Now Playing a la izquierda y el resto a la derecha
+- En escritorio (≥ 900 px): Now Playing a la izquierda, sidebar y hub a la derecha (tablet 600–899: marco 520 px)
 
 ## Uso
 

@@ -516,10 +516,25 @@ Object.assign(App, {
     },
 
     syncDesktopLayout() {
-      const wide = !!(window.matchMedia && window.matchMedia('(min-width: 900px)').matches) && !window.webxdc;
-      document.documentElement.classList.toggle('aurora-wide', wide);
+      const mq = window.matchMedia;
+      const isWebxdc = !!window.webxdc;
+      const wide = !isWebxdc && !!(mq && mq('(min-width: 900px)').matches);
+      const tablet = !isWebxdc && !wide && !!(mq && mq('(min-width: 600px)').matches);
+      const html = document.documentElement;
+      const wasWide = html.classList.contains('aurora-wide');
+      html.classList.toggle('aurora-wide', wide);
+      html.classList.toggle('aurora-tablet', tablet);
       const screen = document.getElementById('deviceScreen');
-      if (screen) screen.classList.toggle('aurora-wide', wide);
+      if (screen) {
+        screen.classList.toggle('aurora-wide', wide);
+        screen.classList.toggle('aurora-tablet', tablet);
+      }
+      const nav = document.querySelector('.bottom-nav');
+      if (nav) nav.setAttribute('aria-orientation', wide ? 'vertical' : 'horizontal');
+      if (wasWide !== wide && typeof this.showView === 'function') {
+        const lyricsOn = !!(document.getElementById('viewLyrics') && document.getElementById('viewLyrics').classList.contains('active'));
+        this.showView(lyricsOn ? 'lyrics' : 'home');
+      }
       if (typeof this.updateChrome === 'function') this.updateChrome();
     },
 

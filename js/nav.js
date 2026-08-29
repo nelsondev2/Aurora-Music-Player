@@ -19,7 +19,7 @@ Object.assign(App, {
       const wide = document.documentElement.classList.contains('aurora-wide');
       const showMini = !wide && !!(this.currentTrack) && !lyrics && (!player || sheets.length > 0);
       screen.classList.toggle('has-mini', showMini);
-      screen.classList.toggle('chrome-hidden', lyrics);
+      screen.classList.toggle('chrome-hidden', lyrics && !wide);
       this.updateMiniPlayer();
     },
 

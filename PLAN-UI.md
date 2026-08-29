@@ -157,19 +157,19 @@ Cada fase es un PR. No se mezcla con features de audio. Criterio de salida = scr
 
 **Salida:** Inicio vacío, biblioteca con 0 pistas y “sin letra” se sienten familia.
 
-### Fase E — Desktop y tablet (1–2 días)
+### Fase E — Desktop y tablet (1–2 días) ✅
 
-**Meta:** ≥ 900 px es una app de escritorio; 600–899 es tablet; webxdc no cambia.
+**Meta:** ≥ 900 px es una app de escritorio; 600–899 es tablet; webxdc no cambia. **Hecha.**
 
-- [ ] **Tablet (600–899, no webxdc):** marco más ancho (520), NP no se parte.
-- [ ] **Desktop (≥ 900, no webxdc):**
+- [x] **Tablet (600–899, no webxdc):** marco más ancho (520), NP no se parte.
+- [x] **Desktop (≥ 900, no webxdc):**
   - Columna NP 400–440 px, *padding de producto* (no el safe-area de teléfono).
   - Hub a la derecha con **sidebar vertical** (Inicio / Fav / Buscar / Biblioteca) — el bottom-nav desaparece.
   - Sheets full (EQ, letras editor, ajustes) ocupan la columna derecha, no un overlay a 430 px.
   - Sheets cortos (confirm, sleep, volumen) centran en el hub, no en toda la ventana.
-- [ ] `syncDesktopLayout()` ya existe: extender breakpoints, no otro flag.
-- [ ] Hover de verdad: filas, knobs, nav. Cursor pointer. Nada de `:active` como único feedback.
-- [ ] Ventana < 600 o `window.webxdc`: comportamiento actual (marco).
+- [x] `syncDesktopLayout()` ya existe: extender breakpoints, no otro flag.
+- [x] Hover de verdad: filas, knobs, nav. Cursor pointer. Nada de `:active` como único feedback.
+- [x] Ventana < 600 o `window.webxdc`: comportamiento actual (marco).
 
 **Salida:** a 1280×800 no parece un iPhone incrustado. A 390, idéntico a hoy.
 
@@ -215,7 +215,7 @@ La fase de UI se da por cerrada cuando:
 - [ ] Un desconocido ve Now Playing oscuro y no pregunta “¿es un template?”.
 - [ ] Tema claro se puede usar de día (contraste de nav, chips, toasts).
 - [ ] AMOLED no tiene grises `#14141f` residuales.
-- [ ] Desktop 1280 px: sidebar + NP, sin bottom-nav.
+- [x] Desktop 1280 px: sidebar + NP, sin bottom-nav.
 - [ ] `fa-solid` / `fa-regular` = 0 en el repo.
 - [ ] `docs/*.jpg` son recortes de la app.
 - [ ] `node audit-i18n.js` exit 0.
