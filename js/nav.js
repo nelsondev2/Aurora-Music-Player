@@ -110,17 +110,34 @@ Object.assign(App, {
     renderHome() {
       const root = document.getElementById('homeContent');
       if (!root) return;
+      const homeView = document.getElementById('viewHome');
+      if (homeView) homeView.classList.toggle('is-empty', !this.tracks.length);
       if (!this.tracks.length) {
         root.innerHTML = `
-          <div class="home-empty">
-            <div class="empty-icon"><i class="fa-solid fa-music"></i></div>
-            <h2>${this.esc(this.t('empty_library_title'))}</h2>
-            <p>${this.esc(this.t('empty_library_hint'))}</p>
-            <button class="primary-btn empty-cta" id="btnHomeLoad">
-              <i class="fa-solid fa-cloud-arrow-up" style="margin-right:8px"></i>
+          <div class="home-welcome">
+            <div class="home-welcome-aurora" aria-hidden="true">
+              <span class="hw-orb hw-orb-a"></span>
+              <span class="hw-orb hw-orb-b"></span>
+              <span class="hw-orb hw-orb-c"></span>
+            </div>
+            <div class="home-welcome-mark">
+              <img src="icon.png" alt="" width="88" height="88">
+            </div>
+            <p class="home-welcome-brand">Aurora</p>
+            <h2>${this.esc(this.t('home_welcome_title'))}</h2>
+            <p class="home-welcome-lead">${this.esc(this.t('home_welcome_lead'))}</p>
+            <button class="primary-btn home-welcome-cta" id="btnHomeLoad" type="button">
+              <i class="fa-solid fa-plus"></i>
               <span>${this.esc(this.t('load_music'))}</span>
             </button>
-            <p class="empty-hint">${this.esc(this.t('empty_format_hint'))}</p>
+            <ul class="home-welcome-formats" aria-label="${this.esc(this.t('empty_format_hint'))}">
+              <li>MP3</li><li>FLAC</li><li>M4A</li><li>WAV</li><li>OGG</li>
+            </ul>
+            <div class="home-welcome-perks">
+              <div><i class="fa-solid fa-align-left" aria-hidden="true"></i><span>${this.esc(this.t('home_perk_lyrics'))}</span></div>
+              <div><i class="fa-solid fa-list-ul" aria-hidden="true"></i><span>${this.esc(this.t('home_perk_playlists'))}</span></div>
+              <div><i class="fa-solid fa-lock" aria-hidden="true"></i><span>${this.esc(this.t('home_perk_offline'))}</span></div>
+            </div>
           </div>`;
         const btn = document.getElementById('btnHomeLoad');
         if (btn) btn.addEventListener('click', () => this.openFilePicker());

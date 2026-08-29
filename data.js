@@ -2223,6 +2223,42 @@ const I18N = {
     it: 'Incolla o modifica', ru: 'Вставить или править'
   },
 
+  home_welcome_title: {
+    es: 'Tu música, aquí',
+    en: 'Your music, right here',
+    pt: 'A tua música, aqui',
+    zh: '你的音乐，就在这里',
+    ja: 'あなたの音楽を、ここに',
+    fr: 'Votre musique, ici',
+    it: 'La tua musica, qui',
+    ru: 'Твоя музыка здесь'
+  },
+  home_welcome_lead: {
+    es: 'Carga canciones del teléfono. Sin cuenta, sin nube, sin anuncios.',
+    en: 'Load songs from your phone. No account, no cloud, no ads.',
+    pt: 'Carregue músicas do telemóvel. Sem conta, sem nuvem, sem anúncios.',
+    zh: '从手机加载歌曲。无需账号、云端或广告。',
+    ja: 'スマホから曲を読み込む。アカウントもクラウドも広告もなし。',
+    fr: 'Chargez des titres depuis le téléphone. Sans compte, sans cloud, sans pubs.',
+    it: 'Carica brani dal telefono. Niente account, cloud o pubblicità.',
+    ru: 'Загрузите песни с телефона. Без аккаунта, облака и рекламы.'
+  },
+  home_perk_lyrics: {
+    es: 'Letras sincronizadas', en: 'Synced lyrics', pt: 'Letra sincronizada',
+    zh: '同步歌词', ja: '同期歌詞', fr: 'Paroles synchronisées',
+    it: 'Testi sincronizzati', ru: 'Синхронный текст'
+  },
+  home_perk_playlists: {
+    es: 'Listas y favoritos', en: 'Playlists and favorites', pt: 'Listas e favoritos',
+    zh: '歌单和收藏', ja: 'リストとお気に入り', fr: 'Listes et favoris',
+    it: 'Liste e preferiti', ru: 'Плейлисты и избранное'
+  },
+  home_perk_offline: {
+    es: 'Local y privado', en: 'Local and private', pt: 'Local e privado',
+    zh: '本地且私密', ja: 'ローカルでプライベート', fr: 'Local et privé',
+    it: 'Locale e privato', ru: 'Локально и приватно'
+  },
+
 };
 
 window.TRACKS = TRACKS;

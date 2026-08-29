@@ -3110,3 +3110,186 @@ button,
 @media (prefers-reduced-motion: reduce) {
   .marquee-inner { animation: none !important; transform: none !important; }
 }
+
+
+/* =====================================================================
+ *  Inicio — primer arranque + listas clicables
+ * ===================================================================== */
+.view-home.is-empty .home-header { display: none; }
+.view-home.is-empty {
+  padding-top: calc(var(--safe-top) + 8px);
+}
+
+.home-welcome {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-height: 100%;
+  padding: 8px 6px 20px;
+  overflow: hidden;
+}
+.home-welcome-aurora {
+  position: absolute;
+  inset: -8% -40% 38%;
+  pointer-events: none;
+  filter: blur(48px);
+  opacity: 0.95;
+}
+.hw-orb {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+.hw-orb-a {
+  width: 240px; height: 240px;
+  left: 4%; top: 6%;
+  background: var(--accent);
+  opacity: 0.5;
+  animation: hwDrift 14s ease-in-out infinite;
+}
+.hw-orb-b {
+  width: 200px; height: 200px;
+  right: 0; top: 14%;
+  background: var(--accent-2);
+  opacity: 0.42;
+  animation: hwDrift 18s ease-in-out infinite reverse;
+}
+.hw-orb-c {
+  width: 150px; height: 150px;
+  left: 38%; top: 48%;
+  background: #6366f1;
+  opacity: 0.28;
+  animation: hwDrift 16s ease-in-out infinite;
+}
+@keyframes hwDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(16px, -14px) scale(1.07); }
+}
+.home-welcome-mark {
+  position: relative;
+  z-index: 1;
+  width: 84px;
+  height: 84px;
+  margin-top: 18px;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow:
+    0 20px 44px color-mix(in srgb, var(--accent) 38%, transparent),
+    0 0 0 1px rgba(255,255,255,0.1);
+}
+.home-welcome-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+.home-welcome-brand {
+  position: relative;
+  z-index: 1;
+  margin: 16px 0 0;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  font-weight: 700;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.home-welcome h2 {
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+  margin: 10px 16px 0;
+  max-width: 280px;
+  color: var(--text-1);
+}
+.home-welcome-lead {
+  position: relative;
+  z-index: 1;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-2);
+  max-width: 280px;
+  margin: 10px 16px 22px;
+}
+.home-welcome-cta {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 260px);
+  min-width: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.home-welcome-formats {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 0;
+}
+.home-welcome-formats li {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 4px 9px;
+}
+.home-welcome-perks {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(100%, 280px);
+  margin-top: 20px;
+}
+.home-welcome-perks > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+}
+.home-welcome-perks i {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.pl-card, .pl-row, .home-card { cursor: pointer; }
+.playlist-grid { list-style: none; padding: 0; margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-orb { animation: none !important; }
+}

@@ -58,9 +58,14 @@ Object.assign(App, {
       if (!s.classList.contains('open')) {
         s._prevFocus = document.activeElement;
         this._sheetStack.push(id);
+      } else {
+        const i = this._sheetStack.lastIndexOf(id);
+        if (i >= 0) this._sheetStack.splice(i, 1);
+        this._sheetStack.push(id);
       }
       s.classList.add('open');
       s.setAttribute('aria-hidden', 'false');
+      this._syncSheetLayer();
       const panel = s.querySelector('.sheet-panel');
       if (panel) {
         panel.setAttribute('role', 'dialog');
@@ -84,6 +89,8 @@ Object.assign(App, {
           const i = this._sheetStack.lastIndexOf(id);
           if (i >= 0) this._sheetStack.splice(i, 1);
         }
+        s.style.zIndex = '';
+        this._syncSheetLayer();
         if ((!this._sheetStack || !this._sheetStack.length) && prev && typeof prev.focus === 'function') {
           try { prev.focus(); } catch (e) {}
         }
@@ -106,6 +113,14 @@ Object.assign(App, {
         this._editingPlaylistId = null;
       }
       if (typeof this.updateChrome === 'function') this.updateChrome();
+    },
+
+    _syncSheetLayer() {
+      const stack = this._sheetStack || [];
+      stack.forEach((sid, i) => {
+        const el = document.getElementById(sid);
+        if (el) el.style.zIndex = String(100 + i);
+      });
     },
 
     _trapSheetFocus(e) {

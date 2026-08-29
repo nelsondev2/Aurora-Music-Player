@@ -74,6 +74,8 @@ Object.assign(App, {
       if (!pl) return;
       this._editingPlaylistId = playlistId;
       this.renderEditPlaylist();
+      const titleEl = document.getElementById('editPlaylistTitle');
+      if (titleEl) titleEl.textContent = pl.name;
       // Mostrar/ocultar el botón "Eliminar lista" según sea predefinida
       const btnDeleteFull = document.getElementById('btnDeletePlaylistFull');
       if (btnDeleteFull) {
