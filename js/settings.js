@@ -482,6 +482,7 @@ Object.assign(App, {
             this.crossfadeEnabled = s.crossfade > 0;
           }
           if (typeof s.marquee === 'boolean') this._marqueeEnabled = s.marquee;
+          if (typeof s.vinyl === 'boolean') this._vinylEnabled = s.vinyl;
         }
       } catch (e) {}
     },
@@ -491,7 +492,8 @@ Object.assign(App, {
           gapless: !!this._gaplessEnabled,
           normalize: !!this._normalizeVolume,
           crossfade: this.crossfadeDuration || 0,
-          marquee: this._marqueeEnabled !== false
+          marquee: this._marqueeEnabled !== false,
+          vinyl: !!this._vinylEnabled
         }));
       } catch (e) {}
     },
@@ -502,6 +504,9 @@ Object.assign(App, {
       if (n) n.checked = !!this._normalizeVolume;
       const m = document.getElementById('toggleMarquee');
       if (m) m.checked = this._marqueeEnabled !== false;
+      const v = document.getElementById('toggleVinyl');
+      if (v) v.checked = !!this._vinylEnabled;
+      if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
       const xf = this.crossfadeDuration || 0;
       document.querySelectorAll('.xfade-opt').forEach(b => {
         b.classList.toggle('active', Number(b.dataset.xfade) === xf);

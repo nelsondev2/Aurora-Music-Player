@@ -174,23 +174,12 @@
         <section class="controls-secondary">
           <button class="sec-btn" id="btnLyrics" data-i18n-aria="lyrics" aria-label="Letras">
             <svg class="ico" aria-hidden="true"><use href="#i-align-left"></use></svg>
-            <span data-i18n="lyrics">Letras</span>
           </button>
           <button class="sec-btn" id="btnQueue" data-i18n-aria="queue" aria-label="Cola">
             <svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg>
-            <span data-i18n="queue">Cola</span>
           </button>
           <button class="sec-btn" id="btnVolume" data-i18n-aria="volume" aria-label="Volumen">
             <svg class="ico" aria-hidden="true"><use href="#i-volume-high"></use></svg>
-            <span data-i18n="volume">Volumen</span>
-          </button>
-          <button class="sec-btn" id="btnEqualizer" data-i18n-aria="equalizer" aria-label="Ecualizador">
-            <svg class="ico" aria-hidden="true"><use href="#i-sliders"></use></svg>
-            <span>EQ</span>
-          </button>
-          <button class="sec-btn" id="btnSleep" data-i18n-aria="sleep" aria-label="Temporizador">
-            <svg class="ico" aria-hidden="true"><use href="#i-moon"></use></svg>
-            <span data-i18n="sleep">Sleep</span>
           </button>
         </section>
 
@@ -580,6 +569,14 @@
               <svg class="ico" aria-hidden="true"><use href="#i-cloud-arrow-up"></use></svg>
               <span data-i18n="menu_load_music">Cargar música del dispositivo</span>
             </button>
+            <button class="menu-row" id="menuEqualizer" type="button">
+              <svg class="ico" aria-hidden="true"><use href="#i-sliders"></use></svg>
+              <span data-i18n="equalizer">Ecualizador</span>
+            </button>
+            <button class="menu-row" id="menuSleep" type="button">
+              <svg class="ico" aria-hidden="true"><use href="#i-moon"></use></svg>
+              <span data-i18n="sleep">Sleep</span>
+            </button>
             <button class="menu-row" id="menuAddToPlaylist">
               <svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg>
               <span data-i18n="menu_add_to_playlist">Añadir a una lista</span>
@@ -757,6 +754,10 @@
             <label class="settings-row" for="toggleMarquee">
               <span data-i18n="settings_marquee">Marquee en títulos largos</span>
               <input type="checkbox" id="toggleMarquee" checked />
+            </label>
+            <label class="settings-row" for="toggleVinyl">
+              <span data-i18n="settings_vinyl">Vinilo en la portada</span>
+              <input type="checkbox" id="toggleVinyl" />
             </label>
             <button class="menu-row" id="menuShortcutsSettings" type="button">
               <svg class="ico" aria-hidden="true"><use href="#i-keyboard"></use></svg>

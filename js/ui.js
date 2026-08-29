@@ -305,9 +305,11 @@ Object.assign(App, {
     updateSleepStatus() {
       const el = document.getElementById('sleepStatus');
       const btn = document.getElementById('btnSleep');
+      const menu = document.getElementById('menuSleep');
       if (this._sleepEndOfTrack) {
         if (el) el.textContent = this.t('sleep_eot_status');
         if (btn) btn.classList.add('active');
+        if (menu) menu.classList.add('active');
         return;
       }
       if (this.sleepEndAt) {
@@ -317,9 +319,11 @@ Object.assign(App, {
         const label = `${this.t('sleep_active_prefix')} ${m}:${String(s).padStart(2,'0')} ${this.t('sleep_remaining')}`;
         if (el) el.textContent = label;
         if (btn) btn.classList.add('active');
+        if (menu) menu.classList.add('active');
       } else {
         if (el) el.textContent = '';
         if (btn) btn.classList.remove('active');
+        if (menu) menu.classList.remove('active');
       }
     },
 

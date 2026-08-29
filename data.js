@@ -2344,6 +2344,11 @@ const I18N = {
     zh: '长标题滚动', ja: '長いタイトルをスクロール', fr: 'Marquee des titres longs',
     it: 'Marquee per titoli lunghi', ru: 'Бегущая строка длинных названий'
   },
+  settings_vinyl: {
+    es: 'Vinilo en la portada', en: 'Vinyl on artwork', pt: 'Vinil na capa',
+    zh: '封面黑胶效果', ja: 'ジャケットにレコード', fr: 'Vinyle sur la pochette',
+    it: 'Vinile sulla copertina', ru: 'Винил на обложке'
+  },
   settings_sleep_fade: {
     es: 'El temporizador sleep hace un fade-out de 10 s al apagar.',
     en: 'The sleep timer fades out over 10 s before stopping.',

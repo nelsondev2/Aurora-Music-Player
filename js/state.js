@@ -137,6 +137,7 @@
     _lastError: null,
     VERSION: '1.0.0',
     _marqueeEnabled: true,
+    _vinylEnabled: false,
 
     ico(name, extra) {
       const cls = extra ? ('ico ' + extra) : 'ico';

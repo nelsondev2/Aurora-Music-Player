@@ -276,6 +276,12 @@ Object.assign(App, {
           if (artist) this._syncMarquee(artist);
         }
       });
+      const toggleVinyl = document.getElementById('toggleVinyl');
+      if (toggleVinyl) toggleVinyl.addEventListener('change', () => {
+        this._vinylEnabled = !!toggleVinyl.checked;
+        this.savePlaybackSettings();
+        if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
+      });
       const btnShortcuts = document.getElementById('menuShortcutsSettings');
       if (btnShortcuts) btnShortcuts.addEventListener('click', () => {
         this.closeSheet('sheetSettings');
@@ -334,7 +340,17 @@ Object.assign(App, {
         });
       }
 
-      // EQ
+      // EQ / Sleep — en el menú ··· (ya no ocupan la fila de NP)
+      const menuEq = document.getElementById('menuEqualizer');
+      if (menuEq) menuEq.addEventListener('click', () => {
+        this.closeSheet('sheetMore');
+        this.openSheet('sheetEqualizer');
+      });
+      const menuSleep = document.getElementById('menuSleep');
+      if (menuSleep) menuSleep.addEventListener('click', () => {
+        this.closeSheet('sheetMore');
+        this.openSheet('sheetSleep');
+      });
       $('btnEqualizer').addEventListener('click', () => this.openSheet('sheetEqualizer'));
       document.querySelectorAll('.eq-preset').forEach(b => {
         b.addEventListener('click', () => this.applyEqPreset(b.dataset.preset));

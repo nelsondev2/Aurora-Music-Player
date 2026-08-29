@@ -130,17 +130,17 @@ Cada fase es un PR. No se mezcla con features de audio. Criterio de salida = scr
 
 **Salida:** ~700 KB menos; ningún icono FA en runtime.
 
-### Fase C — Now Playing (1 día)
+### Fase C — Now Playing (1 día) ✅
 
-**Meta:** la portada es el 60 % de la pantalla; los controles caben en una respiración.
+**Meta:** la portada es el 60 % de la pantalla; los controles caben en una respiración. **Hecha.**
 
-- [ ] Fila secundaria: **iconos sin label** (el `aria-label` ya está). EQ y Sleep pasan al menú `···` o a Ajustes; NP se queda Letras / Cola / Like (el like ya está arriba — no duplicar).
-- [ ] Volumen: el gesto de portada ya existe; el botón Volumen no necesita estar siempre. Slider que aparece al tocar el icono, no un sheet entero.
-- [ ] Portada: radio `--radius-cover`, sombra `--shadow-cover`, glow más suave (opacity 0.35). Vinilo **off por defecto** (toggle en Ajustes, default false).
-- [ ] Quitar `perspective: 1000px` del cover-section salvo reduced-motion already off y vinilo on.
-- [ ] Progreso: thumb 12 px, track 3 px, focus-visible ya está; hover/active más evidentes en desktop.
-- [ ] Título: `--fs-display` 28–32, 2 líneas máx, marquee solo si 1 línea overflow (el flag ya existe).
-- [ ] Letras: línea actual `--fs-title`+, color `--text-1`; vecinas `--text-3`. Sin glow barato salvo karaoke real.
+- [x] Fila secundaria: **iconos sin label** (Letras / Cola / Volumen). EQ y Sleep en el menú `···`. Like sigue arriba.
+- [x] Volumen: slider compacto al tocar el icono (no un sheet).
+- [x] Portada: glow 0.35. Vinilo **off por defecto** (Ajustes).
+- [x] `perspective` solo con vinilo on.
+- [x] Progreso: thumb 12 px, track 3 px, hover/focus más evidentes.
+- [x] Título: display size, 2 líneas máx; marquee solo en 1 línea (artista).
+- [x] Letras: línea actual más grande/`--text-1`; vecinas `--text-3`. Glow solo en karaoke.
 
 **Salida:** un recorte de NP a 390×844 se puede poner en la store sin recortar cromo.
 

@@ -67,7 +67,8 @@ Object.assign(App, {
 
       // Vinilo en lugar de cover si está reproduciendo
       const ca = document.getElementById('coverArt');
-      ca.classList.toggle('playing', this.isPlaying);
+      if (ca) ca.classList.toggle('playing', this.isPlaying);
+      if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
 
       // Favorito
       this.updateFavoriteUI();
@@ -175,6 +176,7 @@ Object.assign(App, {
       });
       const ca = document.getElementById('coverArt');
       if (ca) ca.classList.toggle('playing', this.isPlaying);
+      if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
 
       // Visibilidad de las acciones del menú "Más opciones" según haya pista
       // actual. Si no hay pista (estado vacío), las acciones contextuales
@@ -237,6 +239,14 @@ Object.assign(App, {
       this._syncMarquee(el);
     },
 
+    applyVinylMode() {
+      const art = document.getElementById('coverArt');
+      const sec = document.querySelector('.cover-section');
+      const on = !!this._vinylEnabled;
+      if (art) art.classList.toggle('vinyl-mode', on);
+      if (sec) sec.classList.toggle('vinyl-on', on);
+    },
+
     _syncMarquee(el) {
       if (!el) return;
       const inner = el.querySelector('.marquee-inner');
@@ -250,6 +260,8 @@ Object.assign(App, {
       requestAnimationFrame(() => {
         const overflow = inner.scrollWidth - el.clientWidth;
         if (reduce || this._marqueeEnabled === false || overflow <= 8) return;
+        const ws = window.getComputedStyle(el).whiteSpace;
+        if (ws && ws !== 'nowrap') return;
         el.classList.add('is-marquee');
         const slide = Math.max(2.4, overflow / 42);
         const pause = 1.5;
