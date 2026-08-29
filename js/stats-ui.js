@@ -87,15 +87,7 @@ Object.assign(App, {
         const artist = row.dataset.artist;
         if (artist) {
           row.addEventListener('click', () => {
-            this._searchFilter = 'artist';
-            document.querySelectorAll('.search-filter').forEach(x => {
-              x.classList.toggle('active', x.dataset.filter === 'artist');
-            });
-            const inp = document.getElementById('searchInput');
-            if (inp) inp.value = artist;
-            this.closeSheet('sheetStats');
-            this.runSearch(artist, 'artist');
-            this.openSheet('sheetSearch');
+            if (typeof this.goToArtist === 'function') this.goToArtist(artist);
           });
           return;
         }
@@ -107,10 +99,7 @@ Object.assign(App, {
           if (cv) this.drawRowCover(cv, track);
         }
         row.addEventListener('click', () => {
-          if (tid) {
-            this.playTrack(tid);
-            this.closeSheet('sheetStats');
-          }
+          if (tid) this.playTrack(tid);
         });
       });
     },
@@ -138,23 +127,9 @@ Object.assign(App, {
         return;
       }
       res.forEach(t => {
-        const li = document.createElement('li');
-        li.className = 'track-row';
-        li.innerHTML = `
-          <div class="row-cover"><canvas width="44" height="44"></canvas></div>
-          <div class="row-text">
-            <div class="row-title">${this.esc(t.title)}</div>
-            <div class="row-sub">${this.esc(t.artist)}${t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + this.esc(t.album) : ''}</div>
-          </div>
-          <div class="row-duration">${this.fmtTime(t.duration)}</div>
-        `;
-        li.addEventListener('click', () => {
-          this.playTrack(t.id, { type: 'all' });
-          this.closeSheet('sheetSearch');
-        });
-        ul.appendChild(li);
-        const cv = li.querySelector('canvas');
-        if (cv) this.drawRowCover(cv, t);
+        if (typeof this.makeTrackRow === 'function') {
+          ul.appendChild(this.makeTrackRow(t, { playContext: { type: 'all' } }));
+        }
       });
     },
 
@@ -179,43 +154,10 @@ Object.assign(App, {
       }
       // Para que pulsar una pista desde favoritos reproduzca TODA la lista
       // de favoritos (no solo la pista aislada), construimos el contexto.
-      const favIds = favTracks.map(t => t.id);
-      favTracks.forEach((t, idx) => {
-        const li = document.createElement('li');
-        li.className = 'track-row';
-        li.innerHTML = `
-          <div class="row-cover"><canvas width="44" height="44"></canvas></div>
-          <div class="row-text">
-            <div class="row-title">${this.esc(t.title)}</div>
-            <div class="row-sub">${this.esc(t.artist)}${t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + this.esc(t.album) : ''}</div>
-          </div>
-          <div class="row-duration">${this.fmtTime(t.duration)}</div>
-          <button class="row-action unfav-track" aria-label="${this.esc(this.t('toast_removed_fav'))}"><i class="fa-solid fa-heart"></i></button>
-        `;
-        li.addEventListener('click', (e) => {
-          if (e.target.closest('.unfav-track')) return;
-          // Reproducir desde favoritos: la cola = favoritos, empezar por esta pista
-          this.queue = favIds.slice();
-          this.queueIdx = idx;
-          this.playContext = { type: 'favorites' };
-          const tIdx = this.tracks.findIndex(x => x.id === t.id);
-          if (tIdx >= 0) this.currentTrackIdx = tIdx;
-          this.currentTrack = t;
-          this.loadAndPlay();
-          this.renderQueue();  // refrescar la cola con las pistas de favoritos
-          this.closeSheet('sheetFavorites');
-        });
-        li.querySelector('.unfav-track').addEventListener('click', (e) => {
-          e.stopPropagation();
-          this.favorites.delete(t.id);
-          this.saveFavorites();
-          this.updateFavoriteUI();
-          this.renderFavorites();
-          this.toast(this.t('toast_removed_fav'));
-        });
-        ul.appendChild(li);
-        const cv = li.querySelector('canvas');
-        if (cv) this.drawRowCover(cv, t);
+      favTracks.forEach((t) => {
+        if (typeof this.makeTrackRow === 'function') {
+          ul.appendChild(this.makeTrackRow(t, { playContext: { type: 'favorites' } }));
+        }
       });
     }
 });

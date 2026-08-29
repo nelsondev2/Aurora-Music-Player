@@ -51,19 +51,19 @@ Hallazgos que el plan debe cerrar. No son opiniones: están en el repo.
 |---|---|---|
 | B1 | ~~Listeners / `peerLabel`~~ — **obsoleto** (P2P eliminado) | — |
 | B2 | ~~Historial y stats compartían sheet~~ — **cerrado** (`sheetHistory`) | — |
-| B3 | “Ir al artista” abre búsqueda filtrada; falta vista Artista/Álbum | Fase 1.3 |
+| B3 | ~~“Ir al artista” abre búsqueda~~ — **cerrado** (vistas Álbum/Artista) | — |
 | B4 | Shuffle elige un índice al azar; no es una cola barajada (puede repetir, no es predecible) | `js/audio.js` `next()` |
 | B5 | Gapless se desactiva en cuanto existe el grafo Web Audio (EQ). En la práctica **nunca** hay gapless | `js/library.js` `gaplessNext()` |
 | B6 | Collage de playlist llama `renderPlaylists()` al terminar → riesgo de re-renders en cascada | `js/playlist-ui.js` `getPlaylistCover` |
 | B7 | ~~Textos hardcodeados de reset~~ — **cerrado** (i18n) | — |
 | B8 | Onboarding de idioma existe (`showLanguageOnboarding`) pero **nunca se llama** | `js/init.js` |
-| B9 | `addToQueue` / `playNext` / `startRadio` existen y no tienen UI | `js/queue.js` |
+| B9 | ~~`addToQueue` / `playNext` sin UI~~ — **cerrado** (menú de pista). `startRadio` sigue sin UI (Fase 3) | `js/queue.js` |
 | B10 | ~~Badge de repeat inline duplicado~~ — **cerrado** (`setRepeatUI` + `.repeat-badge`) | — |
 | B11 | Hay `README`; faltan tests y captura de producto | raíz del repo |
 | B12 | Export de biblioteca **no incluye audio**; el import no restaura pistas reales | `js/library.js` `exportLibrary` |
 | B13 | Quota: hay toast; falta flujo “liberar espacio” | `persistTrack` / Fase 3 |
 | B14 | ~~Error de `<audio>` silencioso~~ — **cerrado** (toast) | — |
-| B15 | Home del bottom-nav solo cierra sheets: **no hay pantalla de inicio** | `index.html` + `events.js` |
+| B15 | ~~Home del bottom-nav no era Inicio~~ — **cerrado** (`view-home`) | — |
 
 ### UX que se siente amateur
 
@@ -122,44 +122,33 @@ Cada fase es entregable por sí sola. No se empieza la siguiente si la anterior 
 
 ---
 
-### Fase 1 — Navegación de producto (3–5 días)
+### Fase 1 — Navegación de producto (3–5 días) ✅
 **Meta:** Aurora se usa como un player, no como un now-playing con menús.
 
 #### 1.1 Mini-player persistente
-Barra inferior (encima del nav) visible en todos los sheets:
-- Portada 40px + título/artista (marquee si overflow) + play/pause + next.
-- Tap → vuelve a Now Playing y cierra el sheet.
-- Progreso fino (1–2 px) en el borde superior.
+- [x] Barra inferior (encima del nav) visible en Inicio y sheets a pantalla completa
+- [x] Portada 40px + título/artista (marquee si overflow) + play/pause + next
+- [x] Tap → Now Playing y cierra el sheet
+- [x] Progreso fino (2 px) en el borde superior
+- [x] Chrome oculto en Letras
 
 #### 1.2 Pantalla Inicio (el botón Home de verdad)
-No un now-playing duplicado. Un *hub*:
-
-- Hero: “Continuar” (sesión restaurada) con portada grande.
-- Carrusel **Recién añadidas**.
-- Carrusel **Listas**.
-- Fila **Más escuchadas** (ya hay stats).
-- Estado vacío premium (el actual está bien; unificar estilos duplicados de `.empty-state` en CSS).
-
-Now Playing permanece como vista propia (la actual), accesible desde el mini-player.
+- [x] Hub: Continuar, Recién añadidas, Listas, Más escuchadas
+- [x] Estado vacío con CTA de carga
+- [x] Now Playing como vista propia, accesible desde el mini-player
 
 #### 1.3 Biblioteca con pestañas
-`Canciones | Álbumes | Artistas | Listas`
-
-- Canciones: ordenar por título / artista / recientes / duración.
-- Álbumes: grid de portadas, tap → lista del álbum.
-- Artistas: lista agrupada, tap → discografía local.
-- **B3** “Ir al artista / álbum” navega a esas vistas.
+- [x] `Canciones | Álbumes | Artistas | Listas`
+- [x] Canciones: ordenar por título / artista / recientes / duración
+- [x] Álbumes: grid de portadas → lista del álbum
+- [x] Artistas: lista → discografía local
+- [x] **B3** “Ir al artista / álbum” navega a esas vistas
 
 #### 1.4 Menú contextual de pista
-Long-press o botón `···` en cada fila. Acciones:
-
-- Reproducir ahora
-- Reproducir siguiente → **cablear `playNext`**
-- Añadir a la cola → **cablear `addToQueue`**
-- Añadir a una lista (flujo que ya existe)
-- Ir al artista / álbum
-- Editar etiquetas (título/artista/álbum) — mínimo viable
-- Eliminar
+- [x] Long-press o `···` en cada fila
+- [x] Reproducir ahora / siguiente (`playNext`) / cola (`addToQueue`)
+- [x] Añadir a una lista / ir al artista / álbum / editar etiquetas / eliminar
+- [x] Reproducir **no** cierra biblioteca, búsqueda ni listas (el mini-player sigue visible)
 
 **Criterio de salida:** se puede vivir 10 minutos en la app sin volver al now-playing excepto a propósito.
 
@@ -262,7 +251,7 @@ Ajustes internos, fase a fase, **sin romper el orden de scripts**:
 ```
 state → init → settings → library → queue
      → audio → player-ui → lyrics → playlist-ui → playlist-edit
-     → ui → events → stats-ui → main
+     → ui → nav → events → stats-ui → main
 ```
 
 Reglas nuevas:

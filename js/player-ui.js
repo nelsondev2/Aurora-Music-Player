@@ -153,7 +153,7 @@ Object.assign(App, {
     updatePlayUI() {
       const play = document.getElementById('btnPlay');
       const playLyrics = document.getElementById('btnPlayLyrics');
-      [play, playLyrics].forEach(b => {
+      [play, playLyrics, document.getElementById('miniPlayerPlay')].forEach(b => {
         if (!b) return;
         const ip = b.querySelector('.icon-play');
         const ips = b.querySelector('.icon-pause');
@@ -174,7 +174,7 @@ Object.assign(App, {
       // actual. Si no hay pista (estado vacío), las acciones contextuales
       // (ir al artista, añadir a lista) no tienen sentido y se ocultan.
       const hasTrack = !!(this.currentTrack);
-      const contextualMenuIds = ['menuAddToPlaylist', 'menuGoToArtist'];
+      const contextualMenuIds = ['menuAddToPlaylist', 'menuGoToArtist', 'menuGoToAlbum'];
       contextualMenuIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = hasTrack ? '' : 'none';
@@ -189,6 +189,8 @@ Object.assign(App, {
       const fill = document.getElementById('progressFill');
       const curEl = document.getElementById('timeCurrent');
       if (fill) fill.style.width = pct + '%';
+      const mini = document.getElementById('miniProgress');
+      if (mini) mini.style.width = pct + '%';
       if (curEl) curEl.textContent = this.fmtTime(cur);
       const track = document.getElementById('progressTrack');
       if (track) {

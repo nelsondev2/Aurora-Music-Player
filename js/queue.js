@@ -92,7 +92,8 @@ Object.assign(App, {
     /* "Reproducir siguiente": inserta en la posición inmediatamente
      * después de la pista actual, desplazando el resto */
     playNext(trackId) {
-      const insertAt = this.queueIdx + 1;
+      if (!this.queue.length && this.currentTrack) this.queue = [this.currentTrack.id];
+      const insertAt = Math.min(this.queue.length, (this.queueIdx || 0) + 1);
       this.queue.splice(insertAt, 0, trackId);
       this.renderQueue();
       this.toast(this.t('toast_play_next'));

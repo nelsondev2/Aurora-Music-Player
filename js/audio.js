@@ -194,6 +194,17 @@ Object.assign(App, {
         this.queue = favIds;
         const qIdx = this.queue.indexOf(trackId);
         this.queueIdx = qIdx >= 0 ? qIdx : 0;
+      } else if (context && context.type === 'album' && context.name) {
+        const artist = context.artist;
+        const tracks = this.tracks.filter(t => t.album === context.name && (!artist || t.artist === artist));
+        this.queue = tracks.map(t => t.id);
+        const qIdx = this.queue.indexOf(trackId);
+        this.queueIdx = qIdx >= 0 ? qIdx : 0;
+      } else if (context && context.type === 'artist' && context.name) {
+        const tracks = this.tracks.filter(t => t.artist === context.name);
+        this.queue = tracks.map(t => t.id);
+        const qIdx = this.queue.indexOf(trackId);
+        this.queueIdx = qIdx >= 0 ? qIdx : 0;
       } else {
         // Sin contexto específico o 'all'/'queue': cola = todas las pistas
         this.queue = this.tracks.map(t => t.id);
@@ -246,6 +257,7 @@ Object.assign(App, {
       this.renderLyrics();
       this.updateMediaSession();
       this.preloadNextTrack();
+      if (typeof this.updateChrome === 'function') this.updateChrome();
     },
 
     /* Carga la pista actual en el elemento <audio> pero SIN reproducir.
@@ -443,6 +455,8 @@ Object.assign(App, {
       this.queue = [];
       this.showEmptyState();
       this.renderCurrentTrack();
+      if (typeof this.renderHome === 'function') this.renderHome();
+      if (typeof this.updateChrome === 'function') this.updateChrome();
     },
 
     next(auto) {

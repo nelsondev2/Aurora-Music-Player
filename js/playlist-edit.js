@@ -79,8 +79,6 @@ Object.assign(App, {
       if (btnDeleteFull) {
         btnDeleteFull.style.display = pl.isDefault ? 'none' : '';
       }
-      // Cerrar otros sheets (biblioteca, listas) para evitar solapamiento
-      this.closeSheet('sheetLibrary');
       this.closeSheet('sheetPlaylists');
       this.openSheet('sheetEditPlaylist');
     },
@@ -134,16 +132,22 @@ Object.assign(App, {
             <div class="row-sub">${this.esc(t.artist)}</div>
           </div>
           <div class="row-duration">${isCurrent ? '<i class="fa-solid fa-volume-high now-eq"></i> ' : ''}${this.fmtTime(t.duration)}</div>
+          <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><i class="fa-solid fa-ellipsis-vertical"></i></button>
           <button class="row-action remove-from-pl" aria-label="${this.esc(this.t('remove_from_playlist'))}"><i class="fa-solid fa-xmark"></i></button>
         `;
         li.addEventListener('click', (e) => {
-          if (e.target.closest('.remove-from-pl')) return;
+          if (e.target.closest('.remove-from-pl, .track-menu-btn')) return;
           // Reproducir esta pista dentro del contexto de la playlist.
           // playTrack se encarga de setear la cola = pistas de la playlist.
           this.playTrack(t.id, { type: 'playlist', id: pl.id, name: pl.name });
-          this.renderQueue();  // refrescar la cola con las pistas de la playlist
-          this.closeSheet('sheetEditPlaylist');
+          this.renderQueue();
         });
+        const menuBtn = li.querySelector('.track-menu-btn');
+        if (menuBtn) menuBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.openTrackMenu(t.id);
+        });
+        if (typeof this.wireTrackLongPress === 'function') this.wireTrackLongPress(li, t.id);
         li.querySelector('.remove-from-pl').addEventListener('click', (e) => {
           e.stopPropagation();
           this.removeFromPlaylist(pl.id, t.id);

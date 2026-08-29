@@ -26,6 +26,23 @@ Object.assign(App, {
       // Play / pause
       $('btnPlay').addEventListener('click', () => this.togglePlay());
       $('btnPlayLyrics').addEventListener('click', () => this.togglePlay());
+      $('miniPlayerPlay').addEventListener('click', (e) => { e.stopPropagation(); this.togglePlay(); });
+      $('miniPlayerNext').addEventListener('click', (e) => { e.stopPropagation(); this.next(); });
+      const mini = document.getElementById('miniPlayer');
+      if (mini) {
+        mini.addEventListener('click', (e) => {
+          if (e.target.closest('.mini-btn')) return;
+          this.openNowPlaying();
+        });
+        mini.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.openNowPlaying();
+          }
+        });
+      }
+      const btnHomeAdd = document.getElementById('btnHomeAdd');
+      if (btnHomeAdd) btnHomeAdd.addEventListener('click', () => this.openFilePicker());
       const coverArt = document.getElementById('coverArt');
       if (coverArt) {
         coverArt.addEventListener('click', () => {
@@ -62,11 +79,15 @@ Object.assign(App, {
 
       // Letras
       $('btnLyrics').addEventListener('click', () => {
+        this.closeAllSheets();
         this.showView('lyrics');
         this.restoreLyricsPrefs();
         this.renderLyrics();
       });
-      $('btnBackFromLyrics').addEventListener('click', () => this.showView('player'));
+      $('btnBackFromLyrics').addEventListener('click', () => {
+        this.showView('player');
+        this.updateChrome();
+      });
 
       // === Letras LRC: barra de herramientas ===
       // Tamaño de fuente (#7)
@@ -191,7 +212,6 @@ Object.assign(App, {
       // Playlists
       $('btnNewPlaylist').addEventListener('click', () => this.openCreatePlaylistSheet());
       $('btnOpenNewPlaylist').addEventListener('click', () => {
-        this.closeSheet('sheetLibrary');
         this.openCreatePlaylistSheet();
       });
       // Botón "Borrar todo" en biblioteca
@@ -255,7 +275,6 @@ Object.assign(App, {
       if (btnPlayNow) btnPlayNow.addEventListener('click', () => {
         if (this._editingPlaylistId) {
           this.playPlaylist(this._editingPlaylistId);
-          this.closeSheet('sheetEditPlaylist');
         }
       });
       // Subir canciones directamente a la playlist desde el almacenamiento
@@ -281,26 +300,79 @@ Object.assign(App, {
 
       // Library / search / favorites / home
       document.querySelectorAll('.nav-btn').forEach(b => {
-        b.addEventListener('click', () => {
-          document.querySelectorAll('.nav-btn').forEach(x => x.classList.remove('active'));
-          b.classList.add('active');
-          const nav = b.dataset.nav;
-          if (nav === 'home') {
-            // Cerrar todos los sheets abiertos y volver al reproductor
-            this.closeAllSheets();
-            this.showView('player');
-          }
-          if (nav === 'library') this.openSheet('sheetLibrary');
-          if (nav === 'favorites') {
-            this.renderFavorites();
-            this.openSheet('sheetFavorites');
-          }
-          if (nav === 'search') {
-            this.openSheet('sheetSearch');
-            setTimeout(() => $('searchInput').focus(), 350);
-          }
-        });
+        b.addEventListener('click', () => this.goNav(b.dataset.nav));
       });
+
+      document.querySelectorAll('.lib-tab').forEach(b => {
+        b.addEventListener('click', () => this.setLibraryTab(b.dataset.tab));
+      });
+      document.querySelectorAll('.lib-sort').forEach(b => {
+        b.addEventListener('click', () => this.setLibrarySort(b.dataset.sort));
+      });
+
+      const btnPlayBrowse = document.getElementById('btnPlayBrowse');
+      if (btnPlayBrowse) btnPlayBrowse.addEventListener('click', () => this.playBrowse());
+
+      const ctxPlayNow = document.getElementById('ctxPlayNow');
+      if (ctxPlayNow) ctxPlayNow.addEventListener('click', () => {
+        const t = this.menuTrack();
+        this.closeSheet('sheetTrackMenu');
+        if (t) this.playTrack(t.id, { type: 'all' });
+      });
+      const ctxPlayNext = document.getElementById('ctxPlayNext');
+      if (ctxPlayNext) ctxPlayNext.addEventListener('click', () => {
+        const t = this.menuTrack();
+        this.closeSheet('sheetTrackMenu');
+        if (!t) return;
+        if (!this.currentTrack) this.playTrack(t.id, { type: 'all' });
+        else this.playNext(t.id);
+      });
+      const ctxAddQueue = document.getElementById('ctxAddQueue');
+      if (ctxAddQueue) ctxAddQueue.addEventListener('click', () => {
+        const t = this.menuTrack();
+        this.closeSheet('sheetTrackMenu');
+        if (t) this.addToQueue(t.id);
+      });
+      const ctxAddPlaylist = document.getElementById('ctxAddPlaylist');
+      if (ctxAddPlaylist) ctxAddPlaylist.addEventListener('click', () => {
+        const t = this.menuTrack();
+        this.closeSheet('sheetTrackMenu');
+        if (!t) return;
+        this._trackToAddId = t.id;
+        this._selectPlaylistForAdd = true;
+        this.renderPlaylists();
+        this.openSheet('sheetPlaylists');
+      });
+      const ctxGoArtist = document.getElementById('ctxGoArtist');
+      if (ctxGoArtist) ctxGoArtist.addEventListener('click', () => {
+        const t = this.menuTrack();
+        if (t) this.goToArtist(t.artist);
+      });
+      const ctxGoAlbum = document.getElementById('ctxGoAlbum');
+      if (ctxGoAlbum) ctxGoAlbum.addEventListener('click', () => {
+        const t = this.menuTrack();
+        if (t) this.goToAlbum(t.album, t.artist);
+      });
+      const ctxEditTags = document.getElementById('ctxEditTags');
+      if (ctxEditTags) ctxEditTags.addEventListener('click', () => {
+        const t = this.menuTrack();
+        if (t) this.openEditTrack(t.id);
+      });
+      const ctxDelete = document.getElementById('ctxDelete');
+      if (ctxDelete) ctxDelete.addEventListener('click', async () => {
+        const t = this.menuTrack();
+        this.closeSheet('sheetTrackMenu');
+        if (!t) return;
+        const ok = await this.showConfirm({
+          message: this.t('delete_track_confirm').replace('X', t.title),
+          okLabel: this.t('confirm_delete')
+        });
+        if (ok) this.deleteTrack(t.id);
+      });
+      const btnSaveEdit = document.getElementById('btnSaveEditTrack');
+      if (btnSaveEdit) btnSaveEdit.addEventListener('click', () => this.saveEditTrack());
+      const btnSaveEditP = document.getElementById('btnSaveEditTrackPrimary');
+      if (btnSaveEditP) btnSaveEditP.addEventListener('click', () => this.saveEditTrack());
 
       // Búsqueda
       $('searchInput').addEventListener('input', (e) => this.runSearch(e.target.value, this._searchFilter));
@@ -323,15 +395,16 @@ Object.assign(App, {
           this.toast(this.t('unknown_artist'));
           return;
         }
-        const artist = this.currentTrack.artist;
-        this._searchFilter = 'artist';
-        document.querySelectorAll('.search-filter').forEach(x => {
-          x.classList.toggle('active', x.dataset.filter === 'artist');
-        });
-        const inp = document.getElementById('searchInput');
-        if (inp) inp.value = artist;
-        this.runSearch(artist, 'artist');
-        this.openSheet('sheetSearch');
+        this.goToArtist(this.currentTrack.artist);
+      });
+      const menuGoAlbum = document.getElementById('menuGoToAlbum');
+      if (menuGoAlbum) menuGoAlbum.addEventListener('click', () => {
+        this.closeSheet('sheetMore');
+        if (!this.currentTrack || this.isPlaceholderAlbum(this.currentTrack.album)) {
+          this.toast(this.t('no_album'));
+          return;
+        }
+        this.goToAlbum(this.currentTrack.album, this.currentTrack.artist);
       });
       // Botón "Reproducir Todo" en el sheet de favoritos
       const btnPlayFav = document.getElementById('btnPlayFavoritesNow');
@@ -498,7 +571,7 @@ Object.assign(App, {
         if (ax > 60 && ax > ay * 1.5 && dt < 600) {
           // Solo si el toque NO comienza sobre la barra de progreso ni sobre sheets
           const target = e.target;
-          if (target.closest('#progressTrack, .sheet, .bottom-nav, .controls-main, .controls-secondary')) return;
+          if (target.closest('#progressTrack, .sheet, .bottom-nav, .mini-player, .app-chrome, .view-home, .controls-main, .controls-secondary')) return;
           // En la vista de letras, swipe horizontal = cambiar de pista (#25)
           if (dx < 0) this.next();
           else this.prev();

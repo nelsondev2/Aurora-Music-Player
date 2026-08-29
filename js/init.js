@@ -46,16 +46,19 @@ Object.assign(App, {
       this.wireGestures();
       this.renderLibrary();
       this.renderPlaylists();
+      if (typeof this.renderHome === 'function') this.renderHome();
+      this.showView('home');
+      this.setNavActive('home');
 
       if (this.currentTrack) {
         this.renderCurrentTrack();
         this.renderLyrics();
         this.updateMediaSession();
-      } else {
-        this.showEmptyState();
+        this.hideEmptyState();
       }
       this.setShuffleUI();
       this.setRepeatUI();
+      if (typeof this.updateChrome === 'function') this.updateChrome();
 
       // Guardar sesión cada 5s mientras se reproduce
       setInterval(() => this.saveSession(), 5000);

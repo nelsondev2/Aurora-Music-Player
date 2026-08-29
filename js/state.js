@@ -119,6 +119,13 @@
      * Se usa para mostrar "Reproduciendo desde X" en la barra superior. */
     playContext: null,
 
+    /* Biblioteca: pestaña y orden (Fase 1) */
+    _libraryTab: 'songs',
+    _librarySort: 'title',
+    _menuTrackId: null,
+    _editTrackId: null,
+    _browse: null,
+
     /* Utilidades */
     _wired: {},
     _lastError: null,

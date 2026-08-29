@@ -71,6 +71,7 @@ Object.assign(App, {
       setTimeout(() => {
         try { (focusable || panel).focus(); } catch (e) {}
       }, 40);
+      if (typeof this.updateChrome === 'function') this.updateChrome();
     },
     closeSheet(id) {
       const s = document.getElementById(id);
@@ -104,6 +105,7 @@ Object.assign(App, {
       if (id === 'sheetEditPlaylist') {
         this._editingPlaylistId = null;
       }
+      if (typeof this.updateChrome === 'function') this.updateChrome();
     },
 
     _trapSheetFocus(e) {
@@ -135,6 +137,7 @@ Object.assign(App, {
         if (isActive) v.classList.add('active');
         else v.classList.remove('active');
       });
+      if (typeof this.updateChrome === 'function') this.updateChrome();
     },
 
     /* ============================================================

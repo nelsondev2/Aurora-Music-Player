@@ -413,47 +413,14 @@ Object.assign(App, {
       if (!ul) return;
       ul.innerHTML = '';
       if (this.tracks.length === 0) {
-        ul.innerHTML = '<li class="track-row" style="justify-content:center;color:var(--text-3);font-size:13px;padding:24px">' + this.t('no_tracks_loaded') + '</li>';
+        ul.innerHTML = '<li class="track-row empty-placeholder">' + this.t('no_tracks_loaded') + '</li>';
         return;
       }
-      this.tracks.forEach(t => {
-        const li = document.createElement('li');
-        li.className = 'track-row';
-        li.innerHTML = `
-          <div class="row-cover"><canvas width="44" height="44"></canvas></div>
-          <div class="row-text">
-            <div class="row-title">${this.esc(t.title)}</div>
-            <div class="row-sub">${this.esc(t.artist)}${t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + this.esc(t.album) : ''}</div>
-          </div>
-          <div class="row-duration">${this.fmtTime(t.duration)}</div>
-          <button class="row-action add-to-pl" aria-label="${this.esc(this.t('menu_add_to_playlist'))}"><i class="fa-solid fa-list-plus"></i></button>
-          <button class="row-action delete-track" aria-label="Eliminar"><i class="fa-solid fa-trash-can"></i></button>
-        `;
-        li.addEventListener('click', (e) => {
-          if (e.target.closest('.delete-track, .add-to-pl')) return;
-          this.playTrack(t.id, { type: 'all' });
-          this.closeSheet('sheetLibrary');
-        });
-        li.querySelector('.add-to-pl').addEventListener('click', (e) => {
-          e.stopPropagation();
-          // Añadir ESTA pista (no la que está sonando) a una playlist
-          this._trackToAddId = t.id;
-          this._selectPlaylistForAdd = true;
-          this.openSheet('sheetPlaylists');
-        });
-        li.querySelector('.delete-track').addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const ok = await this.showConfirm({
-            message: this.t('delete_track_confirm').replace('X', t.title),
-            okLabel: this.t('confirm_delete')
-          });
-          if (ok) {
-            this.deleteTrack(t.id);
-          }
-        });
-        ul.appendChild(li);
-        const cv = li.querySelector('canvas');
-        if (cv) this.drawRowCover(cv, t);
+      const list = (typeof this.sortedTracks === 'function') ? this.sortedTracks() : this.tracks.slice();
+      list.forEach(t => {
+        if (typeof this.makeTrackRow === 'function') {
+          ul.appendChild(this.makeTrackRow(t, { playContext: { type: 'all' } }));
+        }
       });
     },
 
@@ -642,9 +609,6 @@ Object.assign(App, {
       this.queueIdx = 0;
       // Establecer contexto de reproducción: "Reproduciendo desde <playlist>"
       this.playContext = { type: 'playlist', id: pl.id, name: pl.name };
-      this.closeSheet('sheetPlaylists');
-      this.closeSheet('sheetLibrary');
-      this.closeSheet('sheetEditPlaylist');
       this.playFromQueue(0);
       this.renderCurrentTrack();  // refresca la barra superior con el contexto
       this.renderQueue();  // refrescar la cola con las pistas de la playlist
@@ -661,7 +625,6 @@ Object.assign(App, {
       this.queue = favTracks.map(t => t.id);
       this.queueIdx = 0;
       this.playContext = { type: 'favorites' };
-      this.closeSheet('sheetFavorites');
       this.playFromQueue(0);
       this.renderCurrentTrack();
       this.renderQueue();  // refrescar la cola con las pistas de favoritos
@@ -682,6 +645,9 @@ Object.assign(App, {
       }
       if (this.playContext.type === 'queue') {
         return this.t('queue_title');
+      }
+      if (this.playContext.type === 'album' || this.playContext.type === 'artist') {
+        return this.playContext.name || null;
       }
       return null;
     },

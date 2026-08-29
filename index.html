@@ -23,7 +23,7 @@
     <div class="device-screen" id="deviceScreen">
 
       <!-- ============== PANTALLA: REPRODUCTOR ============== -->
-      <main class="view view-player active" id="viewPlayer" data-view="player">
+      <main class="view view-player" id="viewPlayer" data-view="player">
 
         <!-- Fondo dinámico con los colores de la portada -->
         <div class="bg-blur" id="bgBlur">
@@ -128,26 +128,21 @@
           </button>
         </section>
 
-        <!-- Barra de navegación inferior -->
-        <nav class="bottom-nav">
-          <button class="nav-btn active" data-nav="home">
-            <i class="fa-solid fa-house"></i>
-            <span data-i18n="nav_home">Inicio</span>
-          </button>
-          <button class="nav-btn" data-nav="favorites">
-            <i class="fa-solid fa-heart"></i>
-            <span data-i18n="nav_favorites">Favoritos</span>
-          </button>
-          <button class="nav-btn" data-nav="search">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <span data-i18n="nav_search">Buscar</span>
-          </button>
-          <button class="nav-btn" data-nav="library">
-            <i class="fa-solid fa-grip"></i>
-            <span data-i18n="nav_library">Biblioteca</span>
-          </button>
-        </nav>
+      </main>
 
+
+      <!-- ============== PANTALLA: INICIO ============== -->
+      <main class="view view-home active" id="viewHome" data-view="home">
+        <header class="home-header">
+          <div>
+            <p class="home-kicker-static" data-i18n="app_title">Aurora</p>
+            <h1 data-i18n="nav_home">Inicio</h1>
+          </div>
+          <button class="icon-btn icon-add" id="btnHomeAdd" data-i18n-aria="load_music" aria-label="Cargar música">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </header>
+        <div class="home-scroll" id="homeContent"></div>
       </main>
 
       <!-- ============== PANTALLA: LETRAS LRC ============== -->
@@ -430,10 +425,30 @@
             <button class="text-btn danger" id="btnDeleteAllTracks"><i class="fa-solid fa-trash-can"></i> <span data-i18n="delete_all_btn">Borrar todo</span></button>
           </header>
           <div class="sheet-body">
-            <h4 class="section-title" data-i18n="playlists_section">Listas de reproducción</h4>
-            <ul class="playlist-grid" id="libraryPlaylists"></ul>
-            <h4 class="section-title" data-i18n="all_tracks_section">Todas las pistas</h4>
-            <ul class="track-list" id="libraryTracks"></ul>
+            <div class="lib-tabs" role="tablist">
+              <button class="lib-tab active" type="button" role="tab" data-tab="songs" data-i18n="lib_tab_songs">Canciones</button>
+              <button class="lib-tab" type="button" role="tab" data-tab="albums" data-i18n="lib_tab_albums">Álbumes</button>
+              <button class="lib-tab" type="button" role="tab" data-tab="artists" data-i18n="lib_tab_artists">Artistas</button>
+              <button class="lib-tab" type="button" role="tab" data-tab="playlists" data-i18n="lib_tab_playlists">Listas</button>
+            </div>
+            <div class="lib-sort-row" id="libSortRow">
+              <button class="lib-sort active" type="button" data-sort="title" data-i18n="lib_sort_title">Título</button>
+              <button class="lib-sort" type="button" data-sort="artist" data-i18n="lib_sort_artist">Artista</button>
+              <button class="lib-sort" type="button" data-sort="recent" data-i18n="lib_sort_recent">Recientes</button>
+              <button class="lib-sort" type="button" data-sort="duration" data-i18n="lib_sort_duration">Duración</button>
+            </div>
+            <div id="libPaneSongs">
+              <ul class="track-list" id="libraryTracks"></ul>
+            </div>
+            <div id="libPaneAlbums" style="display:none">
+              <ul class="playlist-grid" id="libraryAlbums"></ul>
+            </div>
+            <div id="libPaneArtists" style="display:none">
+              <ul class="track-list" id="libraryArtists"></ul>
+            </div>
+            <div id="libPanePlaylists" style="display:none">
+              <ul class="playlist-grid" id="libraryPlaylists"></ul>
+            </div>
           </div>
         </div>
       </div>
@@ -486,6 +501,10 @@
             <button class="menu-row" id="menuGoToArtist">
               <i class="fa-solid fa-user"></i>
               <span data-i18n="menu_go_to_artist">Ir al artista</span>
+            </button>
+            <button class="menu-row" id="menuGoToAlbum">
+              <i class="fa-solid fa-compact-disc"></i>
+              <span data-i18n="menu_go_to_album">Ir al álbum</span>
             </button>
             <button class="menu-row" id="menuStats">
               <i class="fa-solid fa-chart-simple"></i>
@@ -684,6 +703,149 @@
         </div>
       </div>
 
+
+      <!-- Álbum / Artista -->
+      <div class="sheet sheet-full" id="sheetBrowse">
+        <div class="sheet-backdrop" data-close-sheet="sheetBrowse"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetBrowse" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 id="browseTitle">—</h3>
+            <button class="text-btn" id="btnPlayBrowse" data-i18n="play_all_btn">Reproducir Todo</button>
+          </header>
+          <div class="sheet-body">
+            <div class="edit-pl-header">
+              <div class="edit-pl-cover" id="browseCover"><canvas width="160" height="160"></canvas></div>
+              <div class="edit-pl-info">
+                <h4 id="browseTitleDup" style="display:none">—</h4>
+                <p id="browseSubtitle">—</p>
+              </div>
+            </div>
+            <ul class="track-list" id="browseTracks"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Menú contextual de pista -->
+      <div class="sheet" id="sheetTrackMenu">
+        <div class="sheet-backdrop" data-close-sheet="sheetTrackMenu"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetTrackMenu" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="more_options">Más opciones</h3>
+            <button class="text-btn" data-close-sheet="sheetTrackMenu" data-i18n="close_btn">Cerrar</button>
+          </header>
+          <div class="sheet-body">
+            <div class="track-menu-head">
+              <div class="row-cover"><canvas id="trackMenuCover" width="64" height="64"></canvas></div>
+              <div class="row-text">
+                <div class="row-title" id="trackMenuTitle">—</div>
+                <div class="row-sub" id="trackMenuSub"></div>
+              </div>
+            </div>
+            <button class="menu-row" id="ctxPlayNow">
+              <i class="fa-solid fa-play"></i>
+              <span data-i18n="ctx_play_now">Reproducir ahora</span>
+            </button>
+            <button class="menu-row" id="ctxPlayNext">
+              <i class="fa-solid fa-forward"></i>
+              <span data-i18n="ctx_play_next">Reproducir siguiente</span>
+            </button>
+            <button class="menu-row" id="ctxAddQueue">
+              <i class="fa-solid fa-list-ol"></i>
+              <span data-i18n="ctx_add_queue">Añadir a la cola</span>
+            </button>
+            <button class="menu-row" id="ctxAddPlaylist">
+              <i class="fa-solid fa-list-ul"></i>
+              <span data-i18n="menu_add_to_playlist">Añadir a una lista</span>
+            </button>
+            <button class="menu-row" id="ctxGoArtist">
+              <i class="fa-solid fa-user"></i>
+              <span data-i18n="menu_go_to_artist">Ir al artista</span>
+            </button>
+            <button class="menu-row" id="ctxGoAlbum">
+              <i class="fa-solid fa-compact-disc"></i>
+              <span data-i18n="menu_go_to_album">Ir al álbum</span>
+            </button>
+            <button class="menu-row" id="ctxEditTags">
+              <i class="fa-solid fa-pen"></i>
+              <span data-i18n="ctx_edit_tags">Editar etiquetas</span>
+            </button>
+            <button class="menu-row danger" id="ctxDelete">
+              <i class="fa-solid fa-trash-can"></i>
+              <span data-i18n="confirm_delete">Eliminar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Editar etiquetas -->
+      <div class="sheet" id="sheetEditTrack">
+        <div class="sheet-backdrop" data-close-sheet="sheetEditTrack"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetEditTrack" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="edit_track_title">Editar pista</h3>
+            <button class="text-btn" id="btnSaveEditTrack" data-i18n="lrc_save">Guardar</button>
+          </header>
+          <div class="sheet-body">
+            <label class="field">
+              <span data-i18n="field_title">Título</span>
+              <input type="text" id="editTrackTitle" maxlength="120" />
+            </label>
+            <label class="field">
+              <span data-i18n="field_artist">Artista</span>
+              <input type="text" id="editTrackArtist" maxlength="80" />
+            </label>
+            <label class="field">
+              <span data-i18n="field_album">Álbum</span>
+              <input type="text" id="editTrackAlbum" maxlength="80" />
+            </label>
+            <button class="primary-btn" id="btnSaveEditTrackPrimary" data-i18n="lrc_save">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chrome persistente: mini-player + nav -->
+      <div class="app-chrome" id="appChrome">
+        <div class="mini-player" id="miniPlayer" role="button" tabindex="0" data-i18n-aria="now_playing_label" aria-label="Reproduciendo ahora">
+          <div class="mini-progress" id="miniProgress"></div>
+          <div class="mini-cover"><canvas id="miniPlayerCover" width="80" height="80"></canvas></div>
+          <div class="mini-text">
+            <div class="mini-title" id="miniPlayerTitle">—</div>
+            <div class="mini-artist" id="miniPlayerArtist"></div>
+          </div>
+          <button class="mini-btn" id="miniPlayerPlay" type="button" data-i18n-aria="play" aria-label="Reproducir">
+            <i class="fa-solid fa-play icon-play"></i>
+            <i class="fa-solid fa-pause icon-pause" style="display:none"></i>
+          </button>
+          <button class="mini-btn" id="miniPlayerNext" type="button" data-i18n-aria="next" aria-label="Siguiente">
+            <i class="fa-solid fa-forward-step"></i>
+          </button>
+        </div>
+        <nav class="bottom-nav">
+          <button class="nav-btn active" data-nav="home">
+            <i class="fa-solid fa-house"></i>
+            <span data-i18n="nav_home">Inicio</span>
+          </button>
+          <button class="nav-btn" data-nav="favorites">
+            <i class="fa-solid fa-heart"></i>
+            <span data-i18n="nav_favorites">Favoritos</span>
+          </button>
+          <button class="nav-btn" data-nav="search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span data-i18n="nav_search">Buscar</span>
+          </button>
+          <button class="nav-btn" data-nav="library">
+            <i class="fa-solid fa-grip"></i>
+            <span data-i18n="nav_library">Biblioteca</span>
+          </button>
+        </nav>
+      </div>
+
       <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
       <!-- Audio element oculto (sin crossorigin: rompería objectURLs locales) -->
@@ -711,6 +873,7 @@
   <script src="js/playlist-ui.js"></script>
   <script src="js/playlist-edit.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/nav.js"></script>
   <script src="js/events.js"></script>
   <script src="js/stats-ui.js"></script>
   <script src="js/main.js"></script>

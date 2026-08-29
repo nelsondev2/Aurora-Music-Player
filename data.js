@@ -1878,7 +1878,130 @@ const I18N = {
     fr: 'OK',
     it: 'OK',
     ru: 'ОК'
-  }
+  },
+
+  /* ---------- Fase 1: navegación ---------- */
+  home_continue: {
+    es: 'Continuar escuchando', en: 'Continue listening', pt: 'Continuar ouvindo',
+    zh: '继续收听', ja: '再生を続ける', fr: 'Continuer l\'écoute',
+    it: 'Continua ad ascoltare', ru: 'Продолжить прослушивание'
+  },
+  home_recent: {
+    es: 'Recién añadidas', en: 'Recently added', pt: 'Adicionadas recentemente',
+    zh: '最近添加', ja: '最近追加した曲', fr: 'Ajoutées récemment',
+    it: 'Aggiunte di recente', ru: 'Недавно добавленные'
+  },
+  home_playlists: {
+    es: 'Listas', en: 'Playlists', pt: 'Listas',
+    zh: '歌单', ja: 'プレイリスト', fr: 'Listes',
+    it: 'Liste', ru: 'Плейлисты'
+  },
+  home_top: {
+    es: 'Más escuchadas', en: 'Most played', pt: 'Mais ouvidas',
+    zh: '最常播放', ja: 'よく聴く曲', fr: 'Les plus écoutées',
+    it: 'Più ascoltate', ru: 'Самые слушаемые'
+  },
+  lib_tab_songs: {
+    es: 'Canciones', en: 'Songs', pt: 'Músicas',
+    zh: '歌曲', ja: '曲', fr: 'Titres',
+    it: 'Brani', ru: 'Песни'
+  },
+  lib_tab_albums: {
+    es: 'Álbumes', en: 'Albums', pt: 'Álbuns',
+    zh: '专辑', ja: 'アルバム', fr: 'Albums',
+    it: 'Album', ru: 'Альбомы'
+  },
+  lib_tab_artists: {
+    es: 'Artistas', en: 'Artists', pt: 'Artistas',
+    zh: '艺术家', ja: 'アーティスト', fr: 'Artistes',
+    it: 'Artisti', ru: 'Исполнители'
+  },
+  lib_tab_playlists: {
+    es: 'Listas', en: 'Playlists', pt: 'Listas',
+    zh: '歌单', ja: 'プレイリスト', fr: 'Listes',
+    it: 'Liste', ru: 'Списки'
+  },
+  lib_sort_title: {
+    es: 'Título', en: 'Title', pt: 'Título',
+    zh: '标题', ja: 'タイトル', fr: 'Titre',
+    it: 'Titolo', ru: 'Название'
+  },
+  lib_sort_artist: {
+    es: 'Artista', en: 'Artist', pt: 'Artista',
+    zh: '艺术家', ja: 'アーティスト', fr: 'Artiste',
+    it: 'Artista', ru: 'Исполнитель'
+  },
+  lib_sort_recent: {
+    es: 'Recientes', en: 'Recent', pt: 'Recentes',
+    zh: '最近', ja: '最近', fr: 'Récentes',
+    it: 'Recenti', ru: 'Недавние'
+  },
+  lib_sort_duration: {
+    es: 'Duración', en: 'Duration', pt: 'Duração',
+    zh: '时长', ja: '長さ', fr: 'Durée',
+    it: 'Durata', ru: 'Длительность'
+  },
+  ctx_play_now: {
+    es: 'Reproducir ahora', en: 'Play now', pt: 'Reproduzir agora',
+    zh: '立即播放', ja: '今すぐ再生', fr: 'Lire maintenant',
+    it: 'Riproduci ora', ru: 'Играть сейчас'
+  },
+  ctx_play_next: {
+    es: 'Reproducir siguiente', en: 'Play next', pt: 'Reproduzir a seguir',
+    zh: '下一首播放', ja: '次に再生', fr: 'Lire ensuite',
+    it: 'Riproduci dopo', ru: 'Играть следующей'
+  },
+  ctx_add_queue: {
+    es: 'Añadir a la cola', en: 'Add to queue', pt: 'Adicionar à fila',
+    zh: '加入队列', ja: 'キューに追加', fr: 'Ajouter à la file',
+    it: 'Aggiungi in coda', ru: 'Добавить в очередь'
+  },
+  ctx_edit_tags: {
+    es: 'Editar etiquetas', en: 'Edit tags', pt: 'Editar tags',
+    zh: '编辑标签', ja: 'タグを編集', fr: 'Modifier les tags',
+    it: 'Modifica tag', ru: 'Править теги'
+  },
+  edit_track_title: {
+    es: 'Editar pista', en: 'Edit track', pt: 'Editar faixa',
+    zh: '编辑音轨', ja: 'トラックを編集', fr: 'Modifier la piste',
+    it: 'Modifica traccia', ru: 'Изменить трек'
+  },
+  edit_track_saved: {
+    es: 'Etiquetas guardadas', en: 'Tags saved', pt: 'Tags salvas',
+    zh: '标签已保存', ja: 'タグを保存しました', fr: 'Tags enregistrés',
+    it: 'Tag salvati', ru: 'Теги сохранены'
+  },
+  albums_empty: {
+    es: 'Sin álbumes', en: 'No albums', pt: 'Sem álbuns',
+    zh: '暂无专辑', ja: 'アルバムはありません', fr: 'Aucun album',
+    it: 'Nessun album', ru: 'Нет альбомов'
+  },
+  artists_empty: {
+    es: 'Sin artistas', en: 'No artists', pt: 'Sem artistas',
+    zh: '暂无艺术家', ja: 'アーティストはいません', fr: 'Aucun artiste',
+    it: 'Nessun artista', ru: 'Нет исполнителей'
+  },
+  field_title: {
+    es: 'Título', en: 'Title', pt: 'Título',
+    zh: '标题', ja: 'タイトル', fr: 'Titre',
+    it: 'Titolo', ru: 'Название'
+  },
+  field_artist: {
+    es: 'Artista', en: 'Artist', pt: 'Artista',
+    zh: '艺术家', ja: 'アーティスト', fr: 'Artiste',
+    it: 'Artista', ru: 'Исполнитель'
+  },
+  field_album: {
+    es: 'Álbum', en: 'Album', pt: 'Álbum',
+    zh: '专辑', ja: 'アルバム', fr: 'Album',
+    it: 'Album', ru: 'Альбом'
+  },
+  menu_go_to_album: {
+    es: 'Ir al álbum', en: 'Go to album', pt: 'Ir para o álbum',
+    zh: '查看专辑', ja: 'アルバムへ', fr: 'Aller à l\'album',
+    it: 'Vai all\'album', ru: 'К альбому'
+  },
+
 };
 
 window.TRACKS = TRACKS;

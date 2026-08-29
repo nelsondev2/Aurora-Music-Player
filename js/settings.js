@@ -351,7 +351,9 @@ Object.assign(App, {
         this.renderPlaylists();
         this.renderQueue();
         this.renderFavorites();
-        if (this.currentTrack) this.renderCurrentTrack(); else this.showEmptyState();
+        if (this.currentTrack) this.renderCurrentTrack();
+        if (typeof this.renderHome === 'function') this.renderHome();
+        if (typeof this.updateChrome === 'function') this.updateChrome();
         const statsEl = document.getElementById('statsContent');
         if (statsEl && statsEl.innerHTML) this.renderStats();
         const histEl = document.getElementById('historyContent');

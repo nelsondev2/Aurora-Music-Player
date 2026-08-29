@@ -81,7 +81,9 @@ Object.assign(App, {
         const tracksToAdd = uniqueTracks;
 
         // Añadir todas las pistas a memoria primero (rápido)
+        const now = Date.now();
         for (const t of tracksToAdd) {
+          t.addedAt = t.addedAt || now;
           this.tracks.push(t);
         }
 
@@ -117,6 +119,8 @@ Object.assign(App, {
         this.renderPlaylists();
         this.renderQueue();
         this.renderFavorites();
+        if (typeof this.renderHome === 'function') this.renderHome();
+        if (typeof this.updateChrome === 'function') this.updateChrome();
         // Si estábamos editando la playlist destino, refrescar la vista
         if (this._editingPlaylistId === destId) this.renderEditPlaylist();
         this.hideEmptyState();
@@ -285,6 +289,7 @@ Object.assign(App, {
             <div class="row-sub">${this.esc(t.artist)}</div>
           </div>
           <div class="row-duration">${this.fmtTime(t.duration)}</div>
+          <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><i class="fa-solid fa-ellipsis-vertical"></i></button>
         </li>`;
       });
       html += '</ul>';
@@ -295,10 +300,11 @@ Object.assign(App, {
         if (await this.showConfirm({ message: this.t('history_reset_confirm'), danger: false })) this.resetHistory();
       });
       cont.querySelectorAll('.track-row[data-track]').forEach(row => {
-        row.addEventListener('click', () => {
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('.track-menu-btn')) return;
           this.playTrack(row.dataset.track, { type: 'all' });
-          this.closeSheet('sheetHistory');
         });
+        if (typeof this.wireTrackLongPress === 'function') this.wireTrackLongPress(row, row.dataset.track);
         const cv = row.querySelector('canvas');
         const t = this.tracks.find(x => x.id === row.dataset.track);
         if (cv && t) this.drawRowCover(cv, t);
@@ -366,6 +372,7 @@ Object.assign(App, {
         this.renderPlaylists();
         this.renderQueue();
         this.renderFavorites();
+        if (typeof this.renderHome === 'function') this.renderHome();
         if (this.currentTrack) this.renderCurrentTrack();
       }
       if (!silent) {
@@ -539,6 +546,8 @@ Object.assign(App, {
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();
+      if (typeof this.renderHome === 'function') this.renderHome();
+      if (typeof this.updateChrome === 'function') this.updateChrome();
       this.toast(this.t('toast_track_deleted'));
     },
 
@@ -617,6 +626,9 @@ Object.assign(App, {
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();
+      if (typeof this.renderHome === 'function') this.renderHome();
+      if (typeof this.goNav === 'function') this.goNav('home');
+      else if (typeof this.updateChrome === 'function') this.updateChrome();
       this.toast(this.t('toast_all_deleted'));
     },
 
