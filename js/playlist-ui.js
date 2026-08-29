@@ -398,14 +398,14 @@ Object.assign(App, {
         li.className = 'queue-item' + (i === this.queueIdx ? ' current' : '');
         li.dataset.idx = i;
         li.innerHTML = `
-          <button class="drag-handle" aria-label="Mover"><i class="fa-solid fa-grip-vertical"></i></button>
+          <button class="drag-handle" aria-label="Mover"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)}</div>
           </div>
           <div class="row-duration">${this.fmtTime(t.duration)}</div>
-          <button class="row-action queue-remove" aria-label="Quitar"><i class="fa-solid fa-xmark"></i></button>
+          <button class="row-action queue-remove" aria-label="Quitar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
         `;
         // Click normal → reproducir
         li.addEventListener('click', (e) => {
@@ -629,10 +629,10 @@ Object.assign(App, {
           const li = document.createElement('li');
           li.className = 'empty-state pl-empty';
           li.innerHTML = `
-            <div class="empty-icon"><i class="fa-solid fa-compact-disc"></i></div>
+            <div class="empty-icon"><svg class="ico" aria-hidden="true"><use href="#i-compact-disc"></use></svg></div>
             <h4>${this.t('no_playlists_yet')}</h4>
             <p>${this.t('no_playlists_hint')}</p>
-            <button class="primary-btn" id="btnEmptyNewPlaylist"><i class="fa-solid fa-plus"></i> ${this.t('create_new_playlist')}</button>
+            <button class="primary-btn" id="btnEmptyNewPlaylist"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg> ${this.t('create_new_playlist')}</button>
           `;
           const btn = li.querySelector('#btnEmptyNewPlaylist');
           if (btn) btn.addEventListener('click', () => this.openCreatePlaylistSheet());
@@ -649,8 +649,8 @@ Object.assign(App, {
             ? `background-image:url('${cover}');background-size:cover;background-position:center;`
             : `background:linear-gradient(135deg, ${cover.from}, ${cover.to});`;
           const fallbackIcon = pl.id === this.DEFAULT_PLAYLIST_ID
-            ? 'fa-solid fa-music'
-            : (pl.id === 'favoritos' ? 'fa-solid fa-heart' : 'fa-solid fa-list-ul');
+            ? 'music'
+            : (pl.id === 'favoritos' ? 'heart-solid' : 'list-ul');
           const tracksLabel = this.playlistMetaLabel(pl);
           const badge = pl.isDefault
             ? '<span class="pl-badge">' + this.esc(this.t('my_music_playlist')) + '</span>'
@@ -661,10 +661,10 @@ Object.assign(App, {
           const coverHtml = `
             <div class="pl-cover${hasArt ? ' has-art' : ''}" data-pl-cover="${this.esc(pl.id)}">
               <div class="pl-cover-grad" style="${coverBg}" data-pl-cover="${this.esc(pl.id)}"></div>
-              ${hasArt ? '' : '<i class="pl-cover-icon ' + fallbackIcon + '"></i>'}
+              ${hasArt ? '' : this.ico(fallbackIcon, 'pl-cover-icon')}
               ${live}
               <button class="pl-play-fab" type="button" aria-label="${this.esc(this.t('play_all_btn'))}">
-                <i class="fa-solid fa-play"></i>
+                <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
               </button>
             </div>
           `;
@@ -676,7 +676,7 @@ Object.assign(App, {
               const delBtn = document.createElement('button');
               delBtn.className = 'row-action';
               delBtn.setAttribute('aria-label', this.t('delete_playlist_btn'));
-              delBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+              delBtn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>';
               delBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.deletePlaylist(pl.id);
@@ -741,7 +741,7 @@ Object.assign(App, {
         li.dataset.trackId = t.id;
         if (inPl) li.setAttribute('aria-disabled', 'true');
         li.innerHTML = `
-          <div class="row-check"><i class="fa-solid fa-check"></i></div>
+          <div class="row-check"><svg class="ico" aria-hidden="true"><use href="#i-check"></use></svg></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)}${inPl ? ' · <span class="in-pl-tag">' + this.esc(this.t('picker_already_in')) + '</span>' : ''}</div>

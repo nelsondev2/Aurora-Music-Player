@@ -74,7 +74,7 @@ Object.assign(App, {
       const resetDiv = document.createElement('div');
       resetDiv.className = 'stats-reset-wrap';
       resetDiv.innerHTML = `
-        <button class="primary-btn compact ghost danger" id="btnResetStats"><i class="fa-solid fa-trash-can"></i> ${this.esc(this.t('stats_reset_btn'))}</button>
+        <button class="primary-btn compact ghost danger" id="btnResetStats"><svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg> ${this.esc(this.t('stats_reset_btn'))}</button>
       `;
       cont.appendChild(resetDiv);
       const btnRS = document.getElementById('btnResetStats');
@@ -144,7 +144,7 @@ Object.assign(App, {
           artists.forEach(ar => {
             const li = document.createElement('li');
             li.className = 'artist-row';
-            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(ar.name)}</div><div class="row-sub">${ar.tracks.length} ${this.esc(this.t('tracks_count'))}</div></div><i class="fa-solid fa-chevron-right row-chevron"></i>`;
+            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(ar.name)}</div><div class="row-sub">${ar.tracks.length} ${this.esc(this.t('tracks_count'))}</div></div><svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
             li.addEventListener('click', () => this.goToArtist(ar.name));
             ul.appendChild(li);
           });
@@ -154,7 +154,7 @@ Object.assign(App, {
           albums.forEach(al => {
             const li = document.createElement('li');
             li.className = 'artist-row';
-            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(al.name)}</div><div class="row-sub">${this.esc(al.artist)} · ${al.tracks.length} ${this.esc(this.t('tracks_count'))}</div></div><i class="fa-solid fa-chevron-right row-chevron"></i>`;
+            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(al.name)}</div><div class="row-sub">${this.esc(al.artist)} · ${al.tracks.length} ${this.esc(this.t('tracks_count'))}</div></div><svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
             li.addEventListener('click', () => this.goToAlbum(al.name, al.artist));
             ul.appendChild(li);
           });
@@ -209,7 +209,7 @@ Object.assign(App, {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'search-history-row';
-        btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i><span>' + this.esc(q) + '</span>';
+        btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-clock-rotate-left"></use></svg><span>' + this.esc(q) + '</span>';
         btn.addEventListener('click', () => {
           const inp = document.getElementById('searchInput');
           if (inp) inp.value = q;
@@ -222,7 +222,7 @@ Object.assign(App, {
       const cbtn = document.createElement('button');
       cbtn.type = 'button';
       cbtn.className = 'search-history-row';
-      cbtn.innerHTML = '<i class="fa-solid fa-xmark"></i><span>' + this.esc(this.t('search_clear_history')) + '</span>';
+      cbtn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg><span>' + this.esc(this.t('search_clear_history')) + '</span>';
       cbtn.addEventListener('click', () => {
         this.clearSearchHistory();
         this.runSearch('', this._searchFilter || 'all');

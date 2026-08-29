@@ -529,7 +529,7 @@ Object.assign(App, {
         li.innerHTML = `
           <span class="lang-flag">${l.flag}</span>
           <span class="lang-name">${l.name}</span>
-          ${l.code === this.lang ? '<i class="fa-solid fa-check lang-check"></i>' : ''}
+          ${l.code === this.lang ? '<svg class="ico lang-check" aria-hidden="true"><use href="#i-check"></use></svg>' : ''}
         `;
         li.addEventListener('click', () => {
           this.setLang(l.code);

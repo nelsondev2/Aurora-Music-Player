@@ -118,17 +118,17 @@ Cada fase es un PR. No se mezcla con features de audio. Criterio de salida = scr
 
 **Salida:** cambiar tema/acento en Ajustes no deja un componente “del otro mundo”. Light y AMOLED se pueden enseñar.
 
-### Fase B — Marca e iconos (1 día)
+### Fase B — Marca e iconos (1 día) ✅
 
-**Meta:** se reconoce Aurora a 32 px y sin leer el nombre.
+**Meta:** se reconoce Aurora a 32 px y sin leer el nombre. **Hecha.**
 
-- [ ] `icon.png` / favicon: marca aurora (arco o cinta), no el play genérico. Sigue siendo simple, 1 forma + degradado.
-- [ ] Wordmark en welcome: tracking y peso alineados al token display.
-- [ ] Sprite SVG de iconos usados; grep de `fa-solid`/`fa-regular` → 0.
-- [ ] Borrar `webfonts/` y `fontawesome.min.css`. Actualizar `build-xdc.py`.
-- [ ] Hit areas 44 px se mantienen (los SVG no pueden encoger el tap).
+- [x] `icon.png` / favicon: marca aurora (cinta), no el play genérico.
+- [x] Wordmark en welcome: tracking y peso alineados al token display.
+- [x] Sprite SVG (`assets/icons.svg`, inline en `index.html`); `fa-solid`/`fa-regular` = 0 en código.
+- [x] Borrar `webfonts/` y `fontawesome.min.css`. Actualizar `build-xdc.py`.
+- [x] Hit areas 44 px se mantienen (los SVG no encogen el tap).
 
-**Salida:** Lighthouse/peso baja ~700 KB; ningún icono FA en runtime.
+**Salida:** ~700 KB menos; ningún icono FA en runtime.
 
 ### Fase C — Now Playing (1 día)
 

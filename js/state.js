@@ -137,6 +137,17 @@
     _lastError: null,
     VERSION: '1.0.0',
     _marqueeEnabled: true,
+
+    ico(name, extra) {
+      const cls = extra ? ('ico ' + extra) : 'ico';
+      return '<svg class="' + cls + '" aria-hidden="true"><use href="#i-' + name + '"></use></svg>';
+    },
+    setIco(el, name) {
+      if (!el) return;
+      const svg = (el.tagName && el.tagName.toLowerCase() === 'svg') ? el : el.querySelector('svg');
+      const use = svg && svg.querySelector('use');
+      if (use) use.setAttribute('href', '#i-' + name);
+    },
 };
 
 /* App vive en el scope léxico global y se expone también en window. */

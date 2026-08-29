@@ -109,10 +109,10 @@ Object.assign(App, {
           const from = (cover && cover.from) || ((this.coverFallback && this.coverFallback().from) || '#6E5CFF');
           const to = (cover && cover.to) || ((this.coverFallback && this.coverFallback().to) || '#FF7AB6');
           coverEl.style.background = 'linear-gradient(135deg, ' + from + ', ' + to + ')';
-          const iconClass = pl.id === this.DEFAULT_PLAYLIST_ID
-            ? 'fa-solid fa-music'
-            : (pl.id === 'favoritos' ? 'fa-solid fa-heart' : 'fa-solid fa-list-ul');
-          coverEl.innerHTML = '<i class="' + iconClass + '"></i>';
+          const iconName = pl.id === this.DEFAULT_PLAYLIST_ID
+            ? 'music'
+            : (pl.id === 'favoritos' ? 'heart-solid' : 'list-ul');
+          coverEl.innerHTML = this.ico(iconName);
         }
       }
       if (!ul) return;
@@ -120,7 +120,7 @@ Object.assign(App, {
       if (pl.trackIds.length === 0) {
         const li = document.createElement('li');
         li.className = 'pl-empty-tracks';
-        li.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i><p>' + this.esc(this.t('no_tracks_in_playlist')) + '</p>';
+        li.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-cloud-arrow-up"></use></svg><p>' + this.esc(this.t('no_tracks_in_playlist')) + '</p>';
         ul.appendChild(li);
         return;
       }
@@ -133,15 +133,15 @@ Object.assign(App, {
         li.dataset.trackId = id;
         li.dataset.idx = String(i);
         li.innerHTML = `
-          <button class="drag-handle" type="button" aria-label="Mover"><i class="fa-solid fa-grip-vertical"></i></button>
+          <button class="drag-handle" type="button" aria-label="Mover"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)}</div>
           </div>
-          <div class="row-duration">${isCurrent ? '<i class="fa-solid fa-volume-high now-eq"></i> ' : ''}${this.fmtTime(t.duration)}</div>
-          <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><i class="fa-solid fa-ellipsis-vertical"></i></button>
-          <button class="row-action remove-from-pl" aria-label="${this.esc(this.t('remove_from_playlist'))}"><i class="fa-solid fa-xmark"></i></button>
+          <div class="row-duration">${isCurrent ? '<svg class="ico now-eq" aria-hidden="true"><use href="#i-volume-high"></use></svg> ' : ''}${this.fmtTime(t.duration)}</div>
+          <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>
+          <button class="row-action remove-from-pl" aria-label="${this.esc(this.t('remove_from_playlist'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
         `;
         li.addEventListener('click', (e) => {
           if (e.target.closest('.remove-from-pl, .track-menu-btn, .drag-handle')) return;

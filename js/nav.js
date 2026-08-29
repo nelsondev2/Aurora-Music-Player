@@ -128,16 +128,16 @@ Object.assign(App, {
             <h2>${this.esc(this.t('home_welcome_title'))}</h2>
             <p class="home-welcome-lead">${this.esc(this.t('home_welcome_lead'))}</p>
             <button class="primary-btn home-welcome-cta" id="btnHomeLoad" type="button">
-              <i class="fa-solid fa-plus"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
               <span>${this.esc(this.t('load_music'))}</span>
             </button>
             <ul class="home-welcome-formats" aria-label="${this.esc(this.t('empty_format_hint'))}">
               <li>MP3</li><li>FLAC</li><li>M4A</li><li>WAV</li><li>OGG</li>
             </ul>
             <div class="home-welcome-perks">
-              <div><i class="fa-solid fa-align-left" aria-hidden="true"></i><span>${this.esc(this.t('home_perk_lyrics'))}</span></div>
-              <div><i class="fa-solid fa-list-ul" aria-hidden="true"></i><span>${this.esc(this.t('home_perk_playlists'))}</span></div>
-              <div><i class="fa-solid fa-lock" aria-hidden="true"></i><span>${this.esc(this.t('home_perk_offline'))}</span></div>
+              <div><svg class="ico" aria-hidden="true"><use href="#i-align-left"></use></svg><span>${this.esc(this.t('home_perk_lyrics'))}</span></div>
+              <div><svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg><span>${this.esc(this.t('home_perk_playlists'))}</span></div>
+              <div><svg class="ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>${this.esc(this.t('home_perk_offline'))}</span></div>
             </div>
           </div>`;
         const btn = document.getElementById('btnHomeLoad');
@@ -156,7 +156,7 @@ Object.assign(App, {
               <strong>${this.esc(t.title)}</strong>
               <span>${this.esc(t.artist || this.t('unknown_artist'))}</span>
             </div>
-            <i class="fa-solid fa-chevron-right home-hero-chevron"></i>
+            <svg class="ico home-hero-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>
           </button>`;
       }
 
@@ -393,7 +393,7 @@ Object.assign(App, {
             <div class="row-title">${this.esc(ar.name)}</div>
             <div class="row-sub">${ar.tracks.length} ${this.esc(this.t('tracks_count'))}${albums.size ? ' · ' + albums.size : ''}</div>
           </div>
-          <i class="fa-solid fa-chevron-right row-chevron"></i>`;
+          <svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
         li.addEventListener('click', () => this.goToArtist(ar.name));
         ul.appendChild(li);
         const cv = li.querySelector('canvas');
@@ -491,7 +491,7 @@ Object.assign(App, {
           <div class="row-sub">${this.esc(t.artist)}${t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + this.esc(t.album) : ''}</div>
         </div>
         <div class="row-duration">${this.fmtTime(t.duration)}</div>
-        <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><i class="fa-solid fa-ellipsis-vertical"></i></button>`;
+        <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>`;
       const ctx = opts.playContext || { type: 'all' };
       li.addEventListener('click', (e) => {
         if (e.target.closest('.track-menu-btn')) return;

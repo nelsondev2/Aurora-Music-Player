@@ -355,11 +355,11 @@ Object.assign(App, {
             <div class="row-sub">${this.esc(t.artist)}</div>
           </div>
           <div class="row-duration">${this.fmtTime(t.duration)}</div>
-          <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+          <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>
         </li>`;
       });
       html += '</ul>';
-      html += '<div class="history-reset-wrap"><button class="primary-btn compact ghost danger" id="btnResetHistory"><i class="fa-solid fa-trash-can"></i> ' + this.esc(this.t('history_reset_btn')) + '</button></div>';
+      html += '<div class="history-reset-wrap"><button class="primary-btn compact ghost danger" id="btnResetHistory"><svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg> ' + this.esc(this.t('history_reset_btn')) + '</button></div>';
       cont.innerHTML = html;
       const btnRH = document.getElementById('btnResetHistory');
       if (btnRH) btnRH.addEventListener('click', async () => {
@@ -719,19 +719,19 @@ Object.assign(App, {
         const btn = document.createElement('button');
         btn.className = 'primary-btn empty-cta';
         btn.id = 'btnEmptyLoad';
-        btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up" style="margin-right:8px"></i><span></span>';
+        btn.innerHTML = '<svg class="ico" style="margin-right:8px" aria-hidden="true"><use href="#i-cloud-arrow-up"></use></svg><span></span>';
         btn.addEventListener('click', () => this.openFilePicker());
         empty.appendChild(btn);
       }
       // Re-pintar contenido traducido cada vez
       empty.innerHTML = `
         <div class="empty-icon">
-          <i class="fa-solid fa-music"></i>
+          <svg class="ico" aria-hidden="true"><use href="#i-music"></use></svg>
         </div>
         <h2>${this.t('empty_library_title')}</h2>
         <p>${this.t('empty_library_hint')}</p>
         <button class="primary-btn empty-cta" id="btnEmptyLoad">
-          <i class="fa-solid fa-cloud-arrow-up" style="margin-right:8px"></i>
+          <svg class="ico" style="margin-right:8px" aria-hidden="true"><use href="#i-cloud-arrow-up"></use></svg>
           <span>${this.t('load_music')}</span>
         </button>
         <p class="empty-hint">${this.t('empty_format_hint')}</p>

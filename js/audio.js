@@ -729,15 +729,12 @@ Object.assign(App, {
     },
 
     _updateVolumeIcon() {
-      const cls = this.volume <= 0.001 ? 'fa-volume-xmark'
-                : this.volume < 0.4 ? 'fa-volume-low'
-                : 'fa-volume-high';
+      const name = this.volume <= 0.001 ? 'volume-xmark'
+                 : this.volume < 0.4 ? 'volume-low'
+                 : 'volume-high';
       ['btnVolume', 'npVolIcon'].forEach(id => {
         const root = document.getElementById(id);
-        const icon = root && (root.tagName === 'I' ? root : root.querySelector('i'));
-        if (!icon) return;
-        icon.classList.remove('fa-volume-xmark', 'fa-volume-low', 'fa-volume-high');
-        icon.classList.add('fa-solid', cls);
+        if (root) this.setIco(root, name);
       });
     },
 
@@ -797,17 +794,7 @@ Object.assign(App, {
         if (!b) return;
         b.classList.toggle('liked', liked);
         b.setAttribute('aria-pressed', liked ? 'true' : 'false');
-        // Cambiar icono FA: corazón vacío (regular) vs lleno (solid)
-        const icon = b.querySelector('i');
-        if (icon) {
-          if (liked) {
-            icon.classList.remove('fa-regular');
-            icon.classList.add('fa-solid');
-          } else {
-            icon.classList.remove('fa-solid');
-            icon.classList.add('fa-regular');
-          }
-        }
+        this.setIco(b, liked ? 'heart-solid' : 'heart');
       });
     },
 });

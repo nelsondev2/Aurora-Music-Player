@@ -28,8 +28,7 @@ INCLUDE = [
     "storage.js",
     "uploader.js",
     "js",            # módulos de la app
-    "assets",        # jsmediatags + fontawesome css
-    "webfonts",      # webfonts de fontawesome
+    "assets",        # jsmediatags + sprite de iconos
 ]
 
 

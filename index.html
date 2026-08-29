@@ -13,11 +13,65 @@
   <title>Aurora Music Player</title>
   <link rel="icon" type="image/png" href="icon.png" />
   <link rel="apple-touch-icon" href="icon.png" />
-  <!-- Font Awesome 6 (embebido localmente, sin CDN) -->
-  <link rel="stylesheet" href="assets/css/fontawesome.min.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <svg xmlns="http://www.w3.org/2000/svg" class="icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.2v13.6c0 .9 1 1.45 1.75.97l10.2-6.8a1.15 1.15 0 0 0 0-1.94l-10.2-6.8A1.15 1.15 0 0 0 8 5.2z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M7 5.5A1.5 1.5 0 0 1 8.5 4h1A1.5 1.5 0 0 1 11 5.5v13A1.5 1.5 0 0 1 9.5 20h-1A1.5 1.5 0 0 1 7 18.5v-13zm7 0A1.5 1.5 0 0 1 15.5 4h1A1.5 1.5 0 0 1 18 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-1A1.5 1.5 0 0 1 14 18.5v-13z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path fill="currentColor" d="M5 11h14v2H5z"/></symbol>
+    <symbol id="i-xmark" viewBox="0 0 24 24"><path fill="currentColor" d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4L13.4 12l5.3 5.3-1.4 1.4L12 13.4l-5.3 5.3-1.4-1.4L10.6 12 5.3 6.7z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path fill="currentColor" d="M9.2 16.2 4.8 11.8l-1.4 1.4 5.8 5.8 12-12-1.4-1.4z"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 20s-7.2-4.35-9.2-8.4C1.4 8.7 2.7 5.5 6 5.1c1.9-.2 3.6.7 4.5 2.2C11.4 5.8 13.1 4.9 15 5.1c3.3.4 4.6 3.6 3.2 6.5C19.2 15.65 12 20 12 20z"/></symbol>
+    <symbol id="i-heart-solid" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21s-8-4.8-10.2-9.3C.2 7.9 2.1 4.2 6.2 3.8c2.2-.2 4.1.9 5.1 2.7 1-1.8 2.9-2.9 5.1-2.7 4.1.4 6 3.9 4.4 7.9C20 16.2 12 21 12 21z"/></symbol>
+    <symbol id="i-house" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.2 3 11h2v9h6v-6h2v6h6v-9h2L12 3.2z"/></symbol>
+    <symbol id="i-magnifying-glass" viewBox="0 0 24 24"><path fill="currentColor" d="M10.5 3a7.5 7.5 0 0 1 5.9 12.1l4.2 4.2-1.4 1.4-4.2-4.2A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z"/></symbol>
+    <symbol id="i-ellipsis-vertical" viewBox="0 0 24 24"><path fill="currentColor" d="M12 6.5A1.75 1.75 0 1 0 12 3a1.75 1.75 0 0 0 0 3.5zm0 7.25A1.75 1.75 0 1 0 12 10.5a1.75 1.75 0 0 0 0 3.5zM13.75 19.25A1.75 1.75 0 1 1 12 17.5a1.75 1.75 0 0 1 1.75 1.75z"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path fill="currentColor" d="M16 5h2.5l-3.2 3.2 1.4 1.4L20 6.3V9h2V3h-6v2zm-9.6.4L3 9.8l1.4 1.4 3.4-3.4 1.4 1.4L5.8 12.6 7.2 14 3 18.2 4.4 19.6 8.6 15.4l1.4 1.4-3.4 3.4L8 21.6 12.2 17.4 16.6 21.8 18 20.4 13.6 16 17.8 11.8 16.4 10.4 12.2 14.6 9.4 11.8 12.2 9 7.8 4.6 6.4 6z"/></symbol>
+    <symbol id="i-repeat" viewBox="0 0 24 24"><path fill="currentColor" d="M7 7h8V4l5 4-5 4V9H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5zm10 10H9v3l-5-4 5-4v3h8a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5z"/></symbol>
+    <symbol id="i-backward-step" viewBox="0 0 24 24"><path fill="currentColor" d="M6 5h2v14H6V5zm3.2 7 9.8 6.5V5.5L9.2 12z"/></symbol>
+    <symbol id="i-forward-step" viewBox="0 0 24 24"><path fill="currentColor" d="M16 5h2v14h-2V5zM4 18.5V5.5L13.8 12 4 18.5z"/></symbol>
+    <symbol id="i-backward" viewBox="0 0 24 24"><path fill="currentColor" d="M11.5 12 20 18.2V5.8L11.5 12zM4 18.2V5.8L12.5 12 4 18.2z"/></symbol>
+    <symbol id="i-forward" viewBox="0 0 24 24"><path fill="currentColor" d="M4 5.8v12.4L12.5 12 4 5.8zm8.5 0v12.4L21 12l-8.5-6.2z"/></symbol>
+    <symbol id="i-volume-high" viewBox="0 0 24 24"><path fill="currentColor" d="M3 9h4l5-4v14l-5-4H3V9zm11.2.2a4 4 0 0 1 0 5.6l-1.4-1.4a2 2 0 0 0 0-2.8l1.4-1.4zm2.5-2.5a7.5 7.5 0 0 1 0 10.6l-1.4-1.4a5.5 5.5 0 0 0 0-7.8l1.4-1.4z"/></symbol>
+    <symbol id="i-volume-low" viewBox="0 0 24 24"><path fill="currentColor" d="M3 9h4l5-4v14l-5-4H3V9zm11.2.2a4 4 0 0 1 0 5.6l-1.4-1.4a2 2 0 0 0 0-2.8l1.4-1.4z"/></symbol>
+    <symbol id="i-volume-xmark" viewBox="0 0 24 24"><path fill="currentColor" d="M3 9h4l5-4v14l-5-4H3V9zm12.5 1.1 1.4-1.4 1.8 1.8 1.8-1.8 1.4 1.4-1.8 1.8 1.8 1.8-1.4 1.4-1.8-1.8-1.8 1.8-1.4-1.4 1.8-1.8-1.8-1.8z"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path fill="currentColor" d="M13 3a9 9 0 1 0 8 11.2A7 7 0 0 1 13 3z"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path fill="currentColor" d="M4 6h9V4H4v2zm13 0h3V4h-3V2h-2v8h2V6zM4 13h3v2H4v-2zm7 0h9v-2h-9v-2H9v8h2v-4zM4 20h13v-2H4v2zm17 0h-2v2h-2v-8h2v4h2v2z"/></symbol>
+    <symbol id="i-list-ul" viewBox="0 0 24 24"><path fill="currentColor" d="M4 6.5A1.5 1.5 0 1 0 4 3.5 1.5 1.5 0 0 0 4 6.5zM8 4h13v2H8V4zm-4 8.5A1.5 1.5 0 1 0 4 9.5 1.5 1.5 0 0 0 4 12.5zM8 10h13v2H8v-2zm-4 8.5A1.5 1.5 0 1 0 4 15.5 1.5 1.5 0 0 0 4 18.5zM8 16h13v2H8v-2z"/></symbol>
+    <symbol id="i-list-ol" viewBox="0 0 24 24"><path fill="currentColor" d="M3 4h2v5H3.5V7.5H3V6h.5V4H3zm5 0h13v2H8V4zm-5 8h2.2v.8H4.2v1H5.2V14H3v-1.2h1V12H3v-1h2.2v1H3zm5-1h13v2H8v-2zm-4.2 6.2c.7 0 1.2.3 1.2.8s-.5.7-1.2.7H4v1h2v1H3v-2.2c0-.7.5-1.2 1.2-1.2.4 0 .7.1.8.4h.01c0-.3-.3-.5-.8-.5-.4 0-.7.2-.8.4H3.2c.1-.8.8-1.4 1.6-1.4zM8 16h13v2H8v-2z"/></symbol>
+    <symbol id="i-align-left" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h18v2H3V5zm0 4h12v2H3V9zm0 4h18v2H3v-2zm0 4h12v2H3v-2z"/></symbol>
+    <symbol id="i-align-center" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h18v2H3V5zm3 4h12v2H6V9zm-3 4h18v2H3v-2zm3 4h12v2H6v-2z"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path fill="currentColor" d="M11 2h2l.4 2.6a7.5 7.5 0 0 1 2.1.9L17.3 4l1.4 1.4-1.5 1.8a7.5 7.5 0 0 1 .9 2.1L20.7 11v2l-2.6.4a7.5 7.5 0 0 1-.9 2.1l1.5 1.8-1.4 1.4-1.8-1.5a7.5 7.5 0 0 1-2.1.9L13 22h-2l-.4-2.6a7.5 7.5 0 0 1-2.1-.9L6.7 20 5.3 18.6l1.5-1.8a7.5 7.5 0 0 1-.9-2.1L3.3 13v-2l2.6-.4a7.5 7.5 0 0 1 .9-2.1L5.3 6.7 6.7 5.3l1.8 1.5a7.5 7.5 0 0 1 2.1-.9L11 2zm1 7a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"/></symbol>
+    <symbol id="i-palette" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3a9 9 0 0 0-1.2 17.9c.7.1 1.2-.5 1.2-1.1 0-.4.1-.8.4-1.1.3-.3.7-.4 1.1-.3 2.3.4 4.5-1.4 4.5-4.4A9 9 0 0 0 12 3zM7.5 11A1.5 1.5 0 1 1 7.5 8a1.5 1.5 0 0 1 0 3zm3-3A1.5 1.5 0 1 1 10.5 5a1.5 1.5 0 0 1 0 3zm5 0A1.5 1.5 0 1 1 15.5 5a1.5 1.5 0 0 1 0 3zm2 4A1.5 1.5 0 1 1 17.5 9a1.5 1.5 0 0 1 0 3z"/></symbol>
+    <symbol id="i-language" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm7.4 9h-3.1a15 15 0 0 0-1.4-5.3A8 8 0 0 1 19.4 11zM12 4c.8 1.4 1.6 3.4 2 7H10c.4-3.6 1.2-5.6 2-7zM4.6 13h3.1a15 15 0 0 0 1.4 5.3A8 8 0 0 1 4.6 13zM7.7 11H4.6A8 8 0 0 1 9.1 5.7 15 15 0 0 0 7.7 11zM12 20c-.8-1.4-1.6-3.4-2-7h4c-.4 3.6-1.2 5.6-2 7zm2.9-1.7A15 15 0 0 0 16.3 13h3.1a8 8 0 0 1-4.5 5.3z"/></symbol>
+    <symbol id="i-keyboard" viewBox="0 0 24 24"><path fill="currentColor" d="M2 6.5A2.5 2.5 0 0 1 4.5 4h15A2.5 2.5 0 0 1 22 6.5v11A2.5 2.5 0 0 1 19.5 20h-15A2.5 2.5 0 0 1 2 17.5v-11zM5 8v2h2V8H5zm3 0v2h2V8H8zm3 0v2h2V8h-2zm3 0v2h2V8h-2zm3 0v2h2V8h-2zM5 11v2h2v-2H5zm3 0v2h8v-2H8zm9 0v2h2v-2h-2zM5 14v2h14v-2H5z"/></symbol>
+    <symbol id="i-tags" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5.5A2.5 2.5 0 0 1 5.5 3H11l10 10-8.5 8.5L3 11.5V5.5zM8 8.5A1.5 1.5 0 1 0 8 5.5 1.5 1.5 0 0 0 8 8.5z"/></symbol>
+    <symbol id="i-broom" viewBox="0 0 24 24"><path fill="currentColor" d="m15.2 3 1.4 1.4-2.1 2.1 4 4 2.1-2.1 1.4 1.4-3.5 3.5-1.4-1.4.7-.7-4-4-.7.7-1.4-1.4L15.2 3zM4 14l6.5-1.5 5 5L14 24H4l3.5-6.5L4 14z"/></symbol>
+    <symbol id="i-file-export" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h7l5 5v6h-2V8h-5V3H6v18h6v2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm10 11 5 4-5 4v-3h-5v-2h5v-3z"/></symbol>
+    <symbol id="i-file-import" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h7l5 5v6h-2V8h-5V3H6v18h6v2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm15 15-5-4v3h-5v2h5v3l5-4z"/></symbol>
+    <symbol id="i-file-arrow-up" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h7l5 5v15H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5L13 3.5zM11 11v6h2v-6h2.5L12 7.5 8.5 11H11z"/></symbol>
+    <symbol id="i-trash-can" viewBox="0 0 24 24"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v10h-2V9zm4 0h2v10h-2V9zM6 9h2v11a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9h2v11a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V9z"/></symbol>
+    <symbol id="i-pen" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.2 16.6 3.6l3.8 3.8L6.8 21H3v-3.8zM18.2 2.2l1.6 1.6 1.4-1.4L19.6.8 18.2 2.2z"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><path fill="currentColor" d="M12 12a4.5 4.5 0 1 0-4.5-4.5A4.5 4.5 0 0 0 12 12zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z"/></symbol>
+    <symbol id="i-compact-disc" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 8.5A1.5 1.5 0 1 1 12 13a1.5 1.5 0 0 1 0-3zM12 4a8 8 0 0 1 7.5 5.4l-1.9.6A6 6 0 0 0 12 6V4z"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24"><path fill="currentColor" d="M9 4v11.2A3.5 3.5 0 1 0 11 18V8h8V4H9zm0 13.5A1.5 1.5 0 1 1 7.5 16 1.5 1.5 0 0 1 9 17.5z"/></symbol>
+    <symbol id="i-cloud-arrow-up" viewBox="0 0 24 24"><path fill="currentColor" d="M7 18a5 5 0 0 1-.2-10 7 7 0 0 1 13.6 1.7A4.5 4.5 0 0 1 20 18h-7v-4.5l2.2 2.2 1.4-1.4L12 9.7 7.4 14.3l1.4 1.4L11 13.5V18H7z"/></symbol>
+    <symbol id="i-chart-simple" viewBox="0 0 24 24"><path fill="currentColor" d="M4 20V10h3v10H4zm6.5 0V4h3v16h-3zM17 20v-7h3v7h-3z"/></symbol>
+    <symbol id="i-clock-rotate-left" viewBox="0 0 24 24"><path fill="currentColor" d="M12 4a8 8 0 1 1-7.5 5.2L6.9 10 3 11.2 4.2 7.4l1.6 1.2A6 6 0 1 0 12 6V4zm-1 4h2v4.2l3 1.8-.9 1.5L11 12.4V8z"/></symbol>
+    <symbol id="i-arrow-up-right-from-square" viewBox="0 0 24 24"><path fill="currentColor" d="M13 3h8v8h-2V6.4l-9.3 9.3-1.4-1.4L17.6 5H13V3zM5 5h6v2H5v12h12v-6h2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path fill="currentColor" d="m12 15.4 7-7-1.4-1.4L12 12.6 6.4 7 5 8.4z"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><path fill="currentColor" d="m15.4 12-7 7-1.4-1.4L12.6 12 7 6.4 8.4 5z"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></symbol>
+    <symbol id="i-font" viewBox="0 0 24 24"><path fill="currentColor" d="m6 19 6-14 6 14h-2.3l-1.2-3H9.5L8.3 19H6zm4.3-5h3.4L12 8.7 10.3 14z"/></symbol>
+    <symbol id="i-grip" viewBox="0 0 24 24"><path fill="currentColor" d="M8 7.5A1.5 1.5 0 1 1 8 4.5 1.5 1.5 0 0 1 8 7.5zm8 0A1.5 1.5 0 1 1 16 4.5 1.5 1.5 0 0 1 16 7.5zM8 13.5A1.5 1.5 0 1 1 8 10.5 1.5 1.5 0 0 1 8 13.5zm8 0A1.5 1.5 0 1 1 16 10.5 1.5 1.5 0 0 1 16 13.5zM8 19.5A1.5 1.5 0 1 1 8 16.5 1.5 1.5 0 0 1 8 19.5zm8 0A1.5 1.5 0 1 1 16 16.5 1.5 1.5 0 0 1 16 19.5z"/></symbol>
+    <symbol id="i-grip-vertical" viewBox="0 0 24 24"><path fill="currentColor" d="M9 7.5A1.5 1.5 0 1 1 9 4.5 1.5 1.5 0 0 1 9 7.5zm6 0A1.5 1.5 0 1 1 15 4.5 1.5 1.5 0 0 1 15 7.5zM9 13.5A1.5 1.5 0 1 1 9 10.5 1.5 1.5 0 0 1 9 13.5zm6 0A1.5 1.5 0 1 1 15 10.5 1.5 1.5 0 0 1 15 13.5zM9 19.5A1.5 1.5 0 1 1 9 16.5 1.5 1.5 0 0 1 9 19.5zm6 0A1.5 1.5 0 1 1 15 16.5 1.5 1.5 0 0 1 15 19.5z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><path fill="currentColor" d="M8 10V7a4 4 0 1 1 8 0v3h1.5A1.5 1.5 0 0 1 19 11.5v8A1.5 1.5 0 0 1 17.5 21h-11A1.5 1.5 0 0 1 5 19.5v-8A1.5 1.5 0 0 1 6.5 10H8zm2 0h4V7a2 2 0 1 0-4 0v3z"/></symbol>
+    <symbol id="i-tower-broadcast" viewBox="0 0 24 24"><path fill="currentColor" d="M11 3h2v18h-2V3zm-6.5 5.5 1.4 1.4A7 7 0 0 1 5 12a7 7 0 0 1 .9 2.1L4.5 15.5A9 9 0 0 1 3 12a9 9 0 0 1 1.5-3.5zm13.6 0A9 9 0 0 1 21 12a9 9 0 0 1-1.5 3.5l-1.4-1.4A7 7 0 0 0 19 12a7 7 0 0 0-.9-2.1l1.4-1.4zM8.1 10.1 9.5 11.5A3 3 0 0 1 9 12a3 3 0 0 1 .5.5L8.1 13.9A5 5 0 0 1 7 12a5 5 0 0 1 1.1-1.9zm7.8 0A5 5 0 0 1 17 12a5 5 0 0 1-1.1 1.9l-1.4-1.4A3 3 0 0 0 15 12a3 3 0 0 0-.5-.5l1.4-1.4z"/></symbol>
+    <symbol id="i-triangle-exclamation" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3 1.8 21h20.4L12 3zm0 6.5 1 6h-2l1-6zm0 9.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4z"/></symbol>
+  </svg>
+  
   <!-- Contenedor tipo marco de móvil para mostrar en escritorio -->
   <div class="device-frame">
     <div class="device-screen" id="deviceScreen">
@@ -33,14 +87,14 @@
         <!-- Barra superior -->
         <header class="top-bar">
           <button class="icon-btn icon-add" id="btnBack" data-i18n-aria="load_music" aria-label="Cargar música">
-            <i class="fa-solid fa-plus"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
           </button>
           <div class="top-bar-title">
             <span class="now-playing-label" data-i18n="now_playing_label">REPRODUCIENDO AHORA</span>
             <span class="now-playing-context" id="nowPlayingContext" data-i18n="your_library">Tu biblioteca</span>
           </div>
           <button class="icon-btn" id="btnMore" data-i18n-aria="more_options" aria-label="Más opciones">
-            <i class="fa-solid fa-ellipsis-vertical"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg>
           </button>
         </header>
 
@@ -54,7 +108,7 @@
               <div class="vinyl-inner"></div>
             </div>
             <div class="cover-play-hint" id="coverPlayHint" aria-hidden="true">
-              <i class="fa-solid fa-play"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
             </div>
             <div class="cover-buffering" id="coverBuffering" hidden>
               <div class="spin-loader" aria-hidden="true"></div>
@@ -71,7 +125,7 @@
             <p class="track-album" id="trackAlbum"></p>
           </div>
           <button class="icon-btn like-btn" id="btnLike" data-i18n-aria="favorite" aria-label="Favorito" aria-pressed="false">
-            <i class="fa-regular fa-heart"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-heart"></use></svg>
           </button>
         </section>
 
@@ -91,7 +145,7 @@
 
         <!-- Volumen compacto (gesto / long-press) -->
         <div class="np-volume" id="npVolume" hidden>
-          <i class="fa-solid fa-volume-high" id="npVolIcon" aria-hidden="true"></i>
+          <svg class="ico" id="npVolIcon" aria-hidden="true"><use href="#i-volume-high"></use></svg>
           <input type="range" min="0" max="100" value="100" id="volumeSliderNp" class="slider" data-i18n-aria="volume" aria-label="Volumen" />
           <span class="np-volume-val" id="volumeValueNp">100%</span>
         </div>
@@ -99,43 +153,43 @@
         <!-- Controles principales -->
         <section class="controls-main">
           <button class="ctrl-btn ctrl-shuffle" id="btnShuffle" data-i18n-aria="shuffle" aria-label="Aleatorio" aria-pressed="false">
-            <i class="fa-solid fa-shuffle"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-shuffle"></use></svg>
           </button>
           <button class="ctrl-btn ctrl-prev" id="btnPrev" data-i18n-aria="previous" aria-label="Anterior">
-            <i class="fa-solid fa-backward-step"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-backward-step"></use></svg>
           </button>
           <button class="ctrl-btn ctrl-play" id="btnPlay" data-i18n-aria="play" aria-label="Reproducir">
-            <i class="fa-solid fa-play icon-play"></i>
-            <i class="fa-solid fa-pause icon-pause" style="display:none"></i>
+            <svg class="ico icon-play" aria-hidden="true"><use href="#i-play"></use></svg>
+            <svg class="ico icon-pause" style="display:none" aria-hidden="true"><use href="#i-pause"></use></svg>
           </button>
           <button class="ctrl-btn ctrl-next" id="btnNext" data-i18n-aria="next" aria-label="Siguiente">
-            <i class="fa-solid fa-forward-step"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-forward-step"></use></svg>
           </button>
           <button class="ctrl-btn ctrl-repeat" id="btnRepeat" data-i18n-aria="repeat" aria-label="Repetir" aria-pressed="false">
-            <i class="fa-solid fa-repeat"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-repeat"></use></svg>
           </button>
         </section>
 
         <!-- Controles secundarios -->
         <section class="controls-secondary">
           <button class="sec-btn" id="btnLyrics" data-i18n-aria="lyrics" aria-label="Letras">
-            <i class="fa-solid fa-align-left"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-align-left"></use></svg>
             <span data-i18n="lyrics">Letras</span>
           </button>
           <button class="sec-btn" id="btnQueue" data-i18n-aria="queue" aria-label="Cola">
-            <i class="fa-solid fa-list-ul"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg>
             <span data-i18n="queue">Cola</span>
           </button>
           <button class="sec-btn" id="btnVolume" data-i18n-aria="volume" aria-label="Volumen">
-            <i class="fa-solid fa-volume-high"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-volume-high"></use></svg>
             <span data-i18n="volume">Volumen</span>
           </button>
           <button class="sec-btn" id="btnEqualizer" data-i18n-aria="equalizer" aria-label="Ecualizador">
-            <i class="fa-solid fa-sliders"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-sliders"></use></svg>
             <span>EQ</span>
           </button>
           <button class="sec-btn" id="btnSleep" data-i18n-aria="sleep" aria-label="Temporizador">
-            <i class="fa-solid fa-moon"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-moon"></use></svg>
             <span data-i18n="sleep">Sleep</span>
           </button>
         </section>
@@ -151,7 +205,7 @@
             <h1 data-i18n="nav_home">Inicio</h1>
           </div>
           <button class="icon-btn icon-add" id="btnHomeAdd" data-i18n-aria="load_music" aria-label="Cargar música">
-            <i class="fa-solid fa-plus"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
           </button>
         </header>
         <div class="home-scroll" id="homeContent"></div>
@@ -165,35 +219,35 @@
 
         <header class="top-bar lyrics-top-bar">
           <button class="icon-btn" id="btnBackFromLyrics" aria-label="Volver">
-            <i class="fa-solid fa-chevron-down"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-chevron-down"></use></svg>
           </button>
           <div class="top-bar-title">
             <span class="now-playing-label" data-i18n="synced_lyrics">LETRA SINCRONIZADA</span>
             <span class="now-playing-context" id="lyricsTrackName">—</span>
           </div>
           <button class="icon-btn" id="btnLyricsMore" data-i18n-aria="more_options" aria-label="Más opciones">
-            <i class="fa-solid fa-ellipsis-vertical"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg>
           </button>
         </header>
 
         <!-- Barra de herramientas de letras -->
         <div class="lyrics-toolbar" id="lyricsToolbar">
-          <button class="lt-btn" id="btnLrcFontDec" aria-label="A-"><i class="fa-solid fa-font"></i><span class="lt-small">A</span></button>
-          <button class="lt-btn" id="btnLrcFontInc" aria-label="A+"><i class="fa-solid fa-font"></i><span class="lt-big">A</span></button>
+          <button class="lt-btn" id="btnLrcFontDec" aria-label="A-"><svg class="ico" aria-hidden="true"><use href="#i-font"></use></svg><span class="lt-small">A</span></button>
+          <button class="lt-btn" id="btnLrcFontInc" aria-label="A+"><svg class="ico" aria-hidden="true"><use href="#i-font"></use></svg><span class="lt-big">A</span></button>
           <span class="lt-sep"></span>
-          <button class="lt-btn" id="btnLrcOffsetMinus" data-i18n-title="lrc_offset" title="Desfase"><i class="fa-solid fa-backward"></i><span>0.5s</span></button>
-          <button class="lt-btn" id="btnLrcOffsetReset" data-i18n-title="lrc_offset_reset" title="Resetear"><i class="fa-solid fa-rotate-left"></i></button>
-          <button class="lt-btn" id="btnLrcOffsetPlus" data-i18n-title="lrc_offset" title="Desfase"><i class="fa-solid fa-forward"></i><span>0.5s</span></button>
+          <button class="lt-btn" id="btnLrcOffsetMinus" data-i18n-title="lrc_offset" title="Desfase"><svg class="ico" aria-hidden="true"><use href="#i-backward"></use></svg><span>0.5s</span></button>
+          <button class="lt-btn" id="btnLrcOffsetReset" data-i18n-title="lrc_offset_reset" title="Resetear"><svg class="ico" aria-hidden="true"><use href="#i-rotate-left"></use></svg></button>
+          <button class="lt-btn" id="btnLrcOffsetPlus" data-i18n-title="lrc_offset" title="Desfase"><svg class="ico" aria-hidden="true"><use href="#i-forward"></use></svg><span>0.5s</span></button>
           <span class="lt-sep"></span>
-          <button class="lt-btn" id="btnLrcLoop" data-i18n-title="lrc_loop_section" title="Repetir sección"><i class="fa-solid fa-repeat"></i></button>
+          <button class="lt-btn" id="btnLrcLoop" data-i18n-title="lrc_loop_section" title="Repetir sección"><svg class="ico" aria-hidden="true"><use href="#i-repeat"></use></svg></button>
           <span class="lt-sep"></span>
-          <button class="lt-btn" id="btnLrcFullscreen" data-i18n-title="lrc_fullscreen" title="Pantalla completa"><i class="fa-solid fa-expand"></i></button>
-          <button class="lt-btn" id="btnLrcLoadFile" data-i18n-title="lrc_load_file" title="Cargar .lrc"><i class="fa-solid fa-file-arrow-up"></i></button>
-          <button class="lt-btn" id="btnLrcEdit" data-i18n-title="lrc_edit" title="Editar"><i class="fa-solid fa-pen"></i></button>
+          <button class="lt-btn" id="btnLrcFullscreen" data-i18n-title="lrc_fullscreen" title="Pantalla completa"><svg class="ico" aria-hidden="true"><use href="#i-expand"></use></svg></button>
+          <button class="lt-btn" id="btnLrcLoadFile" data-i18n-title="lrc_load_file" title="Cargar .lrc"><svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg></button>
+          <button class="lt-btn" id="btnLrcEdit" data-i18n-title="lrc_edit" title="Editar"><svg class="ico" aria-hidden="true"><use href="#i-pen"></use></svg></button>
         </div>
 
         <!-- Botón salir de pantalla completa -->
-        <button class="icon-btn lyrics-exit-fs" id="btnLrcExitFs" aria-label="Salir"><i class="fa-solid fa-xmark"></i></button>
+        <button class="icon-btn lyrics-exit-fs" id="btnLrcExitFs" aria-label="Salir"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
 
         <!-- Mini portada + info -->
         <section class="lyrics-mini" id="lyricsMini">
@@ -205,9 +259,9 @@
             <p id="miniArtist">—</p>
           </div>
           <div class="lyrics-speed" id="lyricsSpeed">
-            <button class="lt-btn" id="btnLrcSpeedDown"><i class="fa-solid fa-minus"></i></button>
+            <button class="lt-btn" id="btnLrcSpeedDown"><svg class="ico" aria-hidden="true"><use href="#i-minus"></use></svg></button>
             <span id="lrcSpeedLabel">1.0×</span>
-            <button class="lt-btn" id="btnLrcSpeedUp"><i class="fa-solid fa-plus"></i></button>
+            <button class="lt-btn" id="btnLrcSpeedUp"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg></button>
           </div>
         </section>
 
@@ -217,16 +271,16 @@
             <!-- Las líneas se inyectan dinámicamente -->
           </div>
           <div class="lrc-empty" id="lrcEmpty" hidden>
-            <div class="lrc-empty-icon" aria-hidden="true"><i class="fa-solid fa-align-center"></i></div>
+            <div class="lrc-empty-icon" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#i-align-center"></use></svg></div>
             <h4 data-i18n="lrc_empty_title">Sin letra</h4>
             <p data-i18n="lrc_empty_hint">Carga un archivo .lrc o pega la letra para sincronizarla.</p>
             <div class="lrc-empty-actions">
               <button type="button" class="primary-btn" id="btnLrcEmptyLoad">
-                <i class="fa-solid fa-file-import"></i>
+                <svg class="ico" aria-hidden="true"><use href="#i-file-import"></use></svg>
                 <span data-i18n="lrc_load_cta">Cargar .lrc</span>
               </button>
               <button type="button" class="primary-btn ghost" id="btnLrcEmptyEdit">
-                <i class="fa-solid fa-pen"></i>
+                <svg class="ico" aria-hidden="true"><use href="#i-pen"></use></svg>
                 <span data-i18n="lrc_paste_cta">Pegar o editar</span>
               </button>
             </div>
@@ -235,22 +289,22 @@
 
         <!-- Indicador de loop activo -->
         <div class="lyrics-loop-indicator" id="lyricsLoopIndicator" style="display:none">
-          <i class="fa-solid fa-repeat"></i>
+          <svg class="ico" aria-hidden="true"><use href="#i-repeat"></use></svg>
           <span id="lyricsLoopText">Loop activo</span>
-          <button class="lt-btn" id="btnLrcLoopClear"><i class="fa-solid fa-xmark"></i></button>
+          <button class="lt-btn" id="btnLrcLoopClear"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
         </div>
 
         <!-- Controles compactos -->
         <section class="lyrics-controls">
           <button class="ctrl-btn ctrl-prev" id="btnPrevLyrics" data-i18n-aria="previous" aria-label="Anterior">
-            <i class="fa-solid fa-backward-step"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-backward-step"></use></svg>
           </button>
           <button class="ctrl-btn ctrl-play ctrl-play-sm" id="btnPlayLyrics" data-i18n-aria="play" aria-label="Reproducir">
-            <i class="fa-solid fa-play icon-play"></i>
-            <i class="fa-solid fa-pause icon-pause" style="display:none"></i>
+            <svg class="ico icon-play" aria-hidden="true"><use href="#i-play"></use></svg>
+            <svg class="ico icon-pause" style="display:none" aria-hidden="true"><use href="#i-pause"></use></svg>
           </button>
           <button class="ctrl-btn ctrl-next" id="btnNextLyrics" data-i18n-aria="next" aria-label="Siguiente">
-            <i class="fa-solid fa-forward-step"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-forward-step"></use></svg>
           </button>
         </section>
       </section>
@@ -262,14 +316,14 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetQueue" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetQueue" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="queue_title">Cola de reproducción</h3>
             <button class="text-btn" data-close-sheet="sheetQueue" data-i18n="close_btn">Cerrar</button>
           </header>
           <div class="sheet-body">
             <p class="sheet-subtitle" id="queueContextLabel"></p>
             <button class="primary-btn ghost compact" id="btnClearQueue" type="button">
-              <i class="fa-solid fa-broom"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-broom"></use></svg>
               <span data-i18n="clear_btn">Vaciar</span>
             </button>
             <ul class="queue-list" id="queueList"></ul>
@@ -283,9 +337,9 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetPlaylists" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetPlaylists" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="your_playlists">Tus listas</h3>
-            <button class="text-btn" id="btnNewPlaylist"><i class="fa-solid fa-plus"></i> <span data-i18n="new_playlist">Nueva</span></button>
+            <button class="text-btn" id="btnNewPlaylist"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg> <span data-i18n="new_playlist">Nueva</span></button>
           </header>
           <div class="sheet-body">
             <p class="sheet-subtitle" id="playlistCount"></p>
@@ -300,7 +354,7 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetCreatePlaylist" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetCreatePlaylist" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 id="createPlaylistTitle" data-i18n="create_playlist_title">Nueva lista</h3>
             <button class="text-btn" data-close-sheet="sheetCreatePlaylist" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -331,13 +385,13 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetEditPlaylist" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetEditPlaylist" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 id="editPlaylistTitle" data-i18n="edit_playlist_title">Editar lista</h3>
             <button class="text-btn" data-close-sheet="sheetEditPlaylist" data-i18n="close_btn">Cerrar</button>
           </header>
           <div class="sheet-body">
             <div class="edit-pl-header">
-              <div class="edit-pl-cover" id="editPlaylistCover"><i class="fa-solid fa-music"></i></div>
+              <div class="edit-pl-cover" id="editPlaylistCover"><svg class="ico" aria-hidden="true"><use href="#i-music"></use></svg></div>
               <div class="edit-pl-info">
                 <h4 id="editPlaylistName">—</h4>
                 <p id="editPlaylistMeta">—</p>
@@ -345,23 +399,23 @@
             </div>
             <div class="edit-pl-actions">
               <button class="pl-action-btn pl-action-play" id="btnPlayPlaylistNow">
-                <span class="pl-action-ico"><i class="fa-solid fa-play"></i></span>
+                <span class="pl-action-ico"><svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg></span>
                 <span data-i18n="play_all_btn">Reproducir Todo</span>
               </button>
               <button class="pl-action-btn" id="btnUploadToPlaylist">
-                <span class="pl-action-ico"><i class="fa-solid fa-cloud-arrow-up"></i></span>
+                <span class="pl-action-ico"><svg class="ico" aria-hidden="true"><use href="#i-cloud-arrow-up"></use></svg></span>
                 <span data-i18n="upload_to_playlist_btn">Subir canciones</span>
               </button>
               <button class="pl-action-btn pl-action-danger" id="btnClearPlaylist">
-                <span class="pl-action-ico"><i class="fa-solid fa-broom"></i></span>
+                <span class="pl-action-ico"><svg class="ico" aria-hidden="true"><use href="#i-broom"></use></svg></span>
                 <span data-i18n="clear_playlist_btn">Borrar todo</span>
               </button>
               <button class="pl-action-btn" id="btnRenamePlaylist">
-                <span class="pl-action-ico"><i class="fa-solid fa-pen"></i></span>
+                <span class="pl-action-ico"><svg class="ico" aria-hidden="true"><use href="#i-pen"></use></svg></span>
                 <span data-i18n="rename_playlist_btn">Renombrar</span>
               </button>
               <button class="pl-action-btn pl-action-danger" id="btnDeletePlaylistFull" style="display:none">
-                <span class="pl-action-ico"><i class="fa-solid fa-trash-can"></i></span>
+                <span class="pl-action-ico"><svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg></span>
                 <span data-i18n="delete_playlist_btn">Eliminar lista</span>
               </button>
             </div>
@@ -377,7 +431,7 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetEqualizer" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetEqualizer" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="equalizer">Ecualizador</h3>
             <button class="text-btn" data-close-sheet="sheetEqualizer" data-i18n="done_btn">Listo</button>
           </header>
@@ -403,7 +457,7 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetSleep" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetSleep" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="sleep">Sleep</h3>
             <button class="text-btn" data-close-sheet="sheetSleep" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -430,15 +484,15 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetVolume" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetVolume" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="volume">Volumen</h3>
             <button class="text-btn" data-close-sheet="sheetVolume" data-i18n="done_btn">Listo</button>
           </header>
           <div class="sheet-body">
             <div class="volume-row">
-              <i class="fa-solid fa-volume-low"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-volume-low"></use></svg>
               <input type="range" min="0" max="100" value="100" id="volumeSlider" class="slider" />
-              <i class="fa-solid fa-volume-high"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-volume-high"></use></svg>
             </div>
             <div class="volume-value" id="volumeValue">100%</div>
           </div>
@@ -451,10 +505,10 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetLibrary" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetLibrary" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="library_title">Biblioteca</h3>
-            <button class="text-btn" id="btnOpenNewPlaylist"><i class="fa-solid fa-plus"></i> <span data-i18n="new_playlist">Nueva</span></button>
-            <button class="text-btn danger" id="btnDeleteAllTracks"><i class="fa-solid fa-trash-can"></i> <span data-i18n="delete_all_btn">Borrar todo</span></button>
+            <button class="text-btn" id="btnOpenNewPlaylist"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg> <span data-i18n="new_playlist">Nueva</span></button>
+            <button class="text-btn danger" id="btnDeleteAllTracks"><svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg> <span data-i18n="delete_all_btn">Borrar todo</span></button>
           </header>
           <div class="sheet-body">
             <div class="lib-tabs" role="tablist">
@@ -491,7 +545,7 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetSearch" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetSearch" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="search_title">Buscar</h3>
             <button class="text-btn" data-close-sheet="sheetSearch" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -517,37 +571,37 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetMore" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetMore" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="options_title">Opciones</h3>
             <button class="text-btn" data-close-sheet="sheetMore" data-i18n="close_btn">Cerrar</button>
           </header>
           <div class="sheet-body">
             <button class="menu-row" id="menuLoadMusic">
-              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-cloud-arrow-up"></use></svg>
               <span data-i18n="menu_load_music">Cargar música del dispositivo</span>
             </button>
             <button class="menu-row" id="menuAddToPlaylist">
-              <i class="fa-solid fa-list-ul"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg>
               <span data-i18n="menu_add_to_playlist">Añadir a una lista</span>
             </button>
             <button class="menu-row" id="menuGoToArtist">
-              <i class="fa-solid fa-user"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-user"></use></svg>
               <span data-i18n="menu_go_to_artist">Ir al artista</span>
             </button>
             <button class="menu-row" id="menuGoToAlbum">
-              <i class="fa-solid fa-compact-disc"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-compact-disc"></use></svg>
               <span data-i18n="menu_go_to_album">Ir al álbum</span>
             </button>
             <button class="menu-row" id="menuStats">
-              <i class="fa-solid fa-chart-simple"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-chart-simple"></use></svg>
               <span data-i18n="menu_stats">Estadísticas de reproducción</span>
             </button>
             <button class="menu-row" id="menuHistory">
-              <i class="fa-solid fa-clock-rotate-left"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-clock-rotate-left"></use></svg>
               <span data-i18n="settings_history">Historial</span>
             </button>
             <button class="menu-row" id="menuSettings">
-              <i class="fa-solid fa-gear"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-gear"></use></svg>
               <span data-i18n="settings_title">Ajustes</span>
             </button>
           </div>
@@ -560,7 +614,7 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetThemes" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetThemes" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="themes_title">Temas y acentos</h3>
             <button class="text-btn" data-close-sheet="sheetThemes" data-i18n="done_btn">Listo</button>
           </header>
@@ -601,7 +655,7 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetHistory" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetHistory" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="history_title">Historial</h3>
             <button class="text-btn" data-close-sheet="sheetHistory" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -617,7 +671,7 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetStats" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetStats" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="stats_title">Estadísticas</h3>
             <button class="text-btn" data-close-sheet="sheetStats" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -633,13 +687,13 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetFavorites" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetFavorites" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="favorites_title">Favoritos</h3>
             <button class="text-btn" data-close-sheet="sheetFavorites" data-i18n="close_btn">Cerrar</button>
           </header>
           <div class="sheet-body">
             <div class="edit-pl-actions" style="grid-template-columns:1fr;margin-bottom:14px">
-              <button class="primary-btn compact" id="btnPlayFavoritesNow"><i class="fa-solid fa-play"></i> <span data-i18n="play_all_btn">Reproducir Todo</span></button>
+              <button class="primary-btn compact" id="btnPlayFavoritesNow"><svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg> <span data-i18n="play_all_btn">Reproducir Todo</span></button>
             </div>
             <p class="sheet-subtitle" id="favoritesCount"></p>
             <ul class="track-list" id="favoritesList"></ul>
@@ -653,7 +707,7 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetLanguage" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetLanguage" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="language_title">Idioma</h3>
             <button class="text-btn" data-close-sheet="sheetLanguage" data-i18n="done_btn">Listo</button>
           </header>
@@ -670,7 +724,7 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetSettings" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetSettings" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="settings_title">Ajustes</h3>
             <button class="text-btn" data-close-sheet="sheetSettings" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -693,11 +747,11 @@
             </div>
             <h4 class="section-title" data-i18n="settings_interface">Interfaz</h4>
             <button class="menu-row" id="menuThemesSettings">
-              <i class="fa-solid fa-palette"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-palette"></use></svg>
               <span data-i18n="menu_themes">Temas y acentos</span>
             </button>
             <button class="menu-row" id="menuLanguageSettings">
-              <i class="fa-solid fa-language"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-language"></use></svg>
               <span data-i18n="menu_language">Idioma de la aplicación</span>
             </button>
             <label class="settings-row" for="toggleMarquee">
@@ -705,30 +759,30 @@
               <input type="checkbox" id="toggleMarquee" checked />
             </label>
             <button class="menu-row" id="menuShortcutsSettings" type="button">
-              <i class="fa-solid fa-keyboard"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-keyboard"></use></svg>
               <span data-i18n="settings_shortcuts">Atajos de teclado</span>
             </button>
             <h4 class="section-title" data-i18n="settings_storage">Almacenamiento</h4>
             <button class="menu-row" id="menuRetagTracks">
-              <i class="fa-solid fa-tags"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-tags"></use></svg>
               <span data-i18n="settings_retag">Releer metadatos</span>
             </button>
             <p class="sheet-subtitle" id="storageUsageLabel"></p>
             <button class="menu-row" id="menuFreeStorage">
-              <i class="fa-solid fa-broom"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-broom"></use></svg>
               <span data-i18n="settings_free_storage">Liberar espacio</span>
             </button>
             <button class="menu-row" id="menuExportLibrary">
-              <i class="fa-solid fa-file-export"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-file-export"></use></svg>
               <span data-i18n="settings_export">Exportar biblioteca</span>
             </button>
             <p class="settings-hint" data-i18n="settings_export_hint">Solo metadatos (listas, favoritos, etiquetas). No incluye los archivos de audio.</p>
             <button class="menu-row" id="menuImportLibrary">
-              <i class="fa-solid fa-file-import"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-file-import"></use></svg>
               <span data-i18n="settings_import">Importar biblioteca</span>
             </button>
             <button class="menu-row danger" id="menuDeleteLibrary" type="button">
-              <i class="fa-solid fa-trash-can"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>
               <span data-i18n="settings_delete_library">Borrar toda la biblioteca</span>
             </button>
             <p class="settings-hint" data-i18n="settings_sleep_fade">El temporizador sleep hace un fade-out de 10 s al apagar.</p>
@@ -737,7 +791,7 @@
               <p class="about-line"><span data-i18n="settings_version">Versión</span> <strong id="aboutVersion">1.0.0</strong></p>
               <p class="about-line" data-i18n="settings_license">Licencia MIT</p>
               <a class="menu-row" id="aboutSource" href="https://github.com/nelsondev2/Aurora-Music-Player" target="_blank" rel="noopener">
-                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                <svg class="ico" aria-hidden="true"><use href="#i-arrow-up-right-from-square"></use></svg>
                 <span data-i18n="settings_source">Código fuente</span>
               </a>
             </div>
@@ -752,7 +806,7 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetShortcuts" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetShortcuts" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="shortcuts_title">Atajos de teclado</h3>
             <button class="text-btn" data-close-sheet="sheetShortcuts" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -778,7 +832,7 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetLrcEditor" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetLrcEditor" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="lrc_edit">Editar letra</h3>
             <button class="text-btn" id="btnLrcSave" data-i18n="lrc_save">Guardar</button>
           </header>
@@ -795,7 +849,7 @@
         <div class="sheet-panel confirm-panel">
           <div class="sheet-handle"></div>
           <div class="sheet-body confirm-body">
-            <div class="confirm-icon" id="confirmIcon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="confirm-icon" id="confirmIcon"><svg class="ico" aria-hidden="true"><use href="#i-triangle-exclamation"></use></svg></div>
             <p class="confirm-msg" id="confirmMsg">¿Seguro?</p>
             <div class="confirm-actions">
               <button class="primary-btn ghost" id="btnConfirmCancel" data-i18n="cancel">Cancelar</button>
@@ -812,7 +866,7 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetBrowse" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetBrowse" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 id="browseTitle">—</h3>
             <button class="text-btn" id="btnPlayBrowse" data-i18n="play_all_btn">Reproducir Todo</button>
           </header>
@@ -835,7 +889,7 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetTrackMenu" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetTrackMenu" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="more_options">Más opciones</h3>
             <button class="text-btn" data-close-sheet="sheetTrackMenu" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -848,39 +902,39 @@
               </div>
             </div>
             <button class="menu-row" id="ctxPlayNow">
-              <i class="fa-solid fa-play"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
               <span data-i18n="ctx_play_now">Reproducir ahora</span>
             </button>
             <button class="menu-row" id="ctxPlayNext">
-              <i class="fa-solid fa-forward"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-forward"></use></svg>
               <span data-i18n="ctx_play_next">Reproducir siguiente</span>
             </button>
             <button class="menu-row" id="ctxAddQueue">
-              <i class="fa-solid fa-list-ol"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-list-ol"></use></svg>
               <span data-i18n="ctx_add_queue">Añadir a la cola</span>
             </button>
             <button class="menu-row" id="ctxStartRadio">
-              <i class="fa-solid fa-tower-broadcast"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-tower-broadcast"></use></svg>
               <span data-i18n="ctx_start_radio">Iniciar radio</span>
             </button>
             <button class="menu-row" id="ctxAddPlaylist">
-              <i class="fa-solid fa-list-ul"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg>
               <span data-i18n="menu_add_to_playlist">Añadir a una lista</span>
             </button>
             <button class="menu-row" id="ctxGoArtist">
-              <i class="fa-solid fa-user"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-user"></use></svg>
               <span data-i18n="menu_go_to_artist">Ir al artista</span>
             </button>
             <button class="menu-row" id="ctxGoAlbum">
-              <i class="fa-solid fa-compact-disc"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-compact-disc"></use></svg>
               <span data-i18n="menu_go_to_album">Ir al álbum</span>
             </button>
             <button class="menu-row" id="ctxEditTags">
-              <i class="fa-solid fa-pen"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-pen"></use></svg>
               <span data-i18n="ctx_edit_tags">Editar etiquetas</span>
             </button>
             <button class="menu-row danger" id="ctxDelete">
-              <i class="fa-solid fa-trash-can"></i>
+              <svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>
               <span data-i18n="confirm_delete">Eliminar</span>
             </button>
           </div>
@@ -893,7 +947,7 @@
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetEditTrack" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <button class="icon-btn-sm" data-close-sheet="sheetEditTrack" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="edit_track_title">Editar pista</h3>
             <button class="text-btn" id="btnSaveEditTrack" data-i18n="lrc_save">Guardar</button>
           </header>
@@ -925,28 +979,28 @@
             <div class="mini-artist" id="miniPlayerArtist"></div>
           </div>
           <button class="mini-btn" id="miniPlayerPlay" type="button" data-i18n-aria="play" aria-label="Reproducir">
-            <i class="fa-solid fa-play icon-play"></i>
-            <i class="fa-solid fa-pause icon-pause" style="display:none"></i>
+            <svg class="ico icon-play" aria-hidden="true"><use href="#i-play"></use></svg>
+            <svg class="ico icon-pause" style="display:none" aria-hidden="true"><use href="#i-pause"></use></svg>
           </button>
           <button class="mini-btn" id="miniPlayerNext" type="button" data-i18n-aria="next" aria-label="Siguiente">
-            <i class="fa-solid fa-forward-step"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-forward-step"></use></svg>
           </button>
         </div>
         <nav class="bottom-nav">
           <button class="nav-btn active" data-nav="home">
-            <i class="fa-solid fa-house"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-house"></use></svg>
             <span data-i18n="nav_home">Inicio</span>
           </button>
           <button class="nav-btn" data-nav="favorites">
-            <i class="fa-solid fa-heart"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-heart-solid"></use></svg>
             <span data-i18n="nav_favorites">Favoritos</span>
           </button>
           <button class="nav-btn" data-nav="search">
-            <i class="fa-solid fa-magnifying-glass"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-magnifying-glass"></use></svg>
             <span data-i18n="nav_search">Buscar</span>
           </button>
           <button class="nav-btn" data-nav="library">
-            <i class="fa-solid fa-grip"></i>
+            <svg class="ico" aria-hidden="true"><use href="#i-grip"></use></svg>
             <span data-i18n="nav_library">Biblioteca</span>
           </button>
         </nav>
