@@ -78,19 +78,23 @@ Object.assign(App, {
         if (stamps.length > 0) {
           hasTimed = true;
           const lastStampEnd = trimmed.lastIndexOf(stamps[stamps.length - 1].match) + stamps[stamps.length - 1].match.length;
-          const text = trimmed.substring(lastStampEnd).trim();
+          const rawText = trimmed.substring(lastStampEnd).trim();
+          const words = this.parseKaraokeWords(rawText, Math.max(0, stamps[0].time));
+          const text = this.stripKaraokeTags(rawText);
           for (const stamp of stamps) {
-            result.push({
+            const line = {
               time: Math.max(0, stamp.time),
               text: text,
               timed: true
-            });
+            };
+            if (words) line.words = words;
+            result.push(line);
           }
         } else {
           // Línea de texto plano (sin timestamp)
           result.push({
             time: -1,
-            text: trimmed,
+            text: this.stripKaraokeTags(trimmed),
             timed: false
           });
         }
@@ -117,6 +121,7 @@ Object.assign(App, {
           ) {
             if (!prev.text && line.text) {
               prev.text = line.text;   // la 1ª estaba vacía: promover su texto
+              if (!prev.words && line.words) prev.words = line.words;
             } else if (line.text) {
               prev.translation = line.text;
             }
@@ -129,6 +134,52 @@ Object.assign(App, {
       }
       result.hasTimed = hasTimed;
       return result;
+    },
+
+    stripKaraokeTags(text) {
+      return String(text || '').replace(/<\d{1,2}:\d{2}(?:\.\d{1,3})?>/g, '');
+    },
+
+    /* Palabras con timestamp Enhanced LRC: <mm:ss.xx>palabra
+     * Solo si hay al menos 2 tags. No se inventan tiempos. */
+    parseKaraokeWords(text, lineTime) {
+      if (!text || text.indexOf('<') === -1) return null;
+      const re = /<(\d{1,2}):(\d{2}(?:\.\d{1,3})?)>/g;
+      if (!re.test(text)) return null;
+      re.lastIndex = 0;
+      const words = [];
+      let last = 0;
+      let m;
+      let tags = 0;
+      while ((m = re.exec(text)) !== null) {
+        tags++;
+        if (m.index > last) {
+          const chunk = text.slice(last, m.index);
+          if (words.length) words[words.length - 1].text += chunk;
+          else if (chunk) words.push({ time: lineTime, text: chunk });
+        }
+        words.push({
+          time: parseInt(m[1], 10) * 60 + parseFloat(m[2]),
+          text: ''
+        });
+        last = re.lastIndex;
+      }
+      if (last < text.length && words.length) {
+        words[words.length - 1].text += text.slice(last);
+      }
+      const cleaned = words.filter(w => w.text.length);
+      return (tags >= 2 && cleaned.length >= 2) ? cleaned : null;
+    },
+
+    _setLyricsEmpty(on) {
+      const emptyEl = document.getElementById('lrcEmpty');
+      const scroll = document.getElementById('lyricsScroll');
+      if (emptyEl) emptyEl.hidden = !on;
+      if (scroll) scroll.classList.toggle('has-empty', !!on);
+      const loadBtn = document.getElementById('btnLrcLoadFile');
+      const editBtn = document.getElementById('btnLrcEdit');
+      if (loadBtn) loadBtn.classList.toggle('emphasis', !!on);
+      if (editBtn) editBtn.classList.toggle('emphasis', !!on);
     },
 
     /* ============================================================
@@ -145,11 +196,12 @@ Object.assign(App, {
       if (scroll) scroll.style.setProperty('--lrc-font-size', this.lrcFontSize + 'px');
 
       if (!t || !t.lrc || (Array.isArray(t.lrc) && t.lrc.length === 0)) {
-        cont.innerHTML = '<div class="lrc-line untimed">' + this.t('lrc_no_lyrics') + '</div>';
         this.lrcLines = [];
         this.lrcHasTimed = false;
+        this._setLyricsEmpty(true);
         return;
       }
+      this._setLyricsEmpty(false);
 
       // Cache: si ya tenemos las líneas parseadas para esta pista, reutilizar
       if (t._lrcCache && t._lrcCacheKey === JSON.stringify(t.lrc)) {
@@ -163,7 +215,7 @@ Object.assign(App, {
       }
 
       if (this.lrcLines.length === 0) {
-        cont.innerHTML = '<div class="lrc-line untimed">' + this.t('lrc_no_lyrics') + '</div>';
+        this._setLyricsEmpty(true);
         return;
       }
 
@@ -181,7 +233,17 @@ Object.assign(App, {
         if (!l.text) div.classList.add('empty');
         if (!this.lrcHasTimed) div.classList.add('untimed');
         // Traducción (LRC bilingüe): línea secundaria bajo el texto principal
-        if (l.translation) {
+        if (l.words && l.words.length >= 2) {
+          const wordHtml = l.words.map(w =>
+            '<span class="lrc-word" data-t="' + w.time + '">' + this.esc(w.text) + '</span>'
+          ).join('');
+          if (l.translation) {
+            div.innerHTML = '<span class="lrc-main">' + wordHtml + '</span>' +
+              '<span class="lrc-translation">' + this.esc(l.translation) + '</span>';
+          } else {
+            div.innerHTML = wordHtml;
+          }
+        } else if (l.translation) {
           div.innerHTML = '<span class="lrc-main">' + this.esc(l.text || '♪') + '</span>' +
             '<span class="lrc-translation">' + this.esc(l.translation) + '</span>';
         } else {
@@ -285,6 +347,7 @@ Object.assign(App, {
             }
           }
         }
+        this._updateKaraokeWords(cur);
         return;
       }
 
@@ -359,6 +422,29 @@ Object.assign(App, {
             } else {
               this._autoScrolling = false;
             }
+          }
+        }
+      }
+
+      this._updateKaraokeWords(cur);
+    },
+
+    _updateKaraokeWords(cur) {
+      if (!this._lrcLineEls) {
+        const cont = document.getElementById('lyricsContent');
+        if (cont) this._lrcLineEls = Array.from(cont.querySelectorAll('.lrc-line'));
+      }
+      if (!this._lrcLineEls) return;
+      for (let i = 0; i < this._lrcLineEls.length; i++) {
+        const el = this._lrcLineEls[i];
+        const spans = el.querySelectorAll('.lrc-word');
+        if (!spans.length) continue;
+        const active = el.classList.contains('active');
+        for (let j = 0; j < spans.length; j++) {
+          const wt = parseFloat(spans[j].dataset.t);
+          const sung = active && isFinite(wt) && wt <= cur;
+          if (spans[j].classList.contains('sung') !== sung) {
+            spans[j].classList.toggle('sung', sung);
           }
         }
       }
@@ -458,6 +544,7 @@ Object.assign(App, {
       this.setLrcFontSize(19);
       try { localStorage.removeItem('aurora_lrc_fontsize'); } catch (e) {}
       // 3. Velocidad → 1.0×
+      if (this.currentTrack) this.currentTrack.lrcSpeed = 1;
       this.setPlaybackRate(1.0);
       try { localStorage.removeItem('aurora_playback_rate'); } catch (e) {}
       // 4. Loop de sección
@@ -508,6 +595,10 @@ Object.assign(App, {
       const label = document.getElementById('lrcSpeedLabel');
       if (label) label.textContent = this.playbackRate.toFixed(1) + '×';
       try { localStorage.setItem('aurora_playback_rate', this.playbackRate); } catch (e) {}
+      if (this.currentTrack) {
+        this.currentTrack.lrcSpeed = this.playbackRate;
+        this.persistTrack(this.currentTrack);
+      }
     },
 
     /* ============================================================
@@ -557,15 +648,19 @@ Object.assign(App, {
         const fs = localStorage.getItem('aurora_lrc_fontsize');
         if (fs) this.lrcFontSize = parseInt(fs);
       } catch (e) {}
+      if (typeof this.setLrcFontSize === 'function') this.setLrcFontSize(this.lrcFontSize || 19);
+      let rate = 1;
       try {
         const pr = localStorage.getItem('aurora_playback_rate');
-        if (pr) {
-          this.playbackRate = parseFloat(pr);
-          if (this.audio) this.audio.playbackRate = this.playbackRate;
-          const label = document.getElementById('lrcSpeedLabel');
-          if (label) label.textContent = this.playbackRate.toFixed(1) + '×';
-        }
+        if (pr) rate = parseFloat(pr) || 1;
       } catch (e) {}
+      if (this.currentTrack && this.currentTrack.lrcSpeed) {
+        rate = this.currentTrack.lrcSpeed;
+      }
+      this.playbackRate = Math.max(0.5, Math.min(2.0, Math.round(rate * 10) / 10));
+      if (this.audio) this.audio.playbackRate = this.playbackRate;
+      const label = document.getElementById('lrcSpeedLabel');
+      if (label) label.textContent = this.playbackRate.toFixed(1) + '×';
       // Offset por pista
       if (this.currentTrack && this.currentTrack.lrcOffset) {
         this.lrcOffset = this.currentTrack.lrcOffset;

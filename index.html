@@ -48,6 +48,7 @@
         <section class="cover-section">
           <div class="cover-glow" id="coverGlow" aria-hidden="true"></div>
           <div class="cover-art" id="coverArt" role="button" tabindex="0">
+            <canvas id="coverCanvasBack" class="cover-canvas-back" width="600" height="600" aria-hidden="true"></canvas>
             <canvas id="coverCanvas" width="600" height="600"></canvas>
             <div class="cover-vinyl" id="coverVinyl">
               <div class="vinyl-inner"></div>
@@ -55,14 +56,18 @@
             <div class="cover-play-hint" id="coverPlayHint" aria-hidden="true">
               <i class="fa-solid fa-play"></i>
             </div>
+            <div class="cover-buffering" id="coverBuffering" hidden>
+              <div class="spin-loader" aria-hidden="true"></div>
+              <span data-i18n="np_loading">Cargando…</span>
+            </div>
           </div>
         </section>
 
         <!-- Info de la pista -->
         <section class="track-info">
           <div class="track-text">
-            <h1 class="track-title" id="trackTitle">—</h1>
-            <p class="track-artist" id="trackArtist">—</p>
+            <h1 class="track-title" id="trackTitle"><span class="marquee-inner">—</span></h1>
+            <p class="track-artist" id="trackArtist"><span class="marquee-inner">—</span></p>
             <p class="track-album" id="trackAlbum"></p>
           </div>
           <button class="icon-btn like-btn" id="btnLike" data-i18n-aria="favorite" aria-label="Favorito" aria-pressed="false">
@@ -210,6 +215,21 @@
         <section class="lyrics-scroll" id="lyricsScroll">
           <div class="lyrics-content" id="lyricsContent">
             <!-- Las líneas se inyectan dinámicamente -->
+          </div>
+          <div class="lrc-empty" id="lrcEmpty" hidden>
+            <div class="lrc-empty-icon" aria-hidden="true"><i class="fa-solid fa-align-center"></i></div>
+            <h4 data-i18n="lrc_empty_title">Sin letra</h4>
+            <p data-i18n="lrc_empty_hint">Carga un archivo .lrc o pega la letra para sincronizarla.</p>
+            <div class="lrc-empty-actions">
+              <button type="button" class="primary-btn" id="btnLrcEmptyLoad">
+                <i class="fa-solid fa-file-import"></i>
+                <span data-i18n="lrc_load_cta">Cargar .lrc</span>
+              </button>
+              <button type="button" class="primary-btn ghost" id="btnLrcEmptyEdit">
+                <i class="fa-solid fa-pen"></i>
+                <span data-i18n="lrc_paste_cta">Pegar o editar</span>
+              </button>
+            </div>
           </div>
         </section>
 

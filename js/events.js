@@ -45,31 +45,69 @@ Object.assign(App, {
       if (btnHomeAdd) btnHomeAdd.addEventListener('click', () => this.openFilePicker());
       const coverArt = document.getElementById('coverArt');
       if (coverArt) {
-        let cvY = 0, cvVol = 1, cvMoved = false;
-        coverArt.addEventListener('touchstart', (e) => {
-          if (e.touches.length !== 1) return;
-          cvY = e.touches[0].clientY;
-          cvVol = this.volume;
-          cvMoved = false;
-          this._coverVolMoved = false;
-        }, { passive: true });
-        coverArt.addEventListener('touchmove', (e) => {
-          if (e.touches.length !== 1) return;
-          const dy = cvY - e.touches[0].clientY;
-          if (!cvMoved && Math.abs(dy) < 12) return;
-          cvMoved = true;
-          this._coverVolMoved = true;
-          coverArt.classList.add('vol-adjusting');
-          const h = Math.max(120, coverArt.getBoundingClientRect().height);
-          this.setVolume(cvVol + dy / h);
-          this.showNpVolume(true);
-        }, { passive: true });
-        coverArt.addEventListener('touchend', () => {
+        let cvX = 0, cvY = 0, cvVol = 1, mode = null, lpTimer = null, pid = null;
+        const clearLp = () => { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } };
+        const endGesture = (e) => {
+          clearLp();
           coverArt.classList.remove('vol-adjusting');
+          const x = e.clientX, y = e.clientY;
+          if (mode === 'hswipe' && this.currentTrack) {
+            const dx = x - cvX;
+            if (Math.abs(dx) > 48) {
+              this._coverSkipClick = true;
+              if (dx < 0) this.next();
+              else this.prev();
+              if (navigator.vibrate) navigator.vibrate(10);
+            }
+          }
+          if (mode === 'vol' || mode === 'like') this._coverSkipClick = true;
+          mode = null;
+          pid = null;
+        };
+        coverArt.addEventListener('pointerdown', (e) => {
+          if (e.button && e.button !== 0) return;
+          pid = e.pointerId;
+          try { coverArt.setPointerCapture(e.pointerId); } catch (err) {}
+          cvX = e.clientX;
+          cvY = e.clientY;
+          cvVol = this.volume;
+          mode = null;
+          this._coverSkipClick = false;
+          clearLp();
+          lpTimer = setTimeout(() => {
+            if (!this.currentTrack) return;
+            mode = 'like';
+            this._coverSkipClick = true;
+            this.toggleFavorite();
+            coverArt.classList.add('liked-pulse');
+            setTimeout(() => coverArt.classList.remove('liked-pulse'), 420);
+            if (navigator.vibrate) navigator.vibrate(18);
+          }, 480);
         });
+        coverArt.addEventListener('pointermove', (e) => {
+          if (pid == null || e.pointerId !== pid) return;
+          if (mode === 'like') return;
+          const dx = e.clientX - cvX;
+          const dy = cvY - e.clientY;
+          if (!mode) {
+            if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+            clearLp();
+            mode = (Math.abs(dx) > Math.abs(dy) * 1.15) ? 'hswipe' : 'vol';
+          }
+          if (mode === 'vol') {
+            this._coverSkipClick = true;
+            coverArt.classList.add('vol-adjusting');
+            const h = Math.max(120, coverArt.getBoundingClientRect().height);
+            this.setVolume(cvVol + dy / h);
+            this.showNpVolume(true);
+          }
+        });
+        coverArt.addEventListener('pointerup', endGesture);
+        coverArt.addEventListener('pointercancel', endGesture);
+        coverArt.addEventListener('contextmenu', (e) => e.preventDefault());
         coverArt.addEventListener('click', (e) => {
-          if (this._coverVolMoved) {
-            this._coverVolMoved = false;
+          if (this._coverSkipClick) {
+            this._coverSkipClick = false;
             e.preventDefault();
             return;
           }
@@ -131,6 +169,8 @@ Object.assign(App, {
       $('btnLrcFullscreen').addEventListener('click', () => this.toggleLyricsFullscreen());
       // Cargar .lrc externo (#1)
       $('btnLrcLoadFile').addEventListener('click', () => this.loadExternalLrc());
+      $('btnLrcEmptyLoad').addEventListener('click', () => this.loadExternalLrc());
+      $('btnLrcEmptyEdit').addEventListener('click', () => this.openLrcEditor());
       // Editor de letras (#2)
       $('btnLrcEdit').addEventListener('click', () => this.openLrcEditor());
       $('btnLrcSave').addEventListener('click', () => this.saveLrcFromEditor());
@@ -590,6 +630,17 @@ Object.assign(App, {
       document.querySelectorAll('.theme-opt').forEach(b => b.classList.toggle('active', b.dataset.theme === this.theme));
       document.querySelectorAll('.accent-opt').forEach(b => b.classList.toggle('active', b.dataset.accent === this.accent));
 
+      window.addEventListener('resize', () => {
+        clearTimeout(this._marqueeResize);
+        this._marqueeResize = setTimeout(() => {
+          if (typeof this._syncMarquee !== 'function') return;
+          const title = document.getElementById('trackTitle');
+          const artist = document.getElementById('trackArtist');
+          if (title) this._syncMarquee(title);
+          if (artist) this._syncMarquee(artist);
+        }, 140);
+      });
+
       // Atajos de teclado (desktop)
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -657,6 +708,7 @@ Object.assign(App, {
           const msg = (e && e.message) || (this.audio && this.audio.error && this.audio.error.message) || 'unknown';
           this._lastError = { msg: 'audio error: ' + msg, ts: Date.now() };
           this._decodeSkipCount = (this._decodeSkipCount || 0) + 1;
+          if (typeof this.setBuffering === 'function') this.setBuffering(false);
           this.toast(this.t('toast_audio_error'));
           if (this._decodeSkipCount >= 3) {
             this.toast(this.t('toast_skipped_give_up').replace('X', String(this._decodeSkipCount)));
@@ -670,6 +722,15 @@ Object.assign(App, {
           this._decodeSkipCount = 0;
           this._gaplessConsumed = false;
           this.updateMediaPosition(true);
+          if (typeof this.setBuffering === 'function') this.setBuffering(false);
+        };
+        this._onAudioWaiting = () => {
+          if (typeof this.setBuffering === 'function') this.setBuffering(true);
+        };
+        this._onAudioCanPlay = () => {
+          if (this.audio && this.audio.readyState >= 3 && typeof this.setBuffering === 'function') {
+            this.setBuffering(false);
+          }
         };
       }
       if (this._boundAudioEl && this._boundAudioEl !== el) {
@@ -678,6 +739,10 @@ Object.assign(App, {
         this._boundAudioEl.removeEventListener('ended', this._onAudioEnded);
         this._boundAudioEl.removeEventListener('error', this._onAudioError);
         this._boundAudioEl.removeEventListener('playing', this._onAudioPlaying);
+        this._boundAudioEl.removeEventListener('waiting', this._onAudioWaiting);
+        this._boundAudioEl.removeEventListener('stalled', this._onAudioWaiting);
+        this._boundAudioEl.removeEventListener('canplay', this._onAudioCanPlay);
+        this._boundAudioEl.removeEventListener('canplaythrough', this._onAudioCanPlay);
       }
       if (this._boundAudioEl === el) return;
       el.addEventListener('timeupdate', this._onAudioTimeUpdate);
@@ -685,6 +750,10 @@ Object.assign(App, {
       el.addEventListener('ended', this._onAudioEnded);
       el.addEventListener('error', this._onAudioError);
       el.addEventListener('playing', this._onAudioPlaying);
+      el.addEventListener('waiting', this._onAudioWaiting);
+      el.addEventListener('stalled', this._onAudioWaiting);
+      el.addEventListener('canplay', this._onAudioCanPlay);
+      el.addEventListener('canplaythrough', this._onAudioCanPlay);
       this._boundAudioEl = el;
     },
 
@@ -708,10 +777,10 @@ Object.assign(App, {
         const ax = Math.abs(dx), ay = Math.abs(dy);
         // Swipe horizontal (umbral 60px, rápido <500ms)
         if (ax > 60 && ax > ay * 1.5 && dt < 600) {
-          // Solo si el toque NO comienza sobre la barra de progreso ni sobre sheets
           const target = e.target;
-          if (target.closest('#progressTrack, .sheet, .bottom-nav, .mini-player, .app-chrome, .view-home, .controls-main, .controls-secondary')) return;
-          // En la vista de letras, swipe horizontal = cambiar de pista (#25)
+          if (target.closest('#progressTrack, .sheet, .bottom-nav, .mini-player, .app-chrome, .view-home, .controls-main, .controls-secondary, #coverArt')) return;
+          const lyrics = document.getElementById('viewLyrics');
+          if (!(lyrics && lyrics.classList.contains('active'))) return;
           if (dx < 0) this.next();
           else this.prev();
           if (navigator.vibrate) navigator.vibrate(10);
@@ -719,7 +788,7 @@ Object.assign(App, {
         // Swipe vertical (lyrics ↔ player)
         if (ay > 80 && ay > ax * 1.5 && dt < 700) {
           const target = e.target;
-          if (target.closest('.sheet, .bottom-nav')) return;
+          if (target.closest('.sheet, .bottom-nav, #coverArt, #progressTrack')) return;
           if (dy < 0) this.showView('lyrics');
           else this.showView('player');
         }

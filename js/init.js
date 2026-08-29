@@ -51,6 +51,7 @@ Object.assign(App, {
       this.setNavActive('home');
 
       if (this.currentTrack) {
+        if (typeof this.restoreLyricsPrefs === 'function') this.restoreLyricsPrefs();
         this.renderCurrentTrack();
         this.renderLyrics();
         this.updateMediaSession();

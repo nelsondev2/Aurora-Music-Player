@@ -234,9 +234,11 @@ Object.assign(App, {
       this.queueIdx = nextIdx;
       this.audio.src = url;
       try { this.audio.volume = this.volume; } catch (e) {}
+      if (typeof this.restoreLyricsPrefs === 'function') this.restoreLyricsPrefs();
       if (this.playbackRate && this.playbackRate !== 1) {
         try { this.audio.playbackRate = this.playbackRate; } catch (e) {}
       }
+      if (typeof this.setBuffering === 'function') this.setBuffering(this.audio.readyState < 3);
       const p = this.audio.play();
       if (p && p.catch) p.catch(() => {});
       this.isPlaying = true;

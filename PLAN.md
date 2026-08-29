@@ -193,13 +193,13 @@ Cada fase es entregable por sí sola. No se empieza la siguiente si la anterior 
 ### Fase 4 — Now Playing & letras (2–3 días)
 **Meta:** la pantalla principal da gusto.
 
-- [ ] Marquee en título/artista cuando overflow (pausa 1.5 s, desliza, pause, reset).
-- [ ] Gesto en portada: tap = play/pause (ya); swipe horizontal = prev/next (ya a nivel pantalla — acotarlo); long-press = like.
-- [ ] Indicador de buffer / “cargando…” si `readyState < 3` al cambiar de pista.
-- [ ] Letras: botón “buscar .lrc” más visible cuando no hay letra; empty state con CTA (cargar / pegar).
-- [ ] Karaoke opcional (palabra a palabra) **solo si** el LRC trae `<word>` — no inventar.
-- [ ] Ajustes de letras (fuente, offset, speed) persistidos por pista (offset ya) y globales (fuente ya).
-- [ ] Animación de cambio de pista más sobria: crossfade de portada 200 ms, sin `rotateY` que se siente demo.
+- [x] Marquee en título/artista cuando overflow (pausa 1.5 s, desliza, pause, reset).
+- [x] Gesto en portada: tap = play/pause (ya); swipe horizontal = prev/next (ya a nivel pantalla — acotarlo); long-press = like.
+- [x] Indicador de buffer / “cargando…” si `readyState < 3` al cambiar de pista.
+- [x] Letras: botón “buscar .lrc” más visible cuando no hay letra; empty state con CTA (cargar / pegar).
+- [x] Karaoke opcional (palabra a palabra) **solo si** el LRC trae `<word>` — no inventar.
+- [x] Ajustes de letras (fuente, offset, speed) persistidos por pista (offset ya) y globales (fuente ya).
+- [x] Animación de cambio de pista más sobria: crossfade de portada 200 ms, sin `rotateY` que se siente demo.
 
 **Criterio de salida:** Now Playing se puede enseñar en un screenshot de producto sin explicar nada.
 

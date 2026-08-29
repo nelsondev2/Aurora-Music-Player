@@ -2191,6 +2191,38 @@ const I18N = {
     ru: 'Метаданные импортированы. Снова загрузите аудио с устройства.'
   },
 
+  /* ---------- Fase 4: Now Playing y letras ---------- */
+  np_loading: {
+    es: 'Cargando…', en: 'Loading…', pt: 'A carregar…',
+    zh: '加载中…', ja: '読み込み中…', fr: 'Chargement…',
+    it: 'Caricamento…', ru: 'Загрузка…'
+  },
+  lrc_empty_title: {
+    es: 'Sin letra', en: 'No lyrics', pt: 'Sem letra',
+    zh: '没有歌词', ja: '歌詞なし', fr: 'Pas de paroles',
+    it: 'Niente testo', ru: 'Нет текста'
+  },
+  lrc_empty_hint: {
+    es: 'Carga un archivo .lrc o pega la letra para sincronizarla.',
+    en: 'Load a .lrc file or paste lyrics to sync them.',
+    pt: 'Carregue um ficheiro .lrc ou cole a letra para sincronizar.',
+    zh: '加载 .lrc 文件或粘贴歌词以同步。',
+    ja: '.lrc を読み込むか、歌詞を貼り付けて同期できます。',
+    fr: 'Chargez un fichier .lrc ou collez les paroles pour les synchroniser.',
+    it: 'Carica un file .lrc o incolla il testo per sincronizzarlo.',
+    ru: 'Загрузите .lrc или вставьте текст, чтобы синхронизировать.'
+  },
+  lrc_load_cta: {
+    es: 'Cargar .lrc', en: 'Load .lrc', pt: 'Carregar .lrc',
+    zh: '加载 .lrc', ja: '.lrc を読み込む', fr: 'Charger .lrc',
+    it: 'Carica .lrc', ru: 'Загрузить .lrc'
+  },
+  lrc_paste_cta: {
+    es: 'Pegar o editar', en: 'Paste or edit', pt: 'Colar ou editar',
+    zh: '粘贴或编辑', ja: '貼り付け / 編集', fr: 'Coller ou modifier',
+    it: 'Incolla o modifica', ru: 'Вставить или править'
+  },
+
 };
 
 window.TRACKS = TRACKS;

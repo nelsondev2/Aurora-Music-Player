@@ -16,9 +16,11 @@ Object.assign(App, {
     renderCurrentTrack() {
       const t = this.currentTrack;
       if (!t) {
+        this._shownCoverTrackId = null;
+        if (typeof this.setBuffering === 'function') this.setBuffering(false);
         // Limpiar UI
-        document.getElementById('trackTitle').textContent = '—';
-        document.getElementById('trackArtist').textContent = this.t('load_track_to_start');
+        this.setMarqueeText(document.getElementById('trackTitle'), '—');
+        this.setMarqueeText(document.getElementById('trackArtist'), this.t('load_track_to_start'));
         const albumEmpty = document.getElementById('trackAlbum');
         if (albumEmpty) { albumEmpty.textContent = ''; albumEmpty.style.display = 'none'; }
         document.getElementById('timeTotal').textContent = '0:00';
@@ -26,8 +28,8 @@ Object.assign(App, {
         document.getElementById('progressFill').style.width = '0%';
         return;
       }
-      document.getElementById('trackTitle').textContent = t.title;
-      document.getElementById('trackArtist').textContent = t.artist || this.t('unknown_artist');
+      this.setMarqueeText(document.getElementById('trackTitle'), t.title);
+      this.setMarqueeText(document.getElementById('trackArtist'), t.artist || this.t('unknown_artist'));
       const albumEl = document.getElementById('trackAlbum');
       if (albumEl) {
         const hasAlbum = t.album && !this.isPlaceholderAlbum(t.album);
@@ -56,6 +58,10 @@ Object.assign(App, {
       document.documentElement.style.setProperty('--cover-angle', (cover.angle || 135) + 'deg');
 
       // Portada canvas (imagen si existe, si no, gradiente generado)
+      if (this._shownCoverTrackId && this._shownCoverTrackId !== t.id) {
+        if (typeof this.animateCoverTransition === 'function') this.animateCoverTransition();
+      }
+      this._shownCoverTrackId = t.id;
       this.drawCover('coverCanvas', t);
       this.drawCover('miniCoverCanvas', t, true);
 
@@ -216,5 +222,47 @@ Object.assign(App, {
       const m = Math.floor(s / 60);
       const r = s % 60;
       return m + ':' + (r < 10 ? '0' : '') + r;
+    },
+
+    setMarqueeText(el, text) {
+      if (!el) return;
+      let inner = el.querySelector('.marquee-inner');
+      if (!inner) {
+        inner = document.createElement('span');
+        inner.className = 'marquee-inner';
+        el.textContent = '';
+        el.appendChild(inner);
+      }
+      inner.textContent = text == null ? '' : String(text);
+      this._syncMarquee(el);
+    },
+
+    _syncMarquee(el) {
+      if (!el) return;
+      const inner = el.querySelector('.marquee-inner');
+      if (!inner) return;
+      el.classList.remove('is-marquee');
+      if (typeof inner.getAnimations === 'function') {
+        inner.getAnimations().forEach(a => a.cancel());
+      }
+      inner.style.transform = '';
+      const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      requestAnimationFrame(() => {
+        const overflow = inner.scrollWidth - el.clientWidth;
+        if (reduce || overflow <= 8) return;
+        el.classList.add('is-marquee');
+        const slide = Math.max(2.4, overflow / 42);
+        const pause = 1.5;
+        const reset = 0.7;
+        const total = pause + slide + pause + reset;
+        if (typeof inner.animate !== 'function') return;
+        inner.animate([
+          { transform: 'translateX(0)', offset: 0 },
+          { transform: 'translateX(0)', offset: pause / total },
+          { transform: 'translateX(' + (-overflow) + 'px)', offset: (pause + slide) / total },
+          { transform: 'translateX(' + (-overflow) + 'px)', offset: (pause + slide + pause) / total },
+          { transform: 'translateX(0)', offset: 1 }
+        ], { duration: total * 1000, iterations: Infinity, easing: 'ease-in-out' });
+      });
     },
 });

@@ -348,11 +348,13 @@ svg { display: block; }
   box-shadow:
     0 28px 56px rgba(0,0,0,0.5),
     0 0 0 1px rgba(255,255,255,0.08) inset;
-  transform-style: preserve-3d;
-  transition: transform .35s ease, box-shadow .35s ease;
+  transition: box-shadow .35s ease;
   max-width: 100%;
   max-height: 100%;
   cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .cover-art.playing {
   animation: coverFloat 6s ease-in-out infinite;
@@ -377,8 +379,8 @@ svg { display: block; }
 .cover-art:not(.playing):active .cover-play-hint { opacity: 1; }
 
 @keyframes coverFloat {
-  0%, 100% { transform: translateY(0) rotateX(0deg); }
-  50%      { transform: translateY(-6px) rotateX(2deg); }
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
 }
 
 .cover-art canvas {
@@ -1973,7 +1975,7 @@ svg { display: block; }
  *  Crossfade / transición de portada (#12)
  * ===================================================================== */
 .cover-art {
-  transition: opacity .4s ease, transform .4s ease;
+  transition: box-shadow .35s ease;
 }
 .bg-gradient {
   transition: background 1.2s ease, opacity .6s ease;
@@ -2972,3 +2974,139 @@ button,
   outline: none;
 }
 #editPlaylistName { cursor: pointer; }
+
+
+/* =====================================================================
+ *  Fase 4 — Now Playing y letras
+ * ===================================================================== */
+.cover-canvas-back {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.cover-art canvas#coverCanvas { position: relative; z-index: 1; }
+.cover-play-hint { z-index: 3; }
+
+.cover-buffering {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(0,0,0,0.42);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.cover-buffering[hidden] { display: none !important; }
+.cover-art.is-buffering .cover-play-hint { opacity: 0 !important; }
+
+.cover-art.liked-pulse {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent-2) 85%, white),
+    0 28px 56px rgba(0,0,0,0.5);
+}
+
+.track-title.is-marquee,
+.track-artist.is-marquee {
+  text-overflow: clip;
+}
+.marquee-inner {
+  display: inline-block;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.lyrics-scroll.has-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px;
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+.lyrics-scroll.has-empty .lyrics-content { display: none; }
+
+.lrc-empty[hidden] { display: none !important; }
+.lrc-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  max-width: 280px;
+  padding: 8px 8px 28px;
+  color: var(--text-2);
+}
+.lrc-empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 22px;
+}
+.lrc-empty h4 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-1);
+  margin: 4px 0 0;
+}
+.lrc-empty p {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-3);
+  margin: 0;
+}
+.lrc-empty-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+}
+.lrc-empty-actions .primary-btn {
+  width: 100%;
+  min-width: 0;
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.lt-btn.emphasis {
+  color: #fff;
+  background: var(--accent);
+}
+
+.lrc-word {
+  display: inline;
+  color: inherit;
+  transition: color .1s linear, text-shadow .1s linear;
+}
+.lrc-line.active .lrc-word {
+  color: var(--text-4);
+}
+.lrc-line.active .lrc-word.sung {
+  color: var(--text-1);
+  text-shadow: 0 0 18px var(--cover-from);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-inner { animation: none !important; transform: none !important; }
+}

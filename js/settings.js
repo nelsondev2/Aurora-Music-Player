@@ -348,6 +348,12 @@ Object.assign(App, {
         const e = dict[key];
         if (e) el.setAttribute('placeholder', e[this.lang] || e.es || key);
       });
+      // title: data-i18n-title="key"
+      document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        const key = el.getAttribute('data-i18n-title');
+        const e = dict[key];
+        if (e) el.setAttribute('title', e[this.lang] || e.es || key);
+      });
       // Atributo lang del <html>
       document.documentElement.setAttribute('lang', this.lang);
       // Nota: document.title es ignorado en WebXDC; el nombre viene de manifest.toml

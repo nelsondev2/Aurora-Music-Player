@@ -257,6 +257,7 @@ Object.assign(App, {
       if (this.playbackRate && this.playbackRate !== 1) {
         try { this.audio.playbackRate = this.playbackRate; } catch (e) {}
       }
+      this.setBuffering(this.audio.readyState < 3);
       if (typeof this.restoreLyricsPrefs === 'function') this.restoreLyricsPrefs();
       this.addToHistory(t.id);
       this.togglePlay(true);
@@ -289,35 +290,58 @@ Object.assign(App, {
         this.audio.src = url;
         try { this.audio.volume = this.volume; } catch (e) {}
         this.audio.load();
+        this.setBuffering(this.audio.readyState < 3);
+      } else {
+        this.setBuffering(false);
       }
       this.isPlaying = false;
       this.renderCurrentTrack();
       this.renderLyrics();
       this.updateMediaSession();
       this.updatePlayUI();
-      this.animateCoverTransition();
     },
 
-    /* Animación de transición de portada y fondo (#12) */
-    animateCoverTransition() {
+    setBuffering(on) {
+      const el = document.getElementById('coverBuffering');
       const cover = document.getElementById('coverArt');
+      const show = !!on;
+      if (el) {
+        if (show) el.removeAttribute('hidden');
+        else el.setAttribute('hidden', '');
+      }
+      if (cover) cover.classList.toggle('is-buffering', show);
+    },
+
+    /* Crossfade de portada 200 ms, sin rotateY. */
+    animateCoverTransition() {
+      const front = document.getElementById('coverCanvas');
+      const back = document.getElementById('coverCanvasBack');
       const bg = document.getElementById('bgGradient');
-      if (!cover) return;
-      cover.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
-      cover.style.opacity = '0';
-      cover.style.transform = 'scale(0.92) rotateY(8deg)';
-      setTimeout(() => {
-        cover.style.opacity = '1';
-        cover.style.transform = 'scale(1) rotateY(0deg)';
-        setTimeout(() => {
-          cover.style.transition = '';
-          cover.style.transform = '';
-        }, 400);
-      }, 200);
+      if (!front || !back) return;
+      try {
+        const bctx = back.getContext('2d');
+        bctx.clearRect(0, 0, back.width, back.height);
+        bctx.drawImage(front, 0, 0);
+      } catch (e) {
+        return;
+      }
+      back.style.transition = 'none';
+      back.style.opacity = '1';
+      if (this._coverXfadeTimer) clearTimeout(this._coverXfadeTimer);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          back.style.transition = 'opacity 200ms ease';
+          back.style.opacity = '0';
+        });
+      });
+      this._coverXfadeTimer = setTimeout(() => {
+        back.style.transition = '';
+        back.style.opacity = '';
+      }, 240);
       if (bg) {
-        bg.style.transition = 'opacity 0.6s ease';
-        bg.style.opacity = '0.2';
-        setTimeout(() => { bg.style.opacity = ''; }, 50);
+        bg.style.transition = 'opacity 200ms ease';
+        bg.style.opacity = '0.4';
+        setTimeout(() => { bg.style.opacity = ''; }, 200);
       }
     },
 
