@@ -212,14 +212,14 @@ Cada fase es un PR. No se mezcla con features de audio. Criterio de salida = scr
 
 La fase de UI se da por cerrada cuando:
 
-- [ ] Un desconocido ve Now Playing oscuro y no pregunta “¿es un template?”.
-- [ ] Tema claro se puede usar de día (contraste de nav, chips, toasts).
-- [ ] AMOLED no tiene grises `#14141f` residuales.
+- [x] Un desconocido ve Now Playing oscuro y no pregunta “¿es un template?”.
+- [x] Tema claro se puede usar de día (contraste de nav, chips, toasts).
+- [x] AMOLED no tiene grises `#14141f` residuales (`--bg-2: #0a0a0a` en CSS).
 - [x] Desktop 1280 px: sidebar + NP, sin bottom-nav.
-- [ ] `fa-solid` / `fa-regular` = 0 en el repo.
-- [ ] `docs/*.jpg` son recortes de la app.
-- [ ] `node audit-i18n.js` exit 0.
-- [ ] webxdc y viewport 390 se ven como hoy (no peores).
+- [x] `fa-solid` / `fa-regular` = 0 en el repo (salvo este plan).
+- [x] `docs/*.jpg` son recortes de la app.
+- [x] `node audit-i18n.js` exit 0.
+- [x] webxdc y viewport 390 se ven como hoy (no peores).
 
 ---
 

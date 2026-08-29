@@ -150,6 +150,7 @@ Object.assign(App, {
       if (!el) return;
       el.hidden = false;
       this.updateImportOverlay(done, total, name);
+      if (!this.tracks.length) this.showImportSkeleton();
     },
     updateImportOverlay(done, total, name) {
       const fill = document.getElementById('importBarFill');
@@ -166,6 +167,40 @@ Object.assign(App, {
       if (el) el.hidden = true;
       const fill = document.getElementById('importBarFill');
       if (fill) fill.style.width = '0%';
+      this.hideImportSkeleton();
+    },
+
+    _skeletonRowHtml() {
+      return '<li class="track-row is-skeleton" aria-hidden="true">' +
+        '<div class="row-cover skel"></div>' +
+        '<div class="row-text"><div class="skel skel-title"></div><div class="skel skel-sub"></div></div>' +
+        '<div class="skel skel-dur"></div>' +
+        '</li>';
+    },
+    showImportSkeleton() {
+      if (this.tracks.length) return;
+      const html = this._skeletonRowHtml() + this._skeletonRowHtml() + this._skeletonRowHtml();
+      const ul = document.getElementById('libraryTracks');
+      if (ul) {
+        if (typeof this.unbindVirtualList === 'function') this.unbindVirtualList(ul);
+        ul.innerHTML = html;
+      }
+      const home = document.getElementById('homeContent');
+      const hv = document.getElementById('viewHome');
+      if (home && hv && hv.classList.contains('is-empty')) {
+        home.innerHTML = '<ul class="track-list import-skel" aria-hidden="true">' + html + '</ul>';
+      }
+    },
+    hideImportSkeleton() {
+      document.querySelectorAll('.track-row.is-skeleton').forEach(el => el.remove());
+      const skelList = document.querySelector('.import-skel');
+      if (skelList && !this.tracks.length && typeof this.renderHome === 'function') {
+        this.renderHome();
+      } else if (skelList) skelList.remove();
+      if (!this.tracks.length) {
+        const ul = document.getElementById('libraryTracks');
+        if (ul && !ul.children.length && typeof this.renderLibrary === 'function') this.renderLibrary();
+      }
     },
 
     findDuplicateTrack(fileName, fileSize) {

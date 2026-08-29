@@ -59,6 +59,7 @@
   --shadow-cover: 0 24px 48px rgba(0,0,0,.45);
   --ease-out: cubic-bezier(.22, 1, .36, 1);
   --dur: 200ms;
+  --view-dur: 240ms;
 
   /* Safe areas */
   --safe-top:    env(safe-area-inset-top, 0px);
@@ -256,7 +257,7 @@ svg { display: block; }
   opacity: 0;
   transform: translateX(40px);
   pointer-events: none;
-  transition: opacity .35s ease, transform .35s ease;
+  transition: opacity var(--view-dur) var(--ease-out), transform var(--view-dur) var(--ease-out);
   z-index: 1;
   will-change: transform, opacity;
 }
@@ -383,7 +384,7 @@ svg { display: block; }
   box-shadow:
     var(--shadow-cover),
     0 0 0 1px rgba(255,255,255,0.08) inset;
-  transition: box-shadow .35s ease;
+  transition: box-shadow var(--dur) var(--ease-out), transform var(--dur) var(--ease-out);
   max-width: 100%;
   max-height: 100%;
   cursor: pointer;
@@ -412,6 +413,11 @@ svg { display: block; }
 .cover-play-hint .ico { width: 42px; height: 42px; filter: drop-shadow(0 6px 16px rgba(0,0,0,0.45)); }
 .cover-art:not(.playing):hover .cover-play-hint,
 .cover-art:not(.playing):active .cover-play-hint { opacity: 1; }
+.cover-art:active:not(.vol-adjusting) { transform: scale(.98); }
+.cover-art.playing:active:not(.vol-adjusting) {
+  animation: none;
+  transform: scale(.98);
+}
 
 @keyframes coverFloat {
   0%, 100% { transform: translateY(0); }
@@ -625,6 +631,7 @@ svg { display: block; }
   flex-shrink: 0;
 }
 .ctrl-btn:active { transform: scale(0.88); }
+.ctrl-btn.ctrl-play:active { transform: scale(.98); }
 .ctrl-btn.active { color: var(--accent); }
 
 .ctrl-shuffle, .ctrl-repeat {
@@ -1760,7 +1767,7 @@ svg { display: block; }
 .view.active .progress-section,
 .view.active .controls-main,
 .view.active .controls-secondary {
-  animation: fadeUp .5s ease backwards;
+  animation: fadeUp var(--view-dur) var(--ease-out) backwards;
 }
 .view.active .top-bar { animation-delay: 0.05s; }
 .view.active .cover-section { animation-delay: 0.1s; }
@@ -2042,7 +2049,7 @@ svg { display: block; }
  *  Crossfade / transición de portada (#12)
  * ===================================================================== */
 .cover-art {
-  transition: box-shadow .35s ease;
+  transition: box-shadow var(--dur) var(--ease-out), transform var(--dur) var(--ease-out);
 }
 .bg-gradient {
   transition: background 1.2s ease, opacity .6s ease;
@@ -3417,7 +3424,8 @@ button,
 }
 
 :root[data-theme="light"] {
-  --text-4: rgba(26, 22, 18, 0.40);
+  --text-3: rgba(26, 22, 18, 0.64);
+  --text-4: rgba(26, 22, 18, 0.48);
 }
 :root[data-theme="light"] .bottom-nav,
 :root[data-theme="light"] .mini-player {
@@ -3425,7 +3433,7 @@ button,
   border-color: rgba(20, 16, 12, 0.10);
   color: #1A1612;
 }
-:root[data-theme="light"] .nav-btn { color: rgba(26, 22, 18, 0.50); }
+:root[data-theme="light"] .nav-btn { color: rgba(26, 22, 18, 0.62); }
 :root[data-theme="light"] .nav-btn.active { color: var(--accent); }
 :root[data-theme="light"] .toast {
   border-color: rgba(20, 16, 12, 0.12);
@@ -3448,6 +3456,12 @@ button,
   color: #1A1612;
 }
 
+:root[data-theme="amoled"] {
+  --bg-0: #000000;
+  --bg-1: #000000;
+  --bg-2: #0a0a0a;
+  --bg-3: #141414;
+}
 :root[data-theme="amoled"] .bottom-nav,
 :root[data-theme="amoled"] .mini-player {
   background: rgba(0, 0, 0, 0.94);
@@ -3714,6 +3728,36 @@ html.aurora-wide .toast {
   background: var(--bg-1);
 }
 
+
+/* Fase F — skeleton de importación (primer lote) */
+.track-row.is-skeleton {
+  pointer-events: none;
+}
+.skel {
+  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-hi) 45%, var(--surface) 100%);
+  background-size: 200% 100%;
+  animation: skelShine 1.2s var(--ease-out) infinite;
+  border-radius: 8px;
+}
+.track-row.is-skeleton .row-cover.skel {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.skel-title { height: 12px; width: 58%; margin-bottom: 8px; }
+.skel-sub { height: 10px; width: 36%; }
+.skel-dur { height: 10px; width: 36px; flex-shrink: 0; }
+@keyframes skelShine {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel { animation: none; background: var(--surface-2); }
+  .cover-art:active:not(.vol-adjusting),
+  .cover-art.playing:active:not(.vol-adjusting),
+  .ctrl-btn.ctrl-play:active { transform: none; }
+}
 
 .progress-track:focus-visible {
   outline: 2px solid var(--accent);
