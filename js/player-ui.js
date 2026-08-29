@@ -249,7 +249,7 @@ Object.assign(App, {
       const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       requestAnimationFrame(() => {
         const overflow = inner.scrollWidth - el.clientWidth;
-        if (reduce || overflow <= 8) return;
+        if (reduce || this._marqueeEnabled === false || overflow <= 8) return;
         el.classList.add('is-marquee');
         const slide = Math.max(2.4, overflow / 42);
         const pause = 1.5;

@@ -46,10 +46,7 @@ Object.assign(App, {
         const uniqueTracks = [];
         const existingForPlaylist = [];
         for (const t of newTracks) {
-          const existing = this.tracks.find(ex =>
-            ex.fileName === t.fileName &&
-            ex.fileSize === t.fileSize
-          );
+          const existing = this.findDuplicateTrack(t.fileName, t.fileSize);
           if (existing) {
             dupCount++;
             if (t.src && t.src.startsWith('blob:')) URL.revokeObjectURL(t.src);
@@ -169,6 +166,10 @@ Object.assign(App, {
       if (el) el.hidden = true;
       const fill = document.getElementById('importBarFill');
       if (fill) fill.style.width = '0%';
+    },
+
+    findDuplicateTrack(fileName, fileSize) {
+      return this.tracks.find(ex => ex.fileName === fileName && ex.fileSize === fileSize) || null;
     },
 
     /* #15 #16 Obtener objectURL con cache para reutilizar */

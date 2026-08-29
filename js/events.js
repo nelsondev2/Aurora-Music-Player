@@ -265,6 +265,27 @@ Object.assign(App, {
           this.savePlaybackSettings();
         });
       });
+      const toggleMarquee = document.getElementById('toggleMarquee');
+      if (toggleMarquee) toggleMarquee.addEventListener('change', () => {
+        this._marqueeEnabled = !!toggleMarquee.checked;
+        this.savePlaybackSettings();
+        if (typeof this._syncMarquee === 'function') {
+          const title = document.getElementById('trackTitle');
+          const artist = document.getElementById('trackArtist');
+          if (title) this._syncMarquee(title);
+          if (artist) this._syncMarquee(artist);
+        }
+      });
+      const btnShortcuts = document.getElementById('menuShortcutsSettings');
+      if (btnShortcuts) btnShortcuts.addEventListener('click', () => {
+        this.closeSheet('sheetSettings');
+        this.openSheet('sheetShortcuts');
+      });
+      const btnDelLib = document.getElementById('menuDeleteLibrary');
+      if (btnDelLib) btnDelLib.addEventListener('click', () => {
+        this.closeSheet('sheetSettings');
+        this.deleteAllTracks();
+      });
 
       // Volver / cargar música
       $('btnBack').addEventListener('click', () => this.openFilePicker());
@@ -590,6 +611,20 @@ Object.assign(App, {
       pt.addEventListener('mousedown',  (e) => { dragging = true; pt.classList.add('dragging'); seekFromEvent(e); });
       window.addEventListener('mousemove', (e) => { if (dragging) seekFromEvent(e); });
       window.addEventListener('mouseup',   () => { dragging = false; pt.classList.remove('dragging'); });
+      pt.addEventListener('keydown', (e) => {
+        if (!this.audio || !this.audio.duration) return;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          this.seekToTime((this.audio.currentTime || 0) + 5);
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          this.seekToTime((this.audio.currentTime || 0) - 5);
+        } else if (e.key === 'Home') {
+          e.preventDefault(); this.seekTo(0);
+        } else if (e.key === 'End') {
+          e.preventDefault(); this.seekTo(0.99);
+        }
+      });
 
       // Restore volume
       const savedVol = localStorage.getItem('aurora_volume');
@@ -631,6 +666,7 @@ Object.assign(App, {
       document.querySelectorAll('.accent-opt').forEach(b => b.classList.toggle('active', b.dataset.accent === this.accent));
 
       window.addEventListener('resize', () => {
+        if (typeof this.syncDesktopLayout === 'function') this.syncDesktopLayout();
         clearTimeout(this._marqueeResize);
         this._marqueeResize = setTimeout(() => {
           if (typeof this._syncMarquee !== 'function') return;
@@ -655,8 +691,15 @@ Object.assign(App, {
           this._trapSheetFocus(e);
           return;
         }
-        if (document.querySelector('.sheet.open')) return;
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
+          e.preventDefault();
+          const sh = document.getElementById('sheetShortcuts');
+          if (sh && sh.classList.contains('open')) this.closeSheet('sheetShortcuts');
+          else this.openSheet('sheetShortcuts');
+          return;
+        }
+        if (document.querySelector('.sheet.open')) return;
         switch (e.key) {
           case ' ': e.preventDefault(); this.togglePlay(); break;
           case 'ArrowRight': if (e.shiftKey) this.next(); else this.seekTo(((this.audio.currentTime||0)+5) / (this.audio.duration||1)); break;

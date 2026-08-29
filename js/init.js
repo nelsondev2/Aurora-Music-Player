@@ -74,6 +74,7 @@ Object.assign(App, {
 
       this.loadPlaybackSettings();
       this.syncPlaybackSettingsUI();
+      if (typeof this.syncDesktopLayout === 'function') this.syncDesktopLayout();
       // #11 Cargar historial
       this.loadHistory();
       this.loadSearchHistory();

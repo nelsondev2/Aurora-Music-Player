@@ -147,8 +147,11 @@ Object.assign(App, {
      * ============================================================ */
     showView(name) {
       const views = document.querySelectorAll('.view');
+      const wide = document.documentElement.classList.contains('aurora-wide');
       views.forEach(v => {
-        const isActive = v.dataset.view === name;
+        let isActive = v.dataset.view === name;
+        if (wide && v.dataset.view === 'home') isActive = true;
+        if (wide && v.dataset.view === 'player') isActive = name !== 'lyrics';
         if (isActive) v.classList.add('active');
         else v.classList.remove('active');
       });

@@ -16,7 +16,8 @@ Object.assign(App, {
       const lyrics = !!(document.getElementById('viewLyrics') && document.getElementById('viewLyrics').classList.contains('active'));
       const player = !!(document.getElementById('viewPlayer') && document.getElementById('viewPlayer').classList.contains('active'));
       const sheets = Array.from(document.querySelectorAll('.sheet.open')).filter(s => s.id !== 'sheetConfirm');
-      const showMini = !!(this.currentTrack) && !lyrics && (!player || sheets.length > 0);
+      const wide = document.documentElement.classList.contains('aurora-wide');
+      const showMini = !wide && !!(this.currentTrack) && !lyrics && (!player || sheets.length > 0);
       screen.classList.toggle('has-mini', showMini);
       screen.classList.toggle('chrome-hidden', lyrics);
       this.updateMiniPlayer();

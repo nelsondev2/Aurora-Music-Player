@@ -59,7 +59,7 @@ Hallazgos que el plan debe cerrar. No son opiniones: están en el repo.
 | B8 | Onboarding de idioma existe (`showLanguageOnboarding`) pero **nunca se llama** | `js/init.js` |
 | B9 | ~~`addToQueue` / `playNext` / `startRadio` sin UI~~ — **cerrado** (menú de pista + radio) | `js/queue.js` |
 | B10 | ~~Badge de repeat inline duplicado~~ — **cerrado** (`setRepeatUI` + `.repeat-badge`) | — |
-| B11 | Hay `README`; faltan tests y captura de producto | raíz del repo |
+| B11 | ~~README sin tests/capturas~~ — **cerrado** (`tests.html`, `docs/`) | — |
 | B12 | ~~Export de biblioteca no incluye audio~~ — **cerrado** (aviso de metadatos) | `js/library.js` `exportLibrary` |
 | B13 | ~~Quota: toast sin flujo~~ — **cerrado** (“liberar espacio / borrar no usadas”) | `offerFreeStorage` |
 | B14 | ~~Error de `<audio>` silencioso~~ — **cerrado** (toast) | — |
@@ -210,18 +210,18 @@ La sincronización entre dispositivos y el envío de pistas **se eliminaron a pr
 
 ---
 
-### Fase 6 — Profesional hacia fuera (2 días)
-**Meta:** se puede publicar.
+### Fase 6 — Profesional hacia fuera (2 días) ✅
+**Meta:** se puede publicar. **Hecha.**
 
-- [ ] README con capturas (now playing, biblioteca, letras, listeners).
-- [ ] `CHANGELOG.md` semver (`1.0.0` al cerrar fase 1–2).
-- [ ] Tests sin framework: `tests.html` que ejercite `parseLrc`, shuffle, i18n keys completas, `fmtTime`, duplicados.
-- [ ] Auditoría de i18n: script que falle si una clave no tiene los 8 idiomas.
-- [ ] Recortar Font Awesome: solo solid+regular usados; **quitar brands y v4compatibility** (~330 KB).
-- [ ] Accesibilidad: `role="slider"` en progreso, `aria-pressed` en shuffle/like/repeat, live region para toasts, contraste en tema light.
-- [ ] Atajos de teclado: hoja “?” (ya hay espacio/flechas/m/l/n/p).
-- [ ] Layout desktop opcional (`min-width: 900px`): now-playing a la izquierda, biblioteca a la derecha. El marco móvil queda para < 768 px y para webxdc.
-- [ ] Página de Ajustes completa: reproducción (gapless, crossfade, normalizar, sleep fade), interfaz (tema, acento, idioma, marquee), almacenamiento (retag, export, borrar), acerca de (versión, licencia, source).
+- [x] README con capturas (now playing, biblioteca, letras). *Listeners cancelado (P2P).*
+- [x] `CHANGELOG.md` semver (`1.0.0`).
+- [x] Tests sin framework: `tests.html` que ejercite `parseLrc`, shuffle, i18n keys completas, `fmtTime`, duplicados.
+- [x] Auditoría de i18n: `node audit-i18n.js` falla si una clave no tiene los 8 idiomas.
+- [x] Recortar Font Awesome: solo solid+regular; **quitar brands y v4compatibility** (~330 KB).
+- [x] Accesibilidad: `role="slider"` en progreso, `aria-pressed` en shuffle/like/repeat, live region para toasts, contraste en tema light.
+- [x] Atajos de teclado: hoja “?” (espacio/flechas/m/l/n/p).
+- [x] Layout desktop opcional (`min-width: 900px`): now-playing a la izquierda, biblioteca a la derecha. El marco móvil queda para < 768 px y para webxdc.
+- [x] Página de Ajustes completa: reproducción (gapless, crossfade, normalizar, sleep fade), interfaz (tema, acento, idioma, marquee), almacenamiento (retag, export, borrar), acerca de (versión, licencia, source).
 
 **Criterio de salida:** un desconocido clona el repo, entiende qué es, lo abre, y no encuentra un botón que “no hace lo que dice”.
 
@@ -284,18 +284,18 @@ Con eso Aurora **se siente** profesional. El resto es profundidad.
 
 La app se considera pulida cuando se cumplen **todos**:
 
-- [ ] Ningún botón del menú hace “nada” o un toast de placeholder.
-- [ ] Hay mini-player en toda navegación secundaria.
-- [ ] Hay vistas Artista y Álbum, y se llega a ellas desde la pista.
+- [x] Ningún botón del menú hace “nada” o un toast de placeholder.
+- [x] Hay mini-player en toda navegación secundaria.
+- [x] Hay vistas Artista y Álbum, y se llega a ellas desde la pista.
 - [x] Shuffle produce una cola visible y estable.
 - [x] Importar 50 archivos muestra progreso y no bloquea play.
 - [x] Un archivo corrupto no detiene la sesión.
 - [x] Historial y estadísticas son pantallas distintas (o pestañas).
-- [ ] 8 idiomas sin claves huérfanas ni strings en crudo.
+- [x] 8 idiomas sin claves huérfanas ni strings en crudo.
 - [x] Escape, teclado y Media Session funcionan.
 - [x] README + `.xdc` construible en un comando.
 - [ ] *(Cancelado)* Host P2P / oyentes en grupo.
-- [ ] Tema claro usable (contraste de nav, toasts, sheets).
+- [x] Tema claro usable (contraste de nav, toasts, sheets).
 - [ ] Lista de 300 pistas scrollea a 60 fps en móvil medio.
 
 ---

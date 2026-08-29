@@ -2259,6 +2259,112 @@ const I18N = {
     it: 'Locale e privato', ru: 'Локально и приватно'
   },
 
+  shortcuts_title: {
+    es: 'Atajos de teclado', en: 'Keyboard shortcuts', pt: 'Atalhos de teclado',
+    zh: '键盘快捷键', ja: 'キーボードショートカット', fr: 'Raccourcis clavier',
+    it: 'Scorciatoie da tastiera', ru: 'Клавиатурные сокращения'
+  },
+  shortcuts_hint: {
+    es: 'Pulsa ? para abrir esta hoja.',
+    en: 'Press ? to open this sheet.',
+    pt: 'Prima ? para abrir esta folha.',
+    zh: '按 ? 打开此面板。',
+    ja: '? でこのシートを開きます。',
+    fr: 'Appuyez sur ? pour ouvrir cette feuille.',
+    it: 'Premi ? per aprire questo foglio.',
+    ru: 'Нажмите ?, чтобы открыть эту панель.'
+  },
+  shortcut_play: {
+    es: 'Reproducir / pausa', en: 'Play / pause', pt: 'Reproduzir / pausa',
+    zh: '播放 / 暂停', ja: '再生 / 一時停止', fr: 'Lecture / pause',
+    it: 'Play / pausa', ru: 'Играть / пауза'
+  },
+  shortcut_seek: {
+    es: 'Avanzar / rebobinar 5 s', en: 'Seek ±5 s', pt: 'Avançar / recuar 5 s',
+    zh: '快进 / 快退 5 秒', ja: '5秒送り / 戻し', fr: 'Avancer / reculer de 5 s',
+    it: 'Avanti / indietro 5 s', ru: 'Перемотка ±5 с'
+  },
+  shortcut_skip: {
+    es: 'Siguiente / anterior (o Shift + flecha)',
+    en: 'Next / previous (or Shift + arrow)',
+    pt: 'Seguinte / anterior (ou Shift + seta)',
+    zh: '下一首 / 上一首（或 Shift + 方向键）',
+    ja: '次 / 前（または Shift + 矢印）',
+    fr: 'Suivant / précédent (ou Maj + flèche)',
+    it: 'Successivo / precedente (o Shift + freccia)',
+    ru: 'Следующий / предыдущий (или Shift + стрелка)'
+  },
+  shortcut_volume: {
+    es: 'Subir / bajar volumen', en: 'Volume up / down', pt: 'Volume cima / baixo',
+    zh: '音量升高 / 降低', ja: '音量アップ / ダウン', fr: 'Volume plus / moins',
+    it: 'Volume su / giù', ru: 'Громче / тише'
+  },
+  shortcut_mute: {
+    es: 'Silencio', en: 'Mute', pt: 'Silenciar',
+    zh: '静音', ja: 'ミュート', fr: 'Muet',
+    it: 'Muto', ru: 'Без звука'
+  },
+  shortcut_like: {
+    es: 'Favorito', en: 'Favorite', pt: 'Favorito',
+    zh: '收藏', ja: 'お気に入り', fr: 'Favori',
+    it: 'Preferito', ru: 'В избранное'
+  },
+  shortcut_esc: {
+    es: 'Cerrar panel', en: 'Close sheet', pt: 'Fechar painel',
+    zh: '关闭面板', ja: 'シートを閉じる', fr: 'Fermer le panneau',
+    it: 'Chiudi pannello', ru: 'Закрыть панель'
+  },
+  shortcut_help: {
+    es: 'Esta ayuda', en: 'This help', pt: 'Esta ajuda',
+    zh: '本帮助', ja: 'このヘルプ', fr: 'Cette aide',
+    it: 'Questo aiuto', ru: 'Эта справка'
+  },
+  settings_about: {
+    es: 'Acerca de', en: 'About', pt: 'Acerca de',
+    zh: '关于', ja: '情報', fr: 'À propos',
+    it: 'Informazioni', ru: 'О программе'
+  },
+  settings_version: {
+    es: 'Versión', en: 'Version', pt: 'Versão',
+    zh: '版本', ja: 'バージョン', fr: 'Version',
+    it: 'Versione', ru: 'Версия'
+  },
+  settings_license: {
+    es: 'Licencia MIT', en: 'MIT License', pt: 'Licença MIT',
+    zh: 'MIT 许可证', ja: 'MIT ライセンス', fr: 'Licence MIT',
+    it: 'Licenza MIT', ru: 'Лицензия MIT'
+  },
+  settings_source: {
+    es: 'Código fuente', en: 'Source code', pt: 'Código-fonte',
+    zh: '源代码', ja: 'ソースコード', fr: 'Code source',
+    it: 'Codice sorgente', ru: 'Исходный код'
+  },
+  settings_marquee: {
+    es: 'Marquee en títulos largos', en: 'Marquee for long titles', pt: 'Marquee em títulos longos',
+    zh: '长标题滚动', ja: '長いタイトルをスクロール', fr: 'Marquee des titres longs',
+    it: 'Marquee per titoli lunghi', ru: 'Бегущая строка длинных названий'
+  },
+  settings_sleep_fade: {
+    es: 'El temporizador sleep hace un fade-out de 10 s al apagar.',
+    en: 'The sleep timer fades out over 10 s before stopping.',
+    pt: 'O temporizador sleep faz fade-out de 10 s ao parar.',
+    zh: '睡眠定时器在停止前会淡出 10 秒。',
+    ja: 'スリープタイマーは停止前に10秒フェードアウトします。',
+    fr: 'Le minuteur sleep fait un fade-out de 10 s à l’arrêt.',
+    it: 'Il timer sleep fa un fade-out di 10 s all’arresto.',
+    ru: 'Таймер сна делает затухание 10 с перед остановкой.'
+  },
+  settings_delete_library: {
+    es: 'Borrar toda la biblioteca', en: 'Delete entire library', pt: 'Apagar toda a biblioteca',
+    zh: '删除整个曲库', ja: 'ライブラリを全削除', fr: 'Effacer toute la bibliothèque',
+    it: 'Elimina tutta la libreria', ru: 'Удалить всю библиотеку'
+  },
+  settings_shortcuts: {
+    es: 'Atajos de teclado', en: 'Keyboard shortcuts', pt: 'Atalhos de teclado',
+    zh: '键盘快捷键', ja: 'キーボードショートカット', fr: 'Raccourcis clavier',
+    it: 'Scorciatoie da tastiera', ru: 'Клавиатурные сокращения'
+  },
+
 };
 
 window.TRACKS = TRACKS;

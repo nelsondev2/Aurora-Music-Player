@@ -424,6 +424,7 @@ Object.assign(App, {
             this.crossfadeDuration = s.crossfade;
             this.crossfadeEnabled = s.crossfade > 0;
           }
+          if (typeof s.marquee === 'boolean') this._marqueeEnabled = s.marquee;
         }
       } catch (e) {}
     },
@@ -432,7 +433,8 @@ Object.assign(App, {
         localStorage.setItem('aurora_playback', JSON.stringify({
           gapless: !!this._gaplessEnabled,
           normalize: !!this._normalizeVolume,
-          crossfade: this.crossfadeDuration || 0
+          crossfade: this.crossfadeDuration || 0,
+          marquee: this._marqueeEnabled !== false
         }));
       } catch (e) {}
     },
@@ -441,10 +443,22 @@ Object.assign(App, {
       if (g) g.checked = !!this._gaplessEnabled;
       const n = document.getElementById('toggleNormalize');
       if (n) n.checked = !!this._normalizeVolume;
+      const m = document.getElementById('toggleMarquee');
+      if (m) m.checked = this._marqueeEnabled !== false;
       const xf = this.crossfadeDuration || 0;
       document.querySelectorAll('.xfade-opt').forEach(b => {
         b.classList.toggle('active', Number(b.dataset.xfade) === xf);
       });
+      const ver = document.getElementById('aboutVersion');
+      if (ver) ver.textContent = this.VERSION || '1.0.0';
+    },
+
+    syncDesktopLayout() {
+      const wide = !!(window.matchMedia && window.matchMedia('(min-width: 900px)').matches) && !window.webxdc;
+      document.documentElement.classList.toggle('aurora-wide', wide);
+      const screen = document.getElementById('deviceScreen');
+      if (screen) screen.classList.toggle('aurora-wide', wide);
+      if (typeof this.updateChrome === 'function') this.updateChrome();
     },
 
     buildLangList() {

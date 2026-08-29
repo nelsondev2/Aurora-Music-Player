@@ -77,7 +77,7 @@
 
         <!-- Barra de progreso -->
         <section class="progress-section">
-          <div class="progress-track" id="progressTrack" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso">
+          <div class="progress-track" id="progressTrack" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso">
             <div class="progress-buffer" id="progressBuffer"></div>
             <div class="progress-fill" id="progressFill">
               <div class="progress-thumb" id="progressThumb"></div>
@@ -700,6 +700,14 @@
               <i class="fa-solid fa-language"></i>
               <span data-i18n="menu_language">Idioma de la aplicación</span>
             </button>
+            <label class="settings-row" for="toggleMarquee">
+              <span data-i18n="settings_marquee">Marquee en títulos largos</span>
+              <input type="checkbox" id="toggleMarquee" checked />
+            </label>
+            <button class="menu-row" id="menuShortcutsSettings" type="button">
+              <i class="fa-solid fa-keyboard"></i>
+              <span data-i18n="settings_shortcuts">Atajos de teclado</span>
+            </button>
             <h4 class="section-title" data-i18n="settings_storage">Almacenamiento</h4>
             <button class="menu-row" id="menuRetagTracks">
               <i class="fa-solid fa-tags"></i>
@@ -719,7 +727,47 @@
               <i class="fa-solid fa-file-import"></i>
               <span data-i18n="settings_import">Importar biblioteca</span>
             </button>
+            <button class="menu-row danger" id="menuDeleteLibrary" type="button">
+              <i class="fa-solid fa-trash-can"></i>
+              <span data-i18n="settings_delete_library">Borrar toda la biblioteca</span>
+            </button>
+            <p class="settings-hint" data-i18n="settings_sleep_fade">El temporizador sleep hace un fade-out de 10 s al apagar.</p>
+            <h4 class="section-title" data-i18n="settings_about">Acerca de</h4>
+            <div class="about-block" id="aboutBlock">
+              <p class="about-line"><span data-i18n="settings_version">Versión</span> <strong id="aboutVersion">1.0.0</strong></p>
+              <p class="about-line" data-i18n="settings_license">Licencia MIT</p>
+              <a class="menu-row" id="aboutSource" href="https://github.com/nelsondev2/Aurora-Music-Player" target="_blank" rel="noopener">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                <span data-i18n="settings_source">Código fuente</span>
+              </a>
+            </div>
 
+          </div>
+        </div>
+      </div>
+
+      <!-- Atajos de teclado -->
+      <div class="sheet" id="sheetShortcuts">
+        <div class="sheet-backdrop" data-close-sheet="sheetShortcuts"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetShortcuts" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="shortcuts_title">Atajos de teclado</h3>
+            <button class="text-btn" data-close-sheet="sheetShortcuts" data-i18n="close_btn">Cerrar</button>
+          </header>
+          <div class="sheet-body">
+            <p class="sheet-subtitle" data-i18n="shortcuts_hint">Pulsa ? para abrir esta hoja.</p>
+            <ul class="shortcut-list">
+              <li><kbd>Espacio</kbd> <span data-i18n="shortcut_play">Reproducir / pausa</span></li>
+              <li><kbd>←</kbd> <kbd>→</kbd> <span data-i18n="shortcut_seek">Avanzar / rebobinar 5 s</span></li>
+              <li><kbd>N</kbd> <kbd>P</kbd> <span data-i18n="shortcut_skip">Siguiente / anterior (o Shift + flecha)</span></li>
+              <li><kbd>↑</kbd> <kbd>↓</kbd> <span data-i18n="shortcut_volume">Subir / bajar volumen</span></li>
+              <li><kbd>M</kbd> <span data-i18n="shortcut_mute">Silencio</span></li>
+              <li><kbd>L</kbd> <span data-i18n="shortcut_like">Favorito</span></li>
+              <li><kbd>Esc</kbd> <span data-i18n="shortcut_esc">Cerrar panel</span></li>
+              <li><kbd>?</kbd> <span data-i18n="shortcut_help">Esta ayuda</span></li>
+            </ul>
           </div>
         </div>
       </div>

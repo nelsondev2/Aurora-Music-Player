@@ -135,6 +135,8 @@
     /* Utilidades */
     _wired: {},
     _lastError: null,
+    VERSION: '1.0.0',
+    _marqueeEnabled: true,
 };
 
 /* App vive en el scope léxico global y se expone también en window. */
