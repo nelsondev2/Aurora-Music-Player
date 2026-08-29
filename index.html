@@ -336,6 +336,10 @@
                 <span class="pl-action-ico"><i class="fa-solid fa-broom"></i></span>
                 <span data-i18n="clear_playlist_btn">Borrar todo</span>
               </button>
+              <button class="pl-action-btn" id="btnRenamePlaylist">
+                <span class="pl-action-ico"><i class="fa-solid fa-pen"></i></span>
+                <span data-i18n="rename_playlist_btn">Renombrar</span>
+              </button>
               <button class="pl-action-btn pl-action-danger" id="btnDeletePlaylistFull" style="display:none">
                 <span class="pl-action-ico"><i class="fa-solid fa-trash-can"></i></span>
                 <span data-i18n="delete_playlist_btn">Eliminar lista</span>
@@ -681,10 +685,16 @@
               <i class="fa-solid fa-tags"></i>
               <span data-i18n="settings_retag">Releer metadatos</span>
             </button>
+            <p class="sheet-subtitle" id="storageUsageLabel"></p>
+            <button class="menu-row" id="menuFreeStorage">
+              <i class="fa-solid fa-broom"></i>
+              <span data-i18n="settings_free_storage">Liberar espacio</span>
+            </button>
             <button class="menu-row" id="menuExportLibrary">
               <i class="fa-solid fa-file-export"></i>
               <span data-i18n="settings_export">Exportar biblioteca</span>
             </button>
+            <p class="settings-hint" data-i18n="settings_export_hint">Solo metadatos (listas, favoritos, etiquetas). No incluye los archivos de audio.</p>
             <button class="menu-row" id="menuImportLibrary">
               <i class="fa-solid fa-file-import"></i>
               <span data-i18n="settings_import">Importar biblioteca</span>
@@ -781,6 +791,10 @@
               <i class="fa-solid fa-list-ol"></i>
               <span data-i18n="ctx_add_queue">Añadir a la cola</span>
             </button>
+            <button class="menu-row" id="ctxStartRadio">
+              <i class="fa-solid fa-tower-broadcast"></i>
+              <span data-i18n="ctx_start_radio">Iniciar radio</span>
+            </button>
             <button class="menu-row" id="ctxAddPlaylist">
               <i class="fa-solid fa-list-ul"></i>
               <span data-i18n="menu_add_to_playlist">Añadir a una lista</span>
@@ -868,6 +882,16 @@
             <span data-i18n="nav_library">Biblioteca</span>
           </button>
         </nav>
+      </div>
+
+      <div class="import-overlay" id="importOverlay" hidden>
+        <div class="import-card" role="status" aria-live="polite">
+          <h3 data-i18n="import_title">Importando música</h3>
+          <p class="import-file" id="importFileName"></p>
+          <div class="import-bar"><div id="importBarFill"></div></div>
+          <p class="import-count" id="importCount">0 / 0</p>
+          <button type="button" class="primary-btn ghost" id="btnCancelImport" data-i18n="import_cancel">Cancelar</button>
+        </div>
       </div>
 
       <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>

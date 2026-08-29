@@ -75,6 +75,7 @@ Object.assign(App, {
       this.syncPlaybackSettingsUI();
       // #11 Cargar historial
       this.loadHistory();
+      this.loadSearchHistory();
 
       document.querySelectorAll('.sheet').forEach(s => s.setAttribute('aria-hidden', 'true'));
 
@@ -130,7 +131,11 @@ Object.assign(App, {
           } else if (t.fileBlob) {
             t.src = URL.createObjectURL(t.fileBlob);
           }
+          if (!t.addedAt) t.addedAt = 0;
           return t;
+        });
+        this.tracks.forEach((t, i) => {
+          if (!t.addedAt) t.addedAt = i + 1;
         });
       } catch (e) {
         console.warn('[Aurora] Error cargando pistas:', e);
@@ -188,7 +193,10 @@ Object.assign(App, {
         await window.AuroraStorage.putTrack(toSave);
       } catch (e) {
         console.warn('[Aurora] No se pudo guardar pista:', e);
-        if (this._isQuotaError(e)) this.toast(this.t('toast_storage_full'));
+        if (this._isQuotaError(e)) {
+          this.toast(this.t('toast_storage_full'));
+          if (typeof this.offerFreeStorage === 'function') this.offerFreeStorage();
+        }
       }
     },
 

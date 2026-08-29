@@ -21,7 +21,10 @@
     ],
 
     /* ---------- Procesa una lista de File y devuelve tracks ---------- */
-    async processFiles(fileList) {
+    async processFiles(fileList, opts) {
+      opts = opts || {};
+      const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
+      const isCancelled = typeof opts.isCancelled === 'function' ? opts.isCancelled : () => false;
       const out = [];
       // Separar audio vs lrc para emparejarlos por nombre
       const audios = [];
@@ -41,10 +44,13 @@
       // concurrentemente; el límite evita saturar la CPU/memoria con muchos archivos.
       const CONCURRENCY = 3;
       let index = 0;
+      let completed = 0;
       const results = new Array(audios.length);
+      if (onProgress) onProgress(0, audios.length, '');
 
       const worker = async () => {
         while (index < audios.length) {
+          if (isCancelled()) return;
           const myIdx = index++;
           const file = audios[myIdx];
           try {
@@ -54,6 +60,9 @@
             console.warn('[Aurora] No se pudo procesar', file.name, e);
             results[myIdx] = this.fallbackTrack(file);
           }
+          completed++;
+          if (onProgress) onProgress(completed, audios.length, file.name);
+          await new Promise(r => setTimeout(r, 0));
         }
       };
 
@@ -118,6 +127,15 @@
       if (lrcText) meta.lrc = this.normalizeLyrics(lrcText);
       if (!meta.cover) meta.cover = this.randomCover();
 
+      const coverIsImage = typeof meta.cover === 'string' && (meta.cover.startsWith('data:') || meta.cover.startsWith('blob:'));
+      let coverThumb = null, coverThumbLg = null;
+      if (coverIsImage) {
+        try {
+          coverThumb = await this.resizeDataUrl(meta.cover, 96);
+          coverThumbLg = await this.resizeDataUrl(meta.cover, 256);
+        } catch (e) {}
+      }
+
       return {
         id,
         title: meta.title,
@@ -126,12 +144,37 @@
         duration: 0,
         src: URL.createObjectURL(file),
         cover: meta.cover,
-        coverIsImage: typeof meta.cover === 'string' && (meta.cover.startsWith('data:') || meta.cover.startsWith('blob:')),
+        coverIsImage,
+        coverThumb,
+        coverThumbLg,
         lrc: meta.lrc,
         fileSize: file.size,
         fileName: file.name,
+        addedAt: Date.now(),
         _file: file
       };
+    },
+
+    resizeDataUrl(dataUrl, size) {
+      return new Promise((resolve) => {
+        try {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const c = document.createElement('canvas');
+              c.width = size;
+              c.height = size;
+              const ctx = c.getContext('2d');
+              const r = Math.max(size / img.width, size / img.height);
+              const dw = img.width * r, dh = img.height * r;
+              ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
+              resolve(c.toDataURL('image/jpeg', 0.72));
+            } catch (e) { resolve(null); }
+          };
+          img.onerror = () => resolve(null);
+          img.src = dataUrl;
+        } catch (e) { resolve(null); }
+      });
     },
 
     tagText(v) {
@@ -252,6 +295,7 @@
         lrc: null,
         fileSize: file.size,
         fileName: file.name,
+        addedAt: Date.now(),
         _file: file
       };
     },

@@ -117,10 +117,18 @@ Object.assign(App, {
       const others = this.tracks.filter(t =>
         t.id !== trackId && t.artist !== seed.artist && t.album !== seed.album
       );
-      // Mezclar cada grupo
-      const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
-      this.queue = [trackId, ...shuffle(sameArtist), ...shuffle(sameAlbum), ...shuffle(others)];
+      const shuffle = (arr) => {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+        }
+        return a;
+      };
+      this.queue = [trackId, ...shuffle(sameArtist).map(t => t.id), ...shuffle(sameAlbum).map(t => t.id), ...shuffle(others).map(t => t.id)];
       this.queueIdx = 0;
+      this._originalQueue = null;
+      this.playContext = { type: 'radio', name: seed.artist || seed.title };
       this.playFromQueue(0);
       this.toast(this.t('toast_radio_based') + ' ' + seed.title);
     },

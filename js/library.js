@@ -27,11 +27,17 @@ Object.assign(App, {
         return;
       }
       const count = fileList.length;
-      this.toast(this.t('toast_processing_files').replace('X', count), 2000);
+      this._importCancelled = false;
+      this.showImportOverlay(0, count, '');
       try {
-        const newTracks = await window.AuroraUploader.processFiles(fileList);
+        const newTracks = await window.AuroraUploader.processFiles(fileList, {
+          onProgress: (i, n, name) => this.updateImportOverlay(i, n, name),
+          isCancelled: () => this._importCancelled
+        });
+        const cancelled = this._importCancelled;
+        this.hideImportOverlay();
         if (!newTracks.length) {
-          this.toast(this.t('toast_load_failed'));
+          this.toast(cancelled ? this.t('toast_import_cancelled').replace('X', '0') : this.t('toast_load_failed'));
           return;
         }
 
@@ -128,12 +134,41 @@ Object.assign(App, {
         if (this._editingPlaylistId === destId) this.renderEditPlaylist();
         this.hideEmptyState();
         const destName = destPl ? destPl.name : this.t('my_music_playlist');
-        this.toast(tracksToAdd.length + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destName + (fromDirectory ? ' (carpeta)' : ''));
+        if (this._importCancelled) {
+          this.toast(this.t('toast_import_cancelled').replace('X', String(tracksToAdd.length)));
+        } else {
+          this.toast(tracksToAdd.length + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destName + (fromDirectory ? ' (carpeta)' : ''));
+        }
       } catch (e) {
         console.error('[Aurora] Error cargando archivos:', e);
         this._lastError = { msg: 'upload: ' + e.message, ts: Date.now() };
         this.toast(this.t('toast_load_error'));
+      } finally {
+        this.hideImportOverlay();
       }
+    },
+
+    showImportOverlay(done, total, name) {
+      const el = document.getElementById('importOverlay');
+      if (!el) return;
+      el.hidden = false;
+      this.updateImportOverlay(done, total, name);
+    },
+    updateImportOverlay(done, total, name) {
+      const fill = document.getElementById('importBarFill');
+      const count = document.getElementById('importCount');
+      const file = document.getElementById('importFileName');
+      const n = Math.max(1, total || 1);
+      const pct = Math.max(0, Math.min(100, Math.round((done || 0) * 100 / n)));
+      if (fill) fill.style.width = pct + '%';
+      if (count) count.textContent = (done || 0) + ' / ' + (total || 0);
+      if (file) file.textContent = name || '';
+    },
+    hideImportOverlay() {
+      const el = document.getElementById('importOverlay');
+      if (el) el.hidden = true;
+      const fill = document.getElementById('importBarFill');
+      if (fill) fill.style.width = '0%';
     },
 
     /* #15 #16 Obtener objectURL con cache para reutilizar */
@@ -277,6 +312,26 @@ Object.assign(App, {
       } catch (e) {}
     },
 
+    async loadSearchHistory() {
+      try {
+        const stored = await window.AuroraStorage.getSetting('searchHistory');
+        this._searchHistory = Array.isArray(stored) ? stored.slice(0, 8) : [];
+      } catch (e) { this._searchHistory = []; }
+    },
+
+    pushSearchHistory(q) {
+      q = String(q || '').trim();
+      if (q.length < 2) return;
+      const prev = Array.isArray(this._searchHistory) ? this._searchHistory : [];
+      this._searchHistory = [q, ...prev.filter(x => x.toLowerCase() !== q.toLowerCase())].slice(0, 8);
+      try { window.AuroraStorage.setSetting('searchHistory', this._searchHistory); } catch (e) {}
+    },
+
+    clearSearchHistory() {
+      this._searchHistory = [];
+      try { window.AuroraStorage.setSetting('searchHistory', []); } catch (e) {}
+    },
+
     /* #11 Render historial */
     renderHistory() {
       const cont = document.getElementById('historyContent');
@@ -396,11 +451,12 @@ Object.assign(App, {
       try {
         const data = {
           version: 1,
+          kind: 'aurora-metadata',
           tracks: this.tracks.map(t => ({
             id: t.id, title: t.title, artist: t.artist, album: t.album,
             duration: t.duration, fileSize: t.fileSize, fileName: t.fileName,
-            cover: (typeof t.cover === 'string') ? t.cover : null,
-            coverIsImage: t.coverIsImage, lrc: t.lrc
+            coverThumb: t.coverThumb || null,
+            coverIsImage: !!t.coverIsImage, lrc: t.lrc, addedAt: t.addedAt || 0
           })),
           playlists: this.playlists.map(p => ({
             id: p.id, name: p.name, description: p.description,
@@ -456,7 +512,7 @@ Object.assign(App, {
           this.renderLibrary();
           this.renderPlaylists();
           this.renderFavorites();
-          this.toast(this.t('toast_imported'));
+          this.toast(this.t('toast_imported_meta'));
         } catch (e) {
           this.toast(this.t('toast_load_error'));
         }
@@ -502,13 +558,15 @@ Object.assign(App, {
         console.warn('[Aurora] persistTracksBatch falló, intentando uno por uno:', e);
         if (this._isQuotaError(e)) {
           this.toast(this.t('toast_storage_full'));
+          this.offerFreeStorage();
           return;
         }
         for (const t of tracks) await this.persistTrack(t);
       }
     },
 
-    async deleteTrack(trackId) {
+    async deleteTrack(trackId, opts) {
+      opts = opts || {};
       const idx = this.tracks.findIndex(t => t.id === trackId);
       if (idx < 0) return;
       const wasCurrent = this.currentTrack && this.currentTrack.id === trackId;

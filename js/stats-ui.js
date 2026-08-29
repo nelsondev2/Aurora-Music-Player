@@ -107,30 +107,128 @@ Object.assign(App, {
     runSearch(q, filter) {
       const ul = document.getElementById('searchResults');
       if (!ul) return;
+      if (typeof this.unbindVirtualList === 'function') this.unbindVirtualList(ul);
       ul.innerHTML = '';
       if (!q || q.trim().length === 0) {
-        ul.innerHTML = '<li class="track-row" style="justify-content:center;color:var(--text-3);font-size:13px">' + this.t('search_placeholder') + '</li>';
+        this.renderSearchHistory(ul);
         return;
       }
       const ql = q.toLowerCase();
       const f = filter || 'all';
-      const res = this.tracks.filter(t => {
-        if (f === 'title') return t.title.toLowerCase().includes(ql);
-        if (f === 'artist') return t.artist.toLowerCase().includes(ql);
+      const matchTrack = (t) => {
+        if (f === 'title') return (t.title || '').toLowerCase().includes(ql);
+        if (f === 'artist') return (t.artist || '').toLowerCase().includes(ql);
         if (f === 'album') return t.album && t.album.toLowerCase().includes(ql);
-        return t.title.toLowerCase().includes(ql) ||
-               t.artist.toLowerCase().includes(ql) ||
+        return (t.title || '').toLowerCase().includes(ql) ||
+               (t.artist || '').toLowerCase().includes(ql) ||
                (t.album && t.album.toLowerCase().includes(ql));
-      });
-      if (res.length === 0) {
-        ul.innerHTML = '<li class="track-row" style="justify-content:center;color:var(--text-3);font-size:13px">' + this.t('no_results') + '</li>';
+      };
+      if (f === 'all') {
+        const artists = (typeof this.getArtists === 'function' ? this.getArtists() : [])
+          .filter(a => a.name.toLowerCase().includes(ql)).slice(0, 8);
+        const albums = (typeof this.getAlbums === 'function' ? this.getAlbums() : [])
+          .filter(a => a.name.toLowerCase().includes(ql) || (a.artist || '').toLowerCase().includes(ql)).slice(0, 8);
+        const songs = this.tracks.filter(matchTrack);
+        if (!artists.length && !albums.length && !songs.length) {
+          ul.innerHTML = '<li class="track-row empty-placeholder">' + this.t('no_results') + '</li>';
+          return;
+        }
+        const addTitle = (key) => {
+          const li = document.createElement('li');
+          li.className = 'search-section-title';
+          li.textContent = this.t(key);
+          ul.appendChild(li);
+        };
+        if (artists.length) {
+          addTitle('search_section_artists');
+          artists.forEach(ar => {
+            const li = document.createElement('li');
+            li.className = 'artist-row';
+            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(ar.name)}</div><div class="row-sub">${ar.tracks.length} ${this.esc(this.t('tracks_count'))}</div></div><i class="fa-solid fa-chevron-right row-chevron"></i>`;
+            li.addEventListener('click', () => this.goToArtist(ar.name));
+            ul.appendChild(li);
+          });
+        }
+        if (albums.length) {
+          addTitle('search_section_albums');
+          albums.forEach(al => {
+            const li = document.createElement('li');
+            li.className = 'artist-row';
+            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(al.name)}</div><div class="row-sub">${this.esc(al.artist)} · ${al.tracks.length} ${this.esc(this.t('tracks_count'))}</div></div><i class="fa-solid fa-chevron-right row-chevron"></i>`;
+            li.addEventListener('click', () => this.goToAlbum(al.name, al.artist));
+            ul.appendChild(li);
+          });
+        }
+        if (songs.length) {
+          addTitle('search_section_songs');
+          if (songs.length > 80 && typeof this.fillVirtualList === 'function') {
+            const rest = document.createElement('ul');
+            rest.className = 'track-list';
+            rest.id = 'searchResultsSongs';
+            const wrap = document.createElement('li');
+            wrap.style.listStyle = 'none';
+            wrap.appendChild(rest);
+            ul.appendChild(wrap);
+            this.fillVirtualList(rest, songs, (tr) => this.makeTrackRow(tr, { playContext: { type: 'all' } }), {
+              scroller: ul.closest('.sheet-body'),
+              rowHeight: 64
+            });
+          } else {
+            songs.forEach(tr => ul.appendChild(this.makeTrackRow(tr, { playContext: { type: 'all' } })));
+          }
+        }
         return;
       }
-      res.forEach(t => {
-        if (typeof this.makeTrackRow === 'function') {
-          ul.appendChild(this.makeTrackRow(t, { playContext: { type: 'all' } }));
-        }
+      const res = this.tracks.filter(matchTrack);
+      if (res.length === 0) {
+        ul.innerHTML = '<li class="track-row empty-placeholder">' + this.t('no_results') + '</li>';
+        return;
+      }
+      if (typeof this.fillVirtualList === 'function') {
+        this.fillVirtualList(ul, res, (tr) => this.makeTrackRow(tr, { playContext: { type: 'all' } }), {
+          scroller: ul.closest('.sheet-body'),
+          rowHeight: 64
+        });
+      } else {
+        res.forEach(tr => ul.appendChild(this.makeTrackRow(tr, { playContext: { type: 'all' } })));
+      }
+    },
+
+    renderSearchHistory(ul) {
+      const hist = Array.isArray(this._searchHistory) ? this._searchHistory : [];
+      if (!hist.length) {
+        ul.innerHTML = '<li class="track-row empty-placeholder">' + this.t('search_placeholder') + '</li>';
+        return;
+      }
+      const title = document.createElement('li');
+      title.className = 'search-section-title';
+      title.textContent = this.t('search_recent');
+      ul.appendChild(title);
+      hist.forEach(q => {
+        const li = document.createElement('li');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'search-history-row';
+        btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i><span>' + this.esc(q) + '</span>';
+        btn.addEventListener('click', () => {
+          const inp = document.getElementById('searchInput');
+          if (inp) inp.value = q;
+          this.runSearch(q, this._searchFilter || 'all');
+        });
+        li.appendChild(btn);
+        ul.appendChild(li);
       });
+      const clear = document.createElement('li');
+      const cbtn = document.createElement('button');
+      cbtn.type = 'button';
+      cbtn.className = 'search-history-row';
+      cbtn.innerHTML = '<i class="fa-solid fa-xmark"></i><span>' + this.esc(this.t('search_clear_history')) + '</span>';
+      cbtn.addEventListener('click', () => {
+        this.clearSearchHistory();
+        this.runSearch('', this._searchFilter || 'all');
+      });
+      clear.appendChild(cbtn);
+      ul.appendChild(clear);
     },
 
     /* ============================================================

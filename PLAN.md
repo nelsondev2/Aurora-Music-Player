@@ -54,14 +54,14 @@ Hallazgos que el plan debe cerrar. No son opiniones: están en el repo.
 | B3 | ~~“Ir al artista” abre búsqueda~~ — **cerrado** (vistas Álbum/Artista) | — |
 | B4 | ~~Shuffle elige un índice al azar~~ — **cerrado** (Fisher–Yates + `originalQueue`) | `js/audio.js` |
 | B5 | ~~Gapless se desactiva con EQ~~ — **cerrado** (swap de `src` en el `<audio>` conectado) | `js/library.js` `gaplessNext()` |
-| B6 | Collage de playlist llama `renderPlaylists()` al terminar → riesgo de re-renders en cascada | `js/playlist-ui.js` `getPlaylistCover` |
+| B6 | ~~Collage de playlist llama `renderPlaylists()`~~ — **cerrado** (cache + pintado puntual) | `js/playlist-ui.js` |
 | B7 | ~~Textos hardcodeados de reset~~ — **cerrado** (i18n) | — |
 | B8 | Onboarding de idioma existe (`showLanguageOnboarding`) pero **nunca se llama** | `js/init.js` |
-| B9 | ~~`addToQueue` / `playNext` sin UI~~ — **cerrado** (menú de pista). `startRadio` sigue sin UI (Fase 3) | `js/queue.js` |
+| B9 | ~~`addToQueue` / `playNext` / `startRadio` sin UI~~ — **cerrado** (menú de pista + radio) | `js/queue.js` |
 | B10 | ~~Badge de repeat inline duplicado~~ — **cerrado** (`setRepeatUI` + `.repeat-badge`) | — |
 | B11 | Hay `README`; faltan tests y captura de producto | raíz del repo |
-| B12 | Export de biblioteca **no incluye audio**; el import no restaura pistas reales | `js/library.js` `exportLibrary` |
-| B13 | Quota: hay toast; falta flujo “liberar espacio” | `persistTrack` / Fase 3 |
+| B12 | ~~Export de biblioteca no incluye audio~~ — **cerrado** (aviso de metadatos) | `js/library.js` `exportLibrary` |
+| B13 | ~~Quota: toast sin flujo~~ — **cerrado** (“liberar espacio / borrar no usadas”) | `offerFreeStorage` |
 | B14 | ~~Error de `<audio>` silencioso~~ — **cerrado** (toast) | — |
 | B15 | ~~Home del bottom-nav no era Inicio~~ — **cerrado** (`view-home`) | — |
 
@@ -154,37 +154,37 @@ Cada fase es entregable por sí sola. No se empieza la siguiente si la anterior 
 
 ---
 
-### Fase 2 — Motor de audio “pro” (3–4 días)
-**Meta:** el sonido y la cola se comportan como un reproductor de verdad.
+### Fase 2 — Motor de audio “pro” (3–4 días) ✅
+**Meta:** el sonido y la cola se comportan como un reproductor de verdad. **Hecha.**
 
-- [ ] **Shuffle profesional:** barajar una copia de la cola (`Fisher–Yates`), mantener `originalQueue` para deshacer. El next ya no es `Math.random()`.
-- [ ] **Gapless real con EQ:** no intercambiar `<audio>` (rompe el grafo). Precargar el siguiente en un segundo `Audio` *sin* conectarlo al grafo, y hacer el swap de `src` en el elemento ya conectado en el `ended` − 80 ms, o usar un segundo `MediaElementSource` (más delicado). Decisión: **un solo elemento conectado + preload buffer**; gapless “casi” (hueco < 50 ms) es mejor que gapless teórico que nunca corre.
-- [ ] **Crossfade opcional** en Ajustes (0 / 3 / 6 / 12 s). Hoy está desactivado porque retrasaba el corte; debe ser *opt-in* y no tocar el next manual.
-- [ ] **Normalización** como toggle en Ajustes (el RMS ya está escrito; está apagado).
-- [ ] **Sleep:** añadir “Fin de la canción” y fade-out de 10 s.
-- [ ] **EQ:** botón Reset visible; persistir preset; no duplicar Normal/Plano.
-- [ ] **Errores de decode:** toast + skip automático a la siguiente (con contador “3 pistas omitidas”).
-- [ ] **Media Session:** `setPositionState` en cada `timeupdate` (throttled) para seek en lockscreen.
-- [ ] Volumen: slider compacto en Now Playing (long-press del icono o swipe vertical en la portada, común en players móviles).
+- [x] **Shuffle profesional:** barajar una copia de la cola (`Fisher–Yates`), mantener `originalQueue` para deshacer. El next ya no es `Math.random()`.
+- [x] **Gapless real con EQ:** swap de `src` en el `<audio>` ya conectado ~80 ms antes de `ended`.
+- [x] **Crossfade opcional** en Ajustes (0 / 3 / 6 / 12 s), opt-in, no toca el next manual.
+- [x] **Normalización** como toggle en Ajustes.
+- [x] **Sleep:** “Fin de la canción” y fade-out de 10 s.
+- [x] **EQ:** botón Reset visible; persistir preset; no duplicar Normal/Plano.
+- [x] **Errores de decode:** toast + skip automático (contador “3 pistas omitidas”).
+- [x] **Media Session:** `setPositionState` throttled.
+- [x] Volumen: slider compacto en Now Playing (long-press o swipe vertical en la portada).
 
 **Criterio de salida:** shuffle predecible (se puede ver la cola barajada), EQ no impide transiciones, lockscreen muestra tiempo real.
 
 ---
 
-### Fase 3 — Biblioteca sólida (3–4 días)
-**Meta:** 500 pistas no hunden la app; importar no da miedo.
+### Fase 3 — Biblioteca sólida (3–4 días) ✅
+**Meta:** 500 pistas no hunden la app; importar no da miedo. **Hecha.**
 
-- [ ] Overlay de importación: barra de progreso `12 / 48`, nombre del archivo, cancelar.
-- [ ] Virtualizar listas (`libraryTracks`, cola, búsqueda) si `n > 80` (windowing simple, sin librerías).
-- [ ] Portadas: guardar thumbnail 96/256 aparte del dataURL completo; no pintar 600×600 en cada fila.
-- [ ] **B6** collage de playlist: generar una vez, cachear, invalidar solo si cambian `trackIds`; nunca llamar `renderPlaylists()` en cadena.
-- [ ] **B13** detectar `QuotaExceededError`; ofrecer “liberar espacio / borrar no usadas”.
-- [ ] Editar metadatos de una pista (título, artista, álbum) persistido.
-- [ ] Ordenar y agrupar; “Recién añadidas” con `addedAt`.
-- [ ] Búsqueda: debounce 150 ms, historial de queries, resultados agrupados (canciones / álbumes / artistas).
-- [ ] Playlists: renombrar, reordenar pistas (el drag de cola ya existe — reutilizar `wireDragHandle`).
-- [ ] **B12** export: dejar claro que es *metadatos*; o ZIP de biblioteca (opcional, pesado para webxdc). Preferir honestidad en UI antes que un backup falso.
-- [ ] Radio (`startRadio`) como acción del menú contextual — ya está el algoritmo.
+- [x] Overlay de importación: barra de progreso `12 / 48`, nombre del archivo, cancelar.
+- [x] Virtualizar listas (`libraryTracks`, cola, búsqueda) si `n > 80` (windowing simple, sin librerías).
+- [x] Portadas: thumbnail 96/256; las filas no pintan el dataURL completo.
+- [x] **B6** collage de playlist: generar una vez, cachear, invalidar si cambian `trackIds`; pintado puntual sin `renderPlaylists()` en cadena.
+- [x] **B13** `QuotaExceededError` → “liberar espacio / borrar no usadas”.
+- [x] Editar metadatos de una pista (título, artista, álbum) persistido.
+- [x] Ordenar y agrupar; “Recién añadidas” con `addedAt`.
+- [x] Búsqueda: debounce 150 ms, historial de queries, resultados agrupados (canciones / álbumes / artistas).
+- [x] Playlists: renombrar, reordenar pistas (`wireDragHandle`).
+- [x] **B12** export: UI deja claro que es *metadatos* (sin audio).
+- [x] Radio (`startRadio`) en el menú contextual.
 
 **Criterio de salida:** importar una carpeta de 100 mp3 muestra progreso, no congela, y la biblioteca se puede ordenar.
 
@@ -288,8 +288,8 @@ La app se considera pulida cuando se cumplen **todos**:
 - [ ] Hay mini-player en toda navegación secundaria.
 - [ ] Hay vistas Artista y Álbum, y se llega a ellas desde la pista.
 - [x] Shuffle produce una cola visible y estable.
-- [ ] Importar 50 archivos muestra progreso y no bloquea play.
-- [ ] Un archivo corrupto no detiene la sesión.
+- [x] Importar 50 archivos muestra progreso y no bloquea play.
+- [x] Un archivo corrupto no detiene la sesión.
 - [x] Historial y estadísticas son pantallas distintas (o pestañas).
 - [ ] 8 idiomas sin claves huérfanas ni strings en crudo.
 - [x] Escape, teclado y Media Session funcionan.

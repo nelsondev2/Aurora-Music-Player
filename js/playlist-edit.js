@@ -91,7 +91,11 @@ Object.assign(App, {
       const metaEl = document.getElementById('editPlaylistMeta');
       const ul = document.getElementById('editPlaylistTracks');
       const coverEl = document.getElementById('editPlaylistCover');
-      if (nameEl) nameEl.textContent = pl.name;
+      if (nameEl && nameEl.tagName !== 'INPUT') {
+        nameEl.textContent = pl.name;
+        nameEl.title = this.t('rename_playlist_btn');
+        nameEl.onclick = () => this.startRenamePlaylist();
+      }
       if (metaEl) metaEl.textContent = this.playlistMetaLabel(pl);
       if (coverEl) {
         const cover = this.getPlaylistCover(pl);
@@ -118,14 +122,16 @@ Object.assign(App, {
         ul.appendChild(li);
         return;
       }
-      pl.trackIds.forEach(id => {
+      pl.trackIds.forEach((id, i) => {
         const t = this.tracks.find(x => x.id === id);
         if (!t) return;
         const isCurrent = this.currentTrack && this.currentTrack.id === id;
         const li = document.createElement('li');
         li.className = 'track-row' + (isCurrent ? ' current' : '');
         li.dataset.trackId = id;
+        li.dataset.idx = String(i);
         li.innerHTML = `
+          <button class="drag-handle" type="button" aria-label="Mover"><i class="fa-solid fa-grip-vertical"></i></button>
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
@@ -136,7 +142,7 @@ Object.assign(App, {
           <button class="row-action remove-from-pl" aria-label="${this.esc(this.t('remove_from_playlist'))}"><i class="fa-solid fa-xmark"></i></button>
         `;
         li.addEventListener('click', (e) => {
-          if (e.target.closest('.remove-from-pl, .track-menu-btn')) return;
+          if (e.target.closest('.remove-from-pl, .track-menu-btn, .drag-handle')) return;
           // Reproducir esta pista dentro del contexto de la playlist.
           // playTrack se encarga de setear la cola = pistas de la playlist.
           this.playTrack(t.id, { type: 'playlist', id: pl.id, name: pl.name });
@@ -152,9 +158,58 @@ Object.assign(App, {
           e.stopPropagation();
           this.removeFromPlaylist(pl.id, t.id);
         });
+        if (typeof this.wireDragHandle === 'function') {
+          this.wireDragHandle(li, i, ul, '.track-row', {
+            onReorder: (from, to) => this.reorderPlaylistTracks(pl.id, from, to)
+          });
+        }
         ul.appendChild(li);
         const cv = li.querySelector('canvas');
         if (cv) this.drawRowCover(cv, t);
+      });
+    },
+
+    reorderPlaylistTracks(playlistId, from, to) {
+      const pl = this.playlists.find(p => p.id === playlistId);
+      if (!pl || from === to) return;
+      if (from < 0 || to < 0 || from >= pl.trackIds.length || to >= pl.trackIds.length) return;
+      const moved = pl.trackIds.splice(from, 1)[0];
+      pl.trackIds.splice(to, 0, moved);
+      this.persistPlaylist(pl);
+      this.renderEditPlaylist();
+    },
+
+    startRenamePlaylist() {
+      const pl = this.playlists.find(p => p.id === this._editingPlaylistId);
+      if (!pl) return;
+      const nameEl = document.getElementById('editPlaylistName');
+      if (!nameEl || nameEl.tagName === 'INPUT') return;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'edit-pl-name-input';
+      input.value = pl.name;
+      input.maxLength = 80;
+      nameEl.replaceWith(input);
+      input.focus();
+      input.select();
+      let done = false;
+      const commit = () => {
+        if (done) return;
+        done = true;
+        const v = input.value.trim();
+        if (v && v !== pl.name) {
+          pl.name = v;
+          this.persistPlaylist(pl);
+          this.renderPlaylists();
+          if (typeof this.renderHome === 'function') this.renderHome();
+          this.toast(this.t('toast_playlist_renamed'));
+        }
+        this.renderEditPlaylist();
+      };
+      input.addEventListener('blur', commit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') { input.value = pl.name; input.blur(); }
       });
     },
 

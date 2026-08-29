@@ -17,12 +17,22 @@ Object.assign(App, {
     /* ============================================================
      *  Render listas UI
      * ============================================================ */
+    coverSrcForRow(track, size) {
+      if (!track) return null;
+      if (size >= 160 && track.coverThumbLg) return track.coverThumbLg;
+      if (track.coverThumb) return track.coverThumb;
+      if (size >= 160 && track.coverThumb) return track.coverThumb;
+      return null;
+    },
+
     drawRowCover(canvas, track) {
+      if (!canvas || !track) return;
       const ctx = canvas.getContext('2d');
       const W = canvas.width, H = canvas.height;
-      const isImage = track.coverIsImage || (typeof track.cover === 'string' && track.cover.startsWith('data:'));
+      const isImage = track.coverIsImage || (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:')));
+      const thumb = this.coverSrcForRow(track, Math.max(W, H));
 
-      if (isImage) {
+      const paintImg = (src) => {
         const img = new Image();
         img.onload = () => {
           ctx.clearRect(0,0,W,H);
@@ -30,11 +40,26 @@ Object.assign(App, {
           const dw = img.width*r, dh = img.height*r;
           ctx.drawImage(img, (W-dw)/2, (H-dh)/2, dw, dh);
         };
-        img.src = typeof track.cover === 'string' ? track.cover : '';
+        img.src = src;
         ctx.fillStyle = '#222'; ctx.fillRect(0,0,W,H);
+      };
+
+      if (isImage && thumb) {
+        paintImg(thumb);
+        return;
+      }
+      if (isImage && !thumb) {
+        this._paintLetterCover(ctx, W, H, track);
+        this.ensureCoverThumbs(track).then((ok) => {
+          if (ok && canvas.isConnected) this.drawRowCover(canvas, track);
+        });
         return;
       }
 
+      this._paintLetterCover(ctx, W, H, track);
+    },
+
+    _paintLetterCover(ctx, W, H, track) {
       const cover = (typeof track.cover === 'object' && track.cover.from) ? track.cover : { from: '#7C3AED', to: '#EC4899' };
       const g = ctx.createLinearGradient(0,0,W,H);
       g.addColorStop(0, cover.from); g.addColorStop(1, cover.to);
@@ -42,7 +67,36 @@ Object.assign(App, {
       ctx.fillStyle = 'rgba(255,255,255,0.9)';
       ctx.font = "700 " + Math.floor(H*0.5) + "px sans-serif";
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(track.title.charAt(0).toUpperCase(), W/2, H/2);
+      ctx.fillText((track.title || '?').charAt(0).toUpperCase(), W/2, H/2);
+    },
+
+    async ensureCoverThumbs(track) {
+      if (!track || track.coverThumb) return !!track.coverThumb;
+      if (track._thumbing) return false;
+      const src = (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:'))) ? track.cover : null;
+      if (!src) return false;
+      const U = window.AuroraUploader;
+      if (!U || typeof U.resizeDataUrl !== 'function') return false;
+      track._thumbing = true;
+      try {
+        track.coverThumb = await U.resizeDataUrl(src, 96);
+        track.coverThumbLg = await U.resizeDataUrl(src, 256);
+        track._thumbsDirty = true;
+        if (!this._thumbPersistTimer) {
+          this._thumbPersistTimer = setTimeout(() => {
+            this._thumbPersistTimer = null;
+            this.tracks.filter(tr => tr._thumbsDirty).forEach(tr => {
+              tr._thumbsDirty = false;
+              this.persistTrack(tr);
+            });
+          }, 2500);
+        }
+        return !!track.coverThumb;
+      } catch (e) {
+        return false;
+      } finally {
+        track._thumbing = false;
+      }
     },
 
     /* ============================================================
@@ -68,21 +122,23 @@ Object.assign(App, {
         return pl.cover || { from: '#7C3AED', to: '#EC4899', angle: 135 };
       }
 
-      // Hash simple de los trackIds para invalidar caché cuando cambia la lista
-      const hash = pl.trackIds.slice().sort().join('|') + '#' + withImage.length;
+      // Hash de trackIds (orden de la lista) para invalidar solo si cambia el contenido
+      const hash = (pl.trackIds || []).join('|') + '#' + withImage.length;
       if (pl._coverCache && pl._coverCacheHash === hash) {
         return pl._coverCache;
       }
+      if (pl._coverPending === hash) {
+        return pl.cover || { from: '#7C3AED', to: '#EC4899', angle: 135 };
+      }
+      pl._coverPending = hash;
 
-      // Construir collage: tomar hasta 7 covers al azar de las que tienen imagen
+      // Construir collage: primeras 8 portadas (orden estable, sin random)
       const SIZE = 256;
       const canvas = document.createElement('canvas');
       canvas.width = SIZE; canvas.height = SIZE;
       const ctx = canvas.getContext('2d');
 
-      // Seleccionar hasta 8 imágenes (al azar, sin repetir)
-      const shuffled = withImage.slice().sort(() => Math.random() - 0.5);
-      const selected = shuffled.slice(0, Math.min(8, shuffled.length));
+      const selected = withImage.slice(0, Math.min(8, withImage.length));
       const n = selected.length;
 
       // Dibujar las imágenes sincrónicamente si ya están cargadas.
@@ -190,25 +246,44 @@ Object.assign(App, {
           const img = new Image();
           img.onload = () => resolve(img);
           img.onerror = () => resolve(null);
-          img.src = typeof t.cover === 'string' ? t.cover : '';
+          img.src = t.coverThumbLg || t.coverThumb || (typeof t.cover === 'string' ? t.cover : '');
         });
       }));
 
       // Como getPlaylistCover es sincrónico, devolvemos el gradiente ahora
       // y disparamos la generación asíncrona que actualizará el DOM.
+      pl._coverPending = hash;
       promises.then(images => {
         const valid = images.filter(Boolean);
+        if (pl._coverPending === hash) pl._coverPending = null;
         if (valid.length === 0) return;
         drawCollage(valid);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
         pl._coverCache = dataUrl;
         pl._coverCacheHash = hash;
-        // Re-render para que aparezca el collage
-        this.renderPlaylists();
-      }).catch(() => {});
+        this._applyPlaylistCover(pl, dataUrl);
+      }).catch(() => { if (pl._coverPending === hash) pl._coverPending = null; });
 
-      // Mientras se genera, devolver el gradiente por defecto
       return pl.cover || { from: '#7C3AED', to: '#EC4899', angle: 135 };
+    },
+
+    _applyPlaylistCover(pl, dataUrl) {
+      if (!pl || !dataUrl) return;
+      document.querySelectorAll('[data-pl-cover="' + CSS.escape(pl.id) + '"]').forEach(el => {
+        el.style.backgroundImage = 'url(' + dataUrl + ')';
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
+        el.classList.add('has-art');
+        const icon = el.querySelector('.pl-cover-icon');
+        if (icon) icon.remove();
+      });
+      if (this._editingPlaylistId === pl.id) {
+        const edit = document.getElementById('editPlaylistCover');
+        if (edit) {
+          edit.style.background = '';
+          edit.innerHTML = '<img src="' + dataUrl + '" alt="">';
+        }
+      }
     },
 
     /* Helper: dibuja una imagen cubriendo un rect (object-fit: cover) */
@@ -217,6 +292,76 @@ Object.assign(App, {
       const dw = img.width * r, dh = img.height * r;
       const dx = x + (w - dw) / 2, dy = y + (h - dh) / 2;
       ctx.drawImage(img, dx, dy, dw, dh);
+    },
+
+    unbindVirtualList(ul) {
+      if (!ul || !ul._virt) return;
+      const st = ul._virt;
+      if (st.scroller && st.onScroll) st.scroller.removeEventListener('scroll', st.onScroll);
+      if (st._raf) cancelAnimationFrame(st._raf);
+      ul._virt = null;
+      ul.classList.remove('virt');
+    },
+
+    fillVirtualList(ul, items, makeRow, opts) {
+      opts = opts || {};
+      const threshold = opts.threshold || 80;
+      const rowH = opts.rowHeight || 64;
+      this.unbindVirtualList(ul);
+      ul.innerHTML = '';
+      if (!items.length) return;
+      if (items.length <= threshold) {
+        items.forEach((it, i) => {
+          const row = makeRow(it, i);
+          if (row) ul.appendChild(row);
+        });
+        return;
+      }
+      const scroller = opts.scroller || ul.closest('.sheet-body') || ul;
+      ul.classList.add('virt');
+      const spacer = document.createElement('li');
+      spacer.className = 'virt-spacer';
+      spacer.style.height = (items.length * rowH) + 'px';
+      ul.appendChild(spacer);
+      const state = { ul, items, makeRow, rowH, scroller, spacer };
+      const paint = () => this._paintVirtual(state);
+      state.onScroll = () => {
+        if (state._raf) return;
+        state._raf = requestAnimationFrame(() => { state._raf = 0; paint(); });
+      };
+      scroller.addEventListener('scroll', state.onScroll, { passive: true });
+      ul._virt = state;
+      paint();
+    },
+
+    _paintVirtual(state) {
+      const { ul, items, makeRow, rowH, scroller, spacer } = state;
+      if (!ul.isConnected) return;
+      const ulRect = ul.getBoundingClientRect();
+      const scRect = scroller.getBoundingClientRect();
+      const startPx = Math.max(0, scRect.top - ulRect.top);
+      const overscan = 8;
+      let start = Math.max(0, Math.floor(startPx / rowH) - overscan);
+      let end = Math.min(items.length, Math.ceil((startPx + scroller.clientHeight) / rowH) + overscan);
+      const keep = new Set();
+      Array.from(ul.children).forEach(ch => {
+        if (ch === spacer) return;
+        const idx = parseInt(ch.dataset.virtIdx, 10);
+        if (idx < start || idx >= end) ch.remove();
+        else keep.add(idx);
+      });
+      for (let i = start; i < end; i++) {
+        if (keep.has(i)) continue;
+        const row = makeRow(items[i], i);
+        if (!row) continue;
+        row.dataset.virtIdx = String(i);
+        row.style.position = 'absolute';
+        row.style.left = '0';
+        row.style.right = '0';
+        row.style.top = (i * rowH) + 'px';
+        row.style.height = rowH + 'px';
+        ul.appendChild(row);
+      }
     },
 
     renderQueue() {
@@ -246,9 +391,9 @@ Object.assign(App, {
         ul.innerHTML = '<li class="track-row" style="justify-content:center;color:var(--text-3);font-size:13px;padding:24px">' + this.t('queue_empty') + '</li>';
         return;
       }
-      this.queue.forEach((id, i) => {
+      const makeQueueRow = (id, i) => {
         const t = this.tracks.find(x => x.id === id);
-        if (!t) return;
+        if (!t) return null;
         const li = document.createElement('li');
         li.className = 'queue-item' + (i === this.queueIdx ? ' current' : '');
         li.dataset.idx = i;
@@ -311,14 +456,18 @@ Object.assign(App, {
         // Drag handle → reordenar (touch + mouse)
         this.wireDragHandle(li, i, ul, '.queue-item');
 
-        ul.appendChild(li);
         const cv = li.querySelector('canvas');
         if (cv) this.drawRowCover(cv, t);
+        return li;
+      };
+      this.fillVirtualList(ul, this.queue, makeQueueRow, {
+        scroller: ul.closest('.sheet-body'),
+        rowHeight: 64
       });
     },
 
     /* Reordenar con drag handle (touch + mouse) */
-    wireDragHandle(li, idx, ul, itemSelector) {
+    wireDragHandle(li, idx, ul, itemSelector, opts) {
       const handle = li.querySelector('.drag-handle');
       if (!handle) return;
       let dragging = false;
@@ -370,12 +519,16 @@ Object.assign(App, {
         items().forEach(it => it.classList.remove('drop-above','drop-below'));
         // Reordenar
         if (newIdx !== startIdx) {
-          const moved = this.queue.splice(startIdx, 1)[0];
-          this.queue.splice(newIdx, 0, moved);
-          if (this.queueIdx === startIdx) this.queueIdx = newIdx;
-          else if (startIdx < this.queueIdx && newIdx >= this.queueIdx) this.queueIdx--;
-          else if (startIdx > this.queueIdx && newIdx <= this.queueIdx) this.queueIdx++;
-          this.renderQueue();
+          if (opts && typeof opts.onReorder === 'function') {
+            opts.onReorder(startIdx, newIdx);
+          } else {
+            const moved = this.queue.splice(startIdx, 1)[0];
+            this.queue.splice(newIdx, 0, moved);
+            if (this.queueIdx === startIdx) this.queueIdx = newIdx;
+            else if (startIdx < this.queueIdx && newIdx >= this.queueIdx) this.queueIdx--;
+            else if (startIdx > this.queueIdx && newIdx <= this.queueIdx) this.queueIdx++;
+            this.renderQueue();
+          }
         }
       };
 
@@ -414,16 +567,15 @@ Object.assign(App, {
     renderLibrary() {
       const ul = document.getElementById('libraryTracks');
       if (!ul) return;
-      ul.innerHTML = '';
       if (this.tracks.length === 0) {
+        this.unbindVirtualList(ul);
         ul.innerHTML = '<li class="track-row empty-placeholder">' + this.t('no_tracks_loaded') + '</li>';
         return;
       }
       const list = (typeof this.sortedTracks === 'function') ? this.sortedTracks() : this.tracks.slice();
-      list.forEach(t => {
-        if (typeof this.makeTrackRow === 'function') {
-          ul.appendChild(this.makeTrackRow(t, { playContext: { type: 'all' } }));
-        }
+      this.fillVirtualList(ul, list, (tr) => this.makeTrackRow(tr, { playContext: { type: 'all' } }), {
+        scroller: ul.closest('.sheet-body'),
+        rowHeight: 64
       });
     },
 
@@ -507,8 +659,8 @@ Object.assign(App, {
             ? '<span class="pl-live"><span class="pl-bars"><i></i><i></i><i></i></span></span>'
             : '';
           const coverHtml = `
-            <div class="pl-cover${hasArt ? ' has-art' : ''}">
-              <div class="pl-cover-grad" style="${coverBg}"></div>
+            <div class="pl-cover${hasArt ? ' has-art' : ''}" data-pl-cover="${this.esc(pl.id)}">
+              <div class="pl-cover-grad" style="${coverBg}" data-pl-cover="${this.esc(pl.id)}"></div>
               ${hasArt ? '' : '<i class="pl-cover-icon ' + fallbackIcon + '"></i>'}
               ${live}
               <button class="pl-play-fab" type="button" aria-label="${this.esc(this.t('play_all_btn'))}">
@@ -653,6 +805,9 @@ Object.assign(App, {
       }
       if (this.playContext.type === 'album' || this.playContext.type === 'artist') {
         return this.playContext.name || null;
+      }
+      if (this.playContext.type === 'radio') {
+        return this.t('ctx_start_radio');
       }
       return null;
     },

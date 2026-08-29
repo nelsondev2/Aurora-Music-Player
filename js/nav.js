@@ -95,8 +95,9 @@ Object.assign(App, {
       } else if (nav === 'search') {
         this.closeAllSheets();
         this.openSheet('sheetSearch');
+        const inp = document.getElementById('searchInput');
+        this.runSearch(inp ? inp.value : '', this._searchFilter || 'all');
         setTimeout(() => {
-          const inp = document.getElementById('searchInput');
           if (inp) inp.focus();
         }, 350);
       }
@@ -180,7 +181,7 @@ Object.assign(App, {
       const items = lists.map(pl => {
         const n = (pl.trackIds || []).length;
         return `<button class="home-card" type="button" data-kind="playlist" data-id="${this.esc(pl.id)}">
-          <div class="home-card-cover" data-pl="${this.esc(pl.id)}"></div>
+          <div class="home-card-cover" data-pl="${this.esc(pl.id)}" data-pl-cover="${this.esc(pl.id)}"></div>
           <span class="home-card-title">${this.esc(pl.name)}</span>
           <span class="home-card-sub">${n} ${this.esc(this.t('tracks_count'))}</span>
         </button>`;
@@ -436,6 +437,7 @@ Object.assign(App, {
       const tracks = this.tracks.filter(t => t.artist === name);
       this.closeSheet('sheetMore');
       this.closeSheet('sheetTrackMenu');
+      this.closeSheet('sheetSearch');
       this.openBrowse({ type: 'artist', title: name, tracks });
     },
 

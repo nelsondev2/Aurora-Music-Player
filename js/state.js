@@ -129,6 +129,8 @@
     _menuTrackId: null,
     _editTrackId: null,
     _browse: null,
+    _searchHistory: [],
+    _importCancelled: false,
 
     /* Utilidades */
     _wired: {},

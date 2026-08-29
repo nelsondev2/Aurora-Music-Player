@@ -171,6 +171,9 @@ Object.assign(App, {
     canvasToUrl(track, size) {
       // Si la portada ya es una imagen (dataURL), usarla directamente
       const isImage = track.coverIsImage || (typeof track.cover === 'string' && track.cover.startsWith('data:'));
+      if (size <= 96 && track.coverThumb) return track.coverThumb;
+      if (size <= 256 && track.coverThumbLg) return track.coverThumbLg;
+      if (track.coverThumbLg) return track.coverThumbLg;
       if (isImage) {
         return typeof track.cover === 'string' ? track.cover : '';
       }

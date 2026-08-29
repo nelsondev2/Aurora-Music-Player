@@ -1730,8 +1730,8 @@ const I18N = {
     it: 'traccia(e) duplicata/e saltata/e', ru: 'дубликат(ов) пропущено'
   },
   toast_exported: {
-    es: 'Biblioteca exportada', en: 'Library exported', pt: 'Biblioteca exportada', zh: '媒体库已导出', ja: 'ライブラリをエクスポートしました',
-    fr: 'Bibliothèque exportée', it: 'Libreria esportata', ru: 'Библиотека экспортирована'
+    es: 'Metadatos exportados (sin audio)', en: 'Metadata exported (no audio)', pt: 'Metadados exportados (sem áudio)', zh: '已导出元数据（不含音频）', ja: 'メタデータを書き出しました（音声なし）',
+    fr: 'Métadonnées exportées (sans audio)', it: 'Metadati esportati (senza audio)', ru: 'Метаданные экспортированы (без аудио)'
   },
   toast_imported: {
     es: 'Biblioteca importada', en: 'Library imported', pt: 'Biblioteca importada', zh: '媒体库已导入', ja: 'ライブラリをインポートしました',
@@ -2069,6 +2069,127 @@ const I18N = {
     it: 'EQ reimpostato', ru: 'Эквалайзер сброшен'
   },
 
+  /* ---------- Fase 3: biblioteca sólida ---------- */
+  import_title: {
+    es: 'Importando música', en: 'Importing music', pt: 'A importar música',
+    zh: '正在导入音乐', ja: '音楽を読み込み中', fr: 'Import de la musique',
+    it: 'Importazione in corso', ru: 'Импорт музыки'
+  },
+  import_cancel: {
+    es: 'Cancelar', en: 'Cancel', pt: 'Cancelar',
+    zh: '取消', ja: 'キャンセル', fr: 'Annuler',
+    it: 'Annulla', ru: 'Отмена'
+  },
+  toast_import_cancelled: {
+    es: 'Importación cancelada. Se añadieron X pistas.',
+    en: 'Import cancelled. X tracks added.',
+    pt: 'Importação cancelada. X faixas adicionadas.',
+    zh: '导入已取消。已添加 X 首。',
+    ja: '読み込みを中止。X 曲を追加しました。',
+    fr: 'Import annulé. X pistes ajoutées.',
+    it: 'Importazione annullata. X brani aggiunti.',
+    ru: 'Импорт отменён. Добавлено треков: X.'
+  },
+  ctx_start_radio: {
+    es: 'Iniciar radio', en: 'Start radio', pt: 'Iniciar rádio',
+    zh: '开始电台', ja: 'ラジオを開始', fr: 'Lancer la radio',
+    it: 'Avvia radio', ru: 'Запустить радио'
+  },
+  rename_playlist_btn: {
+    es: 'Renombrar', en: 'Rename', pt: 'Mudar nome',
+    zh: '重命名', ja: '名前を変更', fr: 'Renommer',
+    it: 'Rinomina', ru: 'Переименовать'
+  },
+  toast_playlist_renamed: {
+    es: 'Lista renombrada', en: 'Playlist renamed', pt: 'Lista mudada de nome',
+    zh: '播放列表已重命名', ja: 'プレイリスト名を変更しました', fr: 'Liste renommée',
+    it: 'Playlist rinominata', ru: 'Плейлист переименован'
+  },
+  search_recent: {
+    es: 'Búsquedas recientes', en: 'Recent searches', pt: 'Pesquisas recentes',
+    zh: '最近搜索', ja: '最近的搜索', fr: 'Recherches récentes',
+    it: 'Ricerche recenti', ru: 'Недавние запросы'
+  },
+  search_section_songs: {
+    es: 'Canciones', en: 'Songs', pt: 'Músicas',
+    zh: '歌曲', ja: '曲', fr: 'Titres',
+    it: 'Brani', ru: 'Треки'
+  },
+  search_section_albums: {
+    es: 'Álbumes', en: 'Albums', pt: 'Álbuns',
+    zh: '专辑', ja: 'アルバム', fr: 'Albums',
+    it: 'Album', ru: 'Альбомы'
+  },
+  search_section_artists: {
+    es: 'Artistas', en: 'Artists', pt: 'Artistas',
+    zh: '艺人', ja: 'アーティスト', fr: 'Artistes',
+    it: 'Artisti', ru: 'Исполнители'
+  },
+  search_clear_history: {
+    es: 'Borrar historial', en: 'Clear history', pt: 'Limpar histórico',
+    zh: '清除记录', ja: '履歴を消去', fr: 'Effacer l\'historique',
+    it: 'Cancella cronologia', ru: 'Очистить историю'
+  },
+  settings_export_hint: {
+    es: 'Solo metadatos (listas, favoritos, etiquetas). No incluye los archivos de audio.',
+    en: 'Metadata only (playlists, likes, tags). Audio files are not included.',
+    pt: 'Só metadados (listas, favoritos, etiquetas). Sem ficheiros de áudio.',
+    zh: '仅元数据（播放列表、收藏、标签）。不含音频文件。',
+    ja: 'メタデータのみ（リスト・お気に入り・タグ）。音声ファイルは含まれません。',
+    fr: 'Métadonnées seulement (listes, favoris, tags). Pas de fichiers audio.',
+    it: 'Solo metadati (playlist, preferiti, tag). Nessun file audio.',
+    ru: 'Только метаданные (плейлисты, избранное, теги). Без аудиофайлов.'
+  },
+  settings_free_storage: {
+    es: 'Liberar espacio', en: 'Free up space', pt: 'Libertar espaço',
+    zh: '释放空间', ja: '容量を空ける', fr: 'Libérer de l\'espace',
+    it: 'Libera spazio', ru: 'Освободить место'
+  },
+  storage_free_confirm: {
+    es: 'Almacenamiento lleno. ¿Borrar X pistas nunca reproducidas (fuera de cola y favoritos)?',
+    en: 'Storage is full. Delete X never-played tracks (not in queue or favorites)?',
+    pt: 'Armazenamento cheio. Apagar X faixas nunca reproduzidas (fora da fila e favoritos)?',
+    zh: '存储已满。删除 X 首从未播放、且不在队列或收藏中的歌曲？',
+    ja: '容量不足です。未再生の X 曲（キュー・お気に入り以外）を削除しますか？',
+    fr: 'Stockage plein. Supprimer X pistes jamais écoutées (hors file et favoris) ?',
+    it: 'Memoria piena. Eliminare X brani mai ascoltati (non in coda o preferiti)?',
+    ru: 'Память заполнена. Удалить X неигранных треков (не в очереди и не в избранном)?'
+  },
+  storage_free_btn: {
+    es: 'Borrar no usadas', en: 'Delete unused', pt: 'Apagar não usadas',
+    zh: '删除未使用', ja: '未使用を削除', fr: 'Supprimer les inutilisées',
+    it: 'Elimina non usate', ru: 'Удалить неиспользуемые'
+  },
+  storage_freed: {
+    es: 'Se eliminaron X pistas', en: 'Deleted X tracks', pt: 'Apagadas X faixas',
+    zh: '已删除 X 首', ja: 'X 曲を削除しました', fr: 'X pistes supprimées',
+    it: 'Eliminati X brani', ru: 'Удалено треков: X'
+  },
+  storage_nothing_to_free: {
+    es: 'No hay pistas sin usar. Quita canciones de la biblioteca o de favoritos.',
+    en: 'No unused tracks. Remove songs from the library or favorites.',
+    pt: 'Não há faixas por usar. Remova músicas da biblioteca ou dos favoritos.',
+    zh: '没有可删的未使用曲目。请从媒体库或收藏中移除。',
+    ja: '削除できる未使用の曲はありません。ライブラリかお気に入りから削除してください。',
+    fr: 'Aucune piste inutilisée. Retirez des titres de la bibliothèque ou des favoris.',
+    it: 'Nessun brano inutilizzato. Rimuovi brani dalla libreria o dai preferiti.',
+    ru: 'Нет неиспользуемых треков. Удалите песни из библиотеки или избранного.'
+  },
+  storage_usage: {
+    es: 'X pistas · Y', en: 'X tracks · Y', pt: 'X faixas · Y',
+    zh: 'X 首 · Y', ja: 'X 曲 · Y', fr: 'X pistes · Y',
+    it: 'X brani · Y', ru: 'X треков · Y'
+  },
+  toast_imported_meta: {
+    es: 'Metadatos importados. Vuelve a cargar el audio desde el dispositivo.',
+    en: 'Metadata imported. Load the audio files from your device again.',
+    pt: 'Metadados importados. Carregue de novo os ficheiros de áudio.',
+    zh: '已导入元数据。请重新从设备加载音频。',
+    ja: 'メタデータを読み込みました。音声ファイルを再度追加してください。',
+    fr: 'Métadonnées importées. Rechargez les fichiers audio depuis l\'appareil.',
+    it: 'Metadati importati. Ricarica i file audio dal dispositivo.',
+    ru: 'Метаданные импортированы. Снова загрузите аудио с устройства.'
+  },
 
 };
 

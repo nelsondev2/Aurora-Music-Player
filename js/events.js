@@ -164,6 +164,7 @@ Object.assign(App, {
       const btnSettings = document.getElementById('menuSettings');
       if (btnSettings) btnSettings.addEventListener('click', () => {
         this.closeSheet('sheetMore');
+        if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
         this.openSheet('sheetSettings');
       });
       // Temas desde Ajustes
@@ -192,6 +193,16 @@ Object.assign(App, {
       const btnImport = document.getElementById('menuImportLibrary');
       if (btnImport) btnImport.addEventListener('click', () => {
         this.importLibrary();
+      });
+      const btnFree = document.getElementById('menuFreeStorage');
+      if (btnFree) btnFree.addEventListener('click', () => {
+        if (typeof this.offerFreeStorage === 'function') this.offerFreeStorage();
+      });
+      const btnCancelImport = document.getElementById('btnCancelImport');
+      if (btnCancelImport) btnCancelImport.addEventListener('click', () => {
+        this._importCancelled = true;
+        const count = document.getElementById('importCount');
+        if (count) count.textContent = this.t('import_cancel');
       });
       const toggleGapless = document.getElementById('toggleGapless');
       if (toggleGapless) toggleGapless.addEventListener('change', () => {
@@ -409,6 +420,16 @@ Object.assign(App, {
         this.closeSheet('sheetTrackMenu');
         if (t) this.addToQueue(t.id);
       });
+      const ctxRadio = document.getElementById('ctxStartRadio');
+      if (ctxRadio) ctxRadio.addEventListener('click', () => {
+        const t = this.menuTrack();
+        this.closeSheet('sheetTrackMenu');
+        if (t) this.startRadio(t.id);
+      });
+      const btnRenamePl = document.getElementById('btnRenamePlaylist');
+      if (btnRenamePl) btnRenamePl.addEventListener('click', () => this.startRenamePlaylist());
+      const editPlName = document.getElementById('editPlaylistName');
+      if (editPlName) editPlName.addEventListener('click', () => this.startRenamePlaylist());
       const ctxAddPlaylist = document.getElementById('ctxAddPlaylist');
       if (ctxAddPlaylist) ctxAddPlaylist.addEventListener('click', () => {
         const t = this.menuTrack();
@@ -450,8 +471,27 @@ Object.assign(App, {
       const btnSaveEditP = document.getElementById('btnSaveEditTrackPrimary');
       if (btnSaveEditP) btnSaveEditP.addEventListener('click', () => this.saveEditTrack());
 
-      // Búsqueda
-      $('searchInput').addEventListener('input', (e) => this.runSearch(e.target.value, this._searchFilter));
+      // Búsqueda (debounce 150 ms)
+      $('searchInput').addEventListener('input', (e) => {
+        const val = e.target.value;
+        clearTimeout(this._searchTimer);
+        if (!String(val || '').trim()) {
+          this.runSearch('', this._searchFilter);
+          return;
+        }
+        this._searchTimer = setTimeout(() => {
+          this.runSearch(val, this._searchFilter);
+          this.pushSearchHistory(val);
+        }, 150);
+      });
+      $('searchInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          clearTimeout(this._searchTimer);
+          const val = e.target.value;
+          this.runSearch(val, this._searchFilter);
+          this.pushSearchHistory(val);
+        }
+      });
 
       // Más opciones
       $('menuAddToPlaylist').addEventListener('click', () => {
