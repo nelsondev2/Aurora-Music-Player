@@ -333,10 +333,20 @@ Object.assign(App, {
     toast(msg, ms = 2400) {
       const t = document.getElementById('toast');
       if (!t) return;
+      let danger = false;
+      if (ms === 'danger') { danger = true; ms = 2400; }
+      else if (ms && typeof ms === 'object') {
+        danger = !!ms.danger;
+        ms = ms.ms || 2400;
+      }
       t.textContent = msg;
+      t.classList.toggle('is-danger', danger);
       t.classList.add('show');
       clearTimeout(this._toastTimer);
-      this._toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+      this._toastTimer = setTimeout(() => {
+        t.classList.remove('show');
+        t.classList.remove('is-danger');
+      }, ms);
     },
 
     esc(s) {

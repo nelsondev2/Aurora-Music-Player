@@ -723,7 +723,7 @@ Object.assign(App, {
       this.playlists = this.playlists.filter(p => p.id !== playlistId);
       this.deletePlaylistFromStorage(playlistId);
       this.renderPlaylists();
-      this.toast(this.t('toast_track_deleted'));
+      this.toast(this.t('toast_track_deleted'), 'danger');
     },
 
     renderPickTracks() {

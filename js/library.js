@@ -618,7 +618,7 @@ Object.assign(App, {
       this.renderFavorites();
       if (typeof this.renderHome === 'function') this.renderHome();
       if (typeof this.updateChrome === 'function') this.updateChrome();
-      this.toast(this.t('toast_track_deleted'));
+      this.toast(this.t('toast_track_deleted'), 'danger');
     },
 
     /* ============================================================
@@ -700,7 +700,7 @@ Object.assign(App, {
       if (typeof this.renderHome === 'function') this.renderHome();
       if (typeof this.goNav === 'function') this.goNav('home');
       else if (typeof this.updateChrome === 'function') this.updateChrome();
-      this.toast(this.t('toast_all_deleted'));
+      this.toast(this.t('toast_all_deleted'), 'danger');
     },
 
     /* ============================================================

@@ -144,16 +144,16 @@ Cada fase es un PR. No se mezcla con features de audio. Criterio de salida = scr
 
 **Salida:** un recorte de NP a 390×844 se puede poner en la store sin recortar cromo.
 
-### Fase D — Hub, listas, vacíos (1 día)
+### Fase D — Hub, listas, vacíos (1 día) ✅
 
-**Meta:** Biblioteca y Inicio parecen el mismo producto que NP.
+**Meta:** Biblioteca y Inicio parecen el mismo producto que NP. **Hecha.**
 
-- [ ] Filas: cover 48 px radius 10, título `--fs-ui`, meta `--fs-caption`. Indicador “sonando” = barra acento 2 px a la izquierda, no solo el título en purple.
-- [ ] Pills de pestaña: filled = acento *sólido* + texto constrastado (hoy el chip activo está bien; unificar Álbumes/Artistas/sort).
-- [ ] Mini-player: misma card que una fila destacada (radio 16, blur, progreso 2 px). En wide sigue oculto.
-- [ ] Empty states: mismo lenguaje que welcome (orbe + 2 líneas + un CTA). Adiós al círculo FA de 84 px.
-- [ ] Sheets: handle 36×4, padding superior 8, `max-width` del panel alineado al marco. Scrim 40 % dark / 28 % light.
-- [ ] Toasts: un solo estilo (blur + border + 14 px). Destructive = `--danger`, no el mismo morado.
+- [x] Filas: cover 48 px radius 10, título `--fs-ui`, meta `--fs-caption`. Indicador “sonando” = barra acento 2 px a la izquierda.
+- [x] Pills (tabs, sort, search, EQ, xfade): filled = `--accent-fill` + `--accent-on-fill`.
+- [x] Mini-player: radio 16, cover 10, progreso 2 px. En wide sigue oculto.
+- [x] Empty states: orbe + icono en card 22 px, no círculo FA. Letras vacías de la misma familia.
+- [x] Sheets: handle 36×4, margen superior 8. Scrim 40 % dark / 28 % light.
+- [x] Toasts: 14 px, blur + border. Destructivo = `.is-danger` / `--danger`.
 
 **Salida:** Inicio vacío, biblioteca con 0 pistas y “sin letra” se sienten familia.
 
