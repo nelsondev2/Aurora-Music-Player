@@ -69,7 +69,7 @@ Object.assign(App, {
       }
       const focusable = s.querySelector('button, [href], input:not([type="hidden"]), textarea, select, [tabindex]:not([tabindex="-1"])');
       setTimeout(() => {
-        try { (focusable || panel).focus(); } catch (e) {}
+        try { (focusable || panel).focus({ preventScroll: true }); } catch (e) {}
       }, 40);
       if (typeof this.updateChrome === 'function') this.updateChrome();
     },

@@ -974,8 +974,11 @@ svg { display: block; }
   z-index: 2;
   width: 100%;
   max-width: 430px;
-  max-height: 92vh;
-  min-height: 40vh;
+  /* Acotar al marco (.device-screen), no a 92vh de la ventana:
+     en escritorio el teléfono es más bajo que el viewport y el panel
+     se salía por arriba recortando cabecera y mitad superior. */
+  max-height: calc(100% - 12px);
+  min-height: 0;
   background: var(--bg-2);
   border-radius: 28px 28px 0 0;
   border-top: 1px solid var(--border);
@@ -987,7 +990,7 @@ svg { display: block; }
   overflow: hidden;
 }
 .sheet.open .sheet-panel { transform: translateY(0); }
-.sheet-full .sheet-panel { max-height: 100vh; height: 100vh; min-height: 0; border-radius: 0; }
+.sheet-full .sheet-panel { max-height: 100%; height: 100%; min-height: 0; border-radius: 0; }
 
 .sheet-handle {
   width: 38px;
@@ -1424,6 +1427,11 @@ svg { display: block; }
   flex-direction: column;
   gap: 12px;
   padding: 8px 0 0;
+}
+@media (max-height: 700px) {
+  .eq-bands { gap: 8px; padding-top: 4px; }
+  .eq-band { gap: 8px; }
+  .eq-presets { margin-bottom: 10px; }
 }
 .eq-band {
   display: grid;
@@ -2413,6 +2421,7 @@ button,
 
 .sheet {
   position: absolute;
+  overflow: hidden;
 }
 .toast {
   position: absolute;
