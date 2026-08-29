@@ -27,9 +27,7 @@ INCLUDE = [
     "data.js",
     "storage.js",
     "uploader.js",
-    "realtime.js",
-    "webxdc.js",
-    "js",            # módulos de la app (refactor C)
+    "js",            # módulos de la app
     "assets",        # jsmediatags + fontawesome css
     "webfonts",      # webfonts de fontawesome
 ]

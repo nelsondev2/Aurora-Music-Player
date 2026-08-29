@@ -109,7 +109,7 @@ Object.assign(App, {
       if (btnHistoryMenu) btnHistoryMenu.addEventListener('click', () => {
         this.closeSheet('sheetMore');
         this.renderHistory();
-        this.openSheet('sheetStats');
+        this.openSheet('sheetHistory');
       });
 
       // === #17 Panel de ajustes ===
@@ -153,21 +153,6 @@ Object.assign(App, {
       const btnLoadMore = document.getElementById('menuLoadMusic');
       if (btnLoadMore) btnLoadMore.addEventListener('click', () => {
         this.openFilePicker();
-        this.closeSheet('sheetMore');
-      });
-
-      // Botón "Oyentes" en menú más opciones (atajo al sheet Listeners)
-      const btnListenersMenu = document.getElementById('menuListeners');
-      if (btnListenersMenu) btnListenersMenu.addEventListener('click', () => {
-        this.closeSheet('sheetMore');
-        this.renderListeners();
-        this.openSheet('sheetListeners');
-      });
-
-      // Botón "Compartir" pista actual en el chat (vía webxdc.sendToChat)
-      const btnShareTrack = document.getElementById('menuShareTrack');
-      if (btnShareTrack) btnShareTrack.addEventListener('click', () => {
-        this.shareCurrentTrackToChat();
         this.closeSheet('sheetMore');
       });
 
@@ -334,7 +319,19 @@ Object.assign(App, {
       });
       $('menuGoToArtist').addEventListener('click', () => {
         this.closeSheet('sheetMore');
-        if (this.currentTrack) this.toast(this.t('menu_go_to_artist') + ': ' + this.currentTrack.artist);
+        if (!this.currentTrack || this.isPlaceholderArtist(this.currentTrack.artist)) {
+          this.toast(this.t('unknown_artist'));
+          return;
+        }
+        const artist = this.currentTrack.artist;
+        this._searchFilter = 'artist';
+        document.querySelectorAll('.search-filter').forEach(x => {
+          x.classList.toggle('active', x.dataset.filter === 'artist');
+        });
+        const inp = document.getElementById('searchInput');
+        if (inp) inp.value = artist;
+        this.runSearch(artist, 'artist');
+        this.openSheet('sheetSearch');
       });
       // Botón "Reproducir Todo" en el sheet de favoritos
       const btnPlayFav = document.getElementById('btnPlayFavoritesNow');
@@ -406,6 +403,19 @@ Object.assign(App, {
 
       // Atajos de teclado (desktop)
       document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          const open = document.querySelectorAll('.sheet.open');
+          if (open.length) {
+            e.preventDefault();
+            this.closeSheet(open[open.length - 1].id);
+          }
+          return;
+        }
+        if (e.key === 'Tab' && document.querySelector('.sheet.open')) {
+          this._trapSheetFocus(e);
+          return;
+        }
+        if (document.querySelector('.sheet.open')) return;
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
         switch (e.key) {
           case ' ': e.preventDefault(); this.togglePlay(); break;
@@ -447,7 +457,9 @@ Object.assign(App, {
           this.next(true);
         };
         this._onAudioError = (e) => {
-          this._lastError = { msg: 'audio error: ' + ((e && e.message) || 'unknown'), ts: Date.now() };
+          const msg = (e && e.message) || (this.audio && this.audio.error && this.audio.error.message) || 'unknown';
+          this._lastError = { msg: 'audio error: ' + msg, ts: Date.now() };
+          this.toast(this.t('toast_audio_error'));
         };
       }
       if (this._boundAudioEl && this._boundAudioEl !== el) {
@@ -508,6 +520,6 @@ Object.assign(App, {
     },
 
     closeAllSheets() {
-      document.querySelectorAll('.sheet.open').forEach(s => s.classList.remove('open'));
+      document.querySelectorAll('.sheet.open').forEach(s => this.closeSheet(s.id));
     },
 });

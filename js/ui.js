@@ -53,11 +53,40 @@ Object.assign(App, {
 
     openSheet(id) {
       const s = document.getElementById(id);
-      if (s) s.classList.add('open');
+      if (!s) return;
+      if (!this._sheetStack) this._sheetStack = [];
+      if (!s.classList.contains('open')) {
+        s._prevFocus = document.activeElement;
+        this._sheetStack.push(id);
+      }
+      s.classList.add('open');
+      s.setAttribute('aria-hidden', 'false');
+      const panel = s.querySelector('.sheet-panel');
+      if (panel) {
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-modal', 'true');
+        if (!panel.hasAttribute('tabindex')) panel.setAttribute('tabindex', '-1');
+      }
+      const focusable = s.querySelector('button, [href], input:not([type="hidden"]), textarea, select, [tabindex]:not([tabindex="-1"])');
+      setTimeout(() => {
+        try { (focusable || panel).focus(); } catch (e) {}
+      }, 40);
     },
     closeSheet(id) {
       const s = document.getElementById(id);
-      if (s) s.classList.remove('open');
+      if (s) {
+        s.classList.remove('open');
+        s.setAttribute('aria-hidden', 'true');
+        const prev = s._prevFocus;
+        s._prevFocus = null;
+        if (this._sheetStack) {
+          const i = this._sheetStack.lastIndexOf(id);
+          if (i >= 0) this._sheetStack.splice(i, 1);
+        }
+        if ((!this._sheetStack || !this._sheetStack.length) && prev && typeof prev.focus === 'function') {
+          try { prev.focus(); } catch (e) {}
+        }
+      }
       // Si se cierra el sheet de confirmación por backdrop/X, resolver false
       if (id === 'sheetConfirm' && this._confirmResolver) {
         this._confirmResolver(false);
@@ -74,6 +103,25 @@ Object.assign(App, {
       // Si se cierra el sheet de edición, limpiar editing
       if (id === 'sheetEditPlaylist') {
         this._editingPlaylistId = null;
+      }
+    },
+
+    _trapSheetFocus(e) {
+      const open = document.querySelectorAll('.sheet.open');
+      if (!open.length) return;
+      const sheet = open[open.length - 1];
+      const nodes = Array.from(sheet.querySelectorAll(
+        'button, [href], input:not([type="hidden"]), textarea, select, [tabindex]:not([tabindex="-1"])'
+      )).filter(el => !el.disabled && el.offsetParent !== null);
+      if (nodes.length < 1) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
       }
     },
 

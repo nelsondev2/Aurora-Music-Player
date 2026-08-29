@@ -188,6 +188,16 @@ const I18N = {
     it: 'Riproduci',
     ru: 'Играть'
   },
+  pause: {
+    es: 'Pausar',
+    en: 'Pause',
+    pt: 'Pausar',
+    zh: '暂停',
+    ja: '一時停止',
+    fr: 'Pause',
+    it: 'Pausa',
+    ru: 'Пауза'
+  },
   next: {
     es: 'Siguiente',
     en: 'Next',
@@ -1696,81 +1706,7 @@ const I18N = {
     fr: "Pas encore d'historique", it: 'Nessuna cronologia ancora', ru: 'Истории пока нет'
   },
 
-  /* ============================================================
-   *  Cadenas para el sistema de tiempo real (compartir música)
-   * ============================================================ */
-  show_listeners: {
-    es: 'Mostrar oyentes', en: 'Show listeners', pt: 'Mostrar ouvintes', zh: '显示听众', ja: 'リスナーを表示',
-    fr: 'Afficher les auditeurs', it: 'Mostra ascoltatori', ru: 'Показать слушателей'
-  },
-  listeners_title: {
-    es: 'Oyentes', en: 'Listeners', pt: 'Ouvintes', zh: '听众', ja: 'リスナー',
-    fr: 'Auditeurs', it: 'Ascoltatori', ru: 'Слушатели'
-  },
-  listeners_subtitle: {
-    es: 'Conectados en tiempo real', en: 'Connected in real time', pt: 'Conectados em tempo real', zh: '实时连接', ja: 'リアルタイム接続',
-    fr: 'Connectés en temps réel', it: 'Connessi in tempo reale', ru: 'Подключены в реальном времени'
-  },
-  listeners_you: {
-    es: 'Tú', en: 'You', pt: 'Você', zh: '你', ja: 'あなた',
-    fr: 'Vous', it: 'Tu', ru: 'Вы'
-  },
-  listeners_not_playing: {
-    es: 'No reproduciendo', en: 'Not playing', pt: 'Não reproduzindo', zh: '未播放', ja: '再生していません',
-    fr: 'Ne joue pas', it: 'Non in riproduzione', ru: 'Не воспроизводит'
-  },
-  listeners_no_peers: {
-    es: 'Nadie más conectado todavía. Comparte la app en un chat de Delta Chat para escuchar música juntos.',
-    en: 'No one else connected yet. Share the app in a Delta Chat group to listen together.',
-    pt: 'Ninguém mais conectado ainda. Compartilhe o app em um grupo do Delta Chat para ouvir juntos.',
-    zh: '还没有其他人连接。在 Delta Chat 群组中分享此应用即可一起收听。',
-    ja: 'まだ誰も接続していません。Delta Chat のグループでこのアプリを共有して一緒に聴きましょう。',
-    fr: "Personne d'autre connecté pour l'instant. Partagez l'application dans un groupe Delta Chat pour écouter ensemble.",
-    it: 'Nessun altro connesso ancora. Condividi l\'app in un gruppo Delta Chat per ascoltare insieme.',
-    ru: 'Никого больше нет на связи. Поделитесь приложением в группе Delta Chat, чтобы слушать вместе.'
-  },
-  toast_shared_track_received: {
-    es: 'Pista compartida recibida de',
-    en: 'Shared track received from',
-    pt: 'Faixa compartilhada recebida de',
-    zh: '收到分享的音轨，来自',
-    ja: '共有トラックを受信:',
-    fr: 'Piste partagée reçue de',
-    it: 'Traccia condivisa ricevuta da',
-    ru: 'Получена общая дорожка от'
-  },
-  toast_track_shared: {
-    es: 'Pista compartida con el chat',
-    en: 'Track shared with chat',
-    pt: 'Faixa compartilhada com o chat',
-    zh: '音轨已分享到聊天',
-    ja: 'トラックをチャットに共有しました',
-    fr: 'Piste partagée avec le chat',
-    it: 'Traccia condivisa con la chat',
-    ru: 'Дорожка отправлена в чат'
-  },
-  toast_syncing_with_peer: {
-    es: 'Sincronizando con',
-    en: 'Syncing with',
-    pt: 'Sincronizando com',
-    zh: '正在同步:',
-    ja: '同期中:',
-    fr: 'Synchronisation avec',
-    it: 'Sincronizzazione con',
-    ru: 'Синхронизация с'
-  },
-  toast_jam_started: {
-    es: 'inició una sesión compartida en Aurora',
-    en: 'started a shared jam on Aurora',
-    pt: 'iniciou uma sessão compartilhada no Aurora',
-    zh: '在 Aurora 开始了共享会话',
-    ja: 'が Aurora で共有セッションを開始しました',
-    fr: 'a démarré une session partagée sur Aurora',
-    it: 'ha avviato una sessione condivisa su Aurora',
-    ru: 'начал совместную сессию в Aurora'
-  },
-
-  /* ---------- Pulido i18n: textos que estaban hardcodeados en español ---------- */
+  /* ---------- Pulido i18n ---------- */
   queue_empty: {
     es: 'La cola está vacía',
     en: 'Queue is empty',
@@ -1821,16 +1757,7 @@ const I18N = {
     it: 'Azzerare la cronologia?',
     ru: 'Сбросить историю?'
   },
-  sendtochat_unavailable: {
-    es: 'sendToChat no disponible',
-    en: 'sendToChat not available',
-    pt: 'sendToChat indisponível',
-    zh: 'sendToChat 不可用',
-    ja: 'sendToChat は利用できません',
-    fr: 'sendToChat indisponible',
-    it: 'sendToChat non disponibile',
-    ru: 'sendToChat недоступен'
-  },
+
   error_toast: {
     es: 'Error: X',
     en: 'Error: X',
@@ -1891,6 +1818,57 @@ const I18N = {
     it: 'Elimina',
     ru: 'Удалить'
   },
+
+  stats_reset_btn: {
+    es: 'Reiniciar estadísticas',
+    en: 'Reset statistics',
+    pt: 'Reiniciar estatísticas',
+    zh: '重置统计',
+    ja: '统计をリセット',
+    fr: 'Réinitialiser les statistiques',
+    it: 'Azzera statistiche',
+    ru: 'Сбросить статистику'
+  },
+  history_reset_btn: {
+    es: 'Reiniciar historial',
+    en: 'Clear history',
+    pt: 'Reiniciar histórico',
+    zh: '重置历史',
+    ja: '履歴をリセット',
+    fr: "Réinitialiser l'historique",
+    it: 'Azzera cronologia',
+    ru: 'Сбросить историю'
+  },
+  toast_audio_error: {
+    es: 'No se pudo reproducir esta pista',
+    en: 'Could not play this track',
+    pt: 'Não foi possível reproduzir esta faixa',
+    zh: '无法播放此音轨',
+    ja: 'このトラックを再生できませんでした',
+    fr: 'Impossible de lire cette piste',
+    it: 'Impossibile riprodurre questa traccia',
+    ru: 'Не удалось воспроизвести этот трек'
+  },
+  toast_storage_full: {
+    es: 'Almacenamiento lleno. Libera espacio o borra pistas.',
+    en: 'Storage is full. Free up space or delete tracks.',
+    pt: 'Armazenamento cheio. Liberte espaço ou apague faixas.',
+    zh: '存储已满。请释放空间或删除音轨。',
+    ja: 'ストレージがいっぱいです。容量を空けるか曲を削除してください。',
+    fr: 'Stockage plein. Libérez de l\'espace ou supprimez des pistes.',
+    it: 'Memoria piena. Libera spazio o elimina tracce.',
+    ru: 'Память заполнена. Освободите место или удалите треки.'
+  },
+  toast_play_blocked: {
+    es: 'El navegador bloqueó la reproducción. Toca ▶ para empezar.',
+    en: 'The browser blocked playback. Tap ▶ to start.',
+    pt: 'O navegador bloqueou a reprodução. Toque em ▶ para começar.',
+    zh: '浏览器阻止了播放。点按 ▶ 开始。',
+    ja: 'ブラウザが再生をブロックしました。▶ をタップして開始。',
+    fr: 'Le navigateur a bloqué la lecture. Touchez ▶ pour commencer.',
+    it: 'Il browser ha bloccato la riproduzione. Tocca ▶ per iniziare.',
+    ru: 'Браузер заблокировал воспроизведение. Нажмите ▶, чтобы начать.'
+  },
   confirm_ok: {
     es: 'Aceptar',
     en: 'OK',
@@ -1900,16 +1878,6 @@ const I18N = {
     fr: 'OK',
     it: 'OK',
     ru: 'ОК'
-  },
-  listeners_standalone_hint: {
-    es: 'Estás en modo reproductor normal. Para escuchar con amigos en tiempo real, usa Aurora dentro de un chat de Delta Chat. Consejo: abre esta página en otra pestaña para probar la sincronización.',
-    en: 'You are in standalone player mode. To listen together in real time, use Aurora inside a Delta Chat. Tip: open this page in another tab to try syncing.',
-    pt: 'Estás no modo de reprodutor normal. Para ouvir com amigos em tempo real, usa a Aurora dentro de um chat do Delta Chat. Dica: abre esta página noutro separador para testar a sincronização.',
-    zh: '当前为普通播放器模式。要与好友实时同步收听，请在 Delta Chat 聊天中使用 Aurora。提示：在其他标签页打开本页可试用同步功能。',
-    ja: '通常のプレイヤーモードです。友人とリアルタイムで一緒に聴くには、Delta Chat 内で Aurora を使ってください。ヒント: 別タブでこのページを開くと同期を試せます。',
-    fr: "Vous êtes en mode lecteur normal. Pour écouter en temps réel avec des amis, utilisez Aurora dans une discussion Delta Chat. Astuce : ouvrez cette page dans un autre onglet pour tester la synchronisation.",
-    it: "Sei in modalità lettore normale. Per ascoltare in tempo reale con gli amici, usa Aurora dentro una chat Delta Chat. Suggerimento: apri questa pagina in un'altra scheda per provare la sincronizzazione.",
-    ru: 'Вы в режиме обычного плеера. Чтобы слушать вместе в реальном времени, откройте Aurora в чате Delta Chat. Совет: откройте эту страницу в другой вкладке, чтобы попробовать синхронизацию.'
   }
 };
 

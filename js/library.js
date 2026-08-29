@@ -120,9 +120,6 @@ Object.assign(App, {
         // Si estábamos editando la playlist destino, refrescar la vista
         if (this._editingPlaylistId === destId) this.renderEditPlaylist();
         this.hideEmptyState();
-        // Anunciar las nuevas pistas al canal realtime (para que los peers
-        // puedan solicitar los chunks y escucharlas también).
-        tracksToAdd.forEach(t => this._rtAnnounceTrack(t));
         const destName = destPl ? destPl.name : this.t('my_music_playlist');
         this.toast(tracksToAdd.length + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destName + (fromDirectory ? ' (carpeta)' : ''));
       } catch (e) {
@@ -198,7 +195,6 @@ Object.assign(App, {
       this.queueIdx = nextIdx;
       this.isPlaying = true;
       this.audio.play();
-      if (!this._rtSuppressBroadcast) this._rtBroadcastAction(null, 'next');
       this.renderCurrentTrack();
       this.renderLyrics();
       this.updateMediaSession();
@@ -271,14 +267,14 @@ Object.assign(App, {
 
     /* #11 Render historial */
     renderHistory() {
-      const cont = document.getElementById('statsContent');
+      const cont = document.getElementById('historyContent');
       if (!cont) return;
       const history = this._playHistory.slice().reverse(); // más reciente primero
       if (history.length === 0) {
         cont.innerHTML = '<p class="stats-empty">' + this.t('history_empty') + '</p>';
         return;
       }
-      let html = '<h4 class="section-title">' + this.t('history_title') + '</h4><ul class="track-list">';
+      let html = '<ul class="track-list">';
       history.forEach(id => {
         const t = this.tracks.find(x => x.id === id);
         if (!t) return;
@@ -292,12 +288,16 @@ Object.assign(App, {
         </li>`;
       });
       html += '</ul>';
+      html += '<div class="history-reset-wrap"><button class="primary-btn compact ghost danger" id="btnResetHistory"><i class="fa-solid fa-trash-can"></i> ' + this.esc(this.t('history_reset_btn')) + '</button></div>';
       cont.innerHTML = html;
-      // Cablear clicks
+      const btnRH = document.getElementById('btnResetHistory');
+      if (btnRH) btnRH.addEventListener('click', async () => {
+        if (await this.showConfirm({ message: this.t('history_reset_confirm'), danger: false })) this.resetHistory();
+      });
       cont.querySelectorAll('.track-row[data-track]').forEach(row => {
         row.addEventListener('click', () => {
           this.playTrack(row.dataset.track, { type: 'all' });
-          this.closeSheet('sheetStats');
+          this.closeSheet('sheetHistory');
         });
         const cv = row.querySelector('canvas');
         const t = this.tracks.find(x => x.id === row.dataset.track);
@@ -485,6 +485,10 @@ Object.assign(App, {
         });
       } catch (e) {
         console.warn('[Aurora] persistTracksBatch falló, intentando uno por uno:', e);
+        if (this._isQuotaError(e)) {
+          this.toast(this.t('toast_storage_full'));
+          return;
+        }
         for (const t of tracks) await this.persistTrack(t);
       }
     },
@@ -524,8 +528,6 @@ Object.assign(App, {
       this.saveFavorites();
       // Eliminar de IndexedDB
       await this.deleteTrackFromStorage(trackId);
-      // Avisar al canal realtime que la pista ya no está disponible
-      this._rtUnannounceTrack(trackId);
 
       if (wasCurrent) {
         // Detener la reproducción de la pista eliminada

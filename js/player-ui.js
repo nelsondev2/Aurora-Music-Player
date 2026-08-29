@@ -122,6 +122,34 @@ Object.assign(App, {
       ctx.globalAlpha = 1;
     },
 
+    setShuffleUI() {
+      const btn = document.getElementById('btnShuffle');
+      if (!btn) return;
+      btn.classList.toggle('active', !!this.shuffle);
+      btn.setAttribute('aria-pressed', this.shuffle ? 'true' : 'false');
+    },
+
+    setRepeatUI() {
+      const btn = document.getElementById('btnRepeat');
+      if (!btn) return;
+      const mode = this.repeat || 'off';
+      btn.classList.toggle('active', mode !== 'off');
+      btn.dataset.mode = mode;
+      btn.style.position = 'relative';
+      btn.setAttribute('aria-pressed', mode !== 'off' ? 'true' : 'false');
+      let badge = btn.querySelector('.repeat-badge');
+      if (mode === 'one') {
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'repeat-badge';
+          badge.textContent = '1';
+          btn.appendChild(badge);
+        }
+      } else if (badge) {
+        badge.remove();
+      }
+    },
+
     updatePlayUI() {
       const play = document.getElementById('btnPlay');
       const playLyrics = document.getElementById('btnPlayLyrics');
@@ -132,9 +160,11 @@ Object.assign(App, {
         if (this.isPlaying) {
           if (ip) ip.style.display = 'none';
           if (ips) ips.style.display = 'block';
+          b.setAttribute('aria-label', this.t('pause'));
         } else {
           if (ip) ip.style.display = 'block';
           if (ips) ips.style.display = 'none';
+          b.setAttribute('aria-label', this.t('play'));
         }
       });
       const ca = document.getElementById('coverArt');
@@ -160,6 +190,11 @@ Object.assign(App, {
       const curEl = document.getElementById('timeCurrent');
       if (fill) fill.style.width = pct + '%';
       if (curEl) curEl.textContent = this.fmtTime(cur);
+      const track = document.getElementById('progressTrack');
+      if (track) {
+        track.setAttribute('aria-valuenow', String(Math.round(pct)));
+        track.setAttribute('aria-valuetext', this.fmtTime(cur) + ' / ' + this.fmtTime(dur));
+      }
 
       // Buffer
       const buf = document.getElementById('progressBuffer');

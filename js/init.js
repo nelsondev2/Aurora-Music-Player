@@ -18,7 +18,6 @@ Object.assign(App, {
       this.audio = document.getElementById('audioEl');
       this.audio.volume = this.volume;
 
-      this.buildVisualizer();
       this.buildEqualizer();
       this.renderPickTracks();
 
@@ -52,21 +51,11 @@ Object.assign(App, {
         this.renderCurrentTrack();
         this.renderLyrics();
         this.updateMediaSession();
-        // Aplicar shuffle/repeat restaurados
-        document.getElementById('btnShuffle').classList.toggle('active', this.shuffle);
-        const btnRep = document.getElementById('btnRepeat');
-        btnRep.classList.toggle('active', this.repeat !== 'off');
-        btnRep.dataset.mode = this.repeat;
-        if (this.repeat === 'one') {
-          const b = document.createElement('span');
-          b.className = 'repeat-badge';
-          b.textContent = '1';
-          b.style.cssText = 'position:absolute;top:4px;right:4px;font-size:9px;font-weight:700;color:var(--accent);background:var(--bg-1);border-radius:50%;width:12px;height:12px;display:flex;align-items:center;justify-content:center;';
-          btnRep.appendChild(b);
-        }
       } else {
         this.showEmptyState();
       }
+      this.setShuffleUI();
+      this.setRepeatUI();
 
       // Guardar sesión cada 5s mientras se reproduce
       setInterval(() => this.saveSession(), 5000);
@@ -85,8 +74,7 @@ Object.assign(App, {
       // #11 Cargar historial
       this.loadHistory();
 
-      // === Sistema de tiempo real (compartir música) ===
-      this.initRealtime();
+      document.querySelectorAll('.sheet').forEach(s => s.setAttribute('aria-hidden', 'true'));
 
       // Releer tags de pistas antiguas (sin portada / artista / letras)
       const needsRetag = this.tracks.some(t =>
@@ -198,7 +186,13 @@ Object.assign(App, {
         await window.AuroraStorage.putTrack(toSave);
       } catch (e) {
         console.warn('[Aurora] No se pudo guardar pista:', e);
+        if (this._isQuotaError(e)) this.toast(this.t('toast_storage_full'));
       }
+    },
+
+    _isQuotaError(e) {
+      if (!e) return false;
+      return e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014;
     },
 
     async deleteTrackFromStorage(trackId) {

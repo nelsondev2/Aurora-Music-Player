@@ -71,22 +71,16 @@ Object.assign(App, {
         </ul>
       `;
 
-      // Botones de reinicio
       const resetDiv = document.createElement('div');
-      resetDiv.style.cssText = 'display:flex;gap:8px;margin-top:20px;justify-content:center;';
+      resetDiv.className = 'stats-reset-wrap';
       resetDiv.innerHTML = `
-        <button class="primary-btn compact ghost danger" id="btnResetStats"><i class="fa-solid fa-trash-can"></i> Reiniciar estadísticas</button>
-        <button class="primary-btn compact ghost danger" id="btnResetHistory"><i class="fa-solid fa-trash-can"></i> Reiniciar historial</button>
+        <button class="primary-btn compact ghost danger" id="btnResetStats"><i class="fa-solid fa-trash-can"></i> ${this.esc(this.t('stats_reset_btn'))}</button>
       `;
       cont.appendChild(resetDiv);
       const btnRS = document.getElementById('btnResetStats');
-        if (btnRS) btnRS.addEventListener('click', async () => {
-          if (await this.showConfirm({ message: this.t('stats_reset_confirm'), danger: false })) this.resetStats();
-        });
-        const btnRH = document.getElementById('btnResetHistory');
-        if (btnRH) btnRH.addEventListener('click', async () => {
-          if (await this.showConfirm({ message: this.t('history_reset_confirm'), danger: false })) this.resetHistory();
-        });
+      if (btnRS) btnRS.addEventListener('click', async () => {
+        if (await this.showConfirm({ message: this.t('stats_reset_confirm'), danger: false })) this.resetStats();
+      });
 
       // Dibujar covers
       cont.querySelectorAll('.stats-row').forEach((row, i) => {

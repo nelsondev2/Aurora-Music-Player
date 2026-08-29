@@ -39,11 +39,6 @@
             <span class="now-playing-label" data-i18n="now_playing_label">REPRODUCIENDO AHORA</span>
             <span class="now-playing-context" id="nowPlayingContext" data-i18n="your_library">Tu biblioteca</span>
           </div>
-          <!-- Botón Listeners (sincronización en tiempo real) -->
-          <button class="icon-btn sync-btn" id="btnSync" data-i18n-aria="show_listeners" aria-label="Mostrar oyentes">
-            <i class="fa-solid fa-users"></i>
-            <span class="sync-peer-count" id="syncPeerCount">1</span>
-          </button>
           <button class="icon-btn" id="btnMore" data-i18n-aria="more_options" aria-label="Más opciones">
             <i class="fa-solid fa-ellipsis-vertical"></i>
           </button>
@@ -70,14 +65,14 @@
             <p class="track-artist" id="trackArtist">—</p>
             <p class="track-album" id="trackAlbum"></p>
           </div>
-          <button class="icon-btn like-btn" id="btnLike" data-i18n-aria="favorite" aria-label="Favorito">
+          <button class="icon-btn like-btn" id="btnLike" data-i18n-aria="favorite" aria-label="Favorito" aria-pressed="false">
             <i class="fa-regular fa-heart"></i>
           </button>
         </section>
 
         <!-- Barra de progreso -->
         <section class="progress-section">
-          <div class="progress-track" id="progressTrack">
+          <div class="progress-track" id="progressTrack" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso">
             <div class="progress-buffer" id="progressBuffer"></div>
             <div class="progress-fill" id="progressFill">
               <div class="progress-thumb" id="progressThumb"></div>
@@ -91,7 +86,7 @@
 
         <!-- Controles principales -->
         <section class="controls-main">
-          <button class="ctrl-btn ctrl-shuffle" id="btnShuffle" data-i18n-aria="shuffle" aria-label="Aleatorio">
+          <button class="ctrl-btn ctrl-shuffle" id="btnShuffle" data-i18n-aria="shuffle" aria-label="Aleatorio" aria-pressed="false">
             <i class="fa-solid fa-shuffle"></i>
           </button>
           <button class="ctrl-btn ctrl-prev" id="btnPrev" data-i18n-aria="previous" aria-label="Anterior">
@@ -104,7 +99,7 @@
           <button class="ctrl-btn ctrl-next" id="btnNext" data-i18n-aria="next" aria-label="Siguiente">
             <i class="fa-solid fa-forward-step"></i>
           </button>
-          <button class="ctrl-btn ctrl-repeat" id="btnRepeat" data-i18n-aria="repeat" aria-label="Repetir">
+          <button class="ctrl-btn ctrl-repeat" id="btnRepeat" data-i18n-aria="repeat" aria-label="Repetir" aria-pressed="false">
             <i class="fa-solid fa-repeat"></i>
           </button>
         </section>
@@ -492,14 +487,6 @@
               <i class="fa-solid fa-user"></i>
               <span data-i18n="menu_go_to_artist">Ir al artista</span>
             </button>
-            <button class="menu-row" id="menuListeners">
-              <i class="fa-solid fa-users"></i>
-              <span data-i18n="listeners_title">Oyentes</span>
-            </button>
-            <button class="menu-row" id="menuShareTrack">
-              <i class="fa-solid fa-share-nodes"></i>
-              <span data-i18n="menu_share">Compartir</span>
-            </button>
             <button class="menu-row" id="menuStats">
               <i class="fa-solid fa-chart-simple"></i>
               <span data-i18n="menu_stats">Estadísticas de reproducción</span>
@@ -553,6 +540,22 @@
             </div>
 
             <p class="stats-empty" style="margin-top:18px" data-i18n="theme_hint">El tema se aplica al instante y se guarda en el dispositivo.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historial de reproducción -->
+      <div class="sheet sheet-full" id="sheetHistory">
+        <div class="sheet-backdrop" data-close-sheet="sheetHistory"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header">
+            <button class="icon-btn-sm" data-close-sheet="sheetHistory" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            <h3 data-i18n="history_title">Historial</h3>
+            <button class="text-btn" data-close-sheet="sheetHistory" data-i18n="close_btn">Cerrar</button>
+          </header>
+          <div class="sheet-body">
+            <div id="historyContent"></div>
           </div>
         </div>
       </div>
@@ -681,26 +684,7 @@
         </div>
       </div>
 
-      <!-- Sheet: Listeners (sincronización en tiempo real) -->
-      <div class="sheet" id="sheetListeners">
-        <div class="sheet-backdrop" data-close-sheet="sheetListeners"></div>
-        <div class="sheet-panel">
-          <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetListeners" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
-            <h3 data-i18n="listeners_title">Oyentes</h3>
-            <button class="text-btn" data-close-sheet="sheetListeners" data-i18n="close_btn">Cerrar</button>
-          </header>
-          <div class="sheet-body">
-            <p class="sheet-subtitle" id="listenersSubtitle" data-i18n="listeners_subtitle">Conectados en tiempo real</p>
-            <!-- Aviso en modo reproductor normal (navegador sin Delta Chat) -->
-            <p class="listeners-hint" id="listenersStandaloneHint" data-i18n="listeners_standalone_hint" style="display:none"></p>
-            <div class="listeners-list" id="listenersList"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="toast" id="toast"></div>
+      <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
       <!-- Audio element oculto (sin crossorigin: rompería objectURLs locales) -->
       <audio id="audioEl" preload="auto"></audio>
@@ -710,22 +694,16 @@
 
   <!-- jsmediatags para leer metadatos ID3 (embebido localmente, sin CDN) -->
   <script src="assets/js/jsmediatags.min.js"></script>
-  <!-- webxdc.js — proporcionado por el mensajero (Delta Chat).
-       En navegador normal, se usa un stub que simula la API. -->
-  <script src="webxdc.js"></script>
   <script src="data.js"></script>
   <script src="storage.js"></script>
   <script src="uploader.js"></script>
-  <!-- realtime.js — Sistema de compartir música en tiempo real (webxdc realtime channel) -->
-  <script src="realtime.js"></script>
-  <!-- Módulos de la app (refactor C de app.js) — el orden importa:
+  <!-- Módulos de la app — el orden importa:
        state.js crea el objeto App, los demás lo completan con Object.assign,
-       y main.js (siempre el último) arranca la app y detecta el entorno. -->
+       y main.js (siempre el último) arranca la app. -->
   <script src="js/state.js"></script>
   <script src="js/init.js"></script>
   <script src="js/settings.js"></script>
   <script src="js/library.js"></script>
-  <script src="js/realtime-bridge.js"></script>
   <script src="js/queue.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/player-ui.js"></script>

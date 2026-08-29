@@ -352,7 +352,10 @@ Object.assign(App, {
         this.renderQueue();
         this.renderFavorites();
         if (this.currentTrack) this.renderCurrentTrack(); else this.showEmptyState();
-        if (document.getElementById('statsContent').innerHTML) this.renderStats();
+        const statsEl = document.getElementById('statsContent');
+        if (statsEl && statsEl.innerHTML) this.renderStats();
+        const histEl = document.getElementById('historyContent');
+        if (histEl && histEl.innerHTML) this.renderHistory();
       } catch (e) {}
     },
 

@@ -37,9 +37,7 @@
     volume: 1,
     playbackRate: 1,
 
-    /* Visualizador — deshabilitado (eliminado por decisión del usuario).
-     * Los métodos buildVisualizer/startVisualizer/stopVisualizer se
-     * mantienen como no-ops para no romper las llamadas existentes. */
+    /* Visualizador de barras: eliminado. El grafo Web Audio se usa solo para EQ. */
 
     /* Letras */
     lrcLines: [], // {time, text, timed, translation?}
@@ -126,8 +124,6 @@
     _lastError: null,
 };
 
-/* App vive en el scope léxico global y se expone también en window:
- * - Los módulos js/*.js lo completan con Object.assign(App, {...}).
- * - realtime.js y otros scripts clásicos lo consumen como window.AuroraApp. */
+/* App vive en el scope léxico global y se expone también en window. */
 window.App = App;
 window.AuroraApp = App;

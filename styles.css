@@ -580,6 +580,23 @@ svg { display: block; }
   color: var(--text-3);
 }
 .ctrl-shuffle.active, .ctrl-repeat.active { color: var(--accent); }
+.repeat-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--bg-1);
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  line-height: 1;
+}
 .ctrl-prev, .ctrl-next { width: 52px; height: 52px; color: var(--text-1); }
 
 .ctrl-play {
@@ -1936,6 +1953,13 @@ svg { display: block; }
   color: var(--text-3);
   padding: 20px;
 }
+.stats-reset-wrap,
+.history-reset-wrap {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  justify-content: center;
+}
 
 /* =====================================================================
  *  Crossfade / transición de portada (#12)
@@ -2253,171 +2277,6 @@ svg { display: block; }
   cursor: pointer;
 }
 
-/* ============================================================
- *  Sistema de tiempo real — botón Listeners + sheet de oyentes
- * ============================================================ */
-
-/* Botón Listeners en la barra superior */
-.sync-btn {
-  position: relative;
-  width: 40px;
-  height: 40px;
-}
-.sync-btn i { font-size: 16px; color: var(--accent); }
-.sync-btn .sync-peer-count {
-  position: absolute;
-  bottom: 2px;
-  right: 2px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  font-family: var(--font-display);
-}
-.sync-btn:active { transform: scale(0.92); }
-
-/* Lista de oyentes */
-.listeners-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 4px 0 12px;
-}
-
-.listener-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px;
-  background: var(--surface);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-}
-
-.listener-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: #fff;
-  font-weight: 700;
-  font-size: 16px;
-  font-family: var(--font-display);
-}
-
-.listener-info {
-  flex: 1;
-  min-width: 0;
-}
-.listener-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.listener-track {
-  font-size: 12px;
-  color: var(--text-3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 2px;
-}
-.listener-track.playing { color: var(--accent); }
-.listener-track.playing::before { content: '▶ '; }
-.listener-track.paused::before { content: '⏸ '; }
-
-.listener-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--success);
-  flex-shrink: 0;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
-}
-.listener-status-dot.offline {
-  background: var(--text-4);
-  box-shadow: none;
-}
-
-.listeners-empty {
-  padding: 32px 16px;
-  text-align: center;
-  color: var(--text-3);
-  font-size: 13px;
-  line-height: 1.6;
-}
-.listeners-empty i {
-  font-size: 36px;
-  color: var(--text-4);
-  margin-bottom: 12px;
-  display: block;
-}
-
-/* Animación de pulso para el badge cuando hay nuevos peers */
-@keyframes syncPulse {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.2); }
-  100% { transform: scale(1); }
-}
-.sync-btn.pulse .sync-peer-count { animation: syncPulse 0.4s ease; }
-
-/* Indicador en la portada cuando se está sincronizando */
-.sync-indicator {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  background: rgba(0, 0, 0, 0.7);
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 600;
-  padding: 6px 10px;
-  border-radius: var(--radius-pill);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  z-index: 5;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  pointer-events: none;
-}
-.sync-indicator i {
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
-
-/* Etiqueta "compartida por" en las filas de pista de la biblioteca */
-.row-shared-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--accent);
-  background: rgba(168, 85, 247, 0.12);
-  padding: 2px 6px;
-  border-radius: var(--radius-pill);
-  margin-left: 6px;
-  vertical-align: middle;
-}
-
 /* =====================================================================
  *  Sheet de confirmación (sustituye a confirm() nativo)
  * ===================================================================== */
@@ -2465,17 +2324,6 @@ svg { display: block; }
 
 .confirm-actions .primary-btn.confirm-ok.danger:active {
   background: #dc2626;
-}
-
-/* Aviso de modo reproductor normal dentro del sheet de oyentes */
-.listeners-hint {
-  font-size: 12.5px;
-  color: var(--text-3);
-  line-height: 1.55;
-  padding: 10px 12px;
-  background: var(--surface);
-  border-radius: var(--radius-sm);
-  margin: 0 0 12px;
 }
 
 /* =====================================================================

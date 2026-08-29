@@ -48,21 +48,13 @@ Object.assign(App, {
         this.gainNode.connect(this.audioCtx.destination);
         this.applySavedEq();
       } catch (e) {
-        console.warn('[Aurora] Web Audio no disponible, visualizador en modo simulado:', e.message);
+        console.warn('[Aurora] Web Audio no disponible:', e.message);
         this.audioCtx = null;
       }
     },
 
-    /* ============================================================
-     *  Visualizador — DESHABILITADO
-     * ============================================================
-     *  El visualizador de barras de frecuencia ha sido eliminado por
-     *  decisión del usuario. Estos métodos se mantienen como no-ops
-     *  para no romper las llamadas existentes en togglePlay/next/etc.
-     * ============================================================ */
-    buildVisualizer() { /* no-op: visualizador eliminado */ },
-    startVisualizer() {
-      // Asegurar que el grafo de audio está inicializado (necesario para EQ y volumen)
+    /* Asegura el grafo Web Audio (EQ). Se llama en el primer play. */
+    ensureAudioGraph() {
       if (!this.audioCtx) {
         try { this.initAudioGraph(); } catch (e) {}
       }
@@ -70,7 +62,6 @@ Object.assign(App, {
         try { this.audioCtx.resume(); } catch (e) {}
       }
     },
-    stopVisualizer() { /* no-op: visualizador eliminado */ },
 
     /* ============================================================
      *  Ecualizador
@@ -283,7 +274,6 @@ Object.assign(App, {
       this.renderCurrentTrack();
       this.renderLyrics();
       this.updateMediaSession();
-      this.precomputeVisualizerData(t);
       this.updatePlayUI();
       this.animateCoverTransition();
     },
@@ -310,11 +300,6 @@ Object.assign(App, {
         setTimeout(() => { bg.style.opacity = ''; }, 50);
       }
     },
-
-    /* Pre-analizar audio para visualizador — DESHABILITADO
-     * El visualizador fue eliminado, pero mantenemos el método como no-op
-     * para no romper las llamadas en loadAndPlay() / loadTrackPaused(). */
-    async precomputeVisualizerData(track) { /* no-op */ },
 
     async togglePlay(forcePlay) {
       if (!this.currentTrack) return;
@@ -346,19 +331,15 @@ Object.assign(App, {
               } catch (e) {}
             }
             this.updatePlayUI();
-            this.startVisualizer();
+            this.ensureAudioGraph();
             this.requestWakeLock();
             this.trackPlayStarted();
-            // Anunciar al canal realtime (solo si el play NO vino de un sync)
-            if (!this._rtSuppressBroadcast) {
-              const sn = (window.webxdc && window.webxdc.selfName) || 'Listener';
-              this._rtBroadcastAction(sn + ' played');
-            }
           }).catch((e) => {
             console.warn('[Aurora] play() rechazado:', e.message);
             this._lastError = { msg: 'play() rechazado: ' + e.message, ts: Date.now() };
             this.isPlaying = false;
             this.updatePlayUI();
+            this.toast(this.t('toast_play_blocked'));
           });
         }
       } else {
@@ -381,14 +362,8 @@ Object.assign(App, {
         }
         this.isPlaying = false;
         this.updatePlayUI();
-        this.stopVisualizer();
         this.releaseWakeLock();
         this.trackPlayStopped();
-        // Anunciar al canal realtime (solo si la pausa NO vino de un sync)
-        if (!this._rtSuppressBroadcast) {
-          const sn = (window.webxdc && window.webxdc.selfName) || 'Listener';
-          this._rtBroadcastAction(sn + ' paused');
-        }
       }
     },
 
@@ -403,7 +378,6 @@ Object.assign(App, {
       } catch (e) {}
       this.isPlaying = false;
       this.updatePlayUI();
-      this.stopVisualizer();
       this.releaseWakeLock();
       this.trackPlayStopped();
       // Reset visual de la barra de progreso
@@ -512,27 +486,16 @@ Object.assign(App, {
         }
       }
       this.playFromQueue(nextIdx);
-      if (!this._rtSuppressBroadcast) {
-        this._rtBroadcastAction(auto ? null : 'skipped', auto ? 'next' : 'skip');
-      }
     },
 
     prev() {
       if (this.audio.currentTime > 3) {
         this.audio.currentTime = 0;
-        if (!this._rtSuppressBroadcast) {
-          const sn = (window.webxdc && window.webxdc.selfName) || 'Listener';
-          this._rtBroadcastAction(sn + ' seeked');
-        }
         return;
       }
       let prev = this.queueIdx - 1;
       if (prev < 0) prev = this.queue.length - 1;
       this.playFromQueue(prev);
-      if (!this._rtSuppressBroadcast) {
-        const sn = (window.webxdc && window.webxdc.selfName) || 'Listener';
-        this._rtBroadcastAction(sn + ' rewinded');
-      }
     },
 
     seekToTime(sec) {
@@ -543,83 +506,36 @@ Object.assign(App, {
       else t = Math.max(0, t);
       try { this.audio.currentTime = t; } catch (e) {}
       this.updateProgress();
-      if (!this._rtSuppressBroadcast) this._rtBroadcastAction(null, 'seek');
     },
     seekTo(ratio) {
       if (!this.audio || !this.audio.duration || isNaN(this.audio.duration)) return;
       this.audio.currentTime = ratio * this.audio.duration;
       this.updateProgress();
-      // Anunciar seek al realtime (con throttle para no saturar)
-      if (!this._rtSuppressBroadcast) {
-        if (!this._rtSeekThrottle) {
-          this._rtSeekThrottle = (() => {
-            let timer = null;
-            return () => {
-              if (timer) return;
-              timer = setTimeout(() => {
-                timer = null;
-                const sn = (window.webxdc && window.webxdc.selfName) || 'Listener';
-                this._rtBroadcastAction(sn + ' seeked');
-              }, 400);
-            };
-          })();
-        }
-        this._rtSeekThrottle();
-      }
     },
 
     setVolume(v) {
       this.volume = Math.max(0, Math.min(1, v));
       this.audio.volume = this.volume;
-      // No pisar la ganancia del grafo: el volumen del usuario va en <audio>
       const sv = document.getElementById('volumeSlider');
       const vv = document.getElementById('volumeValue');
       if (sv) sv.value = Math.round(this.volume * 100);
       if (vv) vv.textContent = Math.round(this.volume * 100) + '%';
       try { localStorage.setItem('aurora_volume', String(this.volume)); } catch(e){}
-      if (!this._rtSuppressBroadcast) {
-        if (!this._rtVolThrottle) {
-          this._rtVolThrottle = (() => {
-            let t = null;
-            return () => {
-              if (t) return;
-              t = setTimeout(() => { t = null; this._rtBroadcastAction(null, 'volume'); }, 280);
-            };
-          })();
-        }
-        this._rtVolThrottle();
-      }
     },
 
     toggleShuffle() {
       this.shuffle = !this.shuffle;
-      document.getElementById('btnShuffle').classList.toggle('active', this.shuffle);
+      this.setShuffleUI();
       this.toast(this.shuffle ? this.t('toast_shuffle_on') : this.t('toast_shuffle_off'));
-      if (!this._rtSuppressBroadcast) this._rtBroadcastAction(null, 'shuffle');
     },
 
     cycleRepeat() {
       this.repeat = this.repeat === 'off' ? 'all' : this.repeat === 'all' ? 'one' : 'off';
-      const btn = document.getElementById('btnRepeat');
-      btn.classList.toggle('active', this.repeat !== 'off');
-      btn.dataset.mode = this.repeat;
-      // Añadir badge "1" si repeat one
-      btn.style.position = 'relative';
-      const existing = btn.querySelector('.repeat-badge');
-      if (this.repeat === 'one') {
-        if (!existing) {
-          const b = document.createElement('span');
-          b.className = 'repeat-badge';
-          b.textContent = '1';
-          b.style.cssText = 'position:absolute;top:4px;right:4px;font-size:9px;font-weight:700;color:var(--accent);background:var(--bg-1);border-radius:50%;width:12px;height:12px;display:flex;align-items:center;justify-content:center;';
-          btn.appendChild(b);
-        }
-      } else if (existing) existing.remove();
+      this.setRepeatUI();
       const repLabel = this.repeat === 'off' ? this.t('toast_repeat_off')
                      : this.repeat === 'all' ? this.t('toast_repeat_all')
                      : this.t('toast_repeat_one');
       this.toast(this.t('repeat') + ': ' + repLabel);
-      if (!this._rtSuppressBroadcast) this._rtBroadcastAction(null, 'repeat');
     },
 
     toggleFavorite() {
@@ -639,6 +555,7 @@ Object.assign(App, {
         const b = document.getElementById(id);
         if (!b) return;
         b.classList.toggle('liked', liked);
+        b.setAttribute('aria-pressed', liked ? 'true' : 'false');
         // Cambiar icono FA: corazón vacío (regular) vs lleno (solid)
         const icon = b.querySelector('i');
         if (icon) {
