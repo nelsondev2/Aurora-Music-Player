@@ -119,7 +119,11 @@ Object.assign(App, {
       const stack = this._sheetStack || [];
       stack.forEach((sid, i) => {
         const el = document.getElementById(sid);
-        if (el) el.style.zIndex = String(100 + i);
+        if (!el) return;
+        const base = el.classList.contains('sheet-confirm')
+          ? 140
+          : (el.classList.contains('sheet-full') ? 90 : 130);
+        el.style.zIndex = String(base + i);
       });
     },
 

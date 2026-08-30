@@ -2517,7 +2517,16 @@ button,
   border-radius: 0;
   padding-bottom: 0;
 }
-.sheet:not(.sheet-full) { z-index: 130; }
+/* Modales (Opciones, Sleep, EQ, cola…): apoyan encima del chrome,
+ * no debajo del mini-player / nav. El confirm cubre todo. */
+.sheet:not(.sheet-full):not(.sheet-confirm) {
+  bottom: var(--chrome-offset);
+  z-index: 130;
+}
+.sheet:not(.sheet-full):not(.sheet-confirm) .sheet-panel {
+  max-height: calc(100% - 12px);
+  padding-bottom: max(12px, var(--safe-bottom));
+}
 .sheet-confirm { z-index: 140; }
 
 .app-chrome {

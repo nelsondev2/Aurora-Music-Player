@@ -67,7 +67,10 @@ Object.assign(App, {
               readded++;
             }
           });
-          if (readded > 0) this.persistPlaylist(destPlEarly);
+          if (readded > 0) {
+            if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(destPlEarly);
+            this.persistPlaylist(destPlEarly);
+          }
         }
         if (dupCount > 0 && readded === 0 && uniqueTracks.length === 0) {
           this.toast(dupCount + ' ' + this.t('toast_duplicate_found'));
@@ -102,6 +105,7 @@ Object.assign(App, {
           tracksToAdd.forEach(t => {
             if (!destPl.trackIds.includes(t.id)) destPl.trackIds.push(t.id);
           });
+          if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(destPl);
           this.persistPlaylist(destPl);
         }
 
@@ -632,7 +636,10 @@ Object.assign(App, {
       // Quitar de playlists
       this.playlists.forEach(pl => {
         const i = pl.trackIds.indexOf(trackId);
-        if (i >= 0) pl.trackIds.splice(i, 1);
+        if (i >= 0) {
+          pl.trackIds.splice(i, 1);
+          if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
+        }
         this.persistPlaylist(pl);
       });
       // Quitar de favoritos
@@ -699,6 +706,7 @@ Object.assign(App, {
       // 4. Quitar trackIds de todas las playlists (sin borrar las listas)
       this.playlists.forEach(pl => {
         pl.trackIds = [];
+        if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
         this.persistPlaylist(pl);
       });
 

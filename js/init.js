@@ -149,6 +149,12 @@ Object.assign(App, {
         const pls = await window.AuroraStorage.getAllPlaylists();
         if (pls && pls.length) {
           this.playlists = pls;
+          this.playlists.forEach(pl => {
+            if (pl && pl.coverArt && !pl._coverCache) {
+              pl._coverCache = pl.coverArt;
+              pl._coverCacheHash = pl.coverArtHash || null;
+            }
+          });
         } else {
           this.playlists = JSON.parse(JSON.stringify(window.DEFAULT_PLAYLISTS || []));
         }
@@ -212,7 +218,21 @@ Object.assign(App, {
     },
 
     async persistPlaylist(pl) {
-      try { await window.AuroraStorage.putPlaylist(pl); } catch (e) {}
+      try {
+        const toSave = {
+          id: pl.id,
+          name: pl.name,
+          description: pl.description || '',
+          trackIds: Array.isArray(pl.trackIds) ? pl.trackIds.slice() : [],
+          cover: pl.cover || null,
+          isDefault: !!pl.isDefault,
+          coverArt: pl.coverArt || pl._coverCache || null,
+          coverArtHash: pl.coverArtHash || pl._coverCacheHash || null
+        };
+        await window.AuroraStorage.putPlaylist(toSave);
+      } catch (e) {
+        console.warn('[Aurora] No se pudo guardar playlist:', e);
+      }
     },
 
     async deletePlaylistFromStorage(id) {
@@ -225,6 +245,12 @@ Object.assign(App, {
       try {
         const pls = await window.AuroraStorage.getAllPlaylists();
         this.playlists = (pls && pls.length) ? pls : JSON.parse(JSON.stringify(window.DEFAULT_PLAYLISTS || []));
+        this.playlists.forEach(pl => {
+          if (pl && pl.coverArt && !pl._coverCache) {
+            pl._coverCache = pl.coverArt;
+            pl._coverCacheHash = pl.coverArtHash || null;
+          }
+        });
       } catch (e) {
         this.playlists = [];
       }

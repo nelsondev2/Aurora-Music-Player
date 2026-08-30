@@ -232,8 +232,7 @@ Object.assign(App, {
         }
       }
       pl.trackIds.splice(i, 1);
-      pl._coverCache = null;
-      pl._coverCacheHash = null;
+      this._invalidatePlaylistCover(pl);
       this.persistPlaylist(pl);
       if (wasCurrent) {
         this.stopPlayback();
@@ -286,8 +285,7 @@ Object.assign(App, {
       });
       if (!ok) return;
       pl.trackIds = [];
-      pl._coverCache = null;
-      pl._coverCacheHash = null;
+      this._invalidatePlaylistCover(pl);
       this.persistPlaylist(pl);
       // Actualizar vista sin parpadeo
       const ul = document.getElementById('editPlaylistTracks');

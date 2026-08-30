@@ -99,36 +99,90 @@ Object.assign(App, {
       }
     },
 
+    _playlistTrackArtSrc(t) {
+      if (!t) return null;
+      if (t.coverThumbLg) return t.coverThumbLg;
+      if (t.coverThumb) return t.coverThumb;
+      if (typeof t.cover === 'string' && (t.cover.startsWith('data:') || t.cover.startsWith('blob:'))) return t.cover;
+      return null;
+    },
+
+    _playlistCoverFallback(pl) {
+      return pl && pl.cover
+        ? pl.cover
+        : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 });
+    },
+
+    _hydratePlaylistCover(pl) {
+      if (!pl) return;
+      if (pl.coverArt && !pl._coverCache) {
+        pl._coverCache = pl.coverArt;
+        pl._coverCacheHash = pl.coverArtHash || null;
+      }
+    },
+
+    _invalidatePlaylistCover(pl) {
+      if (!pl) return;
+      pl._coverCache = null;
+      pl._coverCacheHash = null;
+      pl._coverPending = null;
+      pl.coverArt = null;
+      pl.coverArtHash = null;
+    },
+
+    _persistPlaylistCoverSoon(pl) {
+      if (!pl || !pl.id) return;
+      if (!this._coverPersistIds) this._coverPersistIds = new Set();
+      this._coverPersistIds.add(pl.id);
+      if (this._coverPersistTimer) return;
+      this._coverPersistTimer = setTimeout(() => {
+        this._coverPersistTimer = null;
+        const ids = this._coverPersistIds;
+        this._coverPersistIds = new Set();
+        ids.forEach(id => {
+          const p = this.playlists.find(x => x.id === id);
+          if (p) this.persistPlaylist(p);
+        });
+      }, 400);
+    },
+
     /* ============================================================
-     *  Cover de playlist — collage de 8 covers al azar
+     *  Cover de playlist — collage de hasta 8 portadas
      * ============================================================
-     *  Devuelve:
-     *    - dataURL (string) si pudo construir un collage con al menos
-     *      una pista que tenga cover de imagen.
-     *    - { from, to, angle } si ninguna pista tiene cover de imagen
-     *      (usa el gradiente por defecto de la playlist).
-     *  El resultado se cachea en pl._coverCache y se invalida cuando
-     *  cambian los trackIds (comparación por longitud + hash simple). */
+     *  Devuelve dataURL si hay al menos una pista con arte, o el
+     *  gradiente de la lista. Se cachea en RAM y se persiste en
+     *  pl.coverArt para sobrevivir recargas. */
     getPlaylistCover(pl) {
-      // Recoger todas las pistas reales de la playlist
+      const fallback = this._playlistCoverFallback(pl);
+      this._hydratePlaylistCover(pl);
       const tracks = (pl.trackIds || [])
         .map(id => this.tracks.find(t => t.id === id))
         .filter(Boolean);
-      // Filtrar las que SÍ tienen cover de imagen (dataURL)
-      const withImage = tracks.filter(t => t.coverIsImage || (typeof t.cover === 'string' && t.cover.startsWith('data:')));
+      const withImage = tracks.filter(t => this._playlistTrackArtSrc(t));
 
-      // Si no hay ninguna con imagen, devolver el gradiente por defecto
       if (withImage.length === 0) {
-        return pl.cover || (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 });
+        const stored = pl._coverCache || pl.coverArt || null;
+        if (stored && (pl.trackIds || []).length) return stored;
+        if (stored) {
+          this._invalidatePlaylistCover(pl);
+          this._persistPlaylistCoverSoon(pl);
+        }
+        return fallback;
       }
 
-      // Hash de trackIds (orden de la lista) para invalidar solo si cambia el contenido
-      const hash = (pl.trackIds || []).join('|') + '#' + withImage.length;
-      if (pl._coverCache && pl._coverCacheHash === hash) {
-        return pl._coverCache;
+      const hash = (pl.trackIds || []).join('|') + '#' + withImage.map(t => {
+        const src = this._playlistTrackArtSrc(t) || '';
+        return t.id + ':' + src.length;
+      }).join(',');
+      const cached = pl._coverCache || pl.coverArt || null;
+      const cachedHash = pl._coverCacheHash || pl.coverArtHash || null;
+      if (cached && cachedHash === hash) {
+        pl._coverCache = cached;
+        pl._coverCacheHash = hash;
+        return cached;
       }
       if (pl._coverPending === hash) {
-        return pl.cover || (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 });
+        return cached || fallback;
       }
       pl._coverPending = hash;
 
@@ -246,13 +300,10 @@ Object.assign(App, {
           const img = new Image();
           img.onload = () => resolve(img);
           img.onerror = () => resolve(null);
-          img.src = t.coverThumbLg || t.coverThumb || (typeof t.cover === 'string' ? t.cover : '');
+          img.src = this._playlistTrackArtSrc(t) || '';
         });
       }));
 
-      // Como getPlaylistCover es sincrónico, devolvemos el gradiente ahora
-      // y disparamos la generación asíncrona que actualizará el DOM.
-      pl._coverPending = hash;
       promises.then(images => {
         const valid = images.filter(Boolean);
         if (pl._coverPending === hash) pl._coverPending = null;
@@ -261,10 +312,13 @@ Object.assign(App, {
         const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
         pl._coverCache = dataUrl;
         pl._coverCacheHash = hash;
+        pl.coverArt = dataUrl;
+        pl.coverArtHash = hash;
         this._applyPlaylistCover(pl, dataUrl);
+        this._persistPlaylistCoverSoon(pl);
       }).catch(() => { if (pl._coverPending === hash) pl._coverPending = null; });
 
-      return pl.cover || (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 });
+      return cached || fallback;
     },
 
     _applyPlaylistCover(pl, dataUrl) {
@@ -829,8 +883,7 @@ Object.assign(App, {
         return;
       }
       pl.trackIds.push(trackId);
-      pl._coverCache = null;
-      pl._coverCacheHash = null;
+      this._invalidatePlaylistCover(pl);
       this.persistPlaylist(pl);
       this.renderPlaylists();
       // Si el sheet de edición de esa playlist está abierto (debajo),
