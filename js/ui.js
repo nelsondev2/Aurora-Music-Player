@@ -1,0 +1,361 @@
+/* =====================================================================
+ *  js/ui.js — Aurora Music Player
+ *  Sheets · confirmación · vistas · Media Session · Wake Lock · Sleep · Toast
+ *
+ *  Parte del refactor (C) de app.js: mismo código, módulos por funcionalidad.
+ *  Este archivo se carga tras js/state.js y completa el objeto App con
+ *  Object.assign (los scripts son clásicos por compatibilidad webxdc).
+ * ===================================================================== */
+
+'use strict';
+
+Object.assign(App, {
+    /* ============================================================
+     *  Sheets
+     * ============================================================ */
+    /* ============================================================
+     *  Confirmación genérica (sustituye a confirm() nativo)
+     *  Devuelve una Promise<boolean>: true = aceptar, false = cancelar.
+     *  Si cierran el sheet por backdrop/X también resuelve false
+     *  (ver hook en closeSheet).
+     * ============================================================ */
+    showConfirm(opts = {}) {
+      return new Promise((resolve) => {
+        const sheet = document.getElementById('sheetConfirm');
+        if (!sheet) {
+          // Fallback extremo: sin markup, usar el nativo
+          resolve(window.confirm(opts.message || ''));
+          return;
+        }
+        const msg = document.getElementById('confirmMsg');
+        const icon = document.getElementById('confirmIcon');
+        const okBtn = document.getElementById('btnConfirmOk');
+        const cancelBtn = document.getElementById('btnConfirmCancel');
+        if (msg) msg.textContent = opts.message || '';
+        if (icon) icon.classList.toggle('hidden', opts.danger === false);
+        if (okBtn) {
+          okBtn.textContent = opts.okLabel || this.t('confirm_ok');
+          okBtn.classList.toggle('danger', opts.danger !== false);
+        }
+        let done = false;
+        this._confirmResolver = (val) => {
+          if (done) return;
+          done = true;
+          this._confirmResolver = null;
+          this.closeSheet('sheetConfirm');
+          resolve(val);
+        };
+        if (okBtn) okBtn.onclick = () => { if (this._confirmResolver) this._confirmResolver(true); };
+        if (cancelBtn) cancelBtn.onclick = () => { if (this._confirmResolver) this._confirmResolver(false); };
+        this.openSheet('sheetConfirm');
+      });
+    },
+
+    openSheet(id) {
+      const s = document.getElementById(id);
+      if (!s) return;
+      if (!this._sheetStack) this._sheetStack = [];
+      if (!s.classList.contains('open')) {
+        s._prevFocus = document.activeElement;
+        this._sheetStack.push(id);
+      } else {
+        const i = this._sheetStack.lastIndexOf(id);
+        if (i >= 0) this._sheetStack.splice(i, 1);
+        this._sheetStack.push(id);
+      }
+      s.classList.add('open');
+      s.setAttribute('aria-hidden', 'false');
+      this._syncSheetLayer();
+      const panel = s.querySelector('.sheet-panel');
+      if (panel) {
+        panel.setAttribute('role', 'dialog');
+        panel.setAttribute('aria-modal', 'true');
+        if (!panel.hasAttribute('tabindex')) panel.setAttribute('tabindex', '-1');
+      }
+      const focusable = s.querySelector('button, [href], input:not([type="hidden"]), textarea, select, [tabindex]:not([tabindex="-1"])');
+      setTimeout(() => {
+        try { (focusable || panel).focus({ preventScroll: true }); } catch (e) {}
+      }, 40);
+      if (typeof this.updateChrome === 'function') this.updateChrome();
+    },
+    closeSheet(id) {
+      const s = document.getElementById(id);
+      if (s) {
+        s.classList.remove('open');
+        s.setAttribute('aria-hidden', 'true');
+        const prev = s._prevFocus;
+        s._prevFocus = null;
+        if (this._sheetStack) {
+          const i = this._sheetStack.lastIndexOf(id);
+          if (i >= 0) this._sheetStack.splice(i, 1);
+        }
+        s.style.zIndex = '';
+        this._syncSheetLayer();
+        if ((!this._sheetStack || !this._sheetStack.length) && prev && typeof prev.focus === 'function') {
+          try { prev.focus(); } catch (e) {}
+        }
+      }
+      // Si se cierra el sheet de confirmación por backdrop/X, resolver false
+      if (id === 'sheetConfirm' && this._confirmResolver) {
+        this._confirmResolver(false);
+      }
+      // Reset del flag de selección si se cierra el sheet de listas
+      if (id === 'sheetPlaylists') {
+        this._selectPlaylistForAdd = false;
+        this._trackToAddId = null;
+      }
+      // Si se cierra el sheet de creación, limpiar modo "add"
+      if (id === 'sheetCreatePlaylist') {
+        this._addingToPlaylistId = null;
+      }
+      // Si se cierra el sheet de edición, limpiar editing
+      if (id === 'sheetEditPlaylist') {
+        this._editingPlaylistId = null;
+      }
+      if (typeof this.updateChrome === 'function') this.updateChrome();
+    },
+
+    _syncSheetLayer() {
+      const stack = this._sheetStack || [];
+      stack.forEach((sid, i) => {
+        const el = document.getElementById(sid);
+        if (!el) return;
+        const base = el.classList.contains('sheet-confirm')
+          ? 140
+          : (el.classList.contains('sheet-full') ? 90 : 130);
+        el.style.zIndex = String(base + i);
+      });
+    },
+
+    _trapSheetFocus(e) {
+      const open = document.querySelectorAll('.sheet.open');
+      if (!open.length) return;
+      const sheet = open[open.length - 1];
+      const nodes = Array.from(sheet.querySelectorAll(
+        'button, [href], input:not([type="hidden"]), textarea, select, [tabindex]:not([tabindex="-1"])'
+      )).filter(el => !el.disabled && el.offsetParent !== null);
+      if (nodes.length < 1) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    },
+
+    /* ============================================================
+     *  Cambio de vista (player ↔ lyrics)
+     * ============================================================ */
+    showView(name) {
+      const views = document.querySelectorAll('.view');
+      const wide = document.documentElement.classList.contains('aurora-wide');
+      views.forEach(v => {
+        let isActive = v.dataset.view === name;
+        if (wide && v.dataset.view === 'home') isActive = true;
+        if (wide && v.dataset.view === 'player') isActive = name !== 'lyrics';
+        if (isActive) v.classList.add('active');
+        else v.classList.remove('active');
+      });
+      if (typeof this.updateChrome === 'function') this.updateChrome();
+    },
+
+    /* ============================================================
+     *  Media Session API
+     * ============================================================ */
+    updateMediaSession() {
+      if (!('mediaSession' in navigator) || !this.currentTrack) return;
+      const t = this.currentTrack;
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: t.title,
+          artist: t.artist,
+          album: t.album,
+          artwork: [
+            { src: this.canvasToUrl(t, 96),   sizes: '96x96',   type: 'image/png' },
+            { src: this.canvasToUrl(t, 256),  sizes: '256x256', type: 'image/png' },
+            { src: this.canvasToUrl(t, 512),  sizes: '512x512', type: 'image/png' }
+          ]
+        });
+        navigator.mediaSession.setActionHandler('play', () => this.togglePlay(true));
+        navigator.mediaSession.setActionHandler('pause', () => this.togglePlay(false));
+        navigator.mediaSession.setActionHandler('previoustrack', () => this.prev());
+        navigator.mediaSession.setActionHandler('nexttrack', () => this.next());
+        navigator.mediaSession.setActionHandler('seekto', (d) => {
+          if (d.seekTime != null) { this.seekToTime(d.seekTime); }
+        });
+        this.updateMediaPosition(true);
+      } catch (e) {}
+    },
+
+    canvasToUrl(track, size) {
+      // Si la portada ya es una imagen (dataURL), usarla directamente
+      const isImage = track.coverIsImage || (typeof track.cover === 'string' && track.cover.startsWith('data:'));
+      if (size <= 96 && track.coverThumb) return track.coverThumb;
+      if (size <= 256 && track.coverThumbLg) return track.coverThumbLg;
+      if (track.coverThumbLg) return track.coverThumbLg;
+      if (isImage) {
+        return typeof track.cover === 'string' ? track.cover : '';
+      }
+      const c = document.createElement('canvas');
+      c.width = size; c.height = size;
+      const ctx = c.getContext('2d');
+      const cover = (typeof track.cover === 'object' && track.cover.from) ? track.cover : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6' });
+      const g = ctx.createLinearGradient(0,0,size,size);
+      g.addColorStop(0, cover.from);
+      g.addColorStop(1, cover.to);
+      ctx.fillStyle = g; ctx.fillRect(0,0,size,size);
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.font = `900 ${size*0.45}px ui-rounded, -apple-system, sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(track.title.charAt(0).toUpperCase(), size/2, size/2);
+      return c.toDataURL('image/png');
+    },
+
+    /* ============================================================
+     *  Wake Lock (mantener pantalla encendida)
+     * ============================================================ */
+    async requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          this.wakeLock = await navigator.wakeLock.request('screen');
+        }
+      } catch (e) {}
+    },
+    async releaseWakeLock() {
+      if (this.wakeLock) {
+        try { await this.wakeLock.release(); this.wakeLock = null; } catch(e) {}
+      }
+    },
+
+    /* ============================================================
+     *  Sleep timer
+     * ============================================================ */
+    startSleep(minutes) {
+      this.cancelSleep();
+      const mins = Math.max(1, parseInt(minutes, 10) || 0);
+      this.sleepEndAt = Date.now() + mins * 60 * 1000;
+      this.sleepTick = setInterval(() => {
+        if (!this.sleepEndAt) return;
+        if (Date.now() >= this.sleepEndAt) this._fireSleep();
+        else this.updateSleepStatus();
+      }, 1000);
+      this.updateSleepStatus();
+      this.toast(this.t('toast_sleep_started').replace('X', mins));
+    },
+    startSleepEndOfTrack() {
+      this.cancelSleep();
+      this._sleepEndOfTrack = true;
+      this.updateSleepStatus();
+      this.toast(this.t('toast_sleep_eot'));
+    },
+    async _fireSleep() {
+      if (this._sleepFading) return;
+      this._sleepFading = true;
+      const hadTimer = !!this.sleepEndAt || this._sleepEndOfTrack;
+      if (this.sleepTimer) { clearTimeout(this.sleepTimer); this.sleepTimer = null; }
+      if (this.sleepTick) { clearInterval(this.sleepTick); this.sleepTick = null; }
+      this.sleepEndAt = null;
+      this._sleepEndOfTrack = false;
+      this.updateSleepStatus();
+      if (!hadTimer && !this.isPlaying) {
+        this._sleepFading = false;
+        return;
+      }
+      const fadeSec = 10;
+      try {
+        if (this.audio && this.isPlaying) {
+          if (this.gainNode && this.audioCtx) {
+            const now = this.audioCtx.currentTime;
+            const g = this.gainNode.gain;
+            g.cancelScheduledValues(now);
+            g.setValueAtTime(g.value, now);
+            g.linearRampToValueAtTime(0.001, now + fadeSec);
+            await new Promise(r => setTimeout(r, fadeSec * 1000));
+          } else {
+            const startVol = this.audio.volume;
+            const steps = 20;
+            for (let i = 1; i <= steps; i++) {
+              if (!this._sleepFading) break;
+              this.audio.volume = startVol * (1 - i / steps);
+              await new Promise(r => setTimeout(r, fadeSec * 1000 / steps));
+            }
+          }
+          this.togglePlay(false);
+          try { this.audio.volume = this.volume; } catch (e) {}
+          this._setPlaybackGain(this._normGain || 1, true);
+        }
+      } catch (e) {
+        this.togglePlay(false);
+      }
+      this._sleepFading = false;
+      document.querySelectorAll('.sleep-opt').forEach(x => x.classList.remove('active'));
+      this.toast(this.t('toast_sleep_done'));
+    },
+    cancelSleep() {
+      if (this.sleepTimer) { clearTimeout(this.sleepTimer); this.sleepTimer = null; }
+      if (this.sleepTick) { clearInterval(this.sleepTick); this.sleepTick = null; }
+      this.sleepEndAt = null;
+      this._sleepEndOfTrack = false;
+      if (this._sleepFading) {
+        this._sleepFading = false;
+        try { if (this.audio) this.audio.volume = this.volume; } catch (e) {}
+        this._setPlaybackGain(this._normGain || 1, true);
+      }
+      this.updateSleepStatus();
+    },
+    updateSleepStatus() {
+      const el = document.getElementById('sleepStatus');
+      const btn = document.getElementById('btnSleep');
+      const menu = document.getElementById('menuSleep');
+      if (this._sleepEndOfTrack) {
+        if (el) el.textContent = this.t('sleep_eot_status');
+        if (btn) btn.classList.add('active');
+        if (menu) menu.classList.add('active');
+        return;
+      }
+      if (this.sleepEndAt) {
+        const ms = Math.max(0, this.sleepEndAt - Date.now());
+        const m = Math.floor(ms / 60000);
+        const s = Math.floor((ms % 60000) / 1000);
+        const label = `${this.t('sleep_active_prefix')} ${m}:${String(s).padStart(2,'0')} ${this.t('sleep_remaining')}`;
+        if (el) el.textContent = label;
+        if (btn) btn.classList.add('active');
+        if (menu) menu.classList.add('active');
+      } else {
+        if (el) el.textContent = '';
+        if (btn) btn.classList.remove('active');
+        if (menu) menu.classList.remove('active');
+      }
+    },
+
+    /* ============================================================
+     *  Toast
+     * ============================================================ */
+    toast(msg, ms = 2400) {
+      const t = document.getElementById('toast');
+      if (!t) return;
+      let danger = false;
+      if (ms === 'danger') { danger = true; ms = 2400; }
+      else if (ms && typeof ms === 'object') {
+        danger = !!ms.danger;
+        ms = ms.ms || 2400;
+      }
+      t.textContent = msg;
+      t.classList.toggle('is-danger', danger);
+      t.classList.add('show');
+      clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => {
+        t.classList.remove('show');
+        t.classList.remove('is-danger');
+      }, ms);
+    },
+
+    esc(s) {
+      return String(s).replace(/[&<>"']/g, m => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[m]));
+    },
+});

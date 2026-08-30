@@ -1,0 +1,135 @@
+/* =====================================================================
+ *  js/queue.js — Aurora Music Player
+ *  File picker · cola inteligente (#4)
+ *
+ *  Parte del refactor (C) de app.js: mismo código, módulos por funcionalidad.
+ *  Este archivo se carga tras js/state.js y completa el objeto App con
+ *  Object.assign (los scripts son clásicos por compatibilidad webxdc).
+ * ===================================================================== */
+
+'use strict';
+
+Object.assign(App, {
+    /* ============================================================
+     *  File picker (input file oculto)
+     *  - Se crea UNA sola vez y se reutiliza
+     *  - multiple=true para permitir varios archivos
+     *  - Soporta selección de carpeta (webkitdirectory)
+     *  - Se resetea el value ANTES de click() para que el mismo
+     *    archivo pueda seleccionarse otra vez, y DESPUÉS de procesar
+     *    para que la próxima apertura empiece limpia.
+     * ============================================================ */
+    /* Abre el selector de archivos del sistema.
+     *   useDirectory    — true para activar el modo "carpeta completa"
+     *   targetPlaylistId — ID de playlist a la que añadir las pistas subidas.
+     *                      Si es null/undefined, las pistas van a "Mi Música".
+     * Creamos un input NUEVO cada vez para evitar problemas de reutilización
+     * y asegurar que el click() se ejecute dentro del gesto de usuario. */
+    openFilePicker(useDirectory, targetPlaylistId) {
+      const UPLOADER = window.AuroraUploader;
+      const acceptedTypes = (UPLOADER && typeof UPLOADER.ACCEPTED === 'string')
+        ? UPLOADER.ACCEPTED
+        : '.mp3,.m4a,.flac,.wav,.ogg,.webm,.opus,audio/*';
+
+      // Crear input SIEMPRE nuevo para evitar problemas de reutilización
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.multiple = true;
+      input.style.display = 'none';
+
+      if (useDirectory) {
+        // Modo carpeta: NO usar accept (interfiere en algunos navegadores)
+        // y añadir todos los atributos de directorio conocidos.
+        input.setAttribute('webkitdirectory', '');
+        input.setAttribute('directory', '');
+        input.setAttribute('mozdirectory', '');
+        input.setAttribute('nwdirectory', '');
+      } else {
+        input.accept = acceptedTypes + ',.lrc,.txt';
+      }
+
+      document.body.appendChild(input);
+
+      input.addEventListener('change', async (e) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+          const arr = Array.from(files);
+          const destId = targetPlaylistId || null;
+          // Filtrar solo archivos de audio + .lrc/.txt si venimos de carpeta
+          // (webkitdirectory devuelve TODOS los archivos de la carpeta)
+          const filtered = useDirectory
+            ? arr.filter(f => {
+                const name = f.name.toLowerCase();
+                return f.type.startsWith('audio/') ||
+                       /\.(mp3|m4a|flac|wav|ogg|webm|opus|lrc|txt)$/i.test(name);
+              })
+            : arr;
+          if (filtered.length > 0) {
+            await this.handleFileInput(filtered, useDirectory, destId);
+          } else if (useDirectory) {
+            this.toast(this.t('toast_load_failed'));
+          }
+        }
+        // Limpiar el input del DOM tras usarlo
+        setTimeout(() => { try { input.remove(); } catch (er) {} }, 100);
+      });
+
+      // click() dentro del gesto de usuario
+      input.click();
+    },
+
+    /* ============================================================
+     *  Cola inteligente (#4)
+     * ============================================================ */
+
+    /* Añadir pista al final de la cola */
+    addToQueue(trackId) {
+      this.queue.push(trackId);
+      if (this.shuffle && this._originalQueue) this._originalQueue.push(trackId);
+      this.renderQueue();
+      this.preloadNextTrack();
+      this.toast(this.t('toast_added_to_queue'));
+    },
+
+    /* "Reproducir siguiente": inserta en la posición inmediatamente
+     * después de la pista actual, desplazando el resto */
+    playNext(trackId) {
+      if (!this.queue.length && this.currentTrack) this.queue = [this.currentTrack.id];
+      const insertAt = Math.min(this.queue.length, (this.queueIdx || 0) + 1);
+      this.queue.splice(insertAt, 0, trackId);
+      if (this.shuffle && this._originalQueue) {
+        const origIdx = this.currentTrack ? this._originalQueue.indexOf(this.currentTrack.id) : -1;
+        const at = origIdx >= 0 ? origIdx + 1 : this._originalQueue.length;
+        this._originalQueue.splice(at, 0, trackId);
+      }
+      this.renderQueue();
+      this.preloadNextTrack();
+      this.toast(this.t('toast_play_next'));
+    },
+
+    /* Modo "Radio": genera una cola a partir de la pista actual,
+     * mezclando pistas del mismo artista/álbum primero, luego el resto */
+    startRadio(trackId) {
+      const seed = this.tracks.find(t => t.id === trackId);
+      if (!seed) return;
+      const sameArtist = this.tracks.filter(t => t.id !== trackId && t.artist === seed.artist);
+      const sameAlbum = this.tracks.filter(t => t.id !== trackId && t.album === seed.album && t.artist !== seed.artist);
+      const others = this.tracks.filter(t =>
+        t.id !== trackId && t.artist !== seed.artist && t.album !== seed.album
+      );
+      const shuffle = (arr) => {
+        const a = arr.slice();
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+        }
+        return a;
+      };
+      this.queue = [trackId, ...shuffle(sameArtist).map(t => t.id), ...shuffle(sameAlbum).map(t => t.id), ...shuffle(others).map(t => t.id)];
+      this.queueIdx = 0;
+      this._originalQueue = null;
+      this.playContext = { type: 'radio', name: seed.artist || seed.title };
+      this.playFromQueue(0);
+      this.toast(this.t('toast_radio_based') + ' ' + seed.title);
+    },
+});
