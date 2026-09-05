@@ -17,12 +17,14 @@ Object.assign(App, {
       const player = !!(document.getElementById('viewPlayer') && document.getElementById('viewPlayer').classList.contains('active'));
       const sheets = Array.from(document.querySelectorAll('.sheet.open')).filter(s => s.id !== 'sheetConfirm');
       const wide = document.documentElement.classList.contains('aurora-wide');
-      /* Mini solo en hub / sheets full (biblioteca, buscar…). Un modal
-       * (Opciones, Sleep, EQ) no debe forzar el mini ni tapar el panel. */
-      const hasModal = sheets.some(s => !s.classList.contains('sheet-full'));
+      /* Overlay = menú corto (Opciones, Sleep, EQ, cola, pista…).
+       * Mini solo en Inicio o bajo un sheet full (biblioteca, buscar…).
+       * Nunca en Now Playing, letras ni encima de un overlay. */
+      const hasOverlay = sheets.some(s => !s.classList.contains('sheet-full'));
       const hasFull = sheets.some(s => s.classList.contains('sheet-full'));
-      const showMini = !wide && !!(this.currentTrack) && !lyrics && !hasModal && (!player || hasFull);
+      const showMini = !wide && !!this.currentTrack && !lyrics && !hasOverlay && (!player || hasFull);
       screen.classList.toggle('has-mini', showMini);
+      screen.classList.toggle('has-overlay', !wide && hasOverlay);
       screen.classList.toggle('chrome-hidden', lyrics && !wide);
       this.updateMiniPlayer();
     },

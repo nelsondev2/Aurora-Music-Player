@@ -2517,15 +2517,15 @@ button,
   border-radius: 0;
   padding-bottom: 0;
 }
-/* Modales (Opciones, Sleep, EQ, cola…): apoyan encima del chrome,
- * no debajo del mini-player / nav. El confirm cubre todo. */
+/* Overlays cortos (Opciones, Sleep, EQ, cola, pista): cubren el chrome
+ * hasta el borde inferior. El confirm cubre todo. */
 .sheet:not(.sheet-full):not(.sheet-confirm) {
-  bottom: var(--chrome-offset);
+  bottom: 0;
   z-index: 130;
 }
 .sheet:not(.sheet-full):not(.sheet-confirm) .sheet-panel {
   max-height: calc(100% - 12px);
-  padding-bottom: max(12px, var(--safe-bottom));
+  padding-bottom: max(20px, var(--safe-bottom));
 }
 .sheet-confirm { z-index: 140; }
 
@@ -2547,6 +2547,13 @@ button,
 }
 
 .device-screen.chrome-hidden .app-chrome { display: none; }
+.device-screen.has-overlay .app-chrome {
+  visibility: hidden;
+  pointer-events: none;
+}
+.device-screen.has-overlay .mini-player {
+  display: none !important;
+}
 
 .mini-player {
   display: none;
