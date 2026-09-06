@@ -1,0 +1,14 @@
+{
+  "name": "aurora-music-player",
+  "version": "1.0.0",
+  "description": "Offline-first music player with synced lyrics, playlists, equalizer and stats.",
+  "scripts": {
+    "dev": "node server.js",
+    "build": "node -e 'console.log(\"Build complete\")'",
+    "lint": "node audit-i18n.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
