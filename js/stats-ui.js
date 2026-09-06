@@ -257,5 +257,46 @@ Object.assign(App, {
           ul.appendChild(this.makeTrackRow(t, { playContext: { type: 'favorites' } }));
         }
       });
+    },
+
+    /* Compartir resumen de estadísticas de reproducción en Delta Chat */
+    async shareStats() {
+      const topTracks = typeof this.getTopTracks === 'function' ? this.getTopTracks(5) : [];
+      const topArtists = typeof this.getTopArtists === 'function' ? this.getTopArtists(3) : [];
+      const totalPlays = Object.values((this.stats && this.stats.plays) || {}).reduce((a, b) => a + b, 0);
+      const totalSec = (this.stats && this.stats.totalSeconds) || 0;
+
+      let msg = `📊 ${this.t('stats_summary_title')}\n\n`;
+      msg += `⏱️ ${this.t('stats_listening_time')}: ${this.fmtDuration(totalSec)}\n`;
+      msg += `▶️ ${this.t('stats_plays')}: ${totalPlays}\n`;
+      msg += `🎵 ${this.t('all_tracks_section')}: ${this.tracks.length}\n`;
+
+      if (topArtists.length) {
+        msg += `\n🎤 ${this.t('stats_top_artists')}:\n`;
+        topArtists.forEach((a, i) => {
+          msg += `  ${i + 1}. ${a.artist} (${a.plays})\n`;
+        });
+      }
+
+      if (topTracks.length) {
+        msg += `\n🔥 ${this.t('stats_top_tracks')}:\n`;
+        topTracks.forEach((tr, i) => {
+          const tName = tr.track ? tr.track.title : 'Track';
+          const aName = tr.track ? tr.track.artist : '';
+          msg += `  ${i + 1}. ${tName} · ${aName} (${tr.plays})\n`;
+        });
+      }
+
+      try {
+        await this.exportFile({
+          name: 'resumen-aurora.txt',
+          content: msg,
+          mimeType: 'text/plain;charset=utf-8',
+          caption: msg
+        });
+        this.toast(this.t('toast_shared_chat'));
+      } catch (e) {
+        this.toast(this.t('toast_share_error'));
+      }
     }
 });

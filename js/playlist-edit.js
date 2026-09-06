@@ -325,4 +325,38 @@ Object.assign(App, {
       this.renderPlaylists();
       return pl;
     },
+
+    /* Exportar playlist (formato M3U8 estándar y enviar a chat o descargar) */
+    async exportPlaylist(playlistId) {
+      const id = playlistId || this._editingPlaylistId;
+      if (!id) return;
+      const pl = this.playlists.find(p => p.id === id);
+      if (!pl) return;
+      const tracks = (pl.trackIds || []).map(tId => this.tracks.find(x => x.id === tId)).filter(Boolean);
+      const safeName = (pl.name || 'playlist').replace(/[\\/:*?"<>|]/g, '_');
+
+      // Generar archivo M3U8 estándar con directivas de playlist y tracks
+      let m3u = '#EXTM3U\n';
+      m3u += `#PLAYLIST:${pl.name}\n`;
+      tracks.forEach(t => {
+        const dur = Math.max(-1, Math.floor(t.duration || -1));
+        const artist = t.artist || this.t('unknown_artist');
+        const title = t.title || this.t('unknown_track');
+        const fn = t.fileName || `${artist} - ${title}.mp3`;
+        m3u += `#EXTINF:${dur},${artist} - ${title}\n${fn}\n`;
+      });
+
+      const caption = `🎶 Lista: ${pl.name} (${tracks.length} canciones) · Aurora Music Player`;
+      try {
+        await this.exportFile({
+          name: `${safeName}.m3u8`,
+          content: m3u,
+          mimeType: 'application/x-mpegurl;charset=utf-8',
+          caption
+        });
+        this.toast(this.t('toast_playlist_shared'));
+      } catch (e) {
+        this.toast(this.t('toast_share_error'));
+      }
+    },
 });

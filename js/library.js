@@ -488,6 +488,111 @@ Object.assign(App, {
       return updated;
     },
 
+    /* Utilidad para exportar archivos: usa webxdc.sendToChat en Delta Chat o descarga directa en navegador */
+    async exportFile({ name, content, mimeType = 'application/json', caption = '' }) {
+      if (window.webxdc && typeof window.webxdc.sendToChat === 'function') {
+        const filePayload = { name };
+        if (typeof content === 'string') {
+          filePayload.plainText = content;
+        } else if (content instanceof Blob) {
+          filePayload.blob = content;
+        }
+        try {
+          await window.webxdc.sendToChat({
+            file: filePayload,
+            text: caption || name
+          });
+          return true;
+        } catch (err) {
+          console.warn('[WebXDC] sendToChat no completado:', err);
+          if (!window.webxdc._isStub) {
+            // En Delta Chat nativo, el diálogo de compartir se gestionó o canceló
+            return false;
+          }
+        }
+      }
+      // Fallback para navegador web estándar
+      const blob = content instanceof Blob ? content : new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return true;
+    },
+
+    /* Compartir pista (audio o metadatos) en Delta Chat o descargar en navegador */
+    async shareTrack(trackId) {
+      const id = trackId || (this.currentTrack && this.currentTrack.id);
+      if (!id) return;
+      const t = this.tracks.find(x => x.id === id) || (this.currentTrack && this.currentTrack.id === id ? this.currentTrack : null);
+      if (!t) return;
+      this.closeSheet('sheetTrackMenu');
+      this.closeSheet('sheetMore');
+      this.toast(this.t('toast_preparing_share'));
+
+      try {
+        let blob = null;
+        if (t._file instanceof Blob) {
+          blob = t._file;
+        } else if (t.fileBlob instanceof Blob) {
+          blob = t.fileBlob;
+        } else if (window.AuroraStorage) {
+          try {
+            const stored = await window.AuroraStorage.getTrack(t.id);
+            if (stored && stored.fileBlob instanceof Blob) {
+              blob = stored.fileBlob;
+            }
+          } catch (e) {}
+        }
+
+        if (!blob && t.src && t.src.startsWith('blob:')) {
+          try {
+            const res = await fetch(t.src);
+            blob = await res.blob();
+          } catch (e) {}
+        }
+
+        const safeTitle = (t.title || 'cancion').replace(/[\\/:*?"<>|]/g, '_');
+        const safeArtist = (t.artist || '').replace(/[\\/:*?"<>|]/g, '_');
+        let ext = 'mp3';
+        if (t.fileName && t.fileName.includes('.')) {
+          ext = t.fileName.split('.').pop().toLowerCase();
+        }
+        const fileName = safeArtist ? `${safeArtist} - ${safeTitle}.${ext}` : `${safeTitle}.${ext}`;
+        const caption = `🎵 ${t.title || this.t('unknown_track')} · ${t.artist || this.t('unknown_artist')}`;
+
+        if (blob) {
+          await this.exportFile({
+            name: fileName,
+            content: blob,
+            mimeType: blob.type || 'audio/mpeg',
+            caption
+          });
+          this.toast(this.t('toast_shared_chat'));
+        } else {
+          // Si no hay archivo de audio accesible, enviar metadatos y letra
+          const txt = `${caption}\n` +
+            (t.album ? `Álbum: ${t.album}\n` : '') +
+            (t.duration ? `Duración: ${this.fmtTime(t.duration)}\n` : '') +
+            (t.lrc && t.lrc.length ? `\n--- Letra ---\n${t.lrc.join('\n')}` : '');
+          await this.exportFile({
+            name: `${safeTitle}.txt`,
+            content: txt,
+            mimeType: 'text/plain;charset=utf-8',
+            caption
+          });
+          this.toast(this.t('toast_shared_chat'));
+        }
+      } catch (err) {
+        console.error('[Aurora] error shareTrack:', err);
+        this.toast(this.t('toast_share_error'));
+      }
+    },
+
     /* #17 Exportar biblioteca a JSON (sin blobs) */
     async exportLibrary() {
       try {
@@ -509,13 +614,12 @@ Object.assign(App, {
           history: this._playHistory
         };
         const json = JSON.stringify(data, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'aurora-backup.json';
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        await this.exportFile({
+          name: 'aurora-backup.json',
+          content: json,
+          mimeType: 'application/json',
+          caption: 'Copia de seguridad de Aurora Music Player'
+        });
         this.toast(this.t('toast_exported'));
       } catch (e) {
         this.toast(this.t('toast_load_error'));

@@ -2369,6 +2369,66 @@ const I18N = {
     zh: '键盘快捷键', ja: 'キーボードショートカット', fr: 'Raccourcis clavier',
     it: 'Scorciatoie da tastiera', ru: 'Клавиатурные сокращения'
   },
+  share_playlist_btn: {
+    es: 'Compartir lista', en: 'Share playlist', pt: 'Compartilhar lista',
+    zh: '分享歌单', ja: 'プレイリストを共有', fr: 'Partager la liste',
+    it: 'Condividi playlist', ru: 'Поделиться плейлистом'
+  },
+  ctx_share_track: {
+    es: 'Compartir en chat / Exportar', en: 'Share to chat / Export', pt: 'Compartilhar no chat / Exportar',
+    zh: '分享到聊天 / 导出', ja: 'チャットに共有 / 書き出し', fr: 'Partager dans le chat / Exporter',
+    it: 'Condividi in chat / Esporta', ru: 'Поделиться в чате / Экспорт'
+  },
+  menu_share_track: {
+    es: 'Compartir canción en chat', en: 'Share song to chat', pt: 'Compartilhar música no chat',
+    zh: '在聊天中分享歌曲', ja: '曲をチャットに共有', fr: 'Partager le morceau dans le chat',
+    it: 'Condividi brano in chat', ru: 'Поделиться треком в чате'
+  },
+  lrc_export_btn: {
+    es: 'Compartir', en: 'Share', pt: 'Compartilhar',
+    zh: '分享', ja: '共有', fr: 'Partager',
+    it: 'Condividi', ru: 'Поделиться'
+  },
+  lrc_share_tooltip: {
+    es: 'Compartir letra', en: 'Share lyrics', pt: 'Compartilhar letra',
+    zh: '分享歌词', ja: '歌詞を共有', fr: 'Partager les paroles',
+    it: 'Condividi testo', ru: 'Поделиться текстом'
+  },
+  stats_share_btn: {
+    es: 'Compartir resumen', en: 'Share summary', pt: 'Compartilhar resumo',
+    zh: '分享概览', ja: '概要を共有', fr: 'Partager le résumé',
+    it: 'Condividi riepilogo', ru: 'Поделиться сводкой'
+  },
+  toast_preparing_share: {
+    es: 'Preparando archivo para compartir...', en: 'Preparing file to share...', pt: 'Preparando arquivo para compartilhar...',
+    zh: '正在准备分享文件...', ja: '共有ファイルを準備中...', fr: 'Préparation du fichier à partager...',
+    it: 'Preparazione file da condividere...', ru: 'Подготовка файла для отправки...'
+  },
+  toast_shared_chat: {
+    es: 'Enviado a Delta Chat', en: 'Sent to Delta Chat', pt: 'Enviado ao Delta Chat',
+    zh: '已发送至 Delta Chat', ja: 'Delta Chat に送信しました', fr: 'Envoyé à Delta Chat',
+    it: 'Inviato a Delta Chat', ru: 'Отправлено в Delta Chat'
+  },
+  toast_share_error: {
+    es: 'No se pudo compartir el archivo', en: 'Could not share the file', pt: 'Não foi possível compartilhar o arquivo',
+    zh: '无法分享文件', ja: 'ファイルを共有できませんでした', fr: 'Impossible de partager le fichier',
+    it: 'Impossibile condividere il file', ru: 'Не удалось отправить файл'
+  },
+  toast_playlist_shared: {
+    es: 'Lista compartida', en: 'Playlist shared', pt: 'Lista compartilhada',
+    zh: '歌单已分享', ja: 'プレイリストを共有しました', fr: 'Liste partagée',
+    it: 'Playlist condivisa', ru: 'Плейлист отправлен'
+  },
+  toast_lrc_exported: {
+    es: 'Letra exportada', en: 'Lyrics exported', pt: 'Letra exportada',
+    zh: '歌词已导出', ja: '歌詞を書き出しました', fr: 'Paroles exportées',
+    it: 'Testo esportato', ru: 'Текст экспортирован'
+  },
+  stats_summary_title: {
+    es: 'Mi resumen en Aurora Music Player', en: 'My summary on Aurora Music Player', pt: 'Meu resumo no Aurora Music Player',
+    zh: '我在 Aurora Music Player 的收听概览', ja: 'Aurora Music Player の再生サマリー', fr: 'Mon résumé sur Aurora Music Player',
+    it: 'Il mio riepilogo su Aurora Music Player', ru: 'Моя сводка в Aurora Music Player'
+  },
 
 };
 

@@ -512,12 +512,19 @@ Object.assign(App, {
         b.classList.toggle('active', Number(b.dataset.xfade) === xf);
       });
       const ver = document.getElementById('aboutVersion');
-      if (ver) ver.textContent = this.VERSION || '1.0.0';
+      if (ver) {
+        let vText = this.VERSION || '1.0.0';
+        if (window.webxdc && !window.webxdc._isStub) {
+          vText += ' · WebXDC (Delta Chat)';
+          if (window.webxdc.selfName) vText += ` · ${window.webxdc.selfName}`;
+        }
+        ver.textContent = vText;
+      }
     },
 
     syncDesktopLayout() {
       const mq = window.matchMedia;
-      const isWebxdc = !!window.webxdc;
+      const isWebxdc = !!(window.webxdc && !window.webxdc._isStub);
       const wide = !isWebxdc && !!(mq && mq('(min-width: 900px)').matches);
       const tablet = !isWebxdc && !wide && !!(mq && mq('(min-width: 600px)').matches);
       const html = document.documentElement;

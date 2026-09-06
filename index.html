@@ -17,9 +17,11 @@
   <link rel="icon" type="image/png" href="icon.png" />
   <link rel="apple-touch-icon" href="icon.png" />
   <link rel="stylesheet" href="styles.css" />
+  <script src="webxdc.js"></script>
 </head>
 <body>
   <svg xmlns="http://www.w3.org/2000/svg" class="icon-sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-paper-plane" viewBox="0 0 24 24"><path fill="currentColor" d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></symbol>
     <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.2v13.6c0 .9 1 1.45 1.75.97l10.2-6.8a1.15 1.15 0 0 0 0-1.94l-10.2-6.8A1.15 1.15 0 0 0 8 5.2z"/></symbol>
     <symbol id="i-pause" viewBox="0 0 24 24"><path fill="currentColor" d="M7 5.5A1.5 1.5 0 0 1 8.5 4h1A1.5 1.5 0 0 1 11 5.5v13A1.5 1.5 0 0 1 9.5 20h-1A1.5 1.5 0 0 1 7 18.5v-13zm7 0A1.5 1.5 0 0 1 15.5 4h1A1.5 1.5 0 0 1 18 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-1A1.5 1.5 0 0 1 14 18.5v-13z"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path fill="currentColor" d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5z"/></symbol>
@@ -237,6 +239,7 @@
           <button class="lt-btn" id="btnLrcFullscreen" data-i18n-title="lrc_fullscreen" title="Pantalla completa"><svg class="ico" aria-hidden="true"><use href="#i-expand"></use></svg></button>
           <button class="lt-btn" id="btnLrcLoadFile" data-i18n-title="lrc_load_file" title="Cargar .lrc"><svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg></button>
           <button class="lt-btn" id="btnLrcEdit" data-i18n-title="lrc_edit" title="Editar"><svg class="ico" aria-hidden="true"><use href="#i-pen"></use></svg></button>
+          <button class="lt-btn" id="btnLrcShare" data-i18n-title="lrc_share_tooltip" title="Compartir letra"><svg class="ico" aria-hidden="true"><use href="#i-paper-plane"></use></svg></button>
         </div>
 
         <!-- Botón salir de pantalla completa -->
@@ -407,6 +410,10 @@
                 <span class="pl-action-ico"><svg class="ico" aria-hidden="true"><use href="#i-pen"></use></svg></span>
                 <span data-i18n="rename_playlist_btn">Renombrar</span>
               </button>
+              <button class="pl-action-btn" id="btnExportPlaylist">
+                <span class="pl-action-ico"><svg class="ico" aria-hidden="true"><use href="#i-paper-plane"></use></svg></span>
+                <span data-i18n="share_playlist_btn">Compartir lista</span>
+              </button>
               <button class="pl-action-btn pl-action-danger" id="btnDeletePlaylistFull" style="display:none">
                 <span class="pl-action-ico"><svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg></span>
                 <span data-i18n="delete_playlist_btn">Eliminar lista</span>
@@ -493,7 +500,7 @@
       </div>
 
       <!-- Biblioteca / Listas -->
-      <div class="sheet sheet-full" id="sheetLibrary">
+      <div class="sheet sheet-full sheet-tab" id="sheetLibrary">
         <div class="sheet-backdrop" data-close-sheet="sheetLibrary"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
@@ -533,7 +540,7 @@
       </div>
 
       <!-- Buscar -->
-      <div class="sheet sheet-full" id="sheetSearch">
+      <div class="sheet sheet-full sheet-tab" id="sheetSearch">
         <div class="sheet-backdrop" data-close-sheet="sheetSearch"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
@@ -596,6 +603,10 @@
             <button class="menu-row" id="menuStats">
               <svg class="ico" aria-hidden="true"><use href="#i-chart-simple"></use></svg>
               <span data-i18n="menu_stats">Estadísticas de reproducción</span>
+            </button>
+            <button class="menu-row" id="menuShareCurrentTrack">
+              <svg class="ico" aria-hidden="true"><use href="#i-paper-plane"></use></svg>
+              <span data-i18n="menu_share_track">Compartir canción en chat</span>
             </button>
             <button class="menu-row" id="menuHistory">
               <svg class="ico" aria-hidden="true"><use href="#i-clock-rotate-left"></use></svg>
@@ -674,6 +685,7 @@
           <header class="sheet-header">
             <button class="icon-btn-sm" data-close-sheet="sheetStats" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="stats_title">Estadísticas</h3>
+            <button class="text-btn" id="btnShareStats" data-i18n="stats_share_btn">Compartir</button>
             <button class="text-btn" data-close-sheet="sheetStats" data-i18n="close_btn">Cerrar</button>
           </header>
           <div class="sheet-body">
@@ -683,7 +695,7 @@
       </div>
 
       <!-- Favoritos -->
-      <div class="sheet sheet-full" id="sheetFavorites">
+      <div class="sheet sheet-full sheet-tab" id="sheetFavorites">
         <div class="sheet-backdrop" data-close-sheet="sheetFavorites"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
@@ -839,6 +851,7 @@
           <header class="sheet-header">
             <button class="icon-btn-sm" data-close-sheet="sheetLrcEditor" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="lrc_edit">Editar letra</h3>
+            <button class="text-btn" id="btnLrcExport" data-i18n="lrc_export_btn">Compartir</button>
             <button class="text-btn" id="btnLrcSave" data-i18n="lrc_save">Guardar</button>
           </header>
           <div class="sheet-body">
@@ -937,6 +950,10 @@
             <button class="menu-row" id="ctxEditTags">
               <svg class="ico" aria-hidden="true"><use href="#i-pen"></use></svg>
               <span data-i18n="ctx_edit_tags">Editar etiquetas</span>
+            </button>
+            <button class="menu-row" id="ctxShareTrack">
+              <svg class="ico" aria-hidden="true"><use href="#i-paper-plane"></use></svg>
+              <span data-i18n="ctx_share_track">Compartir en chat / Exportar</span>
             </button>
             <button class="menu-row danger" id="ctxDelete">
               <svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>

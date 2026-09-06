@@ -518,6 +518,41 @@ Object.assign(App, {
       this.toast(this.t('lrc_saved'));
     },
 
+    /* Exportar / compartir letra LRC activa en Delta Chat o descarga local */
+    async exportCurrentLyrics() {
+      const t = this.currentTrack;
+      const ta = document.getElementById('lrcEditorText');
+      const textFromEditor = ta ? ta.value.trim() : '';
+      let text = '';
+      if (textFromEditor) {
+        text = textFromEditor;
+      } else if (t && t.lrc && t.lrc.length) {
+        text = Array.isArray(t.lrc) ? t.lrc.join('\n') : String(t.lrc);
+      }
+      if (!text) {
+        this.toast(this.t('lrc_empty_title'));
+        return;
+      }
+      const title = (t && t.title) ? t.title : 'letra';
+      const artist = (t && t.artist) ? t.artist : '';
+      const safeTitle = title.replace(/[\\/:*?"<>|]/g, '_');
+      const safeArtist = artist.replace(/[\\/:*?"<>|]/g, '_');
+      const fileName = safeArtist ? `${safeArtist} - ${safeTitle}.lrc` : `${safeTitle}.lrc`;
+      const caption = `📜 Letra: ${title}` + (artist ? ` · ${artist}` : '');
+
+      try {
+        await this.exportFile({
+          name: fileName,
+          content: text,
+          mimeType: 'text/plain;charset=utf-8',
+          caption
+        });
+        this.toast(this.t('toast_lrc_exported'));
+      } catch (e) {
+        this.toast(this.t('toast_share_error'));
+      }
+    },
+
     /* ============================================================
      *  Ajuste de offset manual (#12)
      * ============================================================ */

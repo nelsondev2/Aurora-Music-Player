@@ -112,6 +112,13 @@ Object.assign(App, {
       if (id === 'sheetEditPlaylist') {
         this._editingPlaylistId = null;
       }
+      // Si se cierra una pestaña de navegación (Biblioteca, Buscar, Favoritos), volver a activar 'home'
+      if (id === 'sheetLibrary' || id === 'sheetSearch' || id === 'sheetFavorites') {
+        const remainingTabs = (this._sheetStack || []).filter(s => s === 'sheetLibrary' || s === 'sheetSearch' || s === 'sheetFavorites');
+        if (!remainingTabs.length && typeof this.setNavActive === 'function') {
+          this.setNavActive('home');
+        }
+      }
       if (typeof this.updateChrome === 'function') this.updateChrome();
     },
 
@@ -121,8 +128,8 @@ Object.assign(App, {
         const el = document.getElementById(sid);
         if (!el) return;
         const base = el.classList.contains('sheet-confirm')
-          ? 140
-          : (el.classList.contains('sheet-full') ? 90 : 130);
+          ? 160
+          : (el.classList.contains('sheet-tab') ? 90 : 130);
         el.style.zIndex = String(base + i);
       });
     },

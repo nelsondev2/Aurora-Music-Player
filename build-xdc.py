@@ -27,6 +27,7 @@ INCLUDE = [
     "data.js",
     "storage.js",
     "uploader.js",
+    "webxdc.js",
     "js",            # módulos de la app
     "assets",        # jsmediatags + sprite de iconos
 ]

@@ -174,6 +174,10 @@ Object.assign(App, {
       // Editor de letras (#2)
       $('btnLrcEdit').addEventListener('click', () => this.openLrcEditor());
       $('btnLrcSave').addEventListener('click', () => this.saveLrcFromEditor());
+      const btnLrcExp = document.getElementById('btnLrcExport');
+      if (btnLrcExp) btnLrcExp.addEventListener('click', () => this.exportCurrentLyrics());
+      const btnLrcSh = document.getElementById('btnLrcShare');
+      if (btnLrcSh) btnLrcSh.addEventListener('click', () => this.exportCurrentLyrics());
       // Velocidad de reproducción (#18)
       $('btnLrcSpeedDown').addEventListener('click', () => this.setPlaybackRate(this.playbackRate - 0.1));
       $('btnLrcSpeedUp').addEventListener('click', () => this.setPlaybackRate(this.playbackRate + 0.1));
@@ -505,6 +509,8 @@ Object.assign(App, {
       });
       const btnRenamePl = document.getElementById('btnRenamePlaylist');
       if (btnRenamePl) btnRenamePl.addEventListener('click', () => this.startRenamePlaylist());
+      const btnExpPl = document.getElementById('btnExportPlaylist');
+      if (btnExpPl) btnExpPl.addEventListener('click', () => this.exportPlaylist());
       const editPlName = document.getElementById('editPlaylistName');
       if (editPlName) editPlName.addEventListener('click', () => this.startRenamePlaylist());
       const ctxAddPlaylist = document.getElementById('ctxAddPlaylist');
@@ -531,6 +537,11 @@ Object.assign(App, {
       if (ctxEditTags) ctxEditTags.addEventListener('click', () => {
         const t = this.menuTrack();
         if (t) this.openEditTrack(t.id);
+      });
+      const ctxShare = document.getElementById('ctxShareTrack');
+      if (ctxShare) ctxShare.addEventListener('click', () => {
+        const t = this.menuTrack();
+        if (t) this.shareTrack(t.id);
       });
       const ctxDelete = document.getElementById('ctxDelete');
       if (ctxDelete) ctxDelete.addEventListener('click', async () => {
@@ -655,6 +666,19 @@ Object.assign(App, {
         this.closeSheet('sheetMore');
         this.renderStats();
         this.openSheet('sheetStats');
+      });
+      const btnShareStats = document.getElementById('btnShareStats');
+      if (btnShareStats) btnShareStats.addEventListener('click', () => this.shareStats());
+
+      // Compartir canción actual desde el menú "Más opciones"
+      const btnShareCurrent = document.getElementById('menuShareCurrentTrack');
+      if (btnShareCurrent) btnShareCurrent.addEventListener('click', () => {
+        this.closeSheet('sheetMore');
+        if (this.currentTrack) {
+          this.shareTrack(this.currentTrack.id);
+        } else {
+          this.toast(this.t('no_track_playing') || 'Sin reproducción');
+        }
       });
 
       // Theme buttons — usar .theme-opt (no [data-theme]) porque applyTheme()

@@ -15,16 +15,21 @@ Object.assign(App, {
       if (!screen) return;
       const lyrics = !!(document.getElementById('viewLyrics') && document.getElementById('viewLyrics').classList.contains('active'));
       const player = !!(document.getElementById('viewPlayer') && document.getElementById('viewPlayer').classList.contains('active'));
-      const sheets = Array.from(document.querySelectorAll('.sheet.open')).filter(s => s.id !== 'sheetConfirm');
+      const openSheets = Array.from(document.querySelectorAll('.sheet.open'));
       const wide = document.documentElement.classList.contains('aurora-wide');
-      /* Overlay = menú corto (Opciones, Sleep, EQ, cola, pista…).
-       * Mini solo en Inicio o bajo un sheet full (biblioteca, buscar…).
-       * Nunca en Now Playing, letras ni encima de un overlay. */
-      const hasOverlay = sheets.some(s => !s.classList.contains('sheet-full'));
-      const hasFull = sheets.some(s => s.classList.contains('sheet-full'));
-      const showMini = !wide && !!this.currentTrack && !lyrics && !hasOverlay && (!player || hasFull);
+
+      /* Hay un menú/modal si hay cualquier sheet abierta que no sea una pestaña persistente (Biblioteca, Buscar, Favoritos) */
+      const hasModal = openSheets.some(s => !s.classList.contains('sheet-tab'));
+
+      /* El mini reproductor:
+       * - Solo en vistas de navegación general (Inicio, Biblioteca, Buscar, Favoritos)
+       * - NUNCA en pantalla completa de Now Playing ni en Letras
+       * - NUNCA cuando hay un menú, modal o diálogo de confirmación abierto
+       * - Solo si hay una pista actual y no estamos en modo escritorio dividido */
+      const showMini = !wide && !!this.currentTrack && !lyrics && !player && !hasModal;
+
       screen.classList.toggle('has-mini', showMini);
-      screen.classList.toggle('has-overlay', !wide && hasOverlay);
+      screen.classList.toggle('has-overlay', !wide && hasModal);
       screen.classList.toggle('chrome-hidden', lyrics && !wide);
       this.updateMiniPlayer();
     },
@@ -93,14 +98,17 @@ Object.assign(App, {
         this.renderHome();
       } else if (nav === 'library') {
         this.closeAllSheets();
+        this.showView('home');
         this.openSheet('sheetLibrary');
         this.renderLibraryTabs();
       } else if (nav === 'favorites') {
         this.closeAllSheets();
+        this.showView('home');
         this.renderFavorites();
         this.openSheet('sheetFavorites');
       } else if (nav === 'search') {
         this.closeAllSheets();
+        this.showView('home');
         this.openSheet('sheetSearch');
         const inp = document.getElementById('searchInput');
         this.runSearch(inp ? inp.value : '', this._searchFilter || 'all');
