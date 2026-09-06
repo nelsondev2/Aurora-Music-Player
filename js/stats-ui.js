@@ -104,6 +104,17 @@ Object.assign(App, {
       });
     },
 
+    cleanSearchStr(str) {
+      if (!str) return '';
+      return String(str)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^\w\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    },
+
     runSearch(q, filter) {
       const ul = document.getElementById('searchResults');
       if (!ul) return;
@@ -113,21 +124,32 @@ Object.assign(App, {
         this.renderSearchHistory(ul);
         return;
       }
-      const ql = q.toLowerCase();
+      const qClean = this.cleanSearchStr(q);
+      const qTokens = qClean.split(' ').filter(Boolean);
       const f = filter || 'all';
-      const matchTrack = (t) => {
-        if (f === 'title') return (t.title || '').toLowerCase().includes(ql);
-        if (f === 'artist') return (t.artist || '').toLowerCase().includes(ql);
-        if (f === 'album') return t.album && t.album.toLowerCase().includes(ql);
-        return (t.title || '').toLowerCase().includes(ql) ||
-               (t.artist || '').toLowerCase().includes(ql) ||
-               (t.album && t.album.toLowerCase().includes(ql));
+
+      const matchText = (text) => {
+        if (!text) return false;
+        if (!qTokens.length) return String(text).toLowerCase().includes(q.toLowerCase());
+        const clean = this.cleanSearchStr(text);
+        return qTokens.every(tok => clean.includes(tok));
       };
+
+      const matchTrack = (t) => {
+        if (f === 'title') return matchText(t.title);
+        if (f === 'artist') return matchText(t.artist);
+        if (f === 'album') return matchText(t.album);
+        return matchText(t.title) ||
+               matchText(t.artist) ||
+               matchText(t.album) ||
+               matchText(`${t.title || ''} ${t.artist || ''} ${t.album || ''}`);
+      };
+
       if (f === 'all') {
         const artists = (typeof this.getArtists === 'function' ? this.getArtists() : [])
-          .filter(a => a.name.toLowerCase().includes(ql)).slice(0, 8);
+          .filter(a => matchText(a.name)).slice(0, 8);
         const albums = (typeof this.getAlbums === 'function' ? this.getAlbums() : [])
-          .filter(a => a.name.toLowerCase().includes(ql) || (a.artist || '').toLowerCase().includes(ql)).slice(0, 8);
+          .filter(a => matchText(a.name) || matchText(a.artist)).slice(0, 8);
         const songs = this.tracks.filter(matchTrack);
         if (!artists.length && !albums.length && !songs.length) {
           ul.innerHTML = '<li class="track-row empty-placeholder">' + this.t('no_results') + '</li>';

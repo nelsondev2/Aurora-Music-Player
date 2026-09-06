@@ -186,13 +186,35 @@ Object.assign(App, {
             { src: this.canvasToUrl(t, 512),  sizes: '512x512', type: 'image/png' }
           ]
         });
-        navigator.mediaSession.setActionHandler('play', () => this.togglePlay(true));
-        navigator.mediaSession.setActionHandler('pause', () => this.togglePlay(false));
-        navigator.mediaSession.setActionHandler('previoustrack', () => this.prev());
-        navigator.mediaSession.setActionHandler('nexttrack', () => this.next());
-        navigator.mediaSession.setActionHandler('seekto', (d) => {
-          if (d.seekTime != null) { this.seekToTime(d.seekTime); }
+
+        const safeSetAction = (action, handler) => {
+          try {
+            navigator.mediaSession.setActionHandler(action, handler);
+          } catch (err) {}
+        };
+
+        safeSetAction('play', () => this.togglePlay(true));
+        safeSetAction('pause', () => this.togglePlay(false));
+        safeSetAction('previoustrack', () => this.prev());
+        safeSetAction('nexttrack', () => this.next());
+        safeSetAction('seekto', (d) => {
+          if (d && d.seekTime != null) { this.seekToTime(d.seekTime); }
         });
+        safeSetAction('seekbackward', (d) => {
+          const skip = (d && d.seekOffset) ? d.seekOffset : 10;
+          const curr = this.audio ? this.audio.currentTime : 0;
+          this.seekToTime(Math.max(0, curr - skip));
+        });
+        safeSetAction('seekforward', (d) => {
+          const skip = (d && d.seekOffset) ? d.seekOffset : 10;
+          const curr = this.audio ? this.audio.currentTime : 0;
+          this.seekToTime(curr + skip);
+        });
+        safeSetAction('stop', () => {
+          this.togglePlay(false);
+          this.seekToTime(0);
+        });
+
         this.updateMediaPosition(true);
       } catch (e) {}
     },

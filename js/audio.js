@@ -254,6 +254,12 @@ Object.assign(App, {
       }
       this.audio.src = url;
       try { this.audio.volume = this.volume; } catch (e) {}
+      if (this.clearABRepeat) this.clearABRepeat();
+      if (this.preservesPitch !== undefined) {
+        this.audio.preservesPitch = this.preservesPitch;
+        this.audio.mozPreservesPitch = this.preservesPitch;
+        this.audio.webkitPreservesPitch = this.preservesPitch;
+      }
       if (this.playbackRate && this.playbackRate !== 1) {
         try { this.audio.playbackRate = this.playbackRate; } catch (e) {}
       }
@@ -797,4 +803,230 @@ Object.assign(App, {
         this.setIco(b, liked ? 'heart-solid' : 'heart');
       });
     },
+
+    /* ============================================================
+     *  Control de tono y velocidad (Preserves Pitch)
+     * ============================================================ */
+    setPreservesPitch(enabled) {
+      this.preservesPitch = !!enabled;
+      try {
+        localStorage.setItem('aurora_preserves_pitch', this.preservesPitch ? 'true' : 'false');
+      } catch (e) {}
+      if (this.audio) {
+        this.audio.preservesPitch = this.preservesPitch;
+        this.audio.mozPreservesPitch = this.preservesPitch;
+        this.audio.webkitPreservesPitch = this.preservesPitch;
+      }
+      const chk = document.getElementById('chkPreservePitch');
+      if (chk) chk.checked = this.preservesPitch;
+    },
+
+    /* ============================================================
+     *  Repetición A-B (A-B Repeat)
+     * ============================================================ */
+    toggleABRepeat() {
+      if (!this.abRepeat) this.abRepeat = { active: false, a: null, b: null };
+      const cur = this.audio ? this.audio.currentTime : 0;
+      if (this.abRepeat.a === null) {
+        this.abRepeat.a = cur;
+        this.abRepeat.b = null;
+        this.abRepeat.active = false;
+        this.updateABRepeatUI();
+        this.toast(this.t('ab_set_a').replace('X', this.fmtTime(cur)));
+      } else if (this.abRepeat.b === null) {
+        if (cur <= this.abRepeat.a + 0.3) {
+          this.abRepeat.b = this.abRepeat.a + 1.0;
+        } else {
+          this.abRepeat.b = cur;
+        }
+        this.abRepeat.active = true;
+        this.updateABRepeatUI();
+        this.toast(this.t('ab_active')
+          .replace('X', this.fmtTime(this.abRepeat.a))
+          .replace('Y', this.fmtTime(this.abRepeat.b)));
+        if (this.audio && (this.audio.currentTime < this.abRepeat.a || this.audio.currentTime >= this.abRepeat.b)) {
+          this.seekToTime(this.abRepeat.a);
+        }
+      } else {
+        this.clearABRepeat();
+        this.toast(this.t('ab_cleared'));
+      }
+    },
+
+    clearABRepeat() {
+      this.abRepeat = { active: false, a: null, b: null };
+      this.updateABRepeatUI();
+    },
+
+    updateABRepeatUI() {
+      const btn = document.getElementById('btnABRepeat');
+      const range = document.getElementById('progressAbRange');
+      if (btn) {
+        btn.classList.remove('setting-b', 'active');
+        const badge = btn.querySelector('.ab-badge') || btn;
+        if (this.abRepeat && this.abRepeat.a !== null && this.abRepeat.b === null) {
+          btn.classList.add('setting-b');
+          btn.setAttribute('aria-pressed', 'false');
+          btn.title = `Punto A: ${this.fmtTime(this.abRepeat.a)} · Pulsa para fijar B`;
+          badge.textContent = 'A→';
+        } else if (this.abRepeat && this.abRepeat.active && this.abRepeat.b !== null) {
+          btn.classList.add('active');
+          btn.setAttribute('aria-pressed', 'true');
+          btn.title = `Bucle A-B: ${this.fmtTime(this.abRepeat.a)} ⇄ ${this.fmtTime(this.abRepeat.b)}`;
+          badge.textContent = 'A⇄B';
+        } else {
+          btn.setAttribute('aria-pressed', 'false');
+          btn.title = this.t('ab_repeat');
+          badge.textContent = 'A-B';
+        }
+      }
+      if (range) {
+        const dur = (this.audio && this.audio.duration) || (this.currentTrack && this.currentTrack.duration) || 0;
+        if (this.abRepeat && this.abRepeat.a !== null && dur > 0) {
+          range.removeAttribute('hidden');
+          const startPct = (this.abRepeat.a / dur) * 100;
+          const endPct = this.abRepeat.b !== null ? (this.abRepeat.b / dur) * 100 : Math.min(100, startPct + 0.8);
+          range.style.left = startPct + '%';
+          range.style.width = Math.max(0.5, endPct - startPct) + '%';
+        } else {
+          range.setAttribute('hidden', '');
+        }
+      }
+    },
+
+    /* ============================================================
+     *  Visualizador de frecuencias en tiempo real (AnalyserNode)
+     * ============================================================ */
+    initVisualizer() {
+      let saved = 'bars';
+      try {
+        saved = localStorage.getItem('aurora_visualizer_mode') || 'bars';
+      } catch (e) {}
+      this.visualizerMode = saved;
+      this.updateVisualizerUI();
+      if (this.isPlaying) this.startVisualizer();
+    },
+
+    setVisualizerMode(mode) {
+      this.visualizerMode = mode;
+      try { localStorage.setItem('aurora_visualizer_mode', mode); } catch (e) {}
+      this.updateVisualizerUI();
+      const labels = {
+        bars: this.t('visualizer_bars'),
+        wave: this.t('visualizer_wave'),
+        off: this.t('visualizer_off')
+      };
+      this.toast(this.t('visualizer') + ': ' + (labels[mode] || mode));
+      if (mode === 'off') {
+        this.stopVisualizer();
+      } else if (this.isPlaying) {
+        this.startVisualizer();
+      }
+    },
+
+    cycleVisualizerMode() {
+      const next = this.visualizerMode === 'bars' ? 'wave' : (this.visualizerMode === 'wave' ? 'off' : 'bars');
+      this.setVisualizerMode(next);
+    },
+
+    updateVisualizerUI() {
+      const btn = document.getElementById('btnVisualizer');
+      const sec = document.getElementById('visualizerSection');
+      if (btn) {
+        btn.classList.toggle('active', this.visualizerMode !== 'off');
+        btn.setAttribute('aria-pressed', this.visualizerMode !== 'off' ? 'true' : 'false');
+      }
+      if (sec) {
+        sec.style.display = this.visualizerMode === 'off' ? 'none' : 'block';
+      }
+    },
+
+    startVisualizer() {
+      if (this.visualizerMode === 'off') return;
+      if (this._visRafId) return;
+      const canvas = document.getElementById('visualizerCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const render = () => {
+        if (!this.isPlaying || this.visualizerMode === 'off') {
+          this._visRafId = null;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          return;
+        }
+        this._visRafId = requestAnimationFrame(render);
+        this.drawVisualizerFrame(canvas, ctx);
+      };
+      this._visRafId = requestAnimationFrame(render);
+    },
+
+    stopVisualizer() {
+      if (this._visRafId) {
+        cancelAnimationFrame(this._visRafId);
+        this._visRafId = null;
+      }
+      const canvas = document.getElementById('visualizerCanvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    },
+
+    drawVisualizerFrame(canvas, ctx) {
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      if (!this.analyser || !this.freqData) {
+        return;
+      }
+
+      if (this.visualizerMode === 'wave') {
+        this.analyser.getByteTimeDomainData(this.freqData);
+        ctx.lineWidth = 2.5;
+        const grad = ctx.createLinearGradient(0, 0, w, 0);
+        grad.addColorStop(0, 'rgba(124, 58, 237, 0.85)');
+        grad.addColorStop(0.5, 'rgba(236, 72, 153, 0.95)');
+        grad.addColorStop(1, 'rgba(6, 182, 212, 0.85)');
+        ctx.strokeStyle = grad;
+        ctx.beginPath();
+        const sliceWidth = w / this.freqData.length;
+        let x = 0;
+        for (let i = 0; i < this.freqData.length; i++) {
+          const v = this.freqData[i] / 128.0;
+          const y = (v * h) / 2;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+          x += sliceWidth;
+        }
+        ctx.stroke();
+      } else {
+        this.analyser.getByteFrequencyData(this.freqData);
+        const numBars = 32;
+        const barWidth = Math.floor(w / numBars) - 3;
+        const step = Math.max(1, Math.floor(this.freqData.length / (numBars * 1.6)));
+        for (let i = 0; i < numBars; i++) {
+          const val = this.freqData[i * step] || 0;
+          const pct = val / 255;
+          const barHeight = Math.max(3, pct * (h - 8));
+          const x = i * (barWidth + 3) + 2;
+          const y = h - barHeight;
+
+          const grad = ctx.createLinearGradient(0, y, 0, h);
+          grad.addColorStop(0, 'rgba(236, 72, 153, 0.95)');
+          grad.addColorStop(1, 'rgba(124, 58, 237, 0.65)');
+          ctx.fillStyle = grad;
+
+          ctx.beginPath();
+          const r = Math.min(barWidth / 2, 3);
+          if (typeof ctx.roundRect === 'function') {
+            ctx.roundRect(x, y, barWidth, barHeight, [r, r, 0, 0]);
+          } else {
+            ctx.rect(x, y, barWidth, barHeight);
+          }
+          ctx.fill();
+        }
+      }
+    }
 });

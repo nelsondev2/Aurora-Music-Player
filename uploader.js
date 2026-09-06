@@ -92,7 +92,7 @@
         lrc: null
       };
 
-      const lrcFile = lrcsMap && lrcsMap[baseName];
+      const lrcFile = this.findMatchingLrc(file.name, lrcsMap);
       const [tags, lrcText] = await Promise.all([
         this.readTags(file).catch(() => null),
         lrcFile ? this.readTextFile(lrcFile).catch(() => null) : Promise.resolve(null)
@@ -243,6 +243,26 @@
         .replace(/[_]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim();
+    },
+
+    /* ---------- Emparejamiento inteligente de archivo LRC/TXT ---------- */
+    findMatchingLrc(audioFileName, lrcsMap) {
+      if (!lrcsMap || !Object.keys(lrcsMap).length) return null;
+      const base = audioFileName.replace(/\.[^.]+$/, '').toLowerCase();
+      if (lrcsMap[base]) return lrcsMap[base];
+
+      const cleanAudio = this.cleanName(audioFileName).toLowerCase();
+      if (lrcsMap[cleanAudio]) return lrcsMap[cleanAudio];
+
+      const normAudio = cleanAudio.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w]/g, '');
+
+      for (const [key, file] of Object.entries(lrcsMap)) {
+        const normKey = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w]/g, '');
+        if (normAudio && normKey && (normAudio === normKey || normAudio.includes(normKey) || normKey.includes(normAudio))) {
+          return file;
+        }
+      }
+      return null;
     },
 
     /* ---------- Lee un archivo de texto (.lrc) ---------- */

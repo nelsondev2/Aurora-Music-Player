@@ -178,6 +178,13 @@ Object.assign(App, {
       if (ca) ca.classList.toggle('playing', this.isPlaying);
       if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
 
+      // Visualizador en tiempo real
+      if (this.isPlaying) {
+        if (typeof this.startVisualizer === 'function') this.startVisualizer();
+      } else {
+        if (typeof this.stopVisualizer === 'function') this.stopVisualizer();
+      }
+
       // Visibilidad de las acciones del menú "Más opciones" según haya pista
       // actual. Si no hay pista (estado vacío), las acciones contextuales
       // (ir al artista, añadir a lista) no tienen sentido y se ocultan.
@@ -193,6 +200,15 @@ Object.assign(App, {
       const a = this.audio;
       const cur = a.currentTime || 0;
       const dur = a.duration || this.currentTrack?.duration || 0;
+
+      // Repetición A-B (#22)
+      if (this.abRepeat && this.abRepeat.active && this.abRepeat.b !== null && this.abRepeat.a !== null) {
+        if (cur >= this.abRepeat.b) {
+          this.seekToTime(this.abRepeat.a);
+          return;
+        }
+      }
+
       const pct = dur > 0 ? (cur / dur) * 100 : 0;
       const fill = document.getElementById('progressFill');
       const curEl = document.getElementById('timeCurrent');

@@ -2429,6 +2429,106 @@ const I18N = {
     zh: '我在 Aurora Music Player 的收听概览', ja: 'Aurora Music Player の再生サマリー', fr: 'Mon résumé sur Aurora Music Player',
     it: 'Il mio riepilogo su Aurora Music Player', ru: 'Моя сводка в Aurora Music Player'
   },
+  visualizer: {
+    es: 'Visualizador', en: 'Visualizer', pt: 'Visualizador',
+    zh: '频谱可视化', ja: 'ビジュアライザー', fr: 'Visualiseur',
+    it: 'Visualizzatore', ru: 'Визуализатор'
+  },
+  visualizer_bars: {
+    es: 'Barras de espectro', en: 'Spectrum bars', pt: 'Barras de espectro',
+    zh: '频谱柱', ja: 'スペクトラムバー', fr: 'Barres de spectre',
+    it: 'Barre dello spettro', ru: 'Полосы спектра'
+  },
+  visualizer_wave: {
+    es: 'Onda fluida', en: 'Fluid wave', pt: 'Onda fluida',
+    zh: '流动声波', ja: '波形ウェーブ', fr: 'Onde fluide',
+    it: 'Onda fluida', ru: 'Плавная волна'
+  },
+  visualizer_off: {
+    es: 'Desactivado', en: 'Disabled', pt: 'Desativado',
+    zh: '已关闭', ja: '無効', fr: 'Désactivé',
+    it: 'Disattivato', ru: 'Отключено'
+  },
+  ab_repeat: {
+    es: 'Bucle A-B', en: 'A-B Loop', pt: 'Loop A-B',
+    zh: 'A-B 循环', ja: 'A-B ループ', fr: 'Boucle A-B',
+    it: 'Loop A-B', ru: 'Петля A-B'
+  },
+  ab_set_a: {
+    es: 'Punto A fijado en X. Pulsa para fijar B', en: 'Point A set at X. Tap to set B', pt: 'Ponto A fixado em X. Toque para fixar B',
+    zh: 'A 点已设置在 X。再次点击设置 B 点', ja: 'A 地点を X に設定しました。タップして B を設定', fr: 'Point A défini à X. Touchez pour définir B',
+    it: 'Punto A impostato su X. Tocca per impostare B', ru: 'Точка A установлена на X. Нажмите для B'
+  },
+  ab_active: {
+    es: 'Bucle A-B activo (X ⇄ Y)', en: 'A-B Loop active (X ⇄ Y)', pt: 'Loop A-B ativo (X ⇄ Y)',
+    zh: 'A-B 循环开启 (X ⇄ Y)', ja: 'A-B ループ有効 (X ⇄ Y)', fr: 'Boucle A-B active (X ⇄ Y)',
+    it: 'Loop A-B attivo (X ⇄ Y)', ru: 'Петля A-B активна (X ⇄ Y)'
+  },
+  ab_cleared: {
+    es: 'Bucle A-B desactivado', en: 'A-B Loop cleared', pt: 'Loop A-B desativado',
+    zh: 'A-B 循环已清除', ja: 'A-B ループを解除しました', fr: 'Boucle A-B désactivée',
+    it: 'Loop A-B disattivato', ru: 'Петля A-B отключена'
+  },
+  settings_preserves_pitch: {
+    es: 'Preservar tono al cambiar velocidad', en: 'Preserve pitch on speed change', pt: 'Preservar tom ao mudar velocidade',
+    zh: '变速时保持音调', ja: '速度変更時にピッチを維持', fr: 'Préserver la hauteur à vitesse variable',
+    it: 'Preserva tonalità al cambio velocità', ru: 'Сохранять тональность при изменении скорости'
+  },
+  settings_preserves_pitch_hint: {
+    es: 'Mantiene el tono natural de la voz sin distorsionar el pitch.', en: 'Keeps natural voice pitch without chipmunk effect.', pt: 'Mantém o tom natural da voz sem distorcer o pitch.',
+    zh: '保持自然声音音调，避免变声效果。', ja: '声の高さを変えずに自然なトーンを維持します。', fr: 'Maintient la voix naturelle sans effet accéléré.',
+    it: 'Mantiene il timbro vocale naturale senza alterare l’intonazione.', ru: 'Сохраняет естественную тональность голоса без искажения.'
+  },
+  batch_select: {
+    es: 'Seleccionar', en: 'Select', pt: 'Selecionar',
+    zh: '多选', ja: '選択', fr: 'Sélectionner',
+    it: 'Seleziona', ru: 'Выбрать'
+  },
+  batch_cancel: {
+    es: 'Cancelar selección', en: 'Cancel selection', pt: 'Cancelar seleção',
+    zh: '取消多选', ja: '選択解除', fr: 'Annuler la sélection',
+    it: 'Annulla selezione', ru: 'Отменить выбор'
+  },
+  batch_selected_count: {
+    es: 'X seleccionadas', en: 'X selected', pt: 'X selecionadas',
+    zh: '已选 X 首', ja: 'X 曲を選択中', fr: 'X sélectionnées',
+    it: 'X selezionate', ru: 'Выбрано: X'
+  },
+  batch_edit_tags: {
+    es: 'Editar etiquetas', en: 'Edit tags', pt: 'Editar etiquetas',
+    zh: '批量修改标签', ja: '一括タグ編集', fr: 'Modifier les tags',
+    it: 'Modifica tag', ru: 'Пакетное редактирование'
+  },
+  batch_add_to_playlist: {
+    es: 'Añadir a lista', en: 'Add to playlist', pt: 'Adicionar à lista',
+    zh: '添加到歌单', ja: 'プレイリストに追加', fr: 'Ajouter à la liste',
+    it: 'Aggiungi a playlist', ru: 'Добавить в плейлист'
+  },
+  batch_delete: {
+    es: 'Eliminar pistas', en: 'Delete tracks', pt: 'Excluir faixas',
+    zh: '批量删除', ja: '一括削除', fr: 'Supprimer pistes',
+    it: 'Elimina brani', ru: 'Удалить треки'
+  },
+  batch_edit_title: {
+    es: 'Edición por lote', en: 'Batch Edit', pt: 'Edição em lote',
+    zh: '批量编辑', ja: '一括編集', fr: 'Édition par lot',
+    it: 'Modifica di gruppo', ru: 'Пакетное редактирование'
+  },
+  batch_edit_hint: {
+    es: 'Los campos que dejes vacíos no se modificarán.', en: 'Fields left blank will not be modified.', pt: 'Os campos deixados em branco não serão alterados.',
+    zh: '留空的字段不会被修改。', ja: '空欄の項目は変更されません。', fr: 'Les champs laissés vides ne seront pas modifiés.',
+    it: 'I campi lasciati vuoti non verranno modificati.', ru: 'Пустые поля не будут изменены.'
+  },
+  batch_edit_saved: {
+    es: 'Etiquetas actualizadas en X pistas', en: 'Tags updated for X tracks', pt: 'Etiquetas atualizadas em X faixas',
+    zh: '已更新 X 首歌曲的标签', ja: 'X 曲のタグを更新しました', fr: 'Tags mis à jour pour X pistes',
+    it: 'Tag aggiornati per X brani', ru: 'Теги обновлены для X треков'
+  },
+  batch_delete_confirm: {
+    es: '¿Eliminar X canciones seleccionadas de la biblioteca?', en: 'Delete X selected songs from library?', pt: 'Excluir X músicas selecionadas da biblioteca?',
+    zh: '确定从曲库中删除选中的 X 首歌曲吗？', ja: '選択した X 曲をライブラリから削除しますか？', fr: 'Supprimer les X morceaux sélectionnés de la bibliothèque ?',
+    it: 'Eliminare i X brani selezionati dalla libreria?', ru: 'Удалить выбранные X треков из библиотеки?'
+  },
 
 };
 

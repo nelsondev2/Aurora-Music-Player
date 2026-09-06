@@ -496,9 +496,13 @@ Object.assign(App, {
       opts = opts || {};
       const li = document.createElement('li');
       const isCurrent = this.currentTrack && this.currentTrack.id === t.id;
-      li.className = 'track-row' + (isCurrent ? ' current' : '');
+      const isSelected = this._selectedTrackIds && this._selectedTrackIds.has(t.id);
+      li.className = 'track-row' + (isCurrent ? ' current' : '') + (isSelected ? ' selected' : '') + (this._batchMode ? ' batch-mode' : '');
       li.dataset.track = t.id;
       li.innerHTML = `
+        <div class="row-batch-check" ${this._batchMode ? '' : 'style="display:none"'}>
+          <input type="checkbox" class="batch-checkbox" aria-label="Seleccionar" ${isSelected ? 'checked' : ''} />
+        </div>
         <div class="row-cover"><canvas width="44" height="44"></canvas></div>
         <div class="row-text">
           <div class="row-title">${this.esc(t.title)}</div>
@@ -509,6 +513,10 @@ Object.assign(App, {
       const ctx = opts.playContext || { type: 'all' };
       li.addEventListener('click', (e) => {
         if (e.target.closest('.track-menu-btn')) return;
+        if (this._batchMode) {
+          this.toggleTrackSelection(t.id);
+          return;
+        }
         this.playTrack(t.id, ctx);
         this.updateChrome();
       });
@@ -527,13 +535,18 @@ Object.assign(App, {
       let timer = null;
       let fired = false;
       const start = (e) => {
-        if (e.target && e.target.closest && e.target.closest('.track-menu-btn, .row-action')) return;
+        if (e.target && e.target.closest && e.target.closest('.track-menu-btn, .row-action, .batch-checkbox')) return;
         fired = false;
         timer = setTimeout(() => {
           timer = null;
           fired = true;
-          this.openTrackMenu(trackId);
-          if (navigator.vibrate) navigator.vibrate(20);
+          if (!this._batchMode) {
+            this.toggleBatchMode(true);
+            this.toggleTrackSelection(trackId);
+          } else {
+            this.openTrackMenu(trackId);
+          }
+          if (navigator.vibrate) navigator.vibrate(25);
         }, 520);
       };
       const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
@@ -609,5 +622,148 @@ Object.assign(App, {
       if (this._browse) this.renderBrowseTracks();
       this.updateMiniPlayer();
       this.toast(this.t('edit_track_saved'));
+    },
+
+    /* ============================================================
+     *  Edición y selección de pistas por lotes (#23)
+     * ============================================================ */
+    toggleBatchMode(forceState) {
+      this._batchMode = forceState !== undefined ? !!forceState : !this._batchMode;
+      if (!this._selectedTrackIds) this._selectedTrackIds = new Set();
+      if (!this._batchMode) {
+        this._selectedTrackIds.clear();
+      }
+      this.updateBatchUI();
+      this.renderLibrary();
+    },
+
+    toggleTrackSelection(trackId) {
+      if (!this._selectedTrackIds) this._selectedTrackIds = new Set();
+      if (this._selectedTrackIds.has(trackId)) {
+        this._selectedTrackIds.delete(trackId);
+      } else {
+        this._selectedTrackIds.add(trackId);
+      }
+      this.updateBatchUI();
+      const row = document.querySelector(`.track-row[data-track="${trackId}"]`);
+      if (row) {
+        const isSel = this._selectedTrackIds.has(trackId);
+        row.classList.toggle('selected', isSel);
+        const chk = row.querySelector('.batch-checkbox');
+        if (chk) chk.checked = isSel;
+      }
+    },
+
+    selectAllTracks() {
+      if (!this._selectedTrackIds) this._selectedTrackIds = new Set();
+      const allSelected = this._selectedTrackIds.size === this.tracks.length && this.tracks.length > 0;
+      if (allSelected) {
+        this._selectedTrackIds.clear();
+      } else {
+        this.tracks.forEach(t => this._selectedTrackIds.add(t.id));
+      }
+      this.updateBatchUI();
+      this.renderLibrary();
+    },
+
+    clearTrackSelection() {
+      if (this._selectedTrackIds) this._selectedTrackIds.clear();
+      this.updateBatchUI();
+      this.renderLibrary();
+    },
+
+    updateBatchUI() {
+      const bar = document.getElementById('batchActionBar');
+      const countEl = document.getElementById('batchCount');
+      const btnSelect = document.getElementById('btnBatchSelect');
+      const n = this._selectedTrackIds ? this._selectedTrackIds.size : 0;
+
+      if (btnSelect) {
+        btnSelect.classList.toggle('active', this._batchMode);
+        btnSelect.setAttribute('aria-pressed', this._batchMode ? 'true' : 'false');
+      }
+
+      if (bar) {
+        if (this._batchMode) {
+          bar.removeAttribute('hidden');
+          bar.classList.add('open');
+        } else {
+          bar.setAttribute('hidden', '');
+          bar.classList.remove('open');
+        }
+      }
+
+      if (countEl) {
+        countEl.textContent = this.t('batch_selected_count').replace('X', n);
+      }
+
+      const btnEdit = document.getElementById('btnBatchEditTags');
+      const btnDel = document.getElementById('btnBatchDelete');
+      [btnEdit, btnDel].forEach(b => {
+        if (b) b.disabled = n === 0;
+      });
+    },
+
+    openBatchEditModal() {
+      if (!this._selectedTrackIds || !this._selectedTrackIds.size) return;
+      const artist = document.getElementById('batchEditArtist');
+      const album = document.getElementById('batchEditAlbum');
+      if (artist) artist.value = '';
+      if (album) album.value = '';
+      const summary = document.getElementById('batchEditSummary');
+      if (summary) {
+        summary.textContent = this.t('batch_selected_count').replace('X', this._selectedTrackIds.size);
+      }
+      this.openSheet('sheetBatchEditTags');
+    },
+
+    async saveBatchEditTags() {
+      if (!this._selectedTrackIds || !this._selectedTrackIds.size) return;
+      const artistInput = (document.getElementById('batchEditArtist') || {}).value || '';
+      const albumInput = (document.getElementById('batchEditAlbum') || {}).value || '';
+      const newArtist = artistInput.trim();
+      const newAlbum = albumInput.trim();
+
+      if (!newArtist && !newAlbum) {
+        this.closeSheet('sheetBatchEditTags');
+        return;
+      }
+
+      let count = 0;
+      for (const id of this._selectedTrackIds) {
+        const t = this.tracks.find(x => x.id === id);
+        if (t) {
+          if (newArtist) t.artist = newArtist;
+          if (newAlbum) t.album = newAlbum;
+          await this.persistTrack(t);
+          count++;
+        }
+      }
+
+      this.closeSheet('sheetBatchEditTags');
+      this.toggleBatchMode(false);
+      this.renderLibrary();
+      this.renderPlaylists();
+      this.renderQueue();
+      this.renderFavorites();
+      this.renderHome();
+      if (this.currentTrack) this.renderCurrentTrack();
+      this.toast(this.t('batch_updated_toast').replace('X', count));
+    },
+
+    async batchDeleteTracks() {
+      if (!this._selectedTrackIds || !this._selectedTrackIds.size) return;
+      const count = this._selectedTrackIds.size;
+      const ids = Array.from(this._selectedTrackIds);
+      for (const id of ids) {
+        await this.deleteTrack(id, { silent: true });
+      }
+      this.toggleBatchMode(false);
+      this.renderLibrary();
+      this.renderPlaylists();
+      this.renderQueue();
+      this.renderFavorites();
+      this.renderHome();
+      this.toast(this.t('toast_track_deleted'));
     }
 });

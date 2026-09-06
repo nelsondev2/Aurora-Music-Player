@@ -75,6 +75,16 @@ Object.assign(App, {
       this.loadPlaybackSettings();
       this.syncPlaybackSettingsUI();
       if (typeof this.syncDesktopLayout === 'function') this.syncDesktopLayout();
+      // Cargar preferencias de visualizador y preservación de tono
+      try {
+        const savedPitch = localStorage.getItem('aurora_preserves_pitch');
+        this.preservesPitch = savedPitch !== 'false';
+      } catch (e) {
+        this.preservesPitch = true;
+      }
+      this.setPreservesPitch(this.preservesPitch);
+      if (typeof this.initVisualizer === 'function') this.initVisualizer();
+      if (typeof this.updateABRepeatUI === 'function') this.updateABRepeatUI();
       // #11 Cargar historial
       this.loadHistory();
       this.loadSearchHistory();

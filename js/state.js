@@ -36,8 +36,16 @@
     repeat: 'off', // 'off' | 'all' | 'one'
     volume: 1,
     playbackRate: 1,
+    preservesPitch: true,
 
-    /* Visualizador de barras: eliminado. El grafo Web Audio se usa solo para EQ. */
+    /* Visualizador de frecuencias y repetición A-B */
+    visualizerMode: 'bars', // 'bars' | 'wave' | 'off'
+    _visRafId: null,
+    abRepeat: { active: false, a: null, b: null },
+
+    /* Selección múltiple / lote */
+    _batchMode: false,
+    _selectedTrackIds: new Set(),
 
     /* Letras */
     lrcLines: [], // {time, text, timed, translation?}

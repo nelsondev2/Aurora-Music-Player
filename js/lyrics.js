@@ -626,7 +626,14 @@ Object.assign(App, {
      * ============================================================ */
     setPlaybackRate(rate) {
       this.playbackRate = Math.max(0.5, Math.min(2.0, Math.round(rate * 10) / 10));
-      if (this.audio) this.audio.playbackRate = this.playbackRate;
+      if (this.audio) {
+        this.audio.playbackRate = this.playbackRate;
+        if (this.preservesPitch !== undefined) {
+          this.audio.preservesPitch = this.preservesPitch;
+          this.audio.mozPreservesPitch = this.preservesPitch;
+          this.audio.webkitPreservesPitch = this.preservesPitch;
+        }
+      }
       const label = document.getElementById('lrcSpeedLabel');
       if (label) label.textContent = this.playbackRate.toFixed(1) + '×';
       try { localStorage.setItem('aurora_playback_rate', this.playbackRate); } catch (e) {}

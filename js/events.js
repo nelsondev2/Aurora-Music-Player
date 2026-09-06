@@ -307,6 +307,16 @@ Object.assign(App, {
         this.closeSheet('sheetMore');
       });
 
+      // Visualizador y Bucle A-B
+      const btnVis = document.getElementById('btnVisualizer');
+      if (btnVis) btnVis.addEventListener('click', () => this.cycleVisualizerMode());
+      const cvVis = document.getElementById('visualizerCanvas');
+      if (cvVis) cvVis.addEventListener('click', () => this.cycleVisualizerMode());
+      const btnAB = document.getElementById('btnABRepeat');
+      if (btnAB) btnAB.addEventListener('click', () => this.toggleABRepeat());
+      const chkPitch = document.getElementById('chkPreservePitch');
+      if (chkPitch) chkPitch.addEventListener('change', (e) => this.setPreservesPitch(e.target.checked));
+
       // Cola
       $('btnQueue').addEventListener('click', () => {
         this.renderQueue();
@@ -558,6 +568,29 @@ Object.assign(App, {
       if (btnSaveEdit) btnSaveEdit.addEventListener('click', () => this.saveEditTrack());
       const btnSaveEditP = document.getElementById('btnSaveEditTrackPrimary');
       if (btnSaveEditP) btnSaveEditP.addEventListener('click', () => this.saveEditTrack());
+
+      // Selección múltiple y edición por lotes (#23)
+      const btnBatchSel = document.getElementById('btnBatchSelect');
+      if (btnBatchSel) btnBatchSel.addEventListener('click', () => this.toggleBatchMode());
+      const btnBatchAll = document.getElementById('btnBatchSelectAll');
+      if (btnBatchAll) btnBatchAll.addEventListener('click', () => this.selectAllTracks());
+      const btnBatchEdit = document.getElementById('btnBatchEditTags');
+      if (btnBatchEdit) btnBatchEdit.addEventListener('click', () => this.openBatchEditModal());
+      const btnBatchCancel = document.getElementById('btnBatchCancel');
+      if (btnBatchCancel) btnBatchCancel.addEventListener('click', () => this.toggleBatchMode(false));
+      const btnBatchDel = document.getElementById('btnBatchDelete');
+      if (btnBatchDel) btnBatchDel.addEventListener('click', async () => {
+        if (!this._selectedTrackIds || !this._selectedTrackIds.size) return;
+        const ok = await this.showConfirm({
+          message: this.t('delete_multiple_confirm') ? this.t('delete_multiple_confirm').replace('X', this._selectedTrackIds.size) : '¿Eliminar las pistas seleccionadas?',
+          okLabel: this.t('confirm_delete')
+        });
+        if (ok) this.batchDeleteTracks();
+      });
+      const btnSaveBatch = document.getElementById('btnSaveBatchEdit');
+      if (btnSaveBatch) btnSaveBatch.addEventListener('click', () => this.saveBatchEditTags());
+      const btnSaveBatchP = document.getElementById('btnSaveBatchEditPrimary');
+      if (btnSaveBatchP) btnSaveBatchP.addEventListener('click', () => this.saveBatchEditTags());
 
       // Búsqueda (debounce 150 ms)
       $('searchInput').addEventListener('input', (e) => {
