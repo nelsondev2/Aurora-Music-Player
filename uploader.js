@@ -4,7 +4,7 @@
  *
  *  Funciones:
  *    - Aceptar mp3/m4a/flac/wav/ogg vía input file o drag-drop
- *    - Leer metadatos ID3 con jsmediatags (CDN)
+ *    - Leer metadatos ID3 con jsmediatags (embebido localmente)
  *    - Generar portada dinámica si no hay artwork
  *    - Intentar cargar archivo .lrc con el mismo nombre
  *    - Guardar el blob en IndexedDB y devolver un objectURL
@@ -21,7 +21,10 @@
     ],
 
     /* ---------- Procesa una lista de File y devuelve tracks ---------- */
-    async processFiles(fileList) {
+    async processFiles(fileList, opts) {
+      opts = opts || {};
+      const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
+      const isCancelled = typeof opts.isCancelled === 'function' ? opts.isCancelled : () => false;
       const out = [];
       // Separar audio vs lrc para emparejarlos por nombre
       const audios = [];
@@ -39,12 +42,15 @@
       // Procesar en paralelo con límite de concurrencia para no bloquear.
       // jsmediatags y el parser ID3v2 son asíncronos y pueden ejecutarse
       // concurrentemente; el límite evita saturar la CPU/memoria con muchos archivos.
-      const CONCURRENCY = Math.min(6, Math.max(2, navigator.hardwareConcurrency || 4));
+      const CONCURRENCY = 3;
       let index = 0;
+      let completed = 0;
       const results = new Array(audios.length);
+      if (onProgress) onProgress(0, audios.length, '');
 
       const worker = async () => {
         while (index < audios.length) {
+          if (isCancelled()) return;
           const myIdx = index++;
           const file = audios[myIdx];
           try {
@@ -54,6 +60,9 @@
             console.warn('[Aurora] No se pudo procesar', file.name, e);
             results[myIdx] = this.fallbackTrack(file);
           }
+          completed++;
+          if (onProgress) onProgress(completed, audios.length, file.name);
+          await new Promise(r => setTimeout(r, 0));
         }
       };
 
@@ -73,45 +82,38 @@
     async processOne(file, lrcsMap) {
       const baseName = file.name.replace(/\.[^.]+$/, '').toLowerCase();
       const id = 't-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+      const fromName = this.parseFilename(file.name);
 
-      // Metadatos por defecto
       let meta = {
-        title: this.cleanName(file.name),
-        artist: 'Artista desconocido',
+        title: fromName.title || this.cleanName(file.name),
+        artist: fromName.artist || 'Artista desconocido',
         album: 'Sin álbum',
         cover: null,
         lrc: null
       };
 
-      // Intentar leer ID3 tags
-      try {
-        const tags = await this.readTags(file);
-        if (tags) {
-          if (tags.title) meta.title = tags.title;
-          if (tags.artist) meta.artist = tags.artist;
-          if (tags.album) meta.album = tags.album;
-          if (tags.picture) {
-            meta.cover = this.pictureToDataURL(tags.picture);
-          }
-          // ─── Letras embebidas en metadatos ID3 ───
-          // USLT: Unsynchronized Lyrics (texto plano, posiblemente con timestamps LRC)
-          // SYLT: Synchronized Lyrics (binario con timestamps)
-          const usltLyrics = this.extractUslt(tags);
-          if (usltLyrics && !meta.lrc) {
-            meta.lrc = this.normalizeLyrics(usltLyrics);
-          }
+      const lrcFile = lrcsMap && lrcsMap[baseName];
+      const [tags, lrcText] = await Promise.all([
+        this.readTags(file).catch(() => null),
+        lrcFile ? this.readTextFile(lrcFile).catch(() => null) : Promise.resolve(null)
+      ]);
+
+      if (tags) {
+        const title = this.tagText(tags.title);
+        const artist = this.tagText(tags.artist) || this.tagText(tags.albumartist);
+        const album = this.tagText(tags.album);
+        if (title) meta.title = title;
+        if (artist) meta.artist = artist;
+        if (album) meta.album = album;
+        if (tags.picture) meta.cover = this.pictureToDataURL(tags.picture);
+        const usltLyrics = this.extractUslt(tags);
+        if (usltLyrics) meta.lrc = this.normalizeLyrics(usltLyrics);
+        if (!meta.lrc) {
           const syltLyrics = this.extractSylt(tags);
-          if (syltLyrics && !meta.lrc) {
-            meta.lrc = syltLyrics;
-          }
+          if (syltLyrics) meta.lrc = syltLyrics;
         }
-      } catch (e) {
-        console.debug('[Aurora] ID3 (jsmediatags) falló:', e.message);
       }
 
-      // ─── Parser ID3v2 propio para USLT/SYLT ───
-      // jsmediatags (CDN) NO parsea USLT por defecto. Lo hacemos a mano
-      // leyendo los frames binarios del header ID3v2.
       if (!meta.lrc) {
         try {
           const customLyrics = await this.readLyricsFromId3v2(file);
@@ -119,22 +121,19 @@
             const norm = this.normalizeLyrics(customLyrics);
             if (norm && norm.length) meta.lrc = norm;
           }
-        } catch (e) {
-          console.debug('[Aurora] ID3v2 own-parser falló:', e.message);
-        }
-      }
-
-      // Letra LRC de archivo .lrc acompañante (tiene prioridad si existe)
-      if (lrcsMap[baseName]) {
-        try {
-          const lrcText = await this.readTextFile(lrcsMap[baseName]);
-          meta.lrc = this.normalizeLyrics(lrcText);
         } catch (e) {}
       }
 
-      // Si no hay cover, generar uno dinámico
-      if (!meta.cover) {
-        meta.cover = this.randomCover();
+      if (lrcText) meta.lrc = this.normalizeLyrics(lrcText);
+      if (!meta.cover) meta.cover = this.randomCover();
+
+      const coverIsImage = typeof meta.cover === 'string' && (meta.cover.startsWith('data:') || meta.cover.startsWith('blob:'));
+      let coverThumb = null, coverThumbLg = null;
+      if (coverIsImage) {
+        try {
+          coverThumb = await this.resizeDataUrl(meta.cover, 96);
+          coverThumbLg = await this.resizeDataUrl(meta.cover, 256);
+        } catch (e) {}
       }
 
       return {
@@ -142,15 +141,62 @@
         title: meta.title,
         artist: meta.artist,
         album: meta.album,
-        duration: 0,            // se rellena al cargar el audio
-        src: URL.createObjectURL(file),  // objectURL temporal
-        cover: meta.cover,              // dataURL de artwork O {from,to,angle}
-        coverIsImage: typeof meta.cover === 'string' && meta.cover.startsWith('data:'),
+        duration: 0,
+        src: URL.createObjectURL(file),
+        cover: meta.cover,
+        coverIsImage,
+        coverThumb,
+        coverThumbLg,
         lrc: meta.lrc,
         fileSize: file.size,
         fileName: file.name,
-        _file: file            // referencia al File para guardarlo en IndexedDB
+        addedAt: Date.now(),
+        _file: file
       };
+    },
+
+    resizeDataUrl(dataUrl, size) {
+      return new Promise((resolve) => {
+        try {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const c = document.createElement('canvas');
+              c.width = size;
+              c.height = size;
+              const ctx = c.getContext('2d');
+              const r = Math.max(size / img.width, size / img.height);
+              const dw = img.width * r, dh = img.height * r;
+              ctx.drawImage(img, (size - dw) / 2, (size - dh) / 2, dw, dh);
+              resolve(c.toDataURL('image/jpeg', 0.72));
+            } catch (e) { resolve(null); }
+          };
+          img.onerror = () => resolve(null);
+          img.src = dataUrl;
+        } catch (e) { resolve(null); }
+      });
+    },
+
+    tagText(v) {
+      if (v == null) return '';
+      if (typeof v === 'string') return v.trim();
+      if (typeof v === 'number') return String(v);
+      if (typeof v === 'object') {
+        if (typeof v.data === 'string') return v.data.trim();
+        if (Array.isArray(v.data)) {
+          return v.data.map((x) => (typeof x === 'string' ? x : '')).join('').trim();
+        }
+        if (typeof v.text === 'string') return v.text.trim();
+        if (typeof v.description === 'string' && typeof v.text !== 'string') return '';
+      }
+      return '';
+    },
+
+    parseFilename(name) {
+      const base = name.replace(/\.[^.]+$/, '').replace(/_/g, ' ').trim();
+      const m = base.match(/^(?:\d+[\s._-]+)?(.+?)\s[-–—]\s+(.+)$/);
+      if (m) return { artist: m[1].trim(), title: m[2].trim() };
+      return { artist: '', title: this.cleanName(name) };
     },
 
     /* ---------- Lee tags ID3 con jsmediatags (cargado desde CDN) ---------- */
@@ -173,10 +219,13 @@
     pictureToDataURL(picture) {
       try {
         const { data, format } = picture;
-        let bytes = '';
-        for (let i = 0; i < data.length; i++) bytes += String.fromCharCode(data[i]);
-        const b64 = btoa(bytes);
-        return `data:${format};base64,${b64}`;
+        const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
+        let binary = '';
+        const chunk = 0x8000;
+        for (let i = 0; i < u8.length; i += chunk) {
+          binary += String.fromCharCode.apply(null, u8.subarray(i, i + chunk));
+        }
+        return `data:${format || 'image/jpeg'};base64,${btoa(binary)}`;
       } catch (e) { return null; }
     },
 
@@ -206,6 +255,31 @@
       });
     },
 
+    /* Lee la duración real del archivo con un <audio> temporal. */
+    probeDuration(file) {
+      return new Promise((resolve) => {
+        try {
+          const a = document.createElement('audio');
+          a.preload = 'metadata';
+          const url = URL.createObjectURL(file);
+          let settled = false;
+          const finish = (sec) => {
+            if (settled) return;
+            settled = true;
+            try { URL.revokeObjectURL(url); } catch (e) {}
+            try { a.removeAttribute('src'); a.load(); } catch (e) {}
+            resolve(sec > 0 && isFinite(sec) ? Math.round(sec) : 0);
+          };
+          a.addEventListener('loadedmetadata', () => finish(a.duration));
+          a.addEventListener('error', () => finish(0));
+          setTimeout(() => finish(0), 8000);
+          a.src = url;
+        } catch (e) {
+          resolve(0);
+        }
+      });
+    },
+
     /* ---------- Track mínimo de respaldo si todo falla ---------- */
     fallbackTrack(file) {
       const id = 't-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
@@ -221,6 +295,7 @@
         lrc: null,
         fileSize: file.size,
         fileName: file.name,
+        addedAt: Date.now(),
         _file: file
       };
     },
@@ -334,7 +409,7 @@
     /* Normaliza cualquier texto de letras a un array de líneas.
      * - Si ya tiene timestamps LRC [mm:ss.xx], respeta el formato.
      * - Si es texto plano sin timestamps, lo deja como líneas sueltas
-     *   (la app.js las mostrará sin sincronización).
+     *   (el reproductor las mostrará sin sincronización).
      * - Filtra metadata LRC irrelevante ([ar:], [ti:], etc.) solo si
      *   hay timestamps reales; si no, las mantiene como texto normal. */
     normalizeLyrics(text) {
