@@ -25,7 +25,25 @@ Object.assign(App, {
      *                      Si es null/undefined, las pistas van a "Mi Música".
      * Creamos un input NUEVO cada vez para evitar problemas de reutilización
      * y asegurar que el click() se ejecute dentro del gesto de usuario. */
+    /* ¿Soporta este entorno la selección de carpetas (webkitdirectory)?
+     * En Android (WebView/Chrome) y en el webxdc nativo de Delta Chat el
+     * selector de carpetas no funciona: se oculta la opción y se usa
+     * multiselección de archivos. */
+    supportsFolderPicker() {
+      try {
+        const probe = document.createElement('input');
+        if (!('webkitdirectory' in probe)) return false;
+        const ua = navigator.userAgent || '';
+        if (/Android/i.test(ua)) return false;
+        if (window.webxdc && !window.webxdc._isStub) return false;
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+
     openFilePicker(useDirectory, targetPlaylistId) {
+      if (useDirectory && !this.supportsFolderPicker()) useDirectory = false;
       const UPLOADER = window.AuroraUploader;
       const acceptedTypes = (UPLOADER && typeof UPLOADER.ACCEPTED === 'string')
         ? UPLOADER.ACCEPTED

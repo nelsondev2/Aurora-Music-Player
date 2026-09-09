@@ -43,13 +43,37 @@ Object.assign(App, {
 
         // #10 Detección de duplicados: comparar por fileName + fileSize
         let dupCount = 0;
+        let relinked = 0;
         const uniqueTracks = [];
         const existingForPlaylist = [];
         for (const t of newTracks) {
           const existing = this.findDuplicateTrack(t.fileName, t.fileSize);
           if (existing) {
             dupCount++;
-            if (t.src && t.src.startsWith('blob:')) URL.revokeObjectURL(t.src);
+            if (existing._needsRelink && (t._file || t.src)) {
+              // Curar pista restaurada de un backup: el backup aportó los
+              // metadatos (quizá editados) y el archivo aporta el audio.
+              if (t._file) existing._file = t._file;
+              if (t.src) {
+                if (existing.src && existing.src.startsWith('blob:') && existing.src !== t.src) {
+                  try { URL.revokeObjectURL(existing.src); } catch (e) {}
+                }
+                existing.src = t.src;
+                t.src = null; // reutilizada: no revocar abajo
+              }
+              if (!existing.duration && t.duration) existing.duration = t.duration;
+              if (!existing.coverThumb && t.coverThumb) {
+                existing.coverThumb = t.coverThumb;
+                existing.coverIsImage = t.coverIsImage;
+              }
+              delete existing._needsRelink;
+              this._urlCache.delete(existing.id);
+              if (existing.src) this._urlCache.set(existing.id, existing.src);
+              this.persistTrack(existing);
+              relinked++;
+            } else if (t.src && t.src.startsWith('blob:')) {
+              URL.revokeObjectURL(t.src);
+            }
             // Si se sube a una lista, reutilizar la pista de la biblioteca
             // (p. ej. se quitó de la lista y se vuelve a añadir el mismo archivo).
             existingForPlaylist.push(existing);
@@ -72,7 +96,9 @@ Object.assign(App, {
             this.persistPlaylist(destPlEarly);
           }
         }
-        if (dupCount > 0 && readded === 0 && uniqueTracks.length === 0) {
+        if (relinked > 0 && readded === 0 && uniqueTracks.length === 0) {
+          this.toast(this.t('relink_done').replace('X', String(relinked)));
+        } else if (dupCount > 0 && readded === 0 && uniqueTracks.length === 0) {
           this.toast(dupCount + ' ' + this.t('toast_duplicate_found'));
         }
         if (uniqueTracks.length === 0) {
@@ -80,7 +106,14 @@ Object.assign(App, {
             this.renderPlaylists();
             if (this._editingPlaylistId === destIdEarly) this.renderEditPlaylist();
             const destName = destPlEarly ? destPlEarly.name : this.t('my_music_playlist');
-            this.toast(readded + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destName);
+            let msg = readded + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destName;
+            if (relinked > 0) msg += ' · ' + this.t('relink_done').replace('X', String(relinked));
+            this.toast(msg);
+          }
+          if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
+          if (relinked > 0) {
+            this.renderLibrary();
+            if (typeof this.renderHome === 'function') this.renderHome();
           }
           return;
         }
@@ -134,11 +167,13 @@ Object.assign(App, {
         // Si estábamos editando la playlist destino, refrescar la vista
         if (this._editingPlaylistId === destId) this.renderEditPlaylist();
         this.hideEmptyState();
+        if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
         const destName = destPl ? destPl.name : this.t('my_music_playlist');
+        const relinkSuffix = relinked > 0 ? ' · ' + this.t('relink_done').replace('X', String(relinked)) : '';
         if (this._importCancelled) {
-          this.toast(this.t('toast_import_cancelled').replace('X', String(tracksToAdd.length)));
+          this.toast(this.t('toast_import_cancelled').replace('X', String(tracksToAdd.length)) + relinkSuffix);
         } else {
-          this.toast(tracksToAdd.length + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destName + (fromDirectory ? ' (carpeta)' : ''));
+          this.toast(tracksToAdd.length + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destName + (fromDirectory ? ' (carpeta)' : '') + relinkSuffix);
         }
       } catch (e) {
         console.error('[Aurora] Error cargando archivos:', e);
@@ -485,6 +520,7 @@ Object.assign(App, {
           ? this.t('toast_retag_done').replace('X', String(updated))
           : this.t('toast_retag_none'));
       }
+      if (updated > 0 && typeof this._invalidateArtwork === 'function') this._invalidateArtwork();
       return updated;
     },
 
@@ -626,7 +662,11 @@ Object.assign(App, {
       }
     },
 
-    /* #17 Importar biblioteca desde JSON */
+    /* #17 Importar biblioteca desde JSON.
+     * Restaura listas, favoritos, stats, historial y los metadatos de las
+     * pistas. Como el JSON no incluye audio, las pistas restauradas quedan
+     * marcadas con _needsRelink y se curan al reimportar los mismos
+     * archivos (ver handleFileInput) o desde Ajustes → Vincular audio. */
     async importLibrary() {
       let input = document.createElement('input');
       input.type = 'file';
@@ -639,12 +679,61 @@ Object.assign(App, {
         try {
           const text = await file.text();
           const data = JSON.parse(text);
+          const idMap = {}; // id del backup → id final (colisiones/duplicados)
+          let restoredTracks = 0;
+          if (data.tracks && Array.isArray(data.tracks)) {
+            for (const mt of data.tracks) {
+              if (!mt || typeof mt !== 'object') continue;
+              // Si ese archivo ya está en la biblioteca con audio, reutilizarlo
+              const dup = mt.fileName ? this.findDuplicateTrack(mt.fileName, mt.fileSize) : null;
+              if (dup) {
+                if (mt.id) idMap[mt.id] = dup.id;
+                continue;
+              }
+              let id = (mt.id && !this.tracks.some(t => t.id === mt.id)) ? mt.id : null;
+              if (!id) {
+                id = 't-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+              }
+              if (mt.id && mt.id !== id) idMap[mt.id] = id;
+              const t = {
+                id,
+                title: mt.title || mt.fileName || '—',
+                artist: mt.artist || '',
+                album: mt.album || '',
+                duration: Number(mt.duration) || 0,
+                fileSize: mt.fileSize || 0,
+                fileName: mt.fileName || '',
+                coverThumb: mt.coverThumb || null,
+                coverIsImage: !!mt.coverIsImage,
+                lrc: Array.isArray(mt.lrc) ? mt.lrc : null,
+                addedAt: mt.addedAt || Date.now(),
+                _needsRelink: true
+              };
+              this.tracks.push(t);
+              this.persistTrack(t);
+              restoredTracks++;
+            }
+          }
           if (data.playlists) {
-            this.playlists = data.playlists;
+            this.playlists = data.playlists.map(p => {
+              const pl = Object.assign({}, p);
+              if (Array.isArray(pl.trackIds)) {
+                pl.trackIds = pl.trackIds
+                  .map(tid => idMap[tid] || tid)
+                  .filter(tid => this.tracks.some(t => t.id === tid));
+              } else {
+                pl.trackIds = [];
+              }
+              return pl;
+            });
+            if (typeof this.ensureDefaultPlaylist === 'function') this.ensureDefaultPlaylist();
             this.playlists.forEach(p => this.persistPlaylist(p));
           }
           if (data.favorites) {
-            this.favorites = new Set(data.favorites);
+            const favs = (Array.isArray(data.favorites) ? data.favorites : [])
+              .map(fid => idMap[fid] || fid)
+              .filter(fid => this.tracks.some(t => t.id === fid));
+            this.favorites = new Set(favs);
             this.saveFavorites();
           }
           if (data.stats) {
@@ -652,19 +741,47 @@ Object.assign(App, {
             this.saveStats();
           }
           if (data.history) {
-            this._playHistory = data.history;
+            this._playHistory = Array.isArray(data.history) ? data.history : [];
             try { window.AuroraStorage.setSetting('history', this._playHistory); } catch (e) {}
+          }
+          if (!this.currentTrack && this.tracks.length) {
+            this.currentTrack = this.tracks[0];
+            this.currentTrackIdx = 0;
+            this.queue = this.tracks.map(t => t.id);
+            this.queueIdx = 0;
           }
           this.renderLibrary();
           this.renderPlaylists();
           this.renderFavorites();
-          this.toast(this.t('toast_imported_meta'));
+          if (typeof this.renderHome === 'function') this.renderHome();
+          if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
+          const pending = (typeof this.pendingRelinkCount === 'function') ? this.pendingRelinkCount() : 0;
+          if (restoredTracks > 0 && pending > 0) {
+            this.toast(this.t('relink_pending').replace('X', String(pending)));
+          } else {
+            this.toast(this.t('toast_imported_meta'));
+          }
         } catch (e) {
           this.toast(this.t('toast_load_error'));
         }
         input.remove();
       });
       input.click();
+    },
+
+    /* Nº de pistas restauradas de un backup que aún no tienen audio. */
+    pendingRelinkCount() {
+      return this.tracks.filter(t => t && t._needsRelink).length;
+    },
+
+    /* Muestra/oculta la fila «Vincular audio» de Ajustes según haya
+     * pistas pendientes de re-vincular. */
+    updateRelinkUI() {
+      const n = this.pendingRelinkCount();
+      const btn = document.getElementById('menuRelinkAudio');
+      const label = document.getElementById('relinkAudioLabel');
+      if (btn) btn.hidden = n === 0;
+      if (label) label.textContent = this.t('relink_pending').replace('X', String(n));
     },
 
     /* Persiste múltiples pistas en una sola transacción de IndexedDB.
@@ -728,6 +845,7 @@ Object.assign(App, {
       }
       // Limpiar también la cache de ganancia normalizada (#6)
       this._trackGainCache.delete(trackId);
+      if (typeof this._invalidateArtwork === 'function') this._invalidateArtwork(trackId);
       this.tracks.splice(idx, 1);
       // Quitar de la cola
       const qIdx = this.queue.indexOf(trackId);
@@ -751,6 +869,7 @@ Object.assign(App, {
       this.saveFavorites();
       // Eliminar de IndexedDB
       await this.deleteTrackFromStorage(trackId);
+      if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
 
       if (wasCurrent) {
         // Detener la reproducción de la pista eliminada

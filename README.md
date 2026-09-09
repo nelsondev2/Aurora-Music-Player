@@ -4,7 +4,7 @@ Reproductor de música **offline-first**. Carga archivos locales (MP3, M4A, FLAC
 
 Abre `index.html` en el navegador. No hace falta build.
 
-**Versión:** 1.0.0 · licencia MIT
+**Versión:** 1.1.0 · licencia MIT
 
 ## Capturas
 
@@ -16,10 +16,18 @@ Abre `index.html` en el navegador. No hace falta build.
 
 - Biblioteca local en IndexedDB, playlists, favoritos y cola
 - Shuffle estable (Fisher–Yates), repeat, gapless, crossfade y EQ de 5 bandas
+- Visualizador de frecuencias (barras/onda) en Now Playing
 - Letras sincronizadas (LRC), editor, offset, loop y karaoke si el archivo trae tags de palabra
+- Copia de seguridad (JSON) con re-vinculado de audio al restaurar
+- Compartir canciones y letras por chat en Delta Chat (`sendToChat`)
+- Importación por carpeta en escritorio (multiselección en Android)
+- Indicador de almacenamiento usado y aviso de cuota llena
 - Temas oscuro / claro / AMOLED, acentos e i18n (es, en, pt, zh, ja, fr, it, ru)
 - Estadísticas, historial y restauración de sesión
 - En escritorio (≥ 900 px): Now Playing a la izquierda, sidebar y hub a la derecha (tablet 600–899: marco 520 px)
+
+> Nota Delta Chat: un `.xdc` no puede sonar en segundo plano; la música se
+> detiene al salir del chat. La app lo avisa una vez en el primer arranque.
 
 ## Uso
 

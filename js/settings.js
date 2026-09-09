@@ -440,6 +440,9 @@ Object.assign(App, {
       try { localStorage.setItem('aurora_lang', code); } catch (e) {}
       this.applyLang();
       this.buildLangList();
+      // Refrescar etiquetas dinámicas (no data-i18n) en el nuevo idioma
+      if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
+      if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
       // Si el sheet de idioma está en modo onboarding, restaurar la UI
       // antes de cerrarlo para que la próxima vez se vea normal.
       const sheet = document.getElementById('sheetLanguage');
@@ -564,5 +567,50 @@ Object.assign(App, {
         });
         ul.appendChild(li);
       });
+    },
+
+    /* Muestra el uso de almacenamiento (IndexedDB) en Ajustes.
+     * Se llama al abrir Ajustes; si la API no existe, se oculta la fila. */
+    async updateStorageUsage() {
+      const label = document.getElementById('storageUsageLabel');
+      if (!label) return;
+      try {
+        if (!navigator.storage || typeof navigator.storage.estimate !== 'function') {
+          label.style.display = 'none';
+          return;
+        }
+        const { usage, quota } = await navigator.storage.estimate();
+        if (typeof usage !== 'number') {
+          label.style.display = 'none';
+          return;
+        }
+        const used = this.fmtBytes(usage);
+        const total = (typeof quota === 'number' && quota > 0) ? ' / ' + this.fmtBytes(quota) : '';
+        label.textContent = this.t('storage_usage')
+          .replace('X', String(this.tracks.length))
+          .replace('Y', used + total);
+        label.style.display = '';
+      } catch (e) {
+        label.style.display = 'none';
+      }
+    },
+
+    fmtBytes(n) {
+      n = Number(n) || 0;
+      if (n < 1024) return n + ' B';
+      const units = ['KB', 'MB', 'GB', 'TB'];
+      let v = n / 1024;
+      let u = 0;
+      while (v >= 1024 && u < units.length - 1) { v /= 1024; u++; }
+      return (v >= 100 ? Math.round(v) : v.toFixed(1)) + ' ' + units[u];
+    },
+
+    /* «Liberar espacio»: lleva a Ajustes → Almacenamiento para que el
+     * usuario gestione su biblioteca. Se llama al llenarse la cuota. */
+    offerFreeStorage() {
+      try {
+        if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
+        this.openSheet('sheetSettings');
+      } catch (e) {}
     },
 });

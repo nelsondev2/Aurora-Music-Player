@@ -250,8 +250,19 @@ Object.assign(App, {
       const url = this.getTrackUrl(t);
       if (!url) {
         console.warn('[Aurora] Sin URL de audio para', t.id);
+        // Pista pendiente de re-vincular (restaurada de un backup): avisar
+        // y saltar a la siguiente sin bloquear la reproducción.
+        this.toast(this.t('toast_track_no_audio'));
+        this._noAudioSkips = (this._noAudioSkips || 0) + 1;
+        if (this._noAudioSkips > this.queue.length) {
+          this._noAudioSkips = 0;
+          this.stopPlayback();
+          return;
+        }
+        this.next(true);
         return;
       }
+      this._noAudioSkips = 0;
       this.audio.src = url;
       try { this.audio.volume = this.volume; } catch (e) {}
       if (this.clearABRepeat) this.clearABRepeat();
@@ -898,11 +909,18 @@ Object.assign(App, {
      *  Visualizador de frecuencias en tiempo real (AnalyserNode)
      * ============================================================ */
     initVisualizer() {
-      let saved = 'bars';
+      let saved = null;
       try {
-        saved = localStorage.getItem('aurora_visualizer_mode') || 'bars';
+        saved = localStorage.getItem('aurora_visualizer_mode');
       } catch (e) {}
-      this.visualizerMode = saved;
+      if (!saved) {
+        // Respetar reduced-motion: desactivado por defecto si el usuario
+        // prefiere movimiento reducido.
+        try {
+          if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) saved = 'off';
+        } catch (e) {}
+      }
+      this.visualizerMode = saved || 'bars';
       this.updateVisualizerUI();
       if (this.isPlaying) this.startVisualizer();
     },
@@ -941,21 +959,74 @@ Object.assign(App, {
       }
     },
 
+    /* Ajusta el canvas a su tamaño real (DPR máx 2) para dibujar nítido
+     * sin sobredimensionar en pantallas densas. */
+    _fitVisualizerCanvas(canvas) {
+      try {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+        const h = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+          this._visGrad = null;
+          this._visGradKey = null;
+        }
+      } catch (e) {}
+    },
+
     startVisualizer() {
       if (this.visualizerMode === 'off') return;
-      if (this._visRafId) return;
+      if (this._visRafId || this._visTimer) return;
       const canvas = document.getElementById('visualizerCanvas');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
+      this._fitVisualizerCanvas(canvas);
 
-      const render = () => {
+      // Pausar el dibujado cuando el canvas no está en pantalla
+      // (otra vista, sheet encima): ahorra batería en móvil.
+      if (!this._visObserver && 'IntersectionObserver' in window) {
+        try {
+          this._visVisible = true;
+          this._visObserver = new IntersectionObserver((entries) => {
+            this._visVisible = entries.length ? !!entries[entries.length - 1].isIntersecting : true;
+          }, { threshold: 0.02 });
+          this._visObserver.observe(canvas);
+        } catch (e) {
+          this._visObserver = null;
+        }
+      }
+
+      let last = 0;
+      const render = (now) => {
         if (!this.isPlaying || this.visualizerMode === 'off') {
           this._visRafId = null;
+          this._visTimer = null;
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           return;
         }
+        if (this._visVisible === false || document.hidden) {
+          // Fuera de pantalla: reintentar en 500 ms sin dibujar
+          this._visRafId = null;
+          this._visTimer = setTimeout(() => {
+            this._visTimer = null;
+            if (this.isPlaying && this.visualizerMode !== 'off' && !this._visRafId) {
+              this._visRafId = requestAnimationFrame(render);
+            }
+          }, 500);
+          return;
+        }
         this._visRafId = requestAnimationFrame(render);
+        if (now - last < 33) return; // ~30 fps bastan en móvil
+        last = now;
+        // Reajustar si el layout cambió (vista oculta al arrancar, rotación)
+        try {
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          if (canvas.clientWidth > 0 && Math.abs(canvas.width - canvas.clientWidth * dpr) > 2) {
+            this._fitVisualizerCanvas(canvas);
+          }
+        } catch (e) {}
         this.drawVisualizerFrame(canvas, ctx);
       };
       this._visRafId = requestAnimationFrame(render);
@@ -965,6 +1036,10 @@ Object.assign(App, {
       if (this._visRafId) {
         cancelAnimationFrame(this._visRafId);
         this._visRafId = null;
+      }
+      if (this._visTimer) {
+        clearTimeout(this._visTimer);
+        this._visTimer = null;
       }
       const canvas = document.getElementById('visualizerCanvas');
       if (canvas) {
@@ -984,12 +1059,17 @@ Object.assign(App, {
 
       if (this.visualizerMode === 'wave') {
         this.analyser.getByteTimeDomainData(this.freqData);
-        ctx.lineWidth = 2.5;
-        const grad = ctx.createLinearGradient(0, 0, w, 0);
-        grad.addColorStop(0, 'rgba(124, 58, 237, 0.85)');
-        grad.addColorStop(0.5, 'rgba(236, 72, 153, 0.95)');
-        grad.addColorStop(1, 'rgba(6, 182, 212, 0.85)');
-        ctx.strokeStyle = grad;
+        ctx.lineWidth = Math.max(2, Math.min(3, w / 220));
+        const key = 'wave:' + w;
+        if (!this._visGrad || this._visGradKey !== key) {
+          const grad = ctx.createLinearGradient(0, 0, w, 0);
+          grad.addColorStop(0, 'rgba(124, 58, 237, 0.85)');
+          grad.addColorStop(0.5, 'rgba(236, 72, 153, 0.95)');
+          grad.addColorStop(1, 'rgba(6, 182, 212, 0.85)');
+          this._visGrad = grad;
+          this._visGradKey = key;
+        }
+        ctx.strokeStyle = this._visGrad;
         ctx.beginPath();
         const sliceWidth = w / this.freqData.length;
         let x = 0;
@@ -1003,6 +1083,16 @@ Object.assign(App, {
         ctx.stroke();
       } else {
         this.analyser.getByteFrequencyData(this.freqData);
+        // Un solo gradiente por altura (antes: 32 por frame)
+        const bkey = 'bars:' + h;
+        if (!this._visBarsGrad || this._visBarsKey !== bkey) {
+          const bg = ctx.createLinearGradient(0, 0, 0, h);
+          bg.addColorStop(0, 'rgba(236, 72, 153, 0.95)');
+          bg.addColorStop(1, 'rgba(124, 58, 237, 0.65)');
+          this._visBarsGrad = bg;
+          this._visBarsKey = bkey;
+        }
+        ctx.fillStyle = this._visBarsGrad;
         const numBars = 32;
         const barWidth = Math.floor(w / numBars) - 3;
         const step = Math.max(1, Math.floor(this.freqData.length / (numBars * 1.6)));
@@ -1012,11 +1102,6 @@ Object.assign(App, {
           const barHeight = Math.max(3, pct * (h - 8));
           const x = i * (barWidth + 3) + 2;
           const y = h - barHeight;
-
-          const grad = ctx.createLinearGradient(0, y, 0, h);
-          grad.addColorStop(0, 'rgba(236, 72, 153, 0.95)');
-          grad.addColorStop(1, 'rgba(124, 58, 237, 0.65)');
-          ctx.fillStyle = grad;
 
           ctx.beginPath();
           const r = Math.min(barWidth / 2, 3);

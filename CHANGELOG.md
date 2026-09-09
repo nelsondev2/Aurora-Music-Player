@@ -2,6 +2,20 @@
 
 Formato inspirado en [Keep a Changelog](https://keepachangelog.com/). Versionado semver.
 
+## [Sin publicar]
+
+### Añadido
+- Copia de seguridad re-vinculable: importar un JSON restaura también las pistas (metadatos) y reimportar los archivos les devuelve el audio, con fila «Vincular audio» en Ajustes e insignia «Sin audio».
+- Importación por carpeta en el menú Más (solo escritorio; oculta en Android/webxdc nativo).
+- Aviso de primer arranque en Delta Chat: la música se detiene al salir del chat.
+- Visualizador de frecuencias cableado en Now Playing (barras/onda/off) con pausa fuera de pantalla, 30 fps y respeto a `prefers-reduced-motion`.
+- Indicador de almacenamiento usado en Ajustes y acción «Liberar espacio» funcional.
+- Caché de artwork de MediaSession (sin regenerar PNG en cada pista).
+
+### Cambiado
+- `icon.png` optimizado: 226 KB → 93 KB (el `.xdc` baja ~130 KB).
+- `metadata.json` sin capacidades de plantilla ajenas a la app.
+
 ## 1.0.0 — 2026-08-29
 
 Primera versión publicable. Reproductor **local y offline-first** (sin P2P).

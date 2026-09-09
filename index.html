@@ -149,6 +149,11 @@
           </div>
         </section>
 
+        <!-- Visualizador de frecuencias (se oculta en modo off) -->
+        <section class="visualizer-section" id="visualizerSection">
+          <canvas id="visualizerCanvas" width="600" height="120" aria-hidden="true"></canvas>
+        </section>
+
         <!-- Volumen compacto (gesto / long-press) -->
         <div class="np-volume" id="npVolume" hidden>
           <svg class="ico" id="npVolIcon" aria-hidden="true"><use href="#i-volume-high"></use></svg>
@@ -186,6 +191,9 @@
           </button>
           <button class="sec-btn" id="btnVolume" data-i18n-aria="volume" aria-label="Volumen">
             <svg class="ico" aria-hidden="true"><use href="#i-volume-high"></use></svg>
+          </button>
+          <button class="sec-btn" id="btnVisualizer" data-i18n-aria="visualizer" aria-label="Visualizador" aria-pressed="false">
+            <svg class="ico" aria-hidden="true"><use href="#i-chart-simple"></use></svg>
           </button>
         </section>
 
@@ -580,6 +588,10 @@
               <svg class="ico" aria-hidden="true"><use href="#i-cloud-arrow-up"></use></svg>
               <span data-i18n="menu_load_music">Cargar música del dispositivo</span>
             </button>
+            <button class="menu-row" id="menuLoadFolder">
+              <svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg>
+              <span data-i18n="menu_load_folder">Cargar carpeta completa</span>
+            </button>
             <button class="menu-row" id="menuEqualizer" type="button">
               <svg class="ico" aria-hidden="true"><use href="#i-sliders"></use></svg>
               <span data-i18n="equalizer">Ecualizador</span>
@@ -798,6 +810,10 @@
               <svg class="ico" aria-hidden="true"><use href="#i-file-import"></use></svg>
               <span data-i18n="settings_import">Importar biblioteca</span>
             </button>
+            <button class="menu-row" id="menuRelinkAudio" hidden>
+              <svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg>
+              <span id="relinkAudioLabel">0 pistas sin audio</span>
+            </button>
             <button class="menu-row danger" id="menuDeleteLibrary" type="button">
               <svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>
               <span data-i18n="settings_delete_library">Borrar toda la biblioteca</span>
@@ -805,7 +821,7 @@
             <p class="settings-hint" data-i18n="settings_sleep_fade">El temporizador sleep hace un fade-out de 10 s al apagar.</p>
             <h4 class="section-title" data-i18n="settings_about">Acerca de</h4>
             <div class="about-block" id="aboutBlock">
-              <p class="about-line"><span data-i18n="settings_version">Versión</span> <strong id="aboutVersion">1.0.0</strong></p>
+              <p class="about-line"><span data-i18n="settings_version">Versión</span> <strong id="aboutVersion">1.1.0</strong></p>
               <p class="about-line" data-i18n="settings_license">Licencia MIT</p>
               <a class="menu-row" id="aboutSource" href="https://github.com/nelsondev2/Aurora-Music-Player" target="_blank" rel="noopener">
                 <svg class="ico" aria-hidden="true"><use href="#i-arrow-up-right-from-square"></use></svg>

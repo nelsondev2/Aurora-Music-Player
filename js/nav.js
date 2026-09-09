@@ -497,7 +497,8 @@ Object.assign(App, {
       const li = document.createElement('li');
       const isCurrent = this.currentTrack && this.currentTrack.id === t.id;
       const isSelected = this._selectedTrackIds && this._selectedTrackIds.has(t.id);
-      li.className = 'track-row' + (isCurrent ? ' current' : '') + (isSelected ? ' selected' : '') + (this._batchMode ? ' batch-mode' : '');
+      const isPending = !!(t && t._needsRelink);
+      li.className = 'track-row' + (isCurrent ? ' current' : '') + (isSelected ? ' selected' : '') + (this._batchMode ? ' batch-mode' : '') + (isPending ? ' is-pending' : '');
       li.dataset.track = t.id;
       li.innerHTML = `
         <div class="row-batch-check" ${this._batchMode ? '' : 'style="display:none"'}>
@@ -506,7 +507,7 @@ Object.assign(App, {
         <div class="row-cover"><canvas width="44" height="44"></canvas></div>
         <div class="row-text">
           <div class="row-title">${this.esc(t.title)}</div>
-          <div class="row-sub">${this.esc(t.artist)}${t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + this.esc(t.album) : ''}</div>
+          <div class="row-sub">${this.esc(t.artist)}${t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + this.esc(t.album) : ''}${isPending ? ' <span class="row-pending-badge">' + this.esc(this.t('relink_badge')) + '</span>' : ''}</div>
         </div>
         <div class="row-duration">${this.fmtTime(t.duration)}</div>
         <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>`;

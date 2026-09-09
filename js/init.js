@@ -46,6 +46,7 @@ Object.assign(App, {
       this.wireGestures();
       this.renderLibrary();
       this.renderPlaylists();
+      if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
       if (typeof this.renderHome === 'function') this.renderHome();
       this.showView('home');
       this.setNavActive('home');
@@ -100,7 +101,34 @@ Object.assign(App, {
         this.retagExistingTracks({ silent: true }).catch(() => {});
       }
 
+      if (typeof this.maybeShowBackgroundNotice === 'function') this.maybeShowBackgroundNotice();
+
       console.log('[Aurora] App inicializada ·', this.tracks.length, 'pistas', restored ? '· sesión restaurada' : '');
+    },
+
+    /* Aviso honesto de primer arranque en Delta Chat nativo: un .xdc no
+     * puede sonar en segundo plano. Se muestra una sola vez y nunca tapa
+     * al onboarding de idioma (reintenta si hay un sheet abierto). */
+    maybeShowBackgroundNotice() {
+      try {
+        const native = !!(window.webxdc && !window.webxdc._isStub);
+        if (!native) return;
+        if (localStorage.getItem('aurora_bg_notice') === '1') return;
+        const attempt = (left) => {
+          if (document.querySelector('.sheet.open')) {
+            if (left > 0) setTimeout(() => attempt(left - 1), 1000);
+            return;
+          }
+          try { localStorage.setItem('aurora_bg_notice', '1'); } catch (e) {}
+          this.showConfirm({
+            message: this.t('bg_notice_text'),
+            okLabel: this.t('bg_notice_ok'),
+            danger: false,
+            hideCancel: true
+          }).catch(() => {});
+        };
+        setTimeout(() => attempt(8), 700);
+      } catch (e) {}
     },
 
     /* Muestra el sheet de idioma en modo "onboarding" (primer arranque).

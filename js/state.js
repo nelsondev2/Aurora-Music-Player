@@ -143,7 +143,7 @@
     /* Utilidades */
     _wired: {},
     _lastError: null,
-    VERSION: '1.0.0',
+    VERSION: '1.1.0',
     _marqueeEnabled: true,
     _vinylEnabled: false,
 

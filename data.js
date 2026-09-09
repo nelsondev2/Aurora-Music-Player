@@ -2140,6 +2140,66 @@ const I18N = {
     it: 'Solo metadati (playlist, preferiti, tag). Nessun file audio.',
     ru: 'Только метаданные (плейлисты, избранное, теги). Без аудиофайлов.'
   },
+  relink_pending: {
+    es: 'X pistas sin audio — toca para vincular',
+    en: 'X tracks without audio — tap to link',
+    pt: 'X faixas sem áudio — toca para vincular',
+    zh: 'X 首歌曲缺失音频 — 点击重新关联',
+    ja: '音声のない曲がX件 — タップして関連付け',
+    fr: 'X morceaux sans audio — touchez pour associer',
+    it: 'X brani senza audio — tocca per collegare',
+    ru: 'X треков без аудио — нажмите, чтобы привязать'
+  },
+  relink_done: {
+    es: 'X pistas vinculadas',
+    en: 'X tracks linked',
+    pt: 'X faixas vinculadas',
+    zh: '已关联 X 首',
+    ja: 'X件を関連付けました',
+    fr: 'X morceaux associés',
+    it: 'X brani collegati',
+    ru: 'Привязано треков: X'
+  },
+  toast_track_no_audio: {
+    es: 'Pista sin audio: vuelve a importarla para escucharla',
+    en: 'Track has no audio: import it again to play it',
+    pt: 'Faixa sem áudio: importa-a de novo para ouvir',
+    zh: '歌曲无音频：请重新导入后播放',
+    ja: '音声がありません：再度インポートしてください',
+    fr: 'Morceau sans audio : réimportez-le pour l\'écouter',
+    it: 'Brano senza audio: importalo di nuovo per ascoltarlo',
+    ru: 'Нет аудио: импортируйте трек заново'
+  },
+  relink_badge: {
+    es: 'Sin audio',
+    en: 'No audio',
+    pt: 'Sem áudio',
+    zh: '无音频',
+    ja: '音声なし',
+    fr: 'Sans audio',
+    it: 'Senza audio',
+    ru: 'Без аудио'
+  },
+  bg_notice_text: {
+    es: 'La música suena mientras Aurora esté abierta. Al salir del chat o cerrar Delta Chat, la reproducción se detiene.',
+    en: 'Music plays while Aurora is open. Leaving the chat or closing Delta Chat stops playback.',
+    pt: 'A música toca enquanto o Aurora estiver aberto. Sair do chat ou fechar o Delta Chat para a reprodução.',
+    zh: '仅在 Aurora 打开时播放音乐。离开聊天或关闭 Delta Chat 将停止播放。',
+    ja: '音楽は Aurora を開いている間のみ再生されます。チャットを離れると停止します。',
+    fr: 'La musique joue tant qu\'Aurora est ouvert. Quitter le chat arrête la lecture.',
+    it: 'La musica suona mentre Aurora è aperto. Uscire dalla chat interrompe la riproduzione.',
+    ru: 'Музыка играет, пока открыта Aurora. Выход из чата останавливает воспроизведение.'
+  },
+  bg_notice_ok: {
+    es: 'Entendido',
+    en: 'Got it',
+    pt: 'Entendi',
+    zh: '知道了',
+    ja: '了解',
+    fr: 'Compris',
+    it: 'Capito',
+    ru: 'Понятно'
+  },
   settings_free_storage: {
     es: 'Liberar espacio', en: 'Free up space', pt: 'Libertar espaço',
     zh: '释放空间', ja: '容量を空ける', fr: 'Libérer de l\'espace',

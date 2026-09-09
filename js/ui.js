@@ -37,6 +37,11 @@ Object.assign(App, {
           okBtn.textContent = opts.okLabel || this.t('confirm_ok');
           okBtn.classList.toggle('danger', opts.danger !== false);
         }
+        if (cancelBtn) {
+          if (opts.cancelLabel) cancelBtn.textContent = opts.cancelLabel;
+          // hideCancel: aviso informativo con un solo botón (no pregunta)
+          cancelBtn.style.display = opts.hideCancel ? 'none' : '';
+        }
         let done = false;
         this._confirmResolver = (val) => {
           if (done) return;
@@ -220,6 +225,20 @@ Object.assign(App, {
     },
 
     canvasToUrl(track, size) {
+      if (!this._artworkCache) this._artworkCache = new Map();
+      const key = (track.id || track.title) + ':' + size;
+      if (this._artworkCache.has(key)) return this._artworkCache.get(key);
+      const url = this._renderArtwork(track, size);
+      // Caché acotada (FIFO): evita regenerar PNG en cada cambio de pista
+      if (this._artworkCache.size >= 40) {
+        const oldest = this._artworkCache.keys().next().value;
+        this._artworkCache.delete(oldest);
+      }
+      this._artworkCache.set(key, url);
+      return url;
+    },
+
+    _renderArtwork(track, size) {
       // Si la portada ya es una imagen (dataURL), usarla directamente
       const isImage = track.coverIsImage || (typeof track.cover === 'string' && track.cover.startsWith('data:'));
       if (size <= 96 && track.coverThumb) return track.coverThumb;
@@ -239,8 +258,22 @@ Object.assign(App, {
       ctx.fillStyle = 'rgba(255,255,255,0.9)';
       ctx.font = `900 ${size*0.45}px ui-rounded, -apple-system, sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(track.title.charAt(0).toUpperCase(), size/2, size/2);
+      ctx.fillText((track.title || '?').charAt(0).toUpperCase(), size/2, size/2);
       return c.toDataURL('image/png');
+    },
+
+    /* Invalidar artwork cacheado (al borrar o re-etiquetar pistas). */
+    _invalidateArtwork(trackId) {
+      if (!this._artworkCache) return;
+      if (!trackId) {
+        this._artworkCache.clear();
+        return;
+      }
+      for (const k of this._artworkCache.keys()) {
+        if (k === trackId + ':96' || k === trackId + ':256' || k === trackId + ':512') {
+          this._artworkCache.delete(k);
+        }
+      }
     },
 
     /* ============================================================

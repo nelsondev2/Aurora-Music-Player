@@ -209,6 +209,7 @@ Object.assign(App, {
       if (btnSettings) btnSettings.addEventListener('click', () => {
         this.closeSheet('sheetMore');
         if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
+        if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
         this.openSheet('sheetSettings');
       });
       // Temas desde Ajustes
@@ -237,6 +238,12 @@ Object.assign(App, {
       const btnImport = document.getElementById('menuImportLibrary');
       if (btnImport) btnImport.addEventListener('click', () => {
         this.importLibrary();
+      });
+      const btnRelink = document.getElementById('menuRelinkAudio');
+      if (btnRelink) btnRelink.addEventListener('click', () => {
+        // Reimportar los mismos archivos cura las pistas pendientes
+        // (la curación vive en handleFileInput).
+        this.openFilePicker(false);
       });
       const btnFree = document.getElementById('menuFreeStorage');
       if (btnFree) btnFree.addEventListener('click', () => {
@@ -306,6 +313,18 @@ Object.assign(App, {
         this.openFilePicker();
         this.closeSheet('sheetMore');
       });
+      const btnLoadFolder = document.getElementById('menuLoadFolder');
+      if (btnLoadFolder) {
+        // Sin soporte de carpetas (Android, webxdc nativo): ocultar la opción
+        if (typeof this.supportsFolderPicker === 'function' && !this.supportsFolderPicker()) {
+          btnLoadFolder.style.display = 'none';
+        } else {
+          btnLoadFolder.addEventListener('click', () => {
+            this.openFilePicker(true);
+            this.closeSheet('sheetMore');
+          });
+        }
+      }
 
       // Visualizador y Bucle A-B
       const btnVis = document.getElementById('btnVisualizer');
