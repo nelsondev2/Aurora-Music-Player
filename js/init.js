@@ -106,8 +106,9 @@ Object.assign(App, {
       console.log('[Aurora] App inicializada ·', this.tracks.length, 'pistas', restored ? '· sesión restaurada' : '');
     },
 
-    /* Aviso honesto de primer arranque en Delta Chat nativo: un .xdc no
-     * puede sonar en segundo plano. Se muestra una sola vez y nunca tapa
+    /* Consejo de primer arranque en Delta Chat nativo: el webxdc vive en
+     * su propia actividad y sigue sonando al pulsar inicio, pero el botón
+     * atrás la destruye y detiene la música. Una sola vez y sin tapar
      * al onboarding de idioma (reintenta si hay un sheet abierto). */
     maybeShowBackgroundNotice() {
       try {

@@ -26,8 +26,9 @@ Abre `index.html` en el navegador. No hace falta build.
 - Estadísticas, historial y restauración de sesión
 - En escritorio (≥ 900 px): Now Playing a la izquierda, sidebar y hub a la derecha (tablet 600–899: marco 520 px)
 
-> Nota Delta Chat: un `.xdc` no puede sonar en segundo plano; la música se
-> detiene al salir del chat. La app lo avisa una vez en el primer arranque.
+> Nota Delta Chat: el `.xdc` corre en su propia actividad y sigue sonando en
+> segundo plano al pulsar inicio; el botón atrás la cierra y detiene la música.
+> La app muestra este consejo una vez en el primer arranque.
 
 ## Uso
 

@@ -2181,14 +2181,14 @@ const I18N = {
     ru: 'Без аудио'
   },
   bg_notice_text: {
-    es: 'La música suena mientras Aurora esté abierta. Al salir del chat o cerrar Delta Chat, la reproducción se detiene.',
-    en: 'Music plays while Aurora is open. Leaving the chat or closing Delta Chat stops playback.',
-    pt: 'A música toca enquanto o Aurora estiver aberto. Sair do chat ou fechar o Delta Chat para a reprodução.',
-    zh: '仅在 Aurora 打开时播放音乐。离开聊天或关闭 Delta Chat 将停止播放。',
-    ja: '音楽は Aurora を開いている間のみ再生されます。チャットを離れると停止します。',
-    fr: 'La musique joue tant qu\'Aurora est ouvert. Quitter le chat arrête la lecture.',
-    it: 'La musica suona mentre Aurora è aperto. Uscire dalla chat interrompe la riproduzione.',
-    ru: 'Музыка играет, пока открыта Aurora. Выход из чата останавливает воспроизведение.'
+    es: 'Consejo: usa el botón inicio para salir sin detener la música. El botón atrás cierra Aurora y detiene la reproducción.',
+    en: 'Tip: use the home button to leave without stopping the music. The back button closes Aurora and stops playback.',
+    pt: 'Dica: use o botão de início para sair sem parar a música. O botão de voltar fecha o Aurora e para a reprodução.',
+    zh: '提示：按主屏幕键离开可继续播放音乐。按返回键将关闭 Aurora 并停止播放。',
+    ja: 'ヒント：ホームボタンで離れれば音楽は流れ続けます。戻るボタンでは Aurora が閉じて停止します。',
+    fr: 'Astuce : utilisez le bouton d\'accueil pour partir sans couper la musique. Le bouton retour ferme Aurora et arrête la lecture.',
+    it: 'Suggerimento: usa il tasto home per uscire senza fermare la musica. Il tasto indietro chiude Aurora e interrompe la riproduzione.',
+    ru: 'Совет: кнопка «Домой» сворачивает без остановки музыки. Кнопка «Назад» закрывает Aurora и останавливает воспроизведение.'
   },
   bg_notice_ok: {
     es: 'Entendido',
