@@ -229,7 +229,8 @@ Object.assign(App, {
         border: 'rgba(255,255,255,0.08)',
         blurBg: 'rgba(10, 10, 18, 0.85)',
         toastBg: 'rgba(20, 20, 30, 0.95)',
-        toastText: '#ffffff'
+        toastText: '#ffffff',
+        danger: '#E85A5A'
       },
       light: {
         bg0: '#F4F1EA', bg1: '#FFFCF7', bg2: '#EBE6DC', bg3: '#E0D9CC',
@@ -243,7 +244,8 @@ Object.assign(App, {
         border: 'rgba(20,16,12,0.10)',
         blurBg: 'rgba(255, 250, 244, 0.92)',
         toastBg: 'rgba(244, 241, 234, 0.96)',
-        toastText: '#1A1612'
+        toastText: '#1A1612',
+        danger: '#BE3F3F'
       },
       amoled: {
         bg0: '#000000', bg1: '#000000', bg2: '#0a0a0a', bg3: '#141414',
@@ -257,7 +259,8 @@ Object.assign(App, {
         border: 'rgba(255,255,255,0.08)',
         blurBg: 'rgba(0, 0, 0, 0.92)',
         toastBg: 'rgba(12, 12, 12, 0.96)',
-        toastText: '#ffffff'
+        toastText: '#ffffff',
+        danger: '#E85A5A'
       }
     },
     ACCENTS: {
@@ -323,6 +326,7 @@ Object.assign(App, {
       root.style.setProperty('--blur-bg', t.blurBg);
       root.style.setProperty('--toast-bg', t.toastBg);
       root.style.setProperty('--toast-text', t.toastText);
+      if (t.danger) root.style.setProperty('--danger', t.danger);
       root.style.setProperty('--accent', accent);
       root.style.setProperty('--accent-2', a.accent2);
       root.style.setProperty('--accent-fill', fill);

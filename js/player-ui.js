@@ -122,7 +122,7 @@ Object.assign(App, {
       // Letra inicial
       ctx.globalAlpha = 0.85;
       ctx.fillStyle = '#fff';
-      ctx.font = (mini ? '700 38px ' : '900 220px ') + "ui-rounded, -apple-system, sans-serif";
+      ctx.font = (mini ? '700 38px ' : '900 220px ') + "Outfit, ui-rounded, -apple-system, sans-serif";
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(track.title.charAt(0).toUpperCase(), cx, cy);

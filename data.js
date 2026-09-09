@@ -14,20 +14,22 @@ const TRACKS = [];
 const DEFAULT_PLAYLISTS = [];
 
 /* Paleta para generar portadas dinámicas cuando una pista no trae
- * artwork en sus metadatos ID3. */
+ * artwork en sus metadatos ID3.
+ * Familia aurora (noche fría + ámbar/rosa de contraste), no catálogo
+ * Tailwind. El ángulo varía para que el fondo de Now Playing no repita. */
 const COVER_PALETTE = [
   { from: '#6E5CFF', to: '#FF7AB6', angle: 135 },
-  { from: '#F59E0B', to: '#EF4444', angle: 135 },
-  { from: '#06B6D4', to: '#3B82F6', angle: 135 },
-  { from: '#10B981', to: '#06B6D4', angle: 135 },
-  { from: '#F97316', to: '#DC2626', angle: 135 },
-  { from: '#1E40AF', to: '#6366F1', angle: 135 },
-  { from: '#FF7AB6', to: '#8B7CFF', angle: 135 },
-  { from: '#6366F1', to: '#06B6D4', angle: 135 },
-  { from: '#F59E0B', to: '#EF4444', angle: 135 },
-  { from: '#14B8A6', to: '#0EA5E9', angle: 135 },
-  { from: '#A855F7', to: '#6366F1', angle: 135 },
-  { from: '#FB7185', to: '#A855F7', angle: 135 }
+  { from: '#1A508C', to: '#5AD4DC', angle: 135 },
+  { from: '#2846A0', to: '#B48CFF', angle: 120 },
+  { from: '#14285A', to: '#508CDC', angle: 150 },
+  { from: '#0C4A5E', to: '#46C8DC', angle: 120 },
+  { from: '#C45C18', to: '#E8B84A', angle: 135 },
+  { from: '#C8505A', to: '#FFA078', angle: 120 },
+  { from: '#7A1E3C', to: '#E85A7A', angle: 150 },
+  { from: '#2A6B48', to: '#A8C86A', angle: 135 },
+  { from: '#4C2E9E', to: '#8B7CFF', angle: 135 },
+  { from: '#96275C', to: '#E87AB0', angle: 120 },
+  { from: '#2E3A5C', to: '#7C8CFF', angle: 150 }
 ];
 
 /* Texto LRC de muestra para cuando una pista no trae letra.

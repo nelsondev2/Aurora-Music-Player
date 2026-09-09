@@ -14,6 +14,9 @@ Formato inspirado en [Keep a Changelog](https://keepachangelog.com/). Versionado
 
 ### Cambiado
 - `icon.png` optimizado: 226 KB → 93 KB (el `.xdc` baja ~130 KB).
+- Paleta de portadas generadas rehecha en familia aurora (12 dúos, sin duplicados ni catálogo Tailwind); mini-portadas con surcos y letra Outfit.
+- Tipografía display: Outfit latin 700 local (14 KB, OFL) en `--font-display` (títulos, wordmark, portadas).
+- `font-size` migrados a tokens (108/127); `--danger` por tema (`#BE3F3F` en claro).
 - `metadata.json` sin capacidades de plantilla ajenas a la app.
 
 ## 1.0.0 — 2026-08-29

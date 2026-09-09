@@ -64,10 +64,23 @@ Object.assign(App, {
       const g = ctx.createLinearGradient(0,0,W,H);
       g.addColorStop(0, cover.from); g.addColorStop(1, cover.to);
       ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.font = "700 " + Math.floor(H*0.5) + "px sans-serif";
+      // Surcos concéntricos sutiles (misma familia que la portada grande)
+      ctx.save();
+      ctx.globalAlpha = 0.14;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      const cx = W / 2, cy = H / 2;
+      const step = Math.max(6, Math.min(W, H) / 7);
+      for (let r = step; r < Math.max(W, H); r += step) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.font = "700 " + Math.floor(H*0.48) + "px Outfit, ui-rounded, sans-serif";
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText((track.title || '?').charAt(0).toUpperCase(), W/2, H/2);
+      ctx.fillText((track.title || '?').charAt(0).toUpperCase(), W/2, H/2 + Math.floor(H*0.02));
     },
 
     async ensureCoverThumbs(track) {

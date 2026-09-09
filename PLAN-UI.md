@@ -6,14 +6,14 @@
 
 **Puntuación de partida (app real, no las capturas del README):**
 
-| Superficie | Hoy | Techo de esta fase |
-|---|---|---|
-| Now Playing oscuro | 84 | 92 |
-| Hub / biblioteca / sheets | 76 | 88 |
-| Tema claro | 68 | 86 |
-| Desktop ≥ 900 px | 64 | 86 |
-| Marca (icono, tipo, acento) | 70 | 90 |
-| **Global** | **78** | **~88** |
+| Superficie | v1.0 (base) | v1.1 (hoy) | Techo de esta fase |
+|---|---|---|---|
+| Now Playing oscuro | 84 | 87 | 92 |
+| Hub / biblioteca / sheets | 76 | 84 | 88 |
+| Tema claro | 68 | 82 | 86 |
+| Desktop ≥ 900 px | 64 | 80 | 86 |
+| Marca (icono, tipo, acento) | 70 | 86 | 90 |
+| **Global** | **78** | **~84** | **~88** |
 
 Las fotos de `docs/` se ven ~90 porque son *mockups*. El criterio de éxito es que un screenshot *de la app corriendo* se acerque a esas fotos.
 
@@ -80,7 +80,7 @@ Sin Google Fonts. Dos caminos, en este orden:
    - `--fs-micro: 11px` · `--fs-caption: 12px` · `--fs-body: 14px` · `--fs-ui: 15px` · `--fs-title: 20px` · `--fs-display: 32px`
    - Títulos de pista: `--font-display`, `letter-spacing: -0.03em`, weight 700.
    - Labels de nav: 10 px, `0.08em`, uppercase — o se eliminan (ver Fase C).
-2. **Después (opt-in, ≤ 40 KB):** un `.woff2` subset latin (`Fraunces` o `Newsreader` para display, o `Outfit` para UI). Solo si el paso 1 no basta en screenshot.
+2. **Después (opt-in, ≤ 40 KB):** ✅ hecho en 1.1.0 — `Outfit` latin 700 (14 KB, OFL) en `assets/fonts/`, token `--font-display`, letras de portada en canvas. Sin CDN.
 
 ### Radio y elevación
 
@@ -175,11 +175,12 @@ Cada fase es un PR. No se mezcla con features de audio. Criterio de salida = scr
 
 ### Fase F — Motion, micro, evidencias (½ día)
 
-- [ ] Un easing, una duración de cambio de vista (ya 350 ms — bajar a 240 + `--ease-out`).
-- [ ] Press: `transform: scale(.98)` en portada y play; nada en filas (scroll).
-- [ ] Skeleton de 3 líneas al importar el primer lote (el overlay de progreso ya existe; esto es la lista).
-- [ ] Regenerar `docs/now-playing.jpg`, `library.jpg`, `lyrics.jpg` **desde la app**, no con un generador. El README deja de mentir.
-- [ ] Pasada de contraste WCAG AA en light (nav, chips, `--text-3` sobre papel).
+- [x] Un easing, una duración de cambio de vista (`--view-dur: 240ms` + `--ease-out`).
+- [x] Press: `scale()` en portada, play, iconos y nav; nada en filas (scroll).
+- [x] Skeleton de 3 líneas al importar el primer lote (`.is-skeleton` + `skelShine`, respeta reduced-motion).
+- [ ] Regenerar `docs/now-playing.jpg`, `library.jpg`, `lyrics.jpg` **desde la app** (`scripts/capture-docs.mjs` + Chromium). Paso manual: requiere escritorio o móvil con música.
+- [x] `--danger` por tema (`#BE3F3F` en papel claro para insignias y borrados).
+- [ ] Pasada completa de contraste WCAG AA en light con la app corriendo (manual, junto a las capturas).
 
 **Salida:** README = fotos reales. Reduced-motion no deja animaciones huérfanas.
 
@@ -189,7 +190,7 @@ Cada fase es un PR. No se mezcla con features de audio. Criterio de salida = scr
 
 - ❌ CDN de fuentes o iconos (Google Fonts, jsDelivr, FA kit).
 - ❌ Redesign a Material You / iOS 26 / “glass total”. Aurora es opaca, con blur *puntual* (nav, mini, toast).
-- ❌ Visualizador FFT (se eliminó a propósito).
+- ❌ Visualizador FFT invasivo. Decisión 1.1.0: se mantiene el de `main`, pero **sutil y opcional** — tira de 54 px bajo el progreso, modos barras/onda/off, apagado con `prefers-reduced-motion`, pausa fuera de pantalla. Si en screenshot real rompe el principio «portada = 60 %», se quita.
 - ❌ Ilustraciones raster de empty state a 2× (pesan; los orbes CSS bastan).
 - ❌ Dark *and* light *and* amoled *and* “oled purple” — 3 temas es el máximo.
 - ❌ Más de 5 acentos.
@@ -217,7 +218,7 @@ La fase de UI se da por cerrada cuando:
 - [x] AMOLED no tiene grises `#14141f` residuales (`--bg-2: #0a0a0a` en CSS).
 - [x] Desktop 1280 px: sidebar + NP, sin bottom-nav.
 - [x] `fa-solid` / `fa-regular` = 0 en el repo (salvo este plan).
-- [x] `docs/*.jpg` son recortes de la app.
+- [ ] `docs/*.jpg` son recortes de la app (hoy son mockups; paso manual con `scripts/capture-docs.mjs`).
 - [x] `node audit-i18n.js` exit 0.
 - [x] webxdc y viewport 390 se ven como hoy (no peores).
 
