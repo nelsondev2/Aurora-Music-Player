@@ -19,6 +19,15 @@ Formato inspirado en [Keep a Changelog](https://keepachangelog.com/). Versionado
 - `font-size` migrados a tokens (108/127); `--danger` por tema (`#BE3F3F` en claro).
 - `metadata.json` sin capacidades de plantilla ajenas a la app.
 
+### Corregido
+- `play()` rechazado: distingue `AbortError` (toques rápidos, silencioso) de `NotAllowedError` (aviso real) y de archivo irreproducible (avisa y salta); el spinner de carga siempre se apaga para que la app no parezca congelada.
+- Normalización de volumen: no decodifica archivos de más de 15 MB (evita picos de RAM que podían tumbar el WebView en móviles modestos).
+- Portadas ID3 limitadas a 600 px JPEG al importar (antes se guardaban a resolución completa en IndexedDB, acercando la cuota).
+- La sesión (guardada cada 5 s) ya no persiste la portada original de MBs, solo degradado o miniatura.
+- Almacenamiento persistente (`navigator.storage.persist()`) pedido al arrancar, con 🔒 en Ajustes cuando el sistema lo concede.
+- Detector de biblioteca perdida: si hay 0 pistas pero había música guardada, avisa (posible limpieza del sistema u otra copia del `.xdc`) y ofrece importar una copia de seguridad.
+- Salto de pistas sin audio diferido (sin recursión síncrona con colas enormes).
+
 ## 1.0.0 — 2026-08-29
 
 Primera versión publicable. Reproductor **local y offline-first** (sin P2P).

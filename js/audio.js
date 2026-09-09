@@ -259,7 +259,8 @@ Object.assign(App, {
           this.stopPlayback();
           return;
         }
-        this.next(true);
+        // Diferido: evita recursión síncrona profunda con colas enormes.
+        setTimeout(() => this.next(true), 0);
         return;
       }
       this._noAudioSkips = 0;
@@ -396,11 +397,30 @@ Object.assign(App, {
             this.trackPlayStarted();
             this.updateMediaPosition(true);
           }).catch((e) => {
-            console.warn('[Aurora] play() rechazado:', e.message);
-            this._lastError = { msg: 'play() rechazado: ' + e.message, ts: Date.now() };
+            const name = (e && e.name) || '';
+            console.warn('[Aurora] play() rechazado:', name, e && e.message);
+            this._lastError = { msg: 'play() rechazado: ' + (e && e.message), ts: Date.now() };
             this.isPlaying = false;
             this.updatePlayUI();
-            this.toast(this.t('toast_play_blocked'));
+            // Siempre apagar el spinner: si no, la app parece congelada.
+            if (typeof this.setBuffering === 'function') this.setBuffering(false);
+            // AbortError = carrera benigna (toques rápidos / cambio de pista):
+            // no asustar con el aviso de bloqueo.
+            if (name === 'AbortError') return;
+            if (name === 'NotAllowedError') {
+              this.toast(this.t('toast_play_blocked'));
+              return;
+            }
+            // NotSupportedError u otros: el archivo no se puede reproducir → saltar
+            // a la siguiente (misma política que el manejador de 'error' de audio).
+            this.toast(this.t('toast_audio_error'));
+            this._decodeSkipCount = (this._decodeSkipCount || 0) + 1;
+            if (this._decodeSkipCount >= 3) {
+              this._decodeSkipCount = 0;
+              this.togglePlay(false);
+            } else {
+              setTimeout(() => this.next(true), 0);
+            }
           });
         }
       } else {

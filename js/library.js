@@ -174,6 +174,7 @@ Object.assign(App, {
           this.toast(this.t('toast_import_cancelled').replace('X', String(tracksToAdd.length)) + relinkSuffix);
         } else {
           this.toast(tracksToAdd.length + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destName + (fromDirectory ? ' (carpeta)' : '') + relinkSuffix);
+        this.syncLibCountMarker();
         }
       } catch (e) {
         console.error('[Aurora] Error cargando archivos:', e);
@@ -338,6 +339,9 @@ Object.assign(App, {
         if (!this.audioCtx) return 1.0;
         const file = track._file || track.fileBlob;
         if (!file) return 1.0;
+        // No decodificar archivos grandes: decodeAudioData reserva del orden
+        // de 10x el tamaño en RAM y puede tumbar el WebView en móviles modestos.
+        if (file.size && file.size > 15 * 1024 * 1024) return 1.0;
         const arrayBuffer = await file.arrayBuffer();
         const audioBuffer = await this.audioCtx.decodeAudioData(arrayBuffer);
         // Calcular RMS (root mean square) como medida de volumen
@@ -761,6 +765,7 @@ Object.assign(App, {
           } else {
             this.toast(this.t('toast_imported_meta'));
           }
+          this.syncLibCountMarker();
         } catch (e) {
           this.toast(this.t('toast_load_error'));
         }
@@ -828,6 +833,20 @@ Object.assign(App, {
       }
     },
 
+    /* Guarda en localStorage cuántas pistas tiene la biblioteca.
+     * Sirve para detectar pérdida de datos: si al arrancar hay 0 pistas
+     * pero el marcador dice N > 0, el almacenamiento se borró fuera de
+     * la app (o se abrió otra copia) y se avisa en vez de callar. */
+    syncLibCountMarker() {
+      try {
+        if (this.tracks.length > 0) {
+          localStorage.setItem('aurora_lib_count', String(this.tracks.length));
+        } else {
+          localStorage.removeItem('aurora_lib_count');
+        }
+      } catch (e) {}
+    },
+
     async deleteTrack(trackId, opts) {
       opts = opts || {};
       const idx = this.tracks.findIndex(t => t.id === trackId);
@@ -847,6 +866,7 @@ Object.assign(App, {
       this._trackGainCache.delete(trackId);
       if (typeof this._invalidateArtwork === 'function') this._invalidateArtwork(trackId);
       this.tracks.splice(idx, 1);
+      this.syncLibCountMarker();
       // Quitar de la cola
       const qIdx = this.queue.indexOf(trackId);
       if (qIdx >= 0) {
@@ -918,6 +938,7 @@ Object.assign(App, {
 
       // 3. Vaciar estado en memoria
       this.tracks = [];
+      this.syncLibCountMarker();
       this.queue = [];
       this.queueIdx = 0;
       this._originalQueue = null;

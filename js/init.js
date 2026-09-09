@@ -102,6 +102,7 @@ Object.assign(App, {
       }
 
       if (typeof this.maybeShowBackgroundNotice === 'function') this.maybeShowBackgroundNotice();
+      if (typeof this.maybeShowLibraryMissingNotice === 'function') this.maybeShowLibraryMissingNotice();
 
       console.log('[Aurora] App inicializada ·', this.tracks.length, 'pistas', restored ? '· sesión restaurada' : '');
     },
@@ -129,6 +130,34 @@ Object.assign(App, {
           }).catch(() => {});
         };
         setTimeout(() => attempt(8), 700);
+      } catch (e) {}
+    },
+
+    /* Si la biblioteca está vacía pero el marcador dice que había música,
+     * el almacenamiento se perdió fuera de la app (limpieza del sistema,
+     * cuota, u otra copia del .xdc): avisar y ofrecer importar un backup
+     * en vez de mostrar un estado vacío silencioso. */
+    maybeShowLibraryMissingNotice() {
+      try {
+        if (this.tracks.length > 0) return;
+        let expected = 0;
+        try { expected = parseInt(localStorage.getItem('aurora_lib_count') || '0', 10) || 0; } catch (e) {}
+        if (expected <= 0) return;
+        const attempt = (left) => {
+          if (document.querySelector('.sheet.open')) {
+            if (left > 0) setTimeout(() => attempt(left - 1), 1000);
+            return;
+          }
+          this.showConfirm({
+            message: this.t('library_missing_text'),
+            okLabel: this.t('settings_import'),
+            cancelLabel: this.t('cancel'),
+            danger: false
+          }).then((ok) => {
+            if (ok && typeof this.importLibrary === 'function') this.importLibrary();
+          }).catch(() => {});
+        };
+        setTimeout(() => attempt(8), 1400);
       } catch (e) {}
     },
 
@@ -162,6 +191,14 @@ Object.assign(App, {
      *  Carga desde IndexedDB + localStorage
      * ============================================================ */
     async loadAllFromStorage() {
+      // Pedir almacenamiento persistente: evita que el sistema borre la
+      // biblioteca solo por falta de espacio (orígenes «best-effort»).
+      try {
+        if (navigator.storage && typeof navigator.storage.persist === 'function') {
+          navigator.storage.persist().then((g) => { this._storagePersisted = !!g; }).catch(() => {});
+        }
+      } catch (e) {}
+      this._storageOk = true;
       try {
         // Tracks
         const stored = await window.AuroraStorage.getAllTracks();
@@ -181,6 +218,12 @@ Object.assign(App, {
       } catch (e) {
         console.warn('[Aurora] Error cargando pistas:', e);
         this.tracks = [];
+        this._storageOk = false;
+      }
+      // Refrescar el marcador «la biblioteca tenía N pistas» (solo si hay):
+      // en el próximo arranque, 0 pistas + marcador > 0 = posible pérdida.
+      if (this.tracks.length > 0 && typeof this.syncLibCountMarker === 'function') {
+        this.syncLibCountMarker();
       }
 
       // Playlists (IndexedDB → fallback localStorage)

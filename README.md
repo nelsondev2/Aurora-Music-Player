@@ -61,7 +61,7 @@ node audit-i18n.js
 
 ## Empaquetar como WebXDC (opcional)
 
-Sigue siendo un `.xdc` válido para Delta Chat, **sin sincronización P2P**: cada dispositivo reproduce su propia biblioteca.
+Sigue siendo un `.xdc` válido para Delta Chat, **sin sincronización P2P**: cada dispositivo reproduce su propia biblioteca. Además, **cada copia del `.xdc` guarda su propia biblioteca** (el almacenamiento va ligado al mensaje): usa siempre la misma copia y exporta copias de seguridad periódicas desde Ajustes.
 
 ```bash
 python3 build-xdc.py

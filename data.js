@@ -1911,6 +1911,16 @@ const I18N = {
     it: 'Il browser ha bloccato la riproduzione. Tocca ▶ per iniziare.',
     ru: 'Браузер заблокировал воспроизведение. Нажмите ▶, чтобы начать.'
   },
+  library_missing_text: {
+    es: 'Esta copia tenía música guardada y ahora está vacía: el sistema pudo borrar el almacenamiento, o estás abriendo otra copia de Aurora (cada copia tiene su propia biblioteca). ¿Importar una copia de seguridad?',
+    en: 'This copy had saved music and is now empty: the system may have cleared storage, or you opened a different Aurora copy (each copy keeps its own library). Import a backup?',
+    pt: 'Esta cópia tinha música guardada e agora está vazia: o sistema pode ter limpado o armazenamento, ou abriste outra cópia do Aurora (cada cópia tem a sua biblioteca). Importar uma cópia de segurança?',
+    zh: '此副本曾保存过音乐，现在却为空：系统可能已清除存储，或你打开了另一个 Aurora 副本（每个副本都有自己的曲库）。要导入备份吗？',
+    ja: 'このコピーには音楽が保存されていたはずですが空です。システムがストレージを消去したか、別の Aurora コピーを開いています（コピーごとにライブラリは別）。バックアップを読み込みますか？',
+    fr: 'Cette copie contenait de la musique et elle est vide : le système a peut-être effacé le stockage, ou vous avez ouvert une autre copie d’Aurora (chaque copie a sa bibliothèque). Importer une sauvegarde ?',
+    it: 'Questa copia aveva musica salvata ed è vuota: il sistema potrebbe aver cancellato lo spazio, oppure hai aperto un’altra copia di Aurora (ogni copia ha la sua libreria). Importare un backup?',
+    ru: 'В этой копии была сохранённая музыка, а теперь пусто: система могла очистить хранилище, либо вы открыли другую копию Aurora (у каждой копии своя библиотека). Импортировать резервную копию?'
+  },
   confirm_ok: {
     es: 'Aceptar',
     en: 'OK',

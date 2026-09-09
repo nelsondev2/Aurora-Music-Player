@@ -21,7 +21,7 @@ Object.assign(App, {
           currentTrackTitle: t?.title || null,
           currentTrackArtist: t?.artist || null,
           currentTrackAlbum: t?.album || null,
-          currentTrackCover: t?.cover || null,
+          currentTrackCover: this._coverForSession(t),
           currentTrackCoverIsImage: t?.coverIsImage || false,
           currentTrackDuration: t?.duration || 0,
           currentTrackLrc: t?.lrc || null,
@@ -36,6 +36,14 @@ Object.assign(App, {
         };
         await window.AuroraStorage.setSetting('session', session);
       } catch (e) {}
+    },
+
+    /* La sesión se guarda cada 5 s: nunca persistir la portada original
+     * (puede ser un dataURL de MBs). Solo degradado o miniatura. */
+    _coverForSession(t) {
+      if (!t || !t.cover) return null;
+      if (typeof t.cover === 'object') return t.cover;
+      return t.coverThumbLg || t.coverThumb || null;
     },
 
     async restoreSession() {
@@ -590,9 +598,17 @@ Object.assign(App, {
         }
         const used = this.fmtBytes(usage);
         const total = (typeof quota === 'number' && quota > 0) ? ' / ' + this.fmtBytes(quota) : '';
+        // 🔒 = almacenamiento persistente concedido (el sistema no lo borra solo).
+        let lock = '';
+        try {
+          if (this._storagePersisted === undefined && navigator.storage && typeof navigator.storage.persisted === 'function') {
+            this._storagePersisted = await navigator.storage.persisted();
+          }
+          if (this._storagePersisted) lock = ' 🔒';
+        } catch (e) {}
         label.textContent = this.t('storage_usage')
           .replace('X', String(this.tracks.length))
-          .replace('Y', used + total);
+          .replace('Y', used + total) + lock;
         label.style.display = '';
       } catch (e) {
         label.style.display = 'none';

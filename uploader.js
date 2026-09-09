@@ -105,7 +105,10 @@
         if (title) meta.title = title;
         if (artist) meta.artist = artist;
         if (album) meta.album = album;
-        if (tags.picture) meta.cover = this.pictureToDataURL(tags.picture);
+        if (tags.picture) {
+          const rawCover = this.pictureToDataURL(tags.picture);
+          meta.cover = rawCover ? await this.limitArtwork(rawCover, 600) : null;
+        }
         const usltLyrics = this.extractUslt(tags);
         if (usltLyrics) meta.lrc = this.normalizeLyrics(usltLyrics);
         if (!meta.lrc) {
@@ -212,6 +215,32 @@
             onError: (e) => resolve(null)
           });
         } catch (e) { resolve(null); }
+      });
+    },
+
+    /* ---------- Limita la portada ID3 a 600 px (JPEG) ----------
+     * Los canvas de la app son de 600/512 px como máximo: más resolución
+     * solo hincha IndexedDB y acerca la cuota en bibliotecas grandes. */
+    limitArtwork(dataUrl, maxDim) {
+      maxDim = maxDim || 600;
+      return new Promise((resolve) => {
+        try {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const w = img.width || 0, h = img.height || 0;
+              if (!w || !h || Math.max(w, h) <= maxDim) { resolve(dataUrl); return; }
+              const k = maxDim / Math.max(w, h);
+              const c = document.createElement('canvas');
+              c.width = Math.max(1, Math.round(w * k));
+              c.height = Math.max(1, Math.round(h * k));
+              c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+              resolve(c.toDataURL('image/jpeg', 0.85));
+            } catch (e) { resolve(dataUrl); }
+          };
+          img.onerror = () => resolve(dataUrl);
+          img.src = dataUrl;
+        } catch (e) { resolve(dataUrl); }
       });
     },
 
