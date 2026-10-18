@@ -28,12 +28,19 @@
     <symbol id="i-minus" viewBox="0 0 24 24"><path fill="currentColor" d="M5 11h14v2H5z"/></symbol>
     <symbol id="i-xmark" viewBox="0 0 24 24"><path fill="currentColor" d="M6.7 5.3 12 10.6l5.3-5.3 1.4 1.4L13.4 12l5.3 5.3-1.4 1.4L12 13.4l-5.3 5.3-1.4-1.4L10.6 12 5.3 6.7z"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path fill="currentColor" d="M9.2 16.2 4.8 11.8l-1.4 1.4 5.8 5.8 12-12-1.4-1.4z"/></symbol>
-    <symbol id="i-heart" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 20s-7.2-4.35-9.2-8.4C1.4 8.7 2.7 5.5 6 5.1c1.9-.2 3.6.7 4.5 2.2C11.4 5.8 13.1 4.9 15 5.1c3.3.4 4.6 3.6 3.2 6.5C19.2 15.65 12 20 12 20z"/></symbol>
+    <!-- Corazón outline: trazado simétrico. El anterior tenía un vértice
+         metido en el lóbulo derecho que se veía como una esquina recortada
+         a 18 px. Se dibuja con relleno (agujero interior) para que el
+         grosor sea uniforme y no dependa del stroke. -->
+    <symbol id="i-heart" viewBox="0 0 24 24"><path fill="currentColor" d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36L12 8.9l.93-1.54C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/></symbol>
     <symbol id="i-heart-solid" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21s-8-4.8-10.2-9.3C.2 7.9 2.1 4.2 6.2 3.8c2.2-.2 4.1.9 5.1 2.7 1-1.8 2.9-2.9 5.1-2.7 4.1.4 6 3.9 4.4 7.9C20 16.2 12 21 12 21z"/></symbol>
     <symbol id="i-house" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.2 3 11h2v9h6v-6h2v6h6v-9h2L12 3.2z"/></symbol>
     <symbol id="i-magnifying-glass" viewBox="0 0 24 24"><path fill="currentColor" d="M10.5 3a7.5 7.5 0 0 1 5.9 12.1l4.2 4.2-1.4 1.4-4.2-4.2A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z"/></symbol>
     <symbol id="i-ellipsis-vertical" viewBox="0 0 24 24"><path fill="currentColor" d="M12 6.5A1.75 1.75 0 1 0 12 3a1.75 1.75 0 0 0 0 3.5zm0 7.25A1.75 1.75 0 1 0 12 10.5a1.75 1.75 0 0 0 0 3.5zM13.75 19.25A1.75 1.75 0 1 1 12 17.5a1.75 1.75 0 0 1 1.75 1.75z"/></symbol>
-    <symbol id="i-shuffle" viewBox="0 0 24 24"><path fill="currentColor" d="M16 5h2.5l-3.2 3.2 1.4 1.4L20 6.3V9h2V3h-6v2zm-9.6.4L3 9.8l1.4 1.4 3.4-3.4 1.4 1.4L5.8 12.6 7.2 14 3 18.2 4.4 19.6 8.6 15.4l1.4 1.4-3.4 3.4L8 21.6 12.2 17.4 16.6 21.8 18 20.4 13.6 16 17.8 11.8 16.4 10.4 12.2 14.6 9.4 11.8 12.2 9 7.8 4.6 6.4 6z"/></symbol>
+    <!-- Flechas cruzadas: el icono anterior era un trazado corrupto que no se
+         leía como «aleatorio». Trazo (no relleno) para conservar la silueta
+         estándar a 18 px; el fill:none del <g> gana al fill heredado de .ico. -->
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22"/><path d="M18 2l4 4-4 4"/><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2"/><path d="M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8"/><path d="M18 14l4 4-4 4"/></g></symbol>
     <symbol id="i-repeat" viewBox="0 0 24 24"><path fill="currentColor" d="M7 7h8V4l5 4-5 4V9H7a3 3 0 0 0-3 3v2H2v-2a5 5 0 0 1 5-5zm10 10H9v3l-5-4 5-4v3h8a3 3 0 0 0 3-3v-2h2v2a5 5 0 0 1-5 5z"/></symbol>
     <symbol id="i-backward-step" viewBox="0 0 24 24"><path fill="currentColor" d="M6 5h2v14H6V5zm3.2 7 9.8 6.5V5.5L9.2 12z"/></symbol>
     <symbol id="i-forward-step" viewBox="0 0 24 24"><path fill="currentColor" d="M16 5h2v14h-2V5zM4 18.5V5.5L13.8 12 4 18.5z"/></symbol>
@@ -239,14 +246,30 @@
 
         <!-- Barra de herramientas de letras -->
         <div class="lyrics-toolbar" id="lyricsToolbar">
-          <button class="lt-btn" id="btnLrcFontDec" aria-label="A-"><svg class="ico" aria-hidden="true"><use href="#i-font"></use></svg><span class="lt-small">A</span></button>
-          <button class="lt-btn" id="btnLrcFontInc" aria-label="A+"><svg class="ico" aria-hidden="true"><use href="#i-font"></use></svg><span class="lt-big">A</span></button>
+          <!-- Tamaño de letra: A− y A+ con la «A» a distinto tamaño; antes
+               los dos botones mostraban el mismo icono y la misma letra y
+               parecían el mismo control. -->
+          <button class="lt-btn lt-font" id="btnLrcFontDec" data-i18n-aria="lrc_font_dec" data-i18n-title="lrc_font_dec" aria-label="Reducir letra" title="Reducir letra">
+            <span class="lt-a lt-a-sm" aria-hidden="true">A</span><span class="lt-sign" aria-hidden="true">−</span>
+          </button>
+          <button class="lt-btn lt-font" id="btnLrcFontInc" data-i18n-aria="lrc_font_inc" data-i18n-title="lrc_font_inc" aria-label="Aumentar letra" title="Aumentar letra">
+            <span class="lt-a lt-a-lg" aria-hidden="true">A</span><span class="lt-sign" aria-hidden="true">+</span>
+          </button>
           <span class="lt-sep"></span>
-          <button class="lt-btn" id="btnLrcOffsetMinus" data-i18n-title="lrc_offset" title="Desfase"><svg class="ico" aria-hidden="true"><use href="#i-backward"></use></svg><span>0.5s</span></button>
-          <button class="lt-btn" id="btnLrcOffsetReset" data-i18n-title="lrc_offset_reset" title="Resetear"><svg class="ico" aria-hidden="true"><use href="#i-rotate-left"></use></svg></button>
-          <button class="lt-btn" id="btnLrcOffsetPlus" data-i18n-title="lrc_offset" title="Desfase"><svg class="ico" aria-hidden="true"><use href="#i-forward"></use></svg><span>0.5s</span></button>
+          <!-- Desfase de la letra: − y + van en un grupo con etiqueta
+               visible y el valor actual en medio, para que se vea que
+               ambos pertenecen al mismo ajuste. -->
+          <div class="lt-group" id="lrcOffsetGroup" role="group" data-i18n-aria="lrc_offset_group" aria-label="Desfase de la letra">
+            <span class="lt-group-label" data-i18n="lrc_offset_short">Desfase</span>
+            <button class="lt-btn" id="btnLrcOffsetMinus" data-i18n-aria="lrc_offset_minus_aria" data-i18n-title="lrc_offset_minus_aria" aria-label="Retrasar la letra 0.5 s" title="Retrasar 0.5 s">−</button>
+            <output class="lt-offset-value" id="lrcOffsetValue" aria-live="polite">0.0s</output>
+            <button class="lt-btn" id="btnLrcOffsetPlus" data-i18n-aria="lrc_offset_plus_aria" data-i18n-title="lrc_offset_plus_aria" aria-label="Adelantar la letra 0.5 s" title="Adelantar 0.5 s">+</button>
+          </div>
           <span class="lt-sep"></span>
-          <button class="lt-btn" id="btnLrcLoop" data-i18n-title="lrc_loop_section" title="Repetir sección"><svg class="ico" aria-hidden="true"><use href="#i-repeat"></use></svg></button>
+          <button class="lt-btn" id="btnLrcLoop" data-i18n-aria="lrc_loop_section" data-i18n-title="lrc_loop_section" aria-label="Repetir sección" title="Repetir sección"><svg class="ico" aria-hidden="true"><use href="#i-repeat"></use></svg></button>
+          <!-- Restablecer TODA la letra (no solo el desfase): fuera del
+               grupo para que no parezca parte del ajuste de desfase. -->
+          <button class="lt-btn lt-reset" id="btnLrcOffsetReset" data-i18n-aria="lrc_reset_all" data-i18n-title="lrc_reset_all" aria-label="Restablecer letra" title="Restablecer letra"><svg class="ico" aria-hidden="true"><use href="#i-rotate-left"></use></svg></button>
           <span class="lt-sep"></span>
           <button class="lt-btn" id="btnLrcFullscreen" data-i18n-title="lrc_fullscreen" title="Pantalla completa"><svg class="ico" aria-hidden="true"><use href="#i-expand"></use></svg></button>
           <button class="lt-btn" id="btnLrcLoadFile" data-i18n-title="lrc_load_file" title="Cargar .lrc"><svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg></button>
@@ -511,7 +534,9 @@
         </div>
       </div>
 
-      <!-- Biblioteca / Listas -->
+      <!-- Biblioteca: dos secciones, listas de reproducción y todas las
+           canciones. Sin pestañas ni vistas de álbumes/artistas: para eso ya
+           están los accesos del menú de cada pista. -->
       <div class="sheet sheet-full sheet-tab" id="sheetLibrary">
         <div class="sheet-backdrop" data-close-sheet="sheetLibrary"></div>
         <div class="sheet-panel">
@@ -519,38 +544,44 @@
           <header class="sheet-header" role="presentation">
             <button class="icon-btn-sm" data-close-sheet="sheetLibrary" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="library_title">Biblioteca</h3>
-            <button class="text-btn" id="btnOpenNewPlaylist"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg> <span data-i18n="new_playlist">Nueva</span></button>
-            <button class="text-btn danger" id="btnDeleteAllTracks"><svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg> <span data-i18n="delete_all_btn">Borrar todo</span></button>
+            <span class="sheet-header-spacer" aria-hidden="true"></span>
           </header>
           <div class="sheet-body">
-            <div class="lib-tabs" role="tablist">
-              <button class="lib-tab active" type="button" role="tab" data-tab="songs" data-i18n="lib_tab_songs">Canciones</button>
-              <button class="lib-tab" type="button" role="tab" data-tab="albums" data-i18n="lib_tab_albums">Álbumes</button>
-              <button class="lib-tab" type="button" role="tab" data-tab="artists" data-i18n="lib_tab_artists">Artistas</button>
-              <button class="lib-tab" type="button" role="tab" data-tab="playlists" data-i18n="lib_tab_playlists">Listas</button>
-            </div>
-            <div class="lib-sort-row" id="libSortRow">
-              <button class="lib-sort active" type="button" data-sort="title" data-i18n="lib_sort_title">Título</button>
-              <button class="lib-sort" type="button" data-sort="artist" data-i18n="lib_sort_artist">Artista</button>
-              <button class="lib-sort" type="button" data-sort="recent" data-i18n="lib_sort_recent">Recientes</button>
-              <button class="lib-sort" type="button" data-sort="duration" data-i18n="lib_sort_duration">Duración</button>
-              <button class="lib-batch-btn" id="btnBatchSelect" type="button" aria-pressed="false" data-i18n-aria="batch_select" aria-label="Seleccionar">
-                <svg class="ico" aria-hidden="true"><use href="#i-check"></use></svg>
-                <span data-i18n="batch_select">Seleccionar</span>
-              </button>
-            </div>
-            <div id="libPaneSongs">
+            <!-- Sección 1: listas de reproducción -->
+            <section class="lib-section" id="libSectionPlaylists">
+              <div class="lib-section-head">
+                <h4 class="lib-section-title" data-i18n="library_playlists_section">Listas de reproducción</h4>
+                <span class="lib-section-count" id="libraryPlaylistsCount"></span>
+                <button class="text-btn" id="btnOpenNewPlaylist" type="button">
+                  <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
+                  <span data-i18n="new_playlist">Nueva</span>
+                </button>
+              </div>
+              <ul class="playlist-rail" id="libraryPlaylists" tabindex="0" data-i18n-aria="library_playlists_section" aria-label="Listas de reproducción"></ul>
+            </section>
+
+            <!-- Sección 2: todas las canciones -->
+            <section class="lib-section" id="libSectionSongs">
+              <div class="lib-section-head">
+                <h4 class="lib-section-title" data-i18n="library_songs_section">Todas las canciones</h4>
+                <span class="lib-section-count" id="librarySongsCount"></span>
+                <button class="text-btn danger" id="btnDeleteAllTracks" type="button">
+                  <svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>
+                  <span data-i18n="delete_all_btn">Borrar todo</span>
+                </button>
+              </div>
+              <div class="lib-sort-row" id="libSortRow">
+                <button class="lib-sort active" type="button" data-sort="title" data-i18n="lib_sort_title">Título</button>
+                <button class="lib-sort" type="button" data-sort="artist" data-i18n="lib_sort_artist">Artista</button>
+                <button class="lib-sort" type="button" data-sort="recent" data-i18n="lib_sort_recent">Recientes</button>
+                <button class="lib-sort" type="button" data-sort="duration" data-i18n="lib_sort_duration">Duración</button>
+                <button class="lib-batch-btn" id="btnBatchSelect" type="button" aria-pressed="false" data-i18n-aria="batch_select" aria-label="Seleccionar">
+                  <svg class="ico" aria-hidden="true"><use href="#i-check"></use></svg>
+                  <span data-i18n="batch_select">Seleccionar</span>
+                </button>
+              </div>
               <ul class="track-list" id="libraryTracks"></ul>
-            </div>
-            <div id="libPaneAlbums" style="display:none">
-              <ul class="playlist-grid" id="libraryAlbums"></ul>
-            </div>
-            <div id="libPaneArtists" style="display:none">
-              <ul class="track-list" id="libraryArtists"></ul>
-            </div>
-            <div id="libPanePlaylists" style="display:none">
-              <ul class="playlist-grid" id="libraryPlaylists"></ul>
-            </div>
+            </section>
           </div>
           <div class="batch-bar" id="batchActionBar" hidden>
             <div class="batch-bar-head">

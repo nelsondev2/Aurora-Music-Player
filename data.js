@@ -10,9 +10,6 @@
 /* Catálogo inicial vacío. Las pistas se añaden con el botón "+". */
 const TRACKS = [];
 
-/* Listas iniciales vacías. El usuario crea las suyas. */
-const DEFAULT_PLAYLISTS = [];
-
 /* Paleta para generar portadas dinámicas cuando una pista no trae
  * artwork en sus metadatos ID3.
  * Familia aurora (noche fría + ámbar/rosa de contraste), no catálogo
@@ -395,6 +392,16 @@ const I18N = {
     fr: 'Vider',
     it: 'Svuota',
     ru: 'Очистить'
+  },
+  library_playlists_section: {
+    es: 'Listas de reproducción', en: 'Playlists', pt: 'Listas de reprodução',
+    zh: '播放列表', ja: 'プレイリスト', fr: 'Listes de lecture',
+    it: 'Playlist', ru: 'Плейлисты'
+  },
+  library_songs_section: {
+    es: 'Todas las canciones', en: 'All songs', pt: 'Todas as músicas',
+    zh: '所有歌曲', ja: 'すべての曲', fr: 'Toutes les chansons',
+    it: 'Tutti i brani', ru: 'Все треки'
   },
   library_title: {
     es: 'Biblioteca',
@@ -1455,20 +1462,6 @@ const I18N = {
     ru: 'Создан пустой список'
   }
 ,
-  my_music_playlist: {
-    es: 'Mi Música', en: 'My Music', pt: 'Minha Música', zh: '我的音乐',
-    ja: 'マイミュージック', fr: 'Ma Musique', it: 'La Mia Musica', ru: 'Моя Музыка'
-  },
-  my_music_desc: {
-    es: 'Canciones que no se añadieron a ninguna lista',
-    en: 'Songs not added to any playlist',
-    pt: 'Músicas não adicionadas a nenhuma lista',
-    zh: '未添加到任何歌单的歌曲',
-    ja: 'どのプレイリストにも追加されていない曲',
-    fr: 'Chansons non ajoutées à une liste',
-    it: 'Canzoni non aggiunte a nessuna lista',
-    ru: 'Песни, не добавленные ни в один список'
-  },
   play_all_btn: {
     es: 'Reproducir Todo', en: 'Play All', pt: 'Reproduzir Tudo', zh: '播放全部',
     ja: 'すべて再生', fr: 'Tout lire', it: 'Riproduci tutto', ru: 'Играть все'
@@ -1500,15 +1493,19 @@ const I18N = {
     es: 'Lista vaciada', en: 'Playlist cleared', pt: 'Lista esvaziada', zh: '歌单已清空',
     ja: 'プレイリストを空にしました', fr: 'Liste vidée', it: 'Lista svuotata', ru: 'Список очищен'
   },
-  toast_cannot_delete_default: {
-    es: 'La lista "Mi Música" no se puede eliminar',
-    en: 'The "My Music" playlist cannot be deleted',
-    pt: 'A lista "Minha Música" não pode ser excluída',
-    zh: '无法删除"我的音乐"歌单',
-    ja: '「マイミュージック」プレイリストは削除できません',
-    fr: 'La liste « Ma Musique » ne peut pas être supprimée',
-    it: 'La lista "La Mia Musica" non può essere eliminata',
-    ru: 'Список «Моя Музыка» нельзя удалить'
+  toast_added_to_library: {
+    es: 'pista(s) añadida(s) a la biblioteca',
+    en: 'track(s) added to the library',
+    pt: 'faixa(s) adicionada(s) à biblioteca',
+    zh: '首音轨已添加到媒体库',
+    ja: '曲をライブラリに追加しました',
+    fr: 'piste(s) ajoutée(s) à la bibliothèque',
+    it: 'traccia/e aggiunta/e alla libreria',
+    ru: 'трек(ов) добавлено в медиатеку'
+  },
+  folder_tag: {
+    es: '(carpeta)', en: '(folder)', pt: '(pasta)', zh: '（文件夹）',
+    ja: '（フォルダー）', fr: '(dossier)', it: '(cartella)', ru: '(папка)'
   },
   toast_added_to_playlist_plural: {
     es: 'pista(s) añadida(s) a', en: 'track(s) added to', pt: 'faixa(s) adicionada(s) a',
@@ -1576,11 +1573,52 @@ const I18N = {
     zh: '调整偏移', ja: 'オフセット調整', fr: 'Ajuster le décalage',
     it: 'Regola offset', ru: 'Настроить смещение'
   },
+  lrc_font_dec: {
+    es: 'Reducir letra', en: 'Smaller lyrics', pt: 'Diminuir letra',
+    zh: '缩小歌词', ja: '歌詞を小さく', fr: 'Réduire les paroles',
+    it: 'Riduci testo', ru: 'Уменьшить текст'
+  },
+  lrc_font_inc: {
+    es: 'Aumentar letra', en: 'Larger lyrics', pt: 'Aumentar letra',
+    zh: '放大歌词', ja: '歌詞を大きく', fr: 'Agrandir les paroles',
+    it: 'Ingrandisci testo', ru: 'Увеличить текст'
+  },
+  lrc_offset_group: {
+    es: 'Desfase de la letra', en: 'Lyrics offset', pt: 'Desvio da letra',
+    zh: '歌词偏移', ja: '歌詞のずれ', fr: 'Décalage des paroles',
+    it: 'Scostamento testo', ru: 'Смещение текста'
+  },
+  lrc_offset_short: {
+    es: 'Desfase', en: 'Offset', pt: 'Desvio',
+    zh: '偏移', ja: 'ずれ', fr: 'Décalage',
+    it: 'Offset', ru: 'Смещение'
+  },
+  lrc_offset_minus_aria: {
+    es: 'Retrasar la letra 0.5 s', en: 'Delay lyrics by 0.5 s', pt: 'Atrasar a letra 0,5 s',
+    zh: '歌词延后 0.5 秒', ja: '歌詞を0.5秒遅らせる', fr: 'Retarder les paroles de 0,5 s',
+    it: 'Ritarda il testo di 0,5 s', ru: 'Задержать текст на 0,5 с'
+  },
+  lrc_offset_plus_aria: {
+    es: 'Adelantar la letra 0.5 s', en: 'Advance lyrics by 0.5 s', pt: 'Adiantar a letra 0,5 s',
+    zh: '歌词提前 0.5 秒', ja: '歌詞を0.5秒進める', fr: 'Avancer les paroles de 0,5 s',
+    it: 'Anticipa il testo di 0,5 s', ru: 'Ускорить текст на 0,5 с'
+  },
   lrc_offset_minus: { es: '−0.5s', en: '−0.5s', pt: '−0.5s', zh: '−0.5秒', ja: '−0.5秒', fr: '−0.5s', it: '−0.5s', ru: '−0.5с' },
   lrc_offset_plus: { es: '+0.5s', en: '+0.5s', pt: '+0.5s', zh: '+0.5秒', ja: '+0.5秒', fr: '+0.5s', it: '+0.5s', ru: '+0.5с' },
   lrc_offset_reset: {
     es: 'Resetear', en: 'Reset', pt: 'Redefinir', zh: '重置', ja: 'リセット',
     fr: 'Réinitialiser', it: 'Reimposta', ru: 'Сбросить'
+  },
+  lrc_reset_all: {
+    es: 'Restablecer letra (desfase, tamaño y velocidad)', en: 'Reset lyrics (offset, size and speed)',
+    pt: 'Redefinir letra (desvio, tamanho e velocidade)', zh: '重置歌词（偏移、字号和速度）',
+    ja: '歌詞をリセット（ずれ・サイズ・速度）', fr: 'Réinitialiser les paroles (décalage, taille et vitesse)',
+    it: 'Ripristina testo (scostamento, dimensione e velocità)', ru: 'Сбросить текст (смещение, размер и скорость)'
+  },
+  lrc_reset_done: {
+    es: 'Letra restablecida', en: 'Lyrics reset', pt: 'Letra redefinida',
+    zh: '歌词已重置', ja: '歌詞をリセットしました', fr: 'Paroles réinitialisées',
+    it: 'Testo ripristinato', ru: 'Текст сброшен'
   },
   lrc_save: {
     es: 'Guardar', en: 'Save', pt: 'Salvar', zh: '保存', ja: '保存',
@@ -1633,6 +1671,26 @@ const I18N = {
     es: 'Quitar loop', en: 'Clear loop', pt: 'Limpar loop',
     zh: '清除循环', ja: 'ループ解除', fr: 'Effacer la boucle',
     it: 'Rimuovi loop', ru: 'Сбросить повтор'
+  },
+  lrc_loop_a_set: {
+    es: 'Inicio A fijado en X', en: 'Start A set at X', pt: 'Início A fixado em X',
+    zh: '起点 A 已设在 X', ja: '開始 A を X に設定', fr: 'Début A défini à X',
+    it: 'Inizio A impostato a X', ru: 'Начало A установлено на X'
+  },
+  lrc_loop_tap_b: {
+    es: 'toca para fijar el final B', en: 'tap to set end B', pt: 'toque para fixar o fim B',
+    zh: '点击设置终点 B', ja: 'タップして終点 B を設定', fr: 'touchez pour définir la fin B',
+    it: 'tocca per impostare la fine B', ru: 'нажмите, чтобы задать конец B'
+  },
+  lrc_loop_ab_active: {
+    es: 'Repetir sección X → Y', en: 'Loop section X → Y', pt: 'Repetir seção X → Y',
+    zh: '循环区间 X → Y', ja: '区間 X → Y をリピート', fr: 'Boucle X → Y',
+    it: 'Ripeti sezione X → Y', ru: 'Повтор фрагмента X → Y'
+  },
+  lrc_loop_cleared: {
+    es: 'Repetición de sección desactivada', en: 'Section loop cleared', pt: 'Repetição de seção desativada',
+    zh: '区间循环已关闭', ja: '区間リピートを解除しました', fr: 'Boucle de section désactivée',
+    it: 'Ripetizione di sezione disattivata', ru: 'Повтор фрагмента выключен'
   },
   lrc_tap_to_seek: {
     es: 'Toca una línea para saltar a ese punto', en: 'Tap a line to jump to that point',
@@ -1952,26 +2010,6 @@ const I18N = {
     es: 'Más escuchadas', en: 'Most played', pt: 'Mais ouvidas',
     zh: '最常播放', ja: 'よく聴く曲', fr: 'Les plus écoutées',
     it: 'Più ascoltate', ru: 'Самые слушаемые'
-  },
-  lib_tab_songs: {
-    es: 'Canciones', en: 'Songs', pt: 'Músicas',
-    zh: '歌曲', ja: '曲', fr: 'Titres',
-    it: 'Brani', ru: 'Песни'
-  },
-  lib_tab_albums: {
-    es: 'Álbumes', en: 'Albums', pt: 'Álbuns',
-    zh: '专辑', ja: 'アルバム', fr: 'Albums',
-    it: 'Album', ru: 'Альбомы'
-  },
-  lib_tab_artists: {
-    es: 'Artistas', en: 'Artists', pt: 'Artistas',
-    zh: '艺术家', ja: 'アーティスト', fr: 'Artistes',
-    it: 'Artisti', ru: 'Исполнители'
-  },
-  lib_tab_playlists: {
-    es: 'Listas', en: 'Playlists', pt: 'Listas',
-    zh: '歌单', ja: 'プレイリスト', fr: 'Listes',
-    it: 'Liste', ru: 'Списки'
   },
   lib_sort_title: {
     es: 'Título', en: 'Title', pt: 'Título',
@@ -2707,7 +2745,6 @@ const I18N = {
 };
 
 window.TRACKS = TRACKS;
-window.DEFAULT_PLAYLISTS = DEFAULT_PLAYLISTS;
 window.COVER_PALETTE = COVER_PALETTE;
 window.SAMPLE_LRC = SAMPLE_LRC;
 window.SUPPORTED_LANGS = SUPPORTED_LANGS;

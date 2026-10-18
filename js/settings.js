@@ -405,23 +405,52 @@ Object.assign(App, {
       return v;
     },
 
-    loadLang() {
+    /* Idioma del sistema, limitado a los 8 soportados.
+     * Se miran todas las preferencias (navigator.languages) para acertar
+     * con casos como «es-419», «zh-CN» o «pt-BR». */
+    _detectSystemLang() {
+      let list = [];
       try {
-        const saved = localStorage.getItem('aurora_lang');
-        if (saved && this._isValidLang(saved)) {
-          this.lang = saved;
-          this._langAlreadyChosen = true;
-          return;
-        }
-        const nav = (navigator.language || navigator.userLanguage || 'es').slice(0, 2).toLowerCase();
-        this.lang = this._isValidLang(nav) ? nav : 'es';
-        // No se marca como «elegido» ni se persiste: en el primer arranque
-        // init() muestra el onboarding para que el usuario confirme idioma
-        // (bug B8 del PLAN: la función existía pero nunca se llamaba).
-        this._langAlreadyChosen = false;
-      } catch (e) {
-        this.lang = 'es';
-        this._langAlreadyChosen = false;
+        if (Array.isArray(navigator.languages) && navigator.languages.length) list = navigator.languages;
+        else if (navigator.language) list = [navigator.language];
+        else if (navigator.userLanguage) list = [navigator.userLanguage];
+      } catch (e) {}
+      for (const raw of list) {
+        const code = String(raw || '').toLowerCase().split('-')[0];
+        if (code && this._isValidLang(code)) return code;
+      }
+      return 'es';
+    },
+
+    /* El idioma se detecta del sistema en CADA arranque (no se pregunta).
+     *
+     * La elección manual de Ajustes sigue existiendo como override, pero
+     * lleva atada la huella del idioma del sistema en el momento de elegir
+     * (`aurora_lang_sys`): si el sistema cambia de idioma (otro teléfono,
+     * otro sistema), el override se descarta y vuelve a mandar la
+     * detección automática. Antes se abría un sheet obligatorio al primer
+     * arranque y además se quedaba clavado el idioma guardado. */
+    loadLang() {
+      const system = this._detectSystemLang();
+      this._systemLang = system;
+      let saved = null;
+      let savedSys = null;
+      try {
+        saved = localStorage.getItem('aurora_lang');
+        savedSys = localStorage.getItem('aurora_lang_sys');
+      } catch (e) {}
+      if (saved && this._isValidLang(saved) && savedSys === system) {
+        this.lang = saved;
+        return;
+      }
+      this.lang = system;
+      if (saved) {
+        // Override obsoleto (o guardado por una versión que no lo marcaba):
+        // limpiarlo para no volver a aplicarlo.
+        try {
+          localStorage.removeItem('aurora_lang');
+          localStorage.removeItem('aurora_lang_sys');
+        } catch (e) {}
       }
     },
 
@@ -480,41 +509,17 @@ Object.assign(App, {
         return;
       }
       this.lang = code;
-      this._langAlreadyChosen = true;
-      try { localStorage.setItem('aurora_lang', code); } catch (e) {}
+      try {
+        localStorage.setItem('aurora_lang', code);
+        // Huella del sistema al elegir: si cambia, manda la detección.
+        localStorage.setItem('aurora_lang_sys', this._systemLang || this._detectSystemLang());
+      } catch (e) {}
       this.applyLang();
       this.buildLangList();
       // Refrescar etiquetas dinámicas (no data-i18n) en el nuevo idioma
       if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
       if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
-      // Si el sheet de idioma está en modo onboarding, restaurar la UI
-      // antes de cerrarlo para que la próxima vez se vea normal.
-      const sheet = document.getElementById('sheetLanguage');
-      if (sheet && sheet.classList.contains('onboarding')) {
-        this.restoreLanguageSheet();
-      }
       this.toast(this.t('toast_lang_applied'));
-    },
-
-    /* Restaura el sheet de idioma a su estado normal (tras onboarding) */
-    restoreLanguageSheet() {
-      const sheet = document.getElementById('sheetLanguage');
-      if (!sheet) return;
-      sheet.classList.remove('onboarding');
-      // Restaurar backdrop
-      const backdrop = sheet.querySelector('.sheet-backdrop');
-      if (backdrop) {
-        backdrop.style.pointerEvents = '';
-        backdrop.style.background = '';
-      }
-      // Restaurar botones
-      const textBtn = sheet.querySelector('.sheet-header .text-btn');
-      if (textBtn) textBtn.style.display = '';
-      const closeBtn = sheet.querySelector('.sheet-header .icon-btn-sm');
-      if (closeBtn) closeBtn.style.display = '';
-      // Restaurar título
-      const h3 = sheet.querySelector('.sheet-header h3');
-      if (h3) h3.textContent = this.t('language_title');
     },
 
     loadPlaybackSettings() {

@@ -57,7 +57,9 @@
     lrcRafId: null,      // requestAnimationFrame para sync precisa
     lrcUserScrolling: false,  // true cuando el usuario hace scroll manual
     lrcUserScrollTimer: null,
-    lrcLoop: null,       // {startIdx, endIdx} para loop de sección
+    lrcLoop: null,       // {start, end} en segundos: rango A-B elegido por el usuario
+    _lrcLoopA: null,     // inicio A pendiente de cerrar con B
+    _lrcLoopTrackId: null, // pista a la que pertenece el rango A-B
 
     /* #15 #16 Cache de objectURLs y preload */
     _urlCache: new Map(),     // trackId → objectURL (cache para reutilizar)
@@ -117,11 +119,6 @@
     _selectPlaylistForAdd: false,
     _trackToAddId: null,
 
-    /* ID fijo de la playlist predefinida "Mi Música" (no eliminable).
-     * Sirve también como destino por defecto de las canciones subidas
-     * desde el botón "+" del reproductor. */
-    DEFAULT_PLAYLIST_ID: 'mi-musica',
-
     /* Contexto de reproducción actual: indica desde qué lista se está
      * reproduciendo. Puede ser:
      *   { type: 'playlist', id, name }
@@ -132,8 +129,8 @@
      * Se usa para mostrar "Reproduciendo desde X" en la barra superior. */
     playContext: null,
 
-    /* Biblioteca: pestaña y orden (Fase 1) */
-    _libraryTab: 'songs',
+    /* Biblioteca: orden de la lista de canciones.
+     * Ya no hay pestañas: la vista muestra listas + todas las canciones. */
     _librarySort: 'title',
     _menuTrackId: null,
     _editTrackId: null,

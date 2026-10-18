@@ -35,6 +35,11 @@ Object.assign(App, {
       // Restaurar sesión (cola, pista actual, posición, shuffle, repeat)
       const restored = await this.restoreSession();
 
+      // La lista predefinida «Mi Música» ya no existe. Si la sesión guardada
+      // apuntaba a una lista que ya no está (o a la eliminada), volver a la
+      // biblioteca para no mostrar un contexto fantasma en la barra.
+      this.sanitizePlayContext();
+
       if (!restored) {
         this.queue = this.tracks.map(t => t.id);
         this.queueIdx = 0;
@@ -60,6 +65,7 @@ Object.assign(App, {
       }
       this.setShuffleUI();
       this.setRepeatUI();
+      if (typeof this.updateLrcOffsetUI === 'function') this.updateLrcOffsetUI();
       if (typeof this.updateChrome === 'function') this.updateChrome();
 
       // Guardar sesión cada 5 s. saveSession() deduplica: no escribe si
@@ -122,14 +128,6 @@ Object.assign(App, {
       if (typeof this.maybeShowBackgroundNotice === 'function') this.maybeShowBackgroundNotice();
       if (typeof this.maybeShowLibraryMissingNotice === 'function') this.maybeShowLibraryMissingNotice();
 
-      // Primer arranque: pedir idioma (bug B8: la función existía pero nadie
-      // la llamaba). Se retrasa para no competir con el resto del arranque.
-      if (!this._langAlreadyChosen && typeof this.showLanguageOnboarding === 'function') {
-        setTimeout(() => {
-          if (!this._langAlreadyChosen) this.showLanguageOnboarding();
-        }, 350);
-      }
-
       this._initialized = true;
       document.dispatchEvent(new CustomEvent('aurora:ready', { detail: { tracks: this.tracks.length } }));
       console.log('[Aurora] App inicializada ·', this.tracks.length, 'pistas', restored ? '· sesión restaurada' : '');
@@ -138,7 +136,7 @@ Object.assign(App, {
     /* Consejo de primer arranque en Delta Chat nativo: el webxdc vive en
      * su propia actividad y sigue sonando al pulsar inicio, pero el botón
      * atrás la destruye y detiene la música. Una sola vez y sin tapar
-     * al onboarding de idioma (reintenta si hay un sheet abierto). */
+     * otros avisos (reintenta si hay un sheet abierto). */
     maybeShowBackgroundNotice() {
       try {
         const native = !!(window.webxdc && !window.webxdc._isStub);
@@ -189,32 +187,6 @@ Object.assign(App, {
       } catch (e) {}
     },
 
-    /* Muestra el sheet de idioma en modo "onboarding" (primer arranque).
-     * El botón de cerrar está oculto para obligar al usuario a elegir. */
-    showLanguageOnboarding() {
-      const sheet = document.getElementById('sheetLanguage');
-      if (!sheet) return;
-      // Marcar como onboarding para ocultar el botón de cerrar
-      sheet.classList.add('onboarding');
-      this.buildLangList();
-      // Abrir el sheet
-      this.openSheet('sheetLanguage');
-      // Deshabilitar el backdrop para que no se pueda cerrar tocando fuera
-      const backdrop = sheet.querySelector('.sheet-backdrop');
-      if (backdrop) {
-        backdrop.style.pointerEvents = 'none';
-        backdrop.style.background = 'rgba(0,0,0,0.85)';
-      }
-      // Ocultar el botón "Listo" y el botón X
-      const textBtn = sheet.querySelector('.sheet-header .text-btn');
-      if (textBtn) textBtn.style.display = 'none';
-      const closeBtn = sheet.querySelector('.sheet-header .icon-btn-sm');
-      if (closeBtn) closeBtn.style.display = 'none';
-      // Cambiar el título del sheet
-      const h3 = sheet.querySelector('.sheet-header h3');
-      if (h3) h3.textContent = this.t('welcome_choose_lang');
-    },
-
     /* ============================================================
      *  Carga desde IndexedDB + localStorage
      * ============================================================ */
@@ -256,50 +228,63 @@ Object.assign(App, {
         this.syncLibCountMarker();
       }
 
-      // Playlists (IndexedDB → fallback localStorage)
+      // Playlists (IndexedDB). No hay ninguna lista predefinida: la
+      // biblioteca arranca con cero listas y el usuario crea las que quiera.
       try {
         const pls = await window.AuroraStorage.getAllPlaylists();
-        if (pls && pls.length) {
-          this.playlists = pls;
-          this.playlists.forEach(pl => {
-            if (pl && pl.coverArt && !pl._coverCache) {
-              pl._coverCache = pl.coverArt;
-              pl._coverCacheHash = pl.coverArtHash || null;
-            }
-          });
-        } else {
-          this.playlists = JSON.parse(JSON.stringify(window.DEFAULT_PLAYLISTS || []));
-        }
+        this.playlists = Array.isArray(pls) ? pls : [];
+        this.playlists.forEach(pl => {
+          if (pl && pl.coverArt && !pl._coverCache) {
+            pl._coverCache = pl.coverArt;
+            pl._coverCacheHash = pl.coverArtHash || null;
+          }
+        });
       } catch (e) {
         this.playlists = [];
       }
 
-      // Garantizar que exista la playlist predefinida "Mi Música"
-      this.ensureDefaultPlaylist();
+      // Migración: borrar la antigua lista predefinida «Mi Música» y
+      // limpiar isDefault (ninguna lista es especial ya).
+      this.migrateRemoveDefaultPlaylist();
     },
 
-    /* Crea (si no existe) la playlist predefinida "Mi Música".
-     * No se puede eliminar. Es el destino por defecto de las canciones
-     * subidas desde el botón "+" del reproductor. */
-    ensureDefaultPlaylist() {
-      let pl = this.playlists.find(p => p.id === this.DEFAULT_PLAYLIST_ID);
-      if (!pl) {
-        pl = {
-          id: this.DEFAULT_PLAYLIST_ID,
-          name: this.t('my_music_playlist'),
-          description: this.t('my_music_desc'),
-          trackIds: [],
-          cover: (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 }),
-          isDefault: true
-        };
-        this.playlists.unshift(pl);  // Al principio de la lista
-        this.persistPlaylist(pl);
-      } else {
-        // Asegurar flags aunque la playlist ya existiera (carga desde IDB vieja)
-        pl.isDefault = true;
-        if (!pl.trackIds) pl.trackIds = [];
+    /* Migración (una vez por arranque, idempotente) del modelo antiguo:
+     *   - elimina de memoria y de IndexedDB la lista «Mi Música»
+     *     (id legacy 'mi-musica');
+     *   - quita isDefault de cualquier lista antigua para que todas se
+     *     puedan borrar;
+     *   - si el contexto de reproducción apuntaba a esa lista, lo pasa a
+     *     «biblioteca».
+     * Las pistas que estuvieran dentro siguen en la biblioteca: la lista
+     * solo agrupaba, nunca era dueña del audio. */
+    migrateRemoveDefaultPlaylist() {
+      const LEGACY_ID = 'mi-musica';
+      const removed = this.playlists.filter(p => p && p.id === LEGACY_ID);
+      if (removed.length) {
+        this.playlists = this.playlists.filter(p => p && p.id !== LEGACY_ID);
+        this.deletePlaylistFromStorage(LEGACY_ID);
       }
-      return pl;
+      this.playlists.forEach(p => {
+        if (p && p.isDefault) {
+          p.isDefault = false;
+          this.persistPlaylist(p);
+        }
+      });
+      if (this.playContext && this.playContext.type === 'playlist' &&
+          (!this.playContext.id || this.playContext.id === LEGACY_ID)) {
+        this.playContext = { type: 'all' };
+      }
+      return removed.length;
+    },
+
+    /* Si el contexto guardado apunta a una lista que no existe, se
+     * degrada a «biblioteca». Evita etiquetas fantasma tras migrar. */
+    sanitizePlayContext() {
+      const ctx = this.playContext;
+      if (!ctx || ctx.type !== 'playlist') return;
+      if (!this.playlists.some(p => p && p.id === ctx.id)) {
+        this.playContext = { type: 'all' };
+      }
     },
 
     async persistTrack(track) {
@@ -339,7 +324,6 @@ Object.assign(App, {
           description: pl.description || '',
           trackIds: Array.isArray(pl.trackIds) ? pl.trackIds.slice() : [],
           cover: pl.cover || null,
-          isDefault: !!pl.isDefault,
           coverArt: pl.coverArt || pl._coverCache || null,
           coverArtHash: pl.coverArtHash || pl._coverCacheHash || null
         };
@@ -358,13 +342,14 @@ Object.assign(App, {
       // Mantenido para el test #14 (que llama a loadPlaylists)
       try {
         const pls = await window.AuroraStorage.getAllPlaylists();
-        this.playlists = (pls && pls.length) ? pls : JSON.parse(JSON.stringify(window.DEFAULT_PLAYLISTS || []));
+        this.playlists = Array.isArray(pls) ? pls : [];
         this.playlists.forEach(pl => {
           if (pl && pl.coverArt && !pl._coverCache) {
             pl._coverCache = pl.coverArt;
             pl._coverCacheHash = pl.coverArtHash || null;
           }
         });
+        this.migrateRemoveDefaultPlaylist();
       } catch (e) {
         this.playlists = [];
       }

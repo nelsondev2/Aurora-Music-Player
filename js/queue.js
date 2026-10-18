@@ -22,7 +22,8 @@ Object.assign(App, {
     /* Abre el selector de archivos del sistema.
      *   useDirectory    — true para activar el modo "carpeta completa"
      *   targetPlaylistId — ID de playlist a la que añadir las pistas subidas.
-     *                      Si es null/undefined, las pistas van a "Mi Música".
+     *                      Si es null/undefined, las pistas van solo a la
+     *                      biblioteca (no hay lista predefinida).
      * Creamos un input NUEVO cada vez para evitar problemas de reutilización
      * y asegurar que el click() se ejecute dentro del gesto de usuario. */
     /* ¿Soporta este entorno la selección de carpetas (webkitdirectory)?

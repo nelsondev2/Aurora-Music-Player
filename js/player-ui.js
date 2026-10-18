@@ -235,6 +235,18 @@ Object.assign(App, {
         }
       }
 
+      // Repetición de sección de letras (#19): rango elegido a mano en la
+      // vista de letras ({start, end} en segundos de la canción). Se aplica
+      // aquí, no en el RAF de letras, para que siga activa al volver al
+      // reproductor.
+      if (this.lrcLoop && this.lrcLoop.end > this.lrcLoop.start) {
+        const lyrCur = cur - (this.lrcOffset || 0);
+        if (lyrCur >= this.lrcLoop.end) {
+          this.seekToTime(this.lrcLoop.start + (this.lrcOffset || 0));
+          return;
+        }
+      }
+
       const pct = dur > 0 ? (cur / dur) * 100 : 0;
       const fill = document.getElementById('progressFill');
       const curEl = document.getElementById('timeCurrent');

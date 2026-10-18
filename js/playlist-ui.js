@@ -474,6 +474,7 @@ Object.assign(App, {
         li.addEventListener('click', (e) => {
           if (e.target.closest('.drag-handle, .queue-remove')) return;
           this.playFromQueue(i);
+          if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
         });
         // Tap-and-hold (500ms) → modo reordenar
         let holdTimer = null;
@@ -629,6 +630,9 @@ Object.assign(App, {
 
     renderLibrary() {
       const ul = document.getElementById('libraryTracks');
+      // Contador de la sección (siempre, también con 0 pistas).
+      const countEl = document.getElementById('librarySongsCount');
+      if (countEl) countEl.textContent = String(this.tracks.length);
       if (!ul) return;
       if (this.tracks.length === 0) {
         this.unbindVirtualList(ul);
@@ -685,6 +689,9 @@ Object.assign(App, {
           ? this.t('playlist_count_zero')
           : (n === 1 ? this.t('playlist_count_one') : this.t('playlist_count_many').replace('X', n));
       }
+      // Contador de la sección «Listas de reproducción» de la biblioteca.
+      const libCountEl = document.getElementById('libraryPlaylistsCount');
+      if (libCountEl) libCountEl.textContent = String(this.playlists.length);
       [ul, grid].forEach(target => {
         if (!target) return;
         target.innerHTML = '';
@@ -702,6 +709,15 @@ Object.assign(App, {
           target.appendChild(li);
           return;
         }
+        if (this.playlists.length === 0 && target === grid) {
+          // Rejilla de la biblioteca sin listas: mensaje breve. El botón
+          // «Nueva» ya está en la cabecera de la misma sección.
+          const li = document.createElement('li');
+          li.className = 'lib-empty';
+          li.textContent = this.t('no_playlists_hint');
+          target.appendChild(li);
+          return;
+        }
         this.playlists.forEach(pl => {
           const li = document.createElement('li');
           const playing = this.isPlaylistPlaying(pl);
@@ -713,13 +729,10 @@ Object.assign(App, {
           const coverBg = hasArt
             ? `background-image:url('${cover}');background-size:cover;background-position:center;`
             : `background:linear-gradient(135deg, ${cover.from || '#6E5CFF'}, ${cover.to || '#FF7AB6'});`;
-          const fallbackIcon = pl.id === this.DEFAULT_PLAYLIST_ID
-            ? 'music'
-            : (pl.id === 'favoritos' ? 'heart-solid' : 'list-ul');
+          const fallbackIcon = pl.id === 'favoritos' ? 'heart-solid' : 'list-ul';
           const tracksLabel = this.playlistMetaLabel(pl);
-          const badge = pl.isDefault
-            ? '<span class="pl-badge">' + this.esc(this.t('my_music_playlist')) + '</span>'
-            : '';
+          // Ya no hay lista predefinida: ninguna lleva insignia.
+          const badge = '';
           const live = playing
             ? '<span class="pl-live"><span class="pl-bars"><i></i><i></i><i></i></span></span>'
             : '';
@@ -737,17 +750,15 @@ Object.assign(App, {
             li.innerHTML = coverHtml + `<div class="pl-card-info"><h4>${this.esc(pl.name)}</h4><p>${this.esc(tracksLabel)}</p>${badge}</div>`;
           } else {
             li.innerHTML = coverHtml + `<div class="pl-info"><h4>${this.esc(pl.name)}</h4><p>${this.esc(tracksLabel)}</p></div>`;
-            if (!pl.isDefault) {
-              const delBtn = document.createElement('button');
-              delBtn.className = 'row-action';
-              delBtn.setAttribute('aria-label', this.t('delete_playlist_btn'));
-              delBtn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>';
-              delBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.deletePlaylist(pl.id);
-              });
-              li.appendChild(delBtn);
-            }
+            const delBtn = document.createElement('button');
+            delBtn.className = 'row-action';
+            delBtn.setAttribute('aria-label', this.t('delete_playlist_btn'));
+            delBtn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>';
+            delBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              this.deletePlaylist(pl.id);
+            });
+            li.appendChild(delBtn);
           }
           const fab = li.querySelector('.pl-play-fab');
           if (fab) fab.addEventListener('click', (e) => {
@@ -787,15 +798,11 @@ Object.assign(App, {
       });
     },
 
-    /* Elimina una playlist. Rechaza la operación si es la predefinida
-     * "Mi Música" (id === DEFAULT_PLAYLIST_ID o isDefault === true). */
+    /* Elimina una playlist. Todas se pueden borrar: ya no existe la lista
+     * predefinida «Mi Música» (se migra fuera al arrancar). */
     async deletePlaylist(playlistId) {
       const pl = this.playlists.find(p => p.id === playlistId);
       if (!pl) return;
-      if (pl.isDefault || pl.id === this.DEFAULT_PLAYLIST_ID) {
-        this.toast(this.t('toast_cannot_delete_default'));
-        return;
-      }
       const ok = await this.showConfirm({
         message: this.t('delete_playlist_confirm').replace('X', pl.name),
         okLabel: this.t('confirm_delete')
@@ -852,11 +859,14 @@ Object.assign(App, {
       this.queueIdx = 0;
       // Establecer contexto de reproducción: "Reproduciendo desde <playlist>"
       this.playContext = { type: 'playlist', id: pl.id, name: pl.name };
-      if (this.shuffle) this._applyShuffle();
+      // Con Aleatorio activo la cola es nueva: hay que anclar su primera pista
+      // y no la canción que estuviera sonando (era de otra lista).
+      if (this.shuffle) this._applyShuffle(ids[0]);
       else this._originalQueue = null;
       this.playFromQueue(this.queueIdx);
       this.renderCurrentTrack();  // refresca la barra superior con el contexto
       this.renderQueue();  // refrescar la cola con las pistas de la playlist
+      if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
       this.toast(this.t('toast_now_playing') + ' ' + pl.name);
     },
 
@@ -870,11 +880,13 @@ Object.assign(App, {
       this.queue = favTracks.map(t => t.id);
       this.queueIdx = 0;
       this.playContext = { type: 'favorites' };
-      if (this.shuffle) this._applyShuffle();
+      // Igual que playPlaylist(): anclar la primera favorita, no la pista previa.
+      if (this.shuffle) this._applyShuffle(this.queue[0]);
       else this._originalQueue = null;
       this.playFromQueue(0);
       this.renderCurrentTrack();
       this.renderQueue();  // refrescar la cola con las pistas de favoritos
+      if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
       this.toast(this.t('toast_now_playing') + ' ' + this.t('favorites_playlist_name'));
     },
 
