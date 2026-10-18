@@ -144,7 +144,12 @@ Manifiesto verificable (SHA-256 truncado a 16 hex; tamaño y líneas a fecha de 
 | `uploader.js` | 747 | 28.5 KB | `99e7e1ecaa992574` |
 | `webxdc.js` | 68 | 2.2 KB | `6a464a78eca944c8` |
 
-Además del árbol de trabajo, se adjunta [`docs/cambios-1.2.0.patch`](cambios-1.2.0.patch): un diff unificado con **el código completo de los 50 archivos** añadidos o modificados respecto a la base `8efff93`. Se puede revisar con `git apply --stat docs/cambios-1.2.0.patch` o aplicar sobre un clon limpio de la base con `git apply docs/cambios-1.2.0.patch`. El parche es coherente con el árbol actual (verificado con `git apply --check --reverse`).
+El diff completo de la auditoría (50 archivos, incluida la suite de pruebas y el servidor, hoy retirados del árbol) permanece en el historial de git:
+
+```bash
+git show 24ff6ca            # snapshot completo de la auditoría
+git diff 8efff93 24ff6ca    # cambios respecto a la base auditada
+```
 
 **Archivos nuevos** (no existían en la base):
 
