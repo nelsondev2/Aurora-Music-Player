@@ -852,7 +852,9 @@ Object.assign(App, {
       this.queueIdx = 0;
       // Establecer contexto de reproducción: "Reproduciendo desde <playlist>"
       this.playContext = { type: 'playlist', id: pl.id, name: pl.name };
-      if (this.shuffle) this._applyShuffle();
+      // Con Aleatorio activo la cola es nueva: hay que anclar su primera pista
+      // y no la canción que estuviera sonando (era de otra lista).
+      if (this.shuffle) this._applyShuffle(ids[0]);
       else this._originalQueue = null;
       this.playFromQueue(this.queueIdx);
       this.renderCurrentTrack();  // refresca la barra superior con el contexto
@@ -870,7 +872,8 @@ Object.assign(App, {
       this.queue = favTracks.map(t => t.id);
       this.queueIdx = 0;
       this.playContext = { type: 'favorites' };
-      if (this.shuffle) this._applyShuffle();
+      // Igual que playPlaylist(): anclar la primera favorita, no la pista previa.
+      if (this.shuffle) this._applyShuffle(this.queue[0]);
       else this._originalQueue = null;
       this.playFromQueue(0);
       this.renderCurrentTrack();

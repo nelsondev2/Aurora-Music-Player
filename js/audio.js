@@ -234,7 +234,9 @@ Object.assign(App, {
 
       // Si se pasa contexto, usarlo; si no, mantener el actual
       if (context) this.playContext = context;
-      if (this.shuffle) this._applyShuffle();
+      // La pista tocada debe sonar primero aunque Aleatorio esté activo; el
+      // resto de la cola se baraja detrás.
+      if (this.shuffle) this._applyShuffle(trackId);
       else this._originalQueue = null;
       this.loadAndPlay();
     },
@@ -392,6 +394,15 @@ Object.assign(App, {
       // en vez de pausar.
       const actuallyPlaying = this.audio ? !this.audio.paused : this.isPlaying;
       const wantPlay = forcePlay !== undefined ? forcePlay : !actuallyPlaying;
+      if (wantPlay && !this.audio.getAttribute('src')) {
+        // Arranque sin sesión restaurada: hay pista elegida (tracks[0]) pero
+        // el <audio> aún no tiene fuente. Sin esta guarda, play() falla con
+        // NotSupportedError, se muestra «error de audio» y next() salta a la
+        // pista siguiente sin que el usuario lo pida (con Aleatorio activo,
+        // a una pista cualquiera). Cargar primero y reproducir después.
+        this.loadAndPlay();
+        return;
+      }
       if (wantPlay) {
         // Inicializar Web Audio al primer play (política iOS)
         // Pero NO esperar al resume antes de play() — llamar play() inmediatamente
@@ -620,15 +631,34 @@ Object.assign(App, {
       return arr;
     },
 
-    _applyShuffle() {
-      const cur = this.currentTrack && this.currentTrack.id;
-      this._originalQueue = this.queue.slice();
-      const rest = [];
-      this.queue.forEach((id, i) => {
-        if (i !== this.queueIdx) rest.push(id);
-      });
+    /* Baraja la cola dejando en cabeza la pista que debe sonar primero.
+     *
+     * `firstId` es opcional: si se omite se usa la pista actual (así lo hace
+     * el botón Aleatorio). Los llamadores que acaban de crear una cola nueva
+     * (playlist, favoritos, álbum/artista) pasan el primer id de esa cola,
+     * porque en ese momento `currentTrack` todavía es la canción anterior.
+     *
+     * Antes se quitaba el elemento por POSICIÓN (`queueIdx`) y se volvía a
+     * insertar `currentTrack` delante: si la pista actual no pertenecía a la
+     * cola nueva se colaba una canción ajena como primera (y sonaba), y si no
+     * había pista actual se perdía la canción que ocupaba `queueIdx`.
+     * Ahora se quita por id y nunca se añaden pistas que no estén en la cola.
+     */
+    _applyShuffle(firstId) {
+      const base = this.queue.slice();
+      this._originalQueue = base.slice();
+      let anchor = firstId;
+      if (anchor === undefined) {
+        const cur = this.currentTrack && this.currentTrack.id;
+        anchor = cur || null;
+      }
+      // Solo se ancla si de verdad está en la cola; si no, se baraja entera.
+      if (anchor === null || !base.includes(anchor)) anchor = null;
+      const rest = anchor === null
+        ? base
+        : base.filter((id, i) => i !== base.indexOf(anchor));
       this._fisherYates(rest);
-      this.queue = cur ? [cur, ...rest] : rest;
+      this.queue = anchor === null ? rest : [anchor, ...rest];
       this.queueIdx = 0;
     },
 
@@ -851,6 +881,9 @@ Object.assign(App, {
       else this._restoreShuffle();
       this.setShuffleUI();
       this.renderQueue();
+      // La «siguiente» cambia al barajar: refrescar la precarga (gapless) para
+      // no dejar cacheada la pista que ya no va a sonar.
+      if (typeof this.preloadNextTrack === 'function') this.preloadNextTrack();
       this.saveSession();
       this.toast(this.shuffle ? this.t('toast_shuffle_on') : this.t('toast_shuffle_off'));
     },

@@ -457,9 +457,10 @@ Object.assign(App, {
       this.playContext = this._browse.type === 'album'
         ? { type: 'album', name: this._browse.title, artist: this._browse.artist || this._browse.subtitle }
         : { type: 'artist', name: this._browse.title };
-      // Igual que playPlaylist(): si shuffle está activo, barajar; si no,
-      // limpiar la cola original para no restaurar una lista ajena.
-      if (this.shuffle) this._applyShuffle();
+      // Igual que playPlaylist(): si shuffle está activo, barajar la cola nueva
+      // anclando su primera pista (no la que sonaba antes); si no, limpiar la
+      // cola original para no restaurar una lista ajena.
+      if (this.shuffle) this._applyShuffle(ids[0]);
       else this._originalQueue = null;
       this.playFromQueue(0);
       this.updateChrome();
