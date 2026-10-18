@@ -534,7 +534,9 @@
         </div>
       </div>
 
-      <!-- Biblioteca / Listas -->
+      <!-- Biblioteca: dos secciones, listas de reproducción y todas las
+           canciones. Sin pestañas ni vistas de álbumes/artistas: para eso ya
+           están los accesos del menú de cada pista. -->
       <div class="sheet sheet-full sheet-tab" id="sheetLibrary">
         <div class="sheet-backdrop" data-close-sheet="sheetLibrary"></div>
         <div class="sheet-panel">
@@ -542,38 +544,44 @@
           <header class="sheet-header" role="presentation">
             <button class="icon-btn-sm" data-close-sheet="sheetLibrary" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="library_title">Biblioteca</h3>
-            <button class="text-btn" id="btnOpenNewPlaylist"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg> <span data-i18n="new_playlist">Nueva</span></button>
-            <button class="text-btn danger" id="btnDeleteAllTracks"><svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg> <span data-i18n="delete_all_btn">Borrar todo</span></button>
+            <span class="sheet-header-spacer" aria-hidden="true"></span>
           </header>
           <div class="sheet-body">
-            <div class="lib-tabs" role="tablist">
-              <button class="lib-tab active" type="button" role="tab" data-tab="songs" data-i18n="lib_tab_songs">Canciones</button>
-              <button class="lib-tab" type="button" role="tab" data-tab="albums" data-i18n="lib_tab_albums">Álbumes</button>
-              <button class="lib-tab" type="button" role="tab" data-tab="artists" data-i18n="lib_tab_artists">Artistas</button>
-              <button class="lib-tab" type="button" role="tab" data-tab="playlists" data-i18n="lib_tab_playlists">Listas</button>
-            </div>
-            <div class="lib-sort-row" id="libSortRow">
-              <button class="lib-sort active" type="button" data-sort="title" data-i18n="lib_sort_title">Título</button>
-              <button class="lib-sort" type="button" data-sort="artist" data-i18n="lib_sort_artist">Artista</button>
-              <button class="lib-sort" type="button" data-sort="recent" data-i18n="lib_sort_recent">Recientes</button>
-              <button class="lib-sort" type="button" data-sort="duration" data-i18n="lib_sort_duration">Duración</button>
-              <button class="lib-batch-btn" id="btnBatchSelect" type="button" aria-pressed="false" data-i18n-aria="batch_select" aria-label="Seleccionar">
-                <svg class="ico" aria-hidden="true"><use href="#i-check"></use></svg>
-                <span data-i18n="batch_select">Seleccionar</span>
-              </button>
-            </div>
-            <div id="libPaneSongs">
+            <!-- Sección 1: listas de reproducción -->
+            <section class="lib-section" id="libSectionPlaylists">
+              <div class="lib-section-head">
+                <h4 class="lib-section-title" data-i18n="library_playlists_section">Listas de reproducción</h4>
+                <span class="lib-section-count" id="libraryPlaylistsCount"></span>
+                <button class="text-btn" id="btnOpenNewPlaylist" type="button">
+                  <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
+                  <span data-i18n="new_playlist">Nueva</span>
+                </button>
+              </div>
+              <ul class="playlist-rail" id="libraryPlaylists" tabindex="0" data-i18n-aria="library_playlists_section" aria-label="Listas de reproducción"></ul>
+            </section>
+
+            <!-- Sección 2: todas las canciones -->
+            <section class="lib-section" id="libSectionSongs">
+              <div class="lib-section-head">
+                <h4 class="lib-section-title" data-i18n="library_songs_section">Todas las canciones</h4>
+                <span class="lib-section-count" id="librarySongsCount"></span>
+                <button class="text-btn danger" id="btnDeleteAllTracks" type="button">
+                  <svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>
+                  <span data-i18n="delete_all_btn">Borrar todo</span>
+                </button>
+              </div>
+              <div class="lib-sort-row" id="libSortRow">
+                <button class="lib-sort active" type="button" data-sort="title" data-i18n="lib_sort_title">Título</button>
+                <button class="lib-sort" type="button" data-sort="artist" data-i18n="lib_sort_artist">Artista</button>
+                <button class="lib-sort" type="button" data-sort="recent" data-i18n="lib_sort_recent">Recientes</button>
+                <button class="lib-sort" type="button" data-sort="duration" data-i18n="lib_sort_duration">Duración</button>
+                <button class="lib-batch-btn" id="btnBatchSelect" type="button" aria-pressed="false" data-i18n-aria="batch_select" aria-label="Seleccionar">
+                  <svg class="ico" aria-hidden="true"><use href="#i-check"></use></svg>
+                  <span data-i18n="batch_select">Seleccionar</span>
+                </button>
+              </div>
               <ul class="track-list" id="libraryTracks"></ul>
-            </div>
-            <div id="libPaneAlbums" style="display:none">
-              <ul class="playlist-grid" id="libraryAlbums"></ul>
-            </div>
-            <div id="libPaneArtists" style="display:none">
-              <ul class="track-list" id="libraryArtists"></ul>
-            </div>
-            <div id="libPanePlaylists" style="display:none">
-              <ul class="playlist-grid" id="libraryPlaylists"></ul>
-            </div>
+            </section>
           </div>
           <div class="batch-bar" id="batchActionBar" hidden>
             <div class="batch-bar-head">

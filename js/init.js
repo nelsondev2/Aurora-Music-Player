@@ -35,6 +35,11 @@ Object.assign(App, {
       // Restaurar sesión (cola, pista actual, posición, shuffle, repeat)
       const restored = await this.restoreSession();
 
+      // La lista predefinida «Mi Música» ya no existe. Si la sesión guardada
+      // apuntaba a una lista que ya no está (o a la eliminada), volver a la
+      // biblioteca para no mostrar un contexto fantasma en la barra.
+      this.sanitizePlayContext();
+
       if (!restored) {
         this.queue = this.tracks.map(t => t.id);
         this.queueIdx = 0;
@@ -223,50 +228,63 @@ Object.assign(App, {
         this.syncLibCountMarker();
       }
 
-      // Playlists (IndexedDB → fallback localStorage)
+      // Playlists (IndexedDB). No hay ninguna lista predefinida: la
+      // biblioteca arranca con cero listas y el usuario crea las que quiera.
       try {
         const pls = await window.AuroraStorage.getAllPlaylists();
-        if (pls && pls.length) {
-          this.playlists = pls;
-          this.playlists.forEach(pl => {
-            if (pl && pl.coverArt && !pl._coverCache) {
-              pl._coverCache = pl.coverArt;
-              pl._coverCacheHash = pl.coverArtHash || null;
-            }
-          });
-        } else {
-          this.playlists = JSON.parse(JSON.stringify(window.DEFAULT_PLAYLISTS || []));
-        }
+        this.playlists = Array.isArray(pls) ? pls : [];
+        this.playlists.forEach(pl => {
+          if (pl && pl.coverArt && !pl._coverCache) {
+            pl._coverCache = pl.coverArt;
+            pl._coverCacheHash = pl.coverArtHash || null;
+          }
+        });
       } catch (e) {
         this.playlists = [];
       }
 
-      // Garantizar que exista la playlist predefinida "Mi Música"
-      this.ensureDefaultPlaylist();
+      // Migración: borrar la antigua lista predefinida «Mi Música» y
+      // limpiar isDefault (ninguna lista es especial ya).
+      this.migrateRemoveDefaultPlaylist();
     },
 
-    /* Crea (si no existe) la playlist predefinida "Mi Música".
-     * No se puede eliminar. Es el destino por defecto de las canciones
-     * subidas desde el botón "+" del reproductor. */
-    ensureDefaultPlaylist() {
-      let pl = this.playlists.find(p => p.id === this.DEFAULT_PLAYLIST_ID);
-      if (!pl) {
-        pl = {
-          id: this.DEFAULT_PLAYLIST_ID,
-          name: this.t('my_music_playlist'),
-          description: this.t('my_music_desc'),
-          trackIds: [],
-          cover: (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 }),
-          isDefault: true
-        };
-        this.playlists.unshift(pl);  // Al principio de la lista
-        this.persistPlaylist(pl);
-      } else {
-        // Asegurar flags aunque la playlist ya existiera (carga desde IDB vieja)
-        pl.isDefault = true;
-        if (!pl.trackIds) pl.trackIds = [];
+    /* Migración (una vez por arranque, idempotente) del modelo antiguo:
+     *   - elimina de memoria y de IndexedDB la lista «Mi Música»
+     *     (id legacy 'mi-musica');
+     *   - quita isDefault de cualquier lista antigua para que todas se
+     *     puedan borrar;
+     *   - si el contexto de reproducción apuntaba a esa lista, lo pasa a
+     *     «biblioteca».
+     * Las pistas que estuvieran dentro siguen en la biblioteca: la lista
+     * solo agrupaba, nunca era dueña del audio. */
+    migrateRemoveDefaultPlaylist() {
+      const LEGACY_ID = 'mi-musica';
+      const removed = this.playlists.filter(p => p && p.id === LEGACY_ID);
+      if (removed.length) {
+        this.playlists = this.playlists.filter(p => p && p.id !== LEGACY_ID);
+        this.deletePlaylistFromStorage(LEGACY_ID);
       }
-      return pl;
+      this.playlists.forEach(p => {
+        if (p && p.isDefault) {
+          p.isDefault = false;
+          this.persistPlaylist(p);
+        }
+      });
+      if (this.playContext && this.playContext.type === 'playlist' &&
+          (!this.playContext.id || this.playContext.id === LEGACY_ID)) {
+        this.playContext = { type: 'all' };
+      }
+      return removed.length;
+    },
+
+    /* Si el contexto guardado apunta a una lista que no existe, se
+     * degrada a «biblioteca». Evita etiquetas fantasma tras migrar. */
+    sanitizePlayContext() {
+      const ctx = this.playContext;
+      if (!ctx || ctx.type !== 'playlist') return;
+      if (!this.playlists.some(p => p && p.id === ctx.id)) {
+        this.playContext = { type: 'all' };
+      }
     },
 
     async persistTrack(track) {
@@ -306,7 +324,6 @@ Object.assign(App, {
           description: pl.description || '',
           trackIds: Array.isArray(pl.trackIds) ? pl.trackIds.slice() : [],
           cover: pl.cover || null,
-          isDefault: !!pl.isDefault,
           coverArt: pl.coverArt || pl._coverCache || null,
           coverArtHash: pl.coverArtHash || pl._coverCacheHash || null
         };
@@ -325,13 +342,14 @@ Object.assign(App, {
       // Mantenido para el test #14 (que llama a loadPlaylists)
       try {
         const pls = await window.AuroraStorage.getAllPlaylists();
-        this.playlists = (pls && pls.length) ? pls : JSON.parse(JSON.stringify(window.DEFAULT_PLAYLISTS || []));
+        this.playlists = Array.isArray(pls) ? pls : [];
         this.playlists.forEach(pl => {
           if (pl && pl.coverArt && !pl._coverCache) {
             pl._coverCache = pl.coverArt;
             pl._coverCacheHash = pl.coverArtHash || null;
           }
         });
+        this.migrateRemoveDefaultPlaylist();
       } catch (e) {
         this.playlists = [];
       }

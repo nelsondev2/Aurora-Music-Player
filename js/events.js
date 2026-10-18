@@ -496,7 +496,7 @@ Object.assign(App, {
         if (!this._editingPlaylistId) return;
         this.clearPlaylist(this._editingPlaylistId);
       });
-      // Eliminar la playlist completa (no disponible para Mi Música)
+      // Eliminar la playlist completa (todas las listas se pueden borrar)
       const btnDeletePlFull = document.getElementById('btnDeletePlaylistFull');
       if (btnDeletePlFull) btnDeletePlFull.addEventListener('click', () => {
         if (!this._editingPlaylistId) return;
@@ -510,9 +510,6 @@ Object.assign(App, {
         b.addEventListener('click', () => this.goNav(b.dataset.nav));
       });
 
-      document.querySelectorAll('.lib-tab').forEach(b => {
-        b.addEventListener('click', () => this.setLibraryTab(b.dataset.tab));
-      });
       document.querySelectorAll('.lib-sort').forEach(b => {
         b.addEventListener('click', () => this.setLibrarySort(b.dataset.sort));
       });

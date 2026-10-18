@@ -17,7 +17,8 @@ Object.assign(App, {
      *   fileList       — FileList o array de File
      *   fromDirectory  — true si se cargó una carpeta entera
      *   targetPlaylistId — ID de playlist a la que añadir las nuevas pistas.
-     *                     Si es null, se añaden a la playlist predefinida "Mi Música".
+     *                     Si es null, las pistas van SOLO a la biblioteca
+     *                     (ya no existe ninguna lista predefinida).
      */
     async handleFileInput(fileList, fromDirectory, targetPlaylistId) {
       if (!fileList || !fileList.length) return;
@@ -92,8 +93,13 @@ Object.assign(App, {
             byKey.set(this._dupKey(t.fileName, t.fileSize), t);
           }
         }
-        const destIdEarly = targetPlaylistId || this.DEFAULT_PLAYLIST_ID;
-        const destPlEarly = this.playlists.find(p => p.id === destIdEarly);
+        // Solo se añaden a una lista cuando la importación se lanza desde la
+        // pantalla de esa lista. Las subidas normales (+ / Ajustes / menú)
+        // van únicamente a la biblioteca: «Mi Música» desapareció.
+        const destPlEarly = targetPlaylistId
+          ? this.playlists.find(p => p.id === targetPlaylistId)
+          : null;
+        const destIdEarly = destPlEarly ? destPlEarly.id : null;
         let readded = 0;
         if (destPlEarly && existingForPlaylist.length) {
           existingForPlaylist.forEach(ex => {
@@ -116,8 +122,7 @@ Object.assign(App, {
           if (readded > 0) {
             this.renderPlaylists();
             if (this._editingPlaylistId === destIdEarly) this.renderEditPlaylist();
-            const destName = destPlEarly ? destPlEarly.name : this.t('my_music_playlist');
-            let msg = readded + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destName;
+            let msg = readded + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destPlEarly.name;
             if (relinked > 0) msg += ' · ' + this.t('relink_done').replace('X', String(relinked));
             this.toast(msg);
           }
@@ -143,9 +148,11 @@ Object.assign(App, {
           console.warn('[Aurora] persistencia en segundo plano:', e);
         });
 
-        // Determinar playlist destino (default = Mi Música)
-        const destId = targetPlaylistId || this.DEFAULT_PLAYLIST_ID;
-        const destPl = this.playlists.find(p => p.id === destId);
+        // Lista destino opcional (solo si se importa desde una lista).
+        const destPl = targetPlaylistId
+          ? this.playlists.find(p => p.id === targetPlaylistId)
+          : null;
+        const destId = destPl ? destPl.id : null;
         if (destPl) {
           tracksToAdd.forEach(t => {
             if (!destPl.trackIds.includes(t.id)) destPl.trackIds.push(t.id);
@@ -180,12 +187,15 @@ Object.assign(App, {
         if (this._editingPlaylistId === destId) this.renderEditPlaylist();
         this.hideEmptyState();
         if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
-        const destName = destPl ? destPl.name : this.t('my_music_playlist');
         const relinkSuffix = relinked > 0 ? ' · ' + this.t('relink_done').replace('X', String(relinked)) : '';
+        const folderSuffix = fromDirectory ? ' ' + this.t('folder_tag') : '';
         if (this._importCancelled) {
           this.toast(this.t('toast_import_cancelled').replace('X', String(tracksToAdd.length)) + relinkSuffix);
         } else {
-          this.toast(tracksToAdd.length + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destName + (fromDirectory ? ' (carpeta)' : '') + relinkSuffix);
+          const destMsg = destPl
+            ? this.t('toast_added_to_playlist_plural') + ' ' + destPl.name
+            : this.t('toast_added_to_library');
+          this.toast(tracksToAdd.length + ' ' + destMsg + folderSuffix + relinkSuffix);
         }
         // También al importar parcialmente (cancelado): el marcador debe
         // reflejar lo que realmente quedó guardado.
@@ -687,7 +697,7 @@ Object.assign(App, {
           })),
           playlists: this.playlists.map(p => ({
             id: p.id, name: p.name, description: p.description,
-            trackIds: p.trackIds, isDefault: p.isDefault
+            trackIds: p.trackIds
           })),
           favorites: [...this.favorites],
           stats: this.stats,
@@ -836,13 +846,17 @@ Object.assign(App, {
       if (restoredTracks > 0) this.invalidateTrackIndex();
 
       // --- Listas: fusión por id ---
+      // Los backups antiguos pueden traer la lista predefinida «Mi Música»;
+      // se ignora (sus pistas ya vienen en data.tracks y siguen en la
+      // biblioteca). Tampoco se marca ninguna lista como isDefault.
+      const LEGACY_DEFAULT_ID = 'mi-musica';
       const rawPls = Array.isArray(data.playlists) ? data.playlists.slice(0, MAX_PLAYLISTS) : [];
       const byId = new Map(this.playlists.map(p => [p.id, p]));
       for (const rp of rawPls) {
         if (!rp || typeof rp !== 'object') continue;
         let pid = safeId(rp.id);
+        if (pid === LEGACY_DEFAULT_ID) continue;
         if (!pid) pid = 'pl-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
-        if (pid === this.DEFAULT_PLAYLIST_ID) pid = this.DEFAULT_PLAYLIST_ID;
         const tids = (Array.isArray(rp.trackIds) ? rp.trackIds : [])
           .map(tid => idMap.get(safeId(tid)) || safeId(tid))
           .filter(tid => tid && this.tracks.some(t => t.id === tid));
@@ -866,7 +880,6 @@ Object.assign(App, {
             name: safeText(rp.name, 200) || this.t('playlist_title'),
             description: safeText(rp.description, 500),
             trackIds: uniqueTids,
-            isDefault: pid === this.DEFAULT_PLAYLIST_ID,
             _coverCache: this._safeImageDataUrl(rp.coverArt) ? rp.coverArt : null
           };
           this.playlists.push(pl);
@@ -876,7 +889,6 @@ Object.assign(App, {
           this._invalidatePlaylistCover(byId.get(pid));
         }
       }
-      if (typeof this.ensureDefaultPlaylist === 'function') this.ensureDefaultPlaylist();
       this.playlists.forEach(pl => this.persistPlaylist(pl));
 
       // --- Favoritos: unión ---

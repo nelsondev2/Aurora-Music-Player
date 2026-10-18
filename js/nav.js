@@ -100,7 +100,7 @@ Object.assign(App, {
         this.closeAllSheets();
         this.showView('home');
         this.openSheet('sheetLibrary');
-        this.renderLibraryTabs();
+        this.renderLibrarySections();
       } else if (nav === 'favorites') {
         this.closeAllSheets();
         this.showView('home');
@@ -264,42 +264,16 @@ Object.assign(App, {
     },
 
     /* ============================================================
-     *  Biblioteca con pestañas
+     *  Biblioteca: una sola vista con dos secciones
+     *    1) Listas de reproducción
+     *    2) Todas las canciones
+     *  Antes había pestañas (Canciones/Álbumes/Artistas/Listas); se
+     *  quitaron para simplificar. Álbumes y artistas siguen accesibles
+     *  desde el menú de cada pista («Ir al artista» / «Ir al álbum»).
      * ============================================================ */
-    renderLibraryTabs() {
-      const tab = this._libraryTab || 'songs';
-      document.querySelectorAll('.lib-tab').forEach(b => {
-        b.classList.toggle('active', b.dataset.tab === tab);
-      });
-      const sortRow = document.getElementById('libSortRow');
-      if (sortRow) sortRow.style.display = tab === 'songs' ? '' : 'none';
-      const btnNew = document.getElementById('btnOpenNewPlaylist');
-      const btnDel = document.getElementById('btnDeleteAllTracks');
-      if (btnNew) btnNew.style.display = tab === 'playlists' ? '' : 'none';
-      if (btnDel) btnDel.style.display = tab === 'songs' ? '' : 'none';
-      const songs = document.getElementById('libPaneSongs');
-      const albums = document.getElementById('libPaneAlbums');
-      const artists = document.getElementById('libPaneArtists');
-      const lists = document.getElementById('libPanePlaylists');
-      [songs, albums, artists, lists].forEach(p => { if (p) p.style.display = 'none'; });
-      if (tab === 'songs') {
-        if (songs) songs.style.display = '';
-        this.renderLibrary();
-      } else if (tab === 'albums') {
-        if (albums) albums.style.display = '';
-        this.renderAlbumGrid();
-      } else if (tab === 'artists') {
-        if (artists) artists.style.display = '';
-        this.renderArtistList();
-      } else {
-        if (lists) lists.style.display = '';
-        this.renderPlaylists();
-      }
-    },
-
-    setLibraryTab(tab) {
-      this._libraryTab = tab;
-      this.renderLibraryTabs();
+    renderLibrarySections() {
+      this.renderPlaylists();
+      this.renderLibrary();
     },
 
     setLibrarySort(sort) {
@@ -354,66 +328,6 @@ Object.assign(App, {
         map.get(name).tracks.push(t);
       });
       return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-    },
-
-    renderAlbumGrid() {
-      const ul = document.getElementById('libraryAlbums');
-      if (!ul) return;
-      ul.innerHTML = '';
-      const albums = this.getAlbums();
-      if (!albums.length) {
-        ul.innerHTML = '<li class="track-row empty-placeholder">' + this.t('albums_empty') + '</li>';
-        return;
-      }
-      albums.forEach(al => {
-        const li = document.createElement('li');
-        li.className = 'pl-card';
-        const coverTrack = al.tracks.find(t => t.coverIsImage) || al.tracks[0];
-        li.innerHTML = `
-          <div class="pl-cover"><canvas width="200" height="200"></canvas></div>
-          <div class="pl-card-info">
-            <h4>${this.esc(al.name)}</h4>
-            <p>${this.esc(al.artist)} · ${al.tracks.length} ${this.esc(this.t('tracks_count'))}</p>
-          </div>`;
-        li.addEventListener('click', () => this.openBrowse({
-          type: 'album',
-          title: al.name,
-          subtitle: al.artist,
-          artist: al.artist,
-          tracks: al.tracks
-        }));
-        ul.appendChild(li);
-        const cv = li.querySelector('canvas');
-        if (cv && coverTrack) this.drawRowCover(cv, coverTrack);
-      });
-    },
-
-    renderArtistList() {
-      const ul = document.getElementById('libraryArtists');
-      if (!ul) return;
-      ul.innerHTML = '';
-      const artists = this.getArtists();
-      if (!artists.length) {
-        ul.innerHTML = '<li class="track-row empty-placeholder">' + this.t('artists_empty') + '</li>';
-        return;
-      }
-      artists.forEach(ar => {
-        const li = document.createElement('li');
-        li.className = 'artist-row';
-        const coverTrack = ar.tracks.find(t => t.coverIsImage) || ar.tracks[0];
-        const albums = new Set(ar.tracks.map(t => t.album).filter(a => a && !this.isPlaceholderAlbum(a)));
-        li.innerHTML = `
-          <div class="artist-avatar"><canvas width="64" height="64"></canvas></div>
-          <div class="row-text">
-            <div class="row-title">${this.esc(ar.name)}</div>
-            <div class="row-sub">${ar.tracks.length} ${this.esc(this.t('tracks_count'))}${albums.size ? ' · ' + albums.size : ''}</div>
-          </div>
-          <svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
-        li.addEventListener('click', () => this.goToArtist(ar.name));
-        ul.appendChild(li);
-        const cv = li.querySelector('canvas');
-        if (cv && coverTrack) this.drawRowCover(cv, coverTrack);
-      });
     },
 
     /* ============================================================
@@ -641,12 +555,7 @@ Object.assign(App, {
     toggleBatchMode(forceState) {
       this._batchMode = forceState !== undefined ? !!forceState : !this._batchMode;
       if (!this._selectedTrackIds) this._selectedTrackIds = new Set();
-      if (!this._batchMode) {
-        this._selectedTrackIds.clear();
-      } else if (typeof this.setLibraryTab === 'function') {
-        // La barra de lote solo tiene sentido sobre la pestaña de canciones.
-        this.setLibraryTab('songs');
-      }
+      if (!this._batchMode) this._selectedTrackIds.clear();
       this.updateBatchUI();
       this.renderLibrary();
     },

@@ -76,11 +76,9 @@ Object.assign(App, {
       this.renderEditPlaylist();
       const titleEl = document.getElementById('editPlaylistTitle');
       if (titleEl) titleEl.textContent = pl.name;
-      // Mostrar/ocultar el botón "Eliminar lista" según sea predefinida
+      // Todas las listas se pueden eliminar: ya no hay lista predefinida.
       const btnDeleteFull = document.getElementById('btnDeletePlaylistFull');
-      if (btnDeleteFull) {
-        btnDeleteFull.style.display = pl.isDefault ? 'none' : '';
-      }
+      if (btnDeleteFull) btnDeleteFull.style.display = '';
       this.closeSheet('sheetPlaylists');
       this.openSheet('sheetEditPlaylist');
     },
@@ -113,9 +111,7 @@ Object.assign(App, {
           const from = (cover && cover.from) || ((this.coverFallback && this.coverFallback().from) || '#6E5CFF');
           const to = (cover && cover.to) || ((this.coverFallback && this.coverFallback().to) || '#FF7AB6');
           coverEl.style.background = 'linear-gradient(135deg, ' + from + ', ' + to + ')';
-          const iconName = pl.id === this.DEFAULT_PLAYLIST_ID
-            ? 'music'
-            : (pl.id === 'favoritos' ? 'heart-solid' : 'list-ul');
+          const iconName = pl.id === 'favoritos' ? 'heart-solid' : 'list-ul';
           coverEl.innerHTML = this.ico(iconName);
         }
       }

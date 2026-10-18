@@ -10,9 +10,6 @@
 /* Catálogo inicial vacío. Las pistas se añaden con el botón "+". */
 const TRACKS = [];
 
-/* Listas iniciales vacías. El usuario crea las suyas. */
-const DEFAULT_PLAYLISTS = [];
-
 /* Paleta para generar portadas dinámicas cuando una pista no trae
  * artwork en sus metadatos ID3.
  * Familia aurora (noche fría + ámbar/rosa de contraste), no catálogo
@@ -395,6 +392,16 @@ const I18N = {
     fr: 'Vider',
     it: 'Svuota',
     ru: 'Очистить'
+  },
+  library_playlists_section: {
+    es: 'Listas de reproducción', en: 'Playlists', pt: 'Listas de reprodução',
+    zh: '播放列表', ja: 'プレイリスト', fr: 'Listes de lecture',
+    it: 'Playlist', ru: 'Плейлисты'
+  },
+  library_songs_section: {
+    es: 'Todas las canciones', en: 'All songs', pt: 'Todas as músicas',
+    zh: '所有歌曲', ja: 'すべての曲', fr: 'Toutes les chansons',
+    it: 'Tutti i brani', ru: 'Все треки'
   },
   library_title: {
     es: 'Biblioteca',
@@ -1455,20 +1462,6 @@ const I18N = {
     ru: 'Создан пустой список'
   }
 ,
-  my_music_playlist: {
-    es: 'Mi Música', en: 'My Music', pt: 'Minha Música', zh: '我的音乐',
-    ja: 'マイミュージック', fr: 'Ma Musique', it: 'La Mia Musica', ru: 'Моя Музыка'
-  },
-  my_music_desc: {
-    es: 'Canciones que no se añadieron a ninguna lista',
-    en: 'Songs not added to any playlist',
-    pt: 'Músicas não adicionadas a nenhuma lista',
-    zh: '未添加到任何歌单的歌曲',
-    ja: 'どのプレイリストにも追加されていない曲',
-    fr: 'Chansons non ajoutées à une liste',
-    it: 'Canzoni non aggiunte a nessuna lista',
-    ru: 'Песни, не добавленные ни в один список'
-  },
   play_all_btn: {
     es: 'Reproducir Todo', en: 'Play All', pt: 'Reproduzir Tudo', zh: '播放全部',
     ja: 'すべて再生', fr: 'Tout lire', it: 'Riproduci tutto', ru: 'Играть все'
@@ -1500,15 +1493,19 @@ const I18N = {
     es: 'Lista vaciada', en: 'Playlist cleared', pt: 'Lista esvaziada', zh: '歌单已清空',
     ja: 'プレイリストを空にしました', fr: 'Liste vidée', it: 'Lista svuotata', ru: 'Список очищен'
   },
-  toast_cannot_delete_default: {
-    es: 'La lista "Mi Música" no se puede eliminar',
-    en: 'The "My Music" playlist cannot be deleted',
-    pt: 'A lista "Minha Música" não pode ser excluída',
-    zh: '无法删除"我的音乐"歌单',
-    ja: '「マイミュージック」プレイリストは削除できません',
-    fr: 'La liste « Ma Musique » ne peut pas être supprimée',
-    it: 'La lista "La Mia Musica" non può essere eliminata',
-    ru: 'Список «Моя Музыка» нельзя удалить'
+  toast_added_to_library: {
+    es: 'pista(s) añadida(s) a la biblioteca',
+    en: 'track(s) added to the library',
+    pt: 'faixa(s) adicionada(s) à biblioteca',
+    zh: '首音轨已添加到媒体库',
+    ja: '曲をライブラリに追加しました',
+    fr: 'piste(s) ajoutée(s) à la bibliothèque',
+    it: 'traccia/e aggiunta/e alla libreria',
+    ru: 'трек(ов) добавлено в медиатеку'
+  },
+  folder_tag: {
+    es: '(carpeta)', en: '(folder)', pt: '(pasta)', zh: '（文件夹）',
+    ja: '（フォルダー）', fr: '(dossier)', it: '(cartella)', ru: '(папка)'
   },
   toast_added_to_playlist_plural: {
     es: 'pista(s) añadida(s) a', en: 'track(s) added to', pt: 'faixa(s) adicionada(s) a',
@@ -2013,26 +2010,6 @@ const I18N = {
     es: 'Más escuchadas', en: 'Most played', pt: 'Mais ouvidas',
     zh: '最常播放', ja: 'よく聴く曲', fr: 'Les plus écoutées',
     it: 'Più ascoltate', ru: 'Самые слушаемые'
-  },
-  lib_tab_songs: {
-    es: 'Canciones', en: 'Songs', pt: 'Músicas',
-    zh: '歌曲', ja: '曲', fr: 'Titres',
-    it: 'Brani', ru: 'Песни'
-  },
-  lib_tab_albums: {
-    es: 'Álbumes', en: 'Albums', pt: 'Álbuns',
-    zh: '专辑', ja: 'アルバム', fr: 'Albums',
-    it: 'Album', ru: 'Альбомы'
-  },
-  lib_tab_artists: {
-    es: 'Artistas', en: 'Artists', pt: 'Artistas',
-    zh: '艺术家', ja: 'アーティスト', fr: 'Artistes',
-    it: 'Artisti', ru: 'Исполнители'
-  },
-  lib_tab_playlists: {
-    es: 'Listas', en: 'Playlists', pt: 'Listas',
-    zh: '歌单', ja: 'プレイリスト', fr: 'Listes',
-    it: 'Liste', ru: 'Списки'
   },
   lib_sort_title: {
     es: 'Título', en: 'Title', pt: 'Título',
@@ -2768,7 +2745,6 @@ const I18N = {
 };
 
 window.TRACKS = TRACKS;
-window.DEFAULT_PLAYLISTS = DEFAULT_PLAYLISTS;
 window.COVER_PALETTE = COVER_PALETTE;
 window.SAMPLE_LRC = SAMPLE_LRC;
 window.SUPPORTED_LANGS = SUPPORTED_LANGS;
