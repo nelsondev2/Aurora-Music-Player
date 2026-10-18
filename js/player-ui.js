@@ -26,6 +26,12 @@ Object.assign(App, {
         document.getElementById('timeTotal').textContent = '0:00';
         document.getElementById('timeCurrent').textContent = '0:00';
         document.getElementById('progressFill').style.width = '0%';
+        // La cabecera vuelve a su texto neutro cuando no hay pista.
+        const ctxIdle = document.getElementById('nowPlayingContext');
+        if (ctxIdle) {
+          ctxIdle.textContent = this.t('your_library');
+          ctxIdle.removeAttribute('title');
+        }
         return;
       }
       this.setMarqueeText(document.getElementById('trackTitle'), t.title);
@@ -40,15 +46,24 @@ Object.assign(App, {
       document.getElementById('miniTitle').textContent = t.title;
       document.getElementById('miniArtist').textContent = t.artist;
       document.getElementById('lyricsTrackName').textContent = t.title + ' — ' + t.artist;
-      // Mostrar contexto de reproducción ("Reproduciendo desde X") o álbum/artista
-      const ctxLabel = this.getPlayContextLabel();
+      // Cabecera: bajo «REPRODUCIENDO AHORA» va el TÍTULO de la pista en curso.
+      // Antes se mostraba el álbum o el contexto («Reproduciendo desde X»), que
+      // se leía como si fuera el nombre de la canción. El contexto no se pierde:
+      // queda en el tooltip y, visible, en el sheet de la cola (#queueContextLabel).
       const ctxEl = document.getElementById('nowPlayingContext');
-      if (ctxLabel) {
-        ctxEl.textContent = this.t('playing_from') + ' · ' + ctxLabel;
-      } else if (t.album && t.album !== this.t('no_album')) {
-        ctxEl.textContent = t.album;
-      } else {
-        ctxEl.textContent = t.artist;
+      if (ctxEl) {
+        ctxEl.textContent = t.title || this.t('unknown_track');
+        const ctxLabel = this.getPlayContextLabel();
+        let detail = '';
+        if (ctxLabel) {
+          detail = this.t('playing_from') + ' · ' + ctxLabel;
+        } else if (t.album && !this.isPlaceholderAlbum(t.album)) {
+          detail = t.album;
+        } else if (t.artist) {
+          detail = t.artist;
+        }
+        if (detail) ctxEl.setAttribute('title', detail);
+        else ctxEl.removeAttribute('title');
       }
 
       // Colores dinámicos (para el fondo y visualizador)
