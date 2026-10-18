@@ -15,6 +15,18 @@
   'use strict';
 
   const Uploader = {
+    /* Traduce sin depender de que App.t esté disponible (uploader también
+     * se usa en pruebas aisladas). */
+    _t(key, fallback) {
+      try {
+        if (window.App && typeof window.App.t === 'function') {
+          const v = window.App.t(key);
+          if (v && v !== key) return v;
+        }
+      } catch (e) {}
+      return fallback;
+    },
+
     ACCEPTED: '.mp3,.m4a,.flac,.wav,.ogg,.webm,.opus,audio/*',
     PALETTE: window.COVER_PALETTE || [
       { from: '#7C3AED', to: '#EC4899', angle: 135 }
@@ -86,8 +98,8 @@
 
       let meta = {
         title: fromName.title || this.cleanName(file.name),
-        artist: fromName.artist || 'Artista desconocido',
-        album: 'Sin álbum',
+        artist: fromName.artist || this._t('unknown_artist', 'Artista desconocido'),
+        album: this._t('no_album', 'Sin álbum'),
         cover: null,
         lrc: null
       };
@@ -105,7 +117,10 @@
         if (title) meta.title = title;
         if (artist) meta.artist = artist;
         if (album) meta.album = album;
-        if (tags.picture) meta.cover = this.pictureToDataURL(tags.picture);
+        if (tags.picture) {
+          const rawCover = this.pictureToDataURL(tags.picture);
+          meta.cover = rawCover ? await this.limitArtwork(rawCover, 600) : null;
+        }
         const usltLyrics = this.extractUslt(tags);
         if (usltLyrics) meta.lrc = this.normalizeLyrics(usltLyrics);
         if (!meta.lrc) {
@@ -215,6 +230,32 @@
       });
     },
 
+    /* ---------- Limita la portada ID3 a 600 px (JPEG) ----------
+     * Los canvas de la app son de 600/512 px como máximo: más resolución
+     * solo hincha IndexedDB y acerca la cuota en bibliotecas grandes. */
+    limitArtwork(dataUrl, maxDim) {
+      maxDim = maxDim || 600;
+      return new Promise((resolve) => {
+        try {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const w = img.width || 0, h = img.height || 0;
+              if (!w || !h || Math.max(w, h) <= maxDim) { resolve(dataUrl); return; }
+              const k = maxDim / Math.max(w, h);
+              const c = document.createElement('canvas');
+              c.width = Math.max(1, Math.round(w * k));
+              c.height = Math.max(1, Math.round(h * k));
+              c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+              resolve(c.toDataURL('image/jpeg', 0.85));
+            } catch (e) { resolve(dataUrl); }
+          };
+          img.onerror = () => resolve(dataUrl);
+          img.src = dataUrl;
+        } catch (e) { resolve(dataUrl); }
+      });
+    },
+
     /* ---------- Convierte la imagen ID3 (APIC) a dataURL ---------- */
     pictureToDataURL(picture) {
       try {
@@ -254,11 +295,19 @@
       const cleanAudio = this.cleanName(audioFileName).toLowerCase();
       if (lrcsMap[cleanAudio]) return lrcsMap[cleanAudio];
 
-      const normAudio = cleanAudio.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w]/g, '');
+      // \w borraba cirílico/CJK: la letra no se emparejaba con la canción.
+      const norm = (x) => x.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^\p{L}\p{N}]/gu, '');
+      const normAudio = norm(cleanAudio);
 
       for (const [key, file] of Object.entries(lrcsMap)) {
-        const normKey = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w]/g, '');
-        if (normAudio && normKey && (normAudio === normKey || normAudio.includes(normKey) || normKey.includes(normAudio))) {
+        const normKey = norm(key);
+        if (!normAudio || !normKey) continue;
+        // Evitar falsos positivos con nombres muy cortos («01», «a»).
+        if (normAudio === normKey) return file;
+        if (Math.min(normAudio.length, normKey.length) >= 4 &&
+            (normAudio.includes(normKey) || normKey.includes(normAudio))) {
           return file;
         }
       }
@@ -306,8 +355,8 @@
       return {
         id,
         title: this.cleanName(file.name),
-        artist: 'Artista desconocido',
-        album: 'Sin álbum',
+        artist: this._t('unknown_artist', 'Artista desconocido'),
+        album: this._t('no_album', 'Sin álbum'),
         duration: 0,
         src: URL.createObjectURL(file),
         cover: this.randomCover(),
@@ -603,7 +652,10 @@
       try {
         const encoding = data[0];
         const tsFormat = data[4];  // 1 = milliseconds
-        let pos = 5;
+        // encoding(1) + language(3) + timestampFormat(1) + contentType(1) = 6
+        // Antes empezaba en 5 (contentType), corrompiendo el descriptor si
+        // contentType era 0 y desalineando el primer par texto/tiempo.
+        let pos = 6;
         // Descriptor (null-terminated)
         const descEnd = this.findNullTerminator(data, pos, encoding);
         pos = descEnd + (encoding === 1 || encoding === 2 ? 2 : 1);

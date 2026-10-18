@@ -3,8 +3,9 @@
  *  Estado global de la aplicación
  *
  *  Parte del refactor (C) de app.js: mismo código, módulos por funcionalidad.
- *  Este archivo se carga tras js/state.js y completa el objeto App con
- *  Object.assign (los scripts son clásicos por compatibilidad webxdc).
+ *  Este archivo se carga el primero (tras data.js) y define el objeto App.
+ *  El resto de módulos amplían App con Object.assign porque los scripts
+ *  son clásicos (sin módulos ES) por compatibilidad con webxdc.
  * ===================================================================== */
 
 'use strict';
@@ -139,11 +140,22 @@
     _browse: null,
     _searchHistory: [],
     _importCancelled: false,
+    _importing: false,
+
+    /* Índice id → pista para evitar búsquedas O(n*m) en listas grandes.
+     * Se reconstruye de forma perezosa cuando cambia el tamaño de tracks. */
+    _trackById: null,
+    _trackMapSize: -1,
+
+    /* Timers y ciclo de vida (se limpian al cerrar la app) */
+    _sessionTimer: null,
+    _initialized: false,
+    _storageOk: true,
 
     /* Utilidades */
     _wired: {},
     _lastError: null,
-    VERSION: '1.0.0',
+    VERSION: '1.2.0',
     _marqueeEnabled: true,
     _vinylEnabled: false,
 
@@ -156,6 +168,26 @@
       const svg = (el.tagName && el.tagName.toLowerCase() === 'svg') ? el : el.querySelector('svg');
       const use = svg && svg.querySelector('use');
       if (use) use.setAttribute('href', '#i-' + name);
+    },
+
+    /* ---------- Índice de pistas (rendimiento) ---------- */
+    invalidateTrackIndex() {
+      this._trackById = null;
+      this._trackMapSize = -1;
+    },
+    trackMap() {
+      if (!this._trackById || this._trackMapSize !== this.tracks.length) {
+        this._trackById = new Map();
+        for (const t of this.tracks) {
+          if (t && t.id != null) this._trackById.set(t.id, t);
+        }
+        this._trackMapSize = this.tracks.length;
+      }
+      return this._trackById;
+    },
+    getTrackById(id) {
+      if (id == null) return null;
+      return this.trackMap().get(id) || null;
     },
 };
 

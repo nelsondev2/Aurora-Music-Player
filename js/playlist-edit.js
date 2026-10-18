@@ -102,9 +102,13 @@ Object.assign(App, {
       if (coverEl) {
         const cover = this.getPlaylistCover(pl);
         coverEl.classList.toggle('is-playing', this.isPlaylistPlaying(pl));
-        if (typeof cover === 'string' && cover.startsWith('data:')) {
+        if (typeof cover === 'string' && typeof this._safeImageDataUrl === 'function' && this._safeImageDataUrl(cover)) {
           coverEl.style.background = '';
-          coverEl.innerHTML = '<img src="' + cover + '" alt="">';
+          const img = document.createElement('img');
+          img.src = cover;
+          img.alt = '';
+          coverEl.textContent = '';
+          coverEl.appendChild(img);
         } else {
           const from = (cover && cover.from) || ((this.coverFallback && this.coverFallback().from) || '#6E5CFF');
           const to = (cover && cover.to) || ((this.coverFallback && this.coverFallback().to) || '#FF7AB6');
@@ -309,15 +313,23 @@ Object.assign(App, {
     },
 
     createPlaylist(name, desc, trackIds) {
-      const id = 'pl-' + Date.now();
+      // Validación defensiva: la función es pública y también la usa el
+      // sheet; sin límites un nombre enorme rompía la cabecera y el M3U.
+      const cleanName = String(name == null ? '' : name).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 80);
+      const cleanDesc = String(desc == null ? '' : desc).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 300);
+      if (this.playlists.some(p => (p.name || '').trim().toLowerCase() === cleanName.toLowerCase())) {
+        this.toast(this.t('playlist_name_exists'));
+        return null;
+      }
+      const id = 'pl-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
       const colors = ['#6E5CFF','#FF7AB6','#1A6A88','#3EC8B8','#2A6B48','#A8C86A','#C45C18','#E8B84A','#A61B3A','#E85A7A'];
       const from = colors[Math.floor(Math.random() * colors.length)];
       const to = colors[Math.floor(Math.random() * colors.length)];
       const pl = {
         id,
-        name: name || this.t('create_playlist_title'),
-        description: desc || '',
-        trackIds: Array.isArray(trackIds) ? trackIds : [],
+        name: cleanName || this.t('create_playlist_title'),
+        description: cleanDesc,
+        trackIds: Array.isArray(trackIds) ? trackIds.filter(x => this.tracks.some(t => t.id === x)) : [],
         cover: { from, to, angle: 135 }
       };
       this.playlists.push(pl);
@@ -336,14 +348,17 @@ Object.assign(App, {
       const safeName = (pl.name || 'playlist').replace(/[\\/:*?"<>|]/g, '_');
 
       // Generar archivo M3U8 estándar con directivas de playlist y tracks
+      // Quitar CR/LF de todos los campos de texto: un salto de línea en el
+      // nombre o en el archivo inyectaría entradas falsas en el M3U.
+      const oneLine = (v) => String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').trim();
       let m3u = '#EXTM3U\n';
-      m3u += `#PLAYLIST:${pl.name}\n`;
+      m3u += `#PLAYLIST:${oneLine(pl.name)}\n`;
       tracks.forEach(t => {
         const dur = Math.max(-1, Math.floor(t.duration || -1));
         const artist = t.artist || this.t('unknown_artist');
         const title = t.title || this.t('unknown_track');
-        const fn = t.fileName || `${artist} - ${title}.mp3`;
-        m3u += `#EXTINF:${dur},${artist} - ${title}\n${fn}\n`;
+        const fn = oneLine(t.fileName) || `${oneLine(artist)} - ${oneLine(title)}.mp3`;
+        m3u += `#EXTINF:${dur},${oneLine(artist)} - ${oneLine(title)}\n${fn}\n`;
       });
 
       const caption = `🎶 Lista: ${pl.name} (${tracks.length} canciones) · Aurora Music Player`;

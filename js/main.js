@@ -7,9 +7,21 @@
 
 'use strict';
 
-document.addEventListener('DOMContentLoaded', () => {
-  App.init();
-});
+function bootAurora() {
+  // Si el script se inyecta cuando el documento ya cargó (tests, snippets,
+  // carga diferida), DOMContentLoaded nunca llegaría y la app quedaría en
+  // blanco. Se comprueba readyState.
+  Promise.resolve(App.init()).catch((err) => {
+    console.error('[Aurora] Error de inicialización:', err);
+    try { App.toast(App.t('toast_load_error')); } catch (e) {}
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootAurora);
+} else {
+  bootAurora();
+}
 
 // Reanudar audio context al volver a la app (iOS)
 document.addEventListener('visibilitychange', () => {

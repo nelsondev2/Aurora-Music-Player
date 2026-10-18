@@ -103,6 +103,11 @@ Object.assign(App, {
         const input = document.createElement('input');
         input.type = 'range';
         input.min = -12; input.max = 12; input.value = savedEq[i] || 0; input.step = 1;
+        // Sin <label> asociado axe lo marca como crítico (label). El id
+        // enlaza label/for y el aria-label cubre lectores que ignoren el for.
+        input.id = 'eqBand' + i;
+        input.setAttribute('aria-label', this.t('eq_band_label').replace('X', lbl));
+        lab.id = 'eqBandLabel' + i;
         const val = document.createElement('span');
         val.className = 'eq-band-val';
         const g = savedEq[i] || 0;
@@ -115,7 +120,13 @@ Object.assign(App, {
           try { localStorage.setItem('aurora_eq_preset', 'custom'); } catch (e) {}
           document.querySelectorAll('.eq-preset').forEach(b => b.classList.remove('active'));
         });
-        wrap.appendChild(lab);
+        // <label for> real: además de axe, permite clicar la etiqueta.
+        const labelEl = document.createElement('label');
+        labelEl.className = 'eq-band-label';
+        labelEl.htmlFor = input.id;
+        labelEl.id = lab.id;
+        labelEl.textContent = lbl;
+        wrap.appendChild(labelEl);
         wrap.appendChild(input);
         wrap.appendChild(val);
         c.appendChild(wrap);
@@ -182,7 +193,15 @@ Object.assign(App, {
         if (pl) {
           this.queue = pl.trackIds.filter(id => this.tracks.some(t => t.id === id));
           const qIdx = this.queue.indexOf(trackId);
-          this.queueIdx = qIdx >= 0 ? qIdx : 0;
+          // La pista puede no pertenecer ya a la lista (se quitó mientras
+          // sonaba otra): insertarla para que next/prev sigan teniendo
+          // sentido, en vez de dejar queueIdx apuntando a otra canción.
+          if (qIdx < 0) {
+            this.queue.unshift(trackId);
+            this.queueIdx = 0;
+          } else {
+            this.queueIdx = qIdx;
+          }
         } else {
           this.queue = [trackId];
           this.queueIdx = 0;
@@ -192,18 +211,21 @@ Object.assign(App, {
         const favIds = this.tracks.filter(t => this.favorites.has(t.id)).map(t => t.id);
         this.queue = favIds;
         const qIdx = this.queue.indexOf(trackId);
-        this.queueIdx = qIdx >= 0 ? qIdx : 0;
+        if (qIdx < 0) { this.queue.unshift(trackId); this.queueIdx = 0; }
+        else this.queueIdx = qIdx;
       } else if (context && context.type === 'album' && context.name) {
         const artist = context.artist;
         const tracks = this.tracks.filter(t => t.album === context.name && (!artist || t.artist === artist));
         this.queue = tracks.map(t => t.id);
         const qIdx = this.queue.indexOf(trackId);
-        this.queueIdx = qIdx >= 0 ? qIdx : 0;
+        if (qIdx < 0) { this.queue.unshift(trackId); this.queueIdx = 0; }
+        else this.queueIdx = qIdx;
       } else if (context && context.type === 'artist' && context.name) {
         const tracks = this.tracks.filter(t => t.artist === context.name);
         this.queue = tracks.map(t => t.id);
         const qIdx = this.queue.indexOf(trackId);
-        this.queueIdx = qIdx >= 0 ? qIdx : 0;
+        if (qIdx < 0) { this.queue.unshift(trackId); this.queueIdx = 0; }
+        else this.queueIdx = qIdx;
       } else {
         // Sin contexto específico o 'all'/'queue': cola = todas las pistas
         this.queue = this.tracks.map(t => t.id);
@@ -250,8 +272,20 @@ Object.assign(App, {
       const url = this.getTrackUrl(t);
       if (!url) {
         console.warn('[Aurora] Sin URL de audio para', t.id);
+        // Pista pendiente de re-vincular (restaurada de un backup): avisar
+        // y saltar a la siguiente sin bloquear la reproducción.
+        this.toast(this.t('toast_track_no_audio'));
+        this._noAudioSkips = (this._noAudioSkips || 0) + 1;
+        if (this._noAudioSkips > this.queue.length) {
+          this._noAudioSkips = 0;
+          this.stopPlayback();
+          return;
+        }
+        // Diferido: evita recursión síncrona profunda con colas enormes.
+        setTimeout(() => this.next(true), 0);
         return;
       }
+      this._noAudioSkips = 0;
       this.audio.src = url;
       try { this.audio.volume = this.volume; } catch (e) {}
       if (this.clearABRepeat) this.clearABRepeat();
@@ -353,11 +387,16 @@ Object.assign(App, {
 
     async togglePlay(forcePlay) {
       if (!this.currentTrack) return;
-      const wantPlay = forcePlay !== undefined ? forcePlay : !this.isPlaying;
+      // Si hay un play() pendiente, isPlaying aún es false: usar el estado
+      // real del elemento evita que un segundo toque vuelva a reproducir
+      // en vez de pausar.
+      const actuallyPlaying = this.audio ? !this.audio.paused : this.isPlaying;
+      const wantPlay = forcePlay !== undefined ? forcePlay : !actuallyPlaying;
       if (wantPlay) {
         // Inicializar Web Audio al primer play (política iOS)
         // Pero NO esperar al resume antes de play() — llamar play() inmediatamente
         // para que el audio empiece a cargar/reproducir sin retardo.
+        const token = (this._playToken = (this._playToken || 0) + 1);
         const p = this.audio.play();
         if (!this.audioCtx) {
           setTimeout(() => {
@@ -371,6 +410,9 @@ Object.assign(App, {
         }
         if (p && p.then) {
           p.then(() => {
+            // Si mientras cargaba se pidió pausa o se cambió de pista,
+            // este then ya no debe reactivar la UI.
+            if (token !== this._playToken) return;
             this.isPlaying = true;
             if (this.gainNode && this.audioCtx && !this._xfadeIncoming && !this._xfadeStarted) {
               try {
@@ -385,14 +427,35 @@ Object.assign(App, {
             this.trackPlayStarted();
             this.updateMediaPosition(true);
           }).catch((e) => {
-            console.warn('[Aurora] play() rechazado:', e.message);
-            this._lastError = { msg: 'play() rechazado: ' + e.message, ts: Date.now() };
+            if (token !== this._playToken) return;
+            const name = (e && e.name) || '';
+            console.warn('[Aurora] play() rechazado:', name, e && e.message);
+            this._lastError = { msg: 'play() rechazado: ' + (e && e.message), ts: Date.now() };
             this.isPlaying = false;
             this.updatePlayUI();
-            this.toast(this.t('toast_play_blocked'));
+            // Siempre apagar el spinner: si no, la app parece congelada.
+            if (typeof this.setBuffering === 'function') this.setBuffering(false);
+            // AbortError = carrera benigna (toques rápidos / cambio de pista):
+            // no asustar con el aviso de bloqueo.
+            if (name === 'AbortError') return;
+            if (name === 'NotAllowedError') {
+              this.toast(this.t('toast_play_blocked'));
+              return;
+            }
+            // NotSupportedError u otros: el archivo no se puede reproducir → saltar
+            // a la siguiente (misma política que el manejador de 'error' de audio).
+            this.toast(this.t('toast_audio_error'));
+            this._decodeSkipCount = (this._decodeSkipCount || 0) + 1;
+            if (this._decodeSkipCount >= 3) {
+              this._decodeSkipCount = 0;
+              this.togglePlay(false);
+            } else {
+              setTimeout(() => this.next(true), 0);
+            }
           });
         }
       } else {
+        this._playToken = (this._playToken || 0) + 1;
         this._cancelCrossfade();
         this.audio.pause();
         this.isPlaying = false;
@@ -518,6 +581,9 @@ Object.assign(App, {
       const nextIdx = this._nextQueueIndex(!!auto);
       if (nextIdx == null) {
         this.togglePlay(false);
+        this.seekToTime(0);
+        this.isPlaying = false;
+        this.updatePlayUI();
         return;
       }
       this.playFromQueue(nextIdx);
@@ -687,7 +753,7 @@ Object.assign(App, {
       try {
         const dur = this.audio.duration;
         if (!isFinite(dur) || dur <= 0) return;
-        const pos = Math.max(0, Math.min(this.audio.currentTime || 0, dur));
+        const pos = Math.max(0, Math.min(Number(this.audio.currentTime) || 0, Math.max(0, dur - 0.001)));
         navigator.mediaSession.setPositionState({
           duration: dur,
           playbackRate: this.audio.playbackRate || 1,
@@ -702,7 +768,11 @@ Object.assign(App, {
       this._gaplessArmed = false;
       if (this._xfadeStarted) this._cancelCrossfade();
       const dur = this.audio.duration;
-      let t = Number(sec) || 0;
+      const n = Number(sec);
+      // NaN/Infinity no deben convertirse en 0 (eso rebobinaba la pista
+      // al pulsar una tecla con la duración aún desconocida).
+      if (!isFinite(n)) return;
+      let t = n;
       if (isFinite(dur) && dur > 0) t = Math.max(0, Math.min(dur - 0.05, t));
       else t = Math.max(0, t);
       try { this.audio.currentTime = t; } catch (e) {}
@@ -710,17 +780,29 @@ Object.assign(App, {
       this.updateMediaPosition(true);
     },
     seekTo(ratio) {
-      if (!this.audio || !this.audio.duration || isNaN(this.audio.duration)) return;
+      if (!this.audio || !this.audio.duration || !isFinite(this.audio.duration)) return;
+      // Sin clamp, un clic con rect.width=0 o un gesto fuera de rango
+      // producía NaN/Infinity y `currentTime` lanzaba DOMException.
+      const r = Number(ratio);
+      if (!isFinite(r)) return;
       this._gaplessArmed = false;
       if (this._xfadeStarted) this._cancelCrossfade();
-      this.audio.currentTime = ratio * this.audio.duration;
+      try {
+        this.audio.currentTime = Math.max(0, Math.min(1, r)) * this.audio.duration;
+      } catch (e) {
+        return;
+      }
       this.updateProgress();
       this.updateMediaPosition(true);
     },
 
     setVolume(v) {
-      this.volume = Math.max(0, Math.min(1, v));
-      if (this.audio) this.audio.volume = this.volume;
+      const n = Number(v);
+      if (!isFinite(n)) return; // un <input type=range> vacío da NaN
+      this.volume = Math.max(0, Math.min(1, n));
+      if (this.audio) {
+        try { this.audio.volume = this.volume; } catch (e) {}
+      }
       const pct = Math.round(this.volume * 100);
       const sv = document.getElementById('volumeSlider');
       const vv = document.getElementById('volumeValue');
@@ -789,7 +871,7 @@ Object.assign(App, {
       else this.favorites.add(id);
       this.saveFavorites();
       this.updateFavoriteUI();
-      this.renderFavorites();
+      if (typeof this.renderFavorites === 'function') this.renderFavorites();
       this.toast(this.favorites.has(id) ? this.t('toast_added_fav') : this.t('toast_removed_fav'));
     },
 
@@ -825,8 +907,12 @@ Object.assign(App, {
      *  Repetición A-B (A-B Repeat)
      * ============================================================ */
     toggleABRepeat() {
+      if (!this.audio || !this.currentTrack || !this.audio.src) {
+        this.toast(this.t('no_track_playing'));
+        return;
+      }
       if (!this.abRepeat) this.abRepeat = { active: false, a: null, b: null };
-      const cur = this.audio ? this.audio.currentTime : 0;
+      const cur = Number(this.audio.currentTime) || 0;
       if (this.abRepeat.a === null) {
         this.abRepeat.a = cur;
         this.abRepeat.b = null;
@@ -867,12 +953,14 @@ Object.assign(App, {
         if (this.abRepeat && this.abRepeat.a !== null && this.abRepeat.b === null) {
           btn.classList.add('setting-b');
           btn.setAttribute('aria-pressed', 'false');
-          btn.title = `Punto A: ${this.fmtTime(this.abRepeat.a)} · Pulsa para fijar B`;
+          btn.title = this.t('ab_set_a').replace('X', this.fmtTime(this.abRepeat.a));
           badge.textContent = 'A→';
         } else if (this.abRepeat && this.abRepeat.active && this.abRepeat.b !== null) {
           btn.classList.add('active');
           btn.setAttribute('aria-pressed', 'true');
-          btn.title = `Bucle A-B: ${this.fmtTime(this.abRepeat.a)} ⇄ ${this.fmtTime(this.abRepeat.b)}`;
+          btn.title = this.t('ab_active')
+            .replace('X', this.fmtTime(this.abRepeat.a))
+            .replace('Y', this.fmtTime(this.abRepeat.b));
           badge.textContent = 'A⇄B';
         } else {
           btn.setAttribute('aria-pressed', 'false');
@@ -898,11 +986,18 @@ Object.assign(App, {
      *  Visualizador de frecuencias en tiempo real (AnalyserNode)
      * ============================================================ */
     initVisualizer() {
-      let saved = 'bars';
+      let saved = null;
       try {
-        saved = localStorage.getItem('aurora_visualizer_mode') || 'bars';
+        saved = localStorage.getItem('aurora_visualizer_mode');
       } catch (e) {}
-      this.visualizerMode = saved;
+      if (!saved) {
+        // Respetar reduced-motion: desactivado por defecto si el usuario
+        // prefiere movimiento reducido.
+        try {
+          if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) saved = 'off';
+        } catch (e) {}
+      }
+      this.visualizerMode = saved || 'bars';
       this.updateVisualizerUI();
       if (this.isPlaying) this.startVisualizer();
     },
@@ -941,21 +1036,74 @@ Object.assign(App, {
       }
     },
 
+    /* Ajusta el canvas a su tamaño real (DPR máx 2) para dibujar nítido
+     * sin sobredimensionar en pantallas densas. */
+    _fitVisualizerCanvas(canvas) {
+      try {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+        const h = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+          this._visGrad = null;
+          this._visGradKey = null;
+        }
+      } catch (e) {}
+    },
+
     startVisualizer() {
       if (this.visualizerMode === 'off') return;
-      if (this._visRafId) return;
+      if (this._visRafId || this._visTimer) return;
       const canvas = document.getElementById('visualizerCanvas');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
+      this._fitVisualizerCanvas(canvas);
 
-      const render = () => {
+      // Pausar el dibujado cuando el canvas no está en pantalla
+      // (otra vista, sheet encima): ahorra batería en móvil.
+      if (!this._visObserver && 'IntersectionObserver' in window) {
+        try {
+          this._visVisible = true;
+          this._visObserver = new IntersectionObserver((entries) => {
+            this._visVisible = entries.length ? !!entries[entries.length - 1].isIntersecting : true;
+          }, { threshold: 0.02 });
+          this._visObserver.observe(canvas);
+        } catch (e) {
+          this._visObserver = null;
+        }
+      }
+
+      let last = 0;
+      const render = (now) => {
         if (!this.isPlaying || this.visualizerMode === 'off') {
           this._visRafId = null;
+          this._visTimer = null;
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           return;
         }
+        if (this._visVisible === false || document.hidden) {
+          // Fuera de pantalla: reintentar en 500 ms sin dibujar
+          this._visRafId = null;
+          this._visTimer = setTimeout(() => {
+            this._visTimer = null;
+            if (this.isPlaying && this.visualizerMode !== 'off' && !this._visRafId) {
+              this._visRafId = requestAnimationFrame(render);
+            }
+          }, 500);
+          return;
+        }
         this._visRafId = requestAnimationFrame(render);
+        if (now - last < 33) return; // ~30 fps bastan en móvil
+        last = now;
+        // Reajustar si el layout cambió (vista oculta al arrancar, rotación)
+        try {
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          if (canvas.clientWidth > 0 && Math.abs(canvas.width - canvas.clientWidth * dpr) > 2) {
+            this._fitVisualizerCanvas(canvas);
+          }
+        } catch (e) {}
         this.drawVisualizerFrame(canvas, ctx);
       };
       this._visRafId = requestAnimationFrame(render);
@@ -965,6 +1113,10 @@ Object.assign(App, {
       if (this._visRafId) {
         cancelAnimationFrame(this._visRafId);
         this._visRafId = null;
+      }
+      if (this._visTimer) {
+        clearTimeout(this._visTimer);
+        this._visTimer = null;
       }
       const canvas = document.getElementById('visualizerCanvas');
       if (canvas) {
@@ -984,12 +1136,17 @@ Object.assign(App, {
 
       if (this.visualizerMode === 'wave') {
         this.analyser.getByteTimeDomainData(this.freqData);
-        ctx.lineWidth = 2.5;
-        const grad = ctx.createLinearGradient(0, 0, w, 0);
-        grad.addColorStop(0, 'rgba(124, 58, 237, 0.85)');
-        grad.addColorStop(0.5, 'rgba(236, 72, 153, 0.95)');
-        grad.addColorStop(1, 'rgba(6, 182, 212, 0.85)');
-        ctx.strokeStyle = grad;
+        ctx.lineWidth = Math.max(2, Math.min(3, w / 220));
+        const key = 'wave:' + w;
+        if (!this._visGrad || this._visGradKey !== key) {
+          const grad = ctx.createLinearGradient(0, 0, w, 0);
+          grad.addColorStop(0, 'rgba(124, 58, 237, 0.85)');
+          grad.addColorStop(0.5, 'rgba(236, 72, 153, 0.95)');
+          grad.addColorStop(1, 'rgba(6, 182, 212, 0.85)');
+          this._visGrad = grad;
+          this._visGradKey = key;
+        }
+        ctx.strokeStyle = this._visGrad;
         ctx.beginPath();
         const sliceWidth = w / this.freqData.length;
         let x = 0;
@@ -1003,6 +1160,16 @@ Object.assign(App, {
         ctx.stroke();
       } else {
         this.analyser.getByteFrequencyData(this.freqData);
+        // Un solo gradiente por altura (antes: 32 por frame)
+        const bkey = 'bars:' + h;
+        if (!this._visBarsGrad || this._visBarsKey !== bkey) {
+          const bg = ctx.createLinearGradient(0, 0, 0, h);
+          bg.addColorStop(0, 'rgba(236, 72, 153, 0.95)');
+          bg.addColorStop(1, 'rgba(124, 58, 237, 0.65)');
+          this._visBarsGrad = bg;
+          this._visBarsKey = bkey;
+        }
+        ctx.fillStyle = this._visBarsGrad;
         const numBars = 32;
         const barWidth = Math.floor(w / numBars) - 3;
         const step = Math.max(1, Math.floor(this.freqData.length / (numBars * 1.6)));
@@ -1012,11 +1179,6 @@ Object.assign(App, {
           const barHeight = Math.max(3, pct * (h - 8));
           const x = i * (barWidth + 3) + 2;
           const y = h - barHeight;
-
-          const grad = ctx.createLinearGradient(0, y, 0, h);
-          grad.addColorStop(0, 'rgba(236, 72, 153, 0.95)');
-          grad.addColorStop(1, 'rgba(124, 58, 237, 0.65)');
-          ctx.fillStyle = grad;
 
           ctx.beginPath();
           const r = Math.min(barWidth / 2, 3);

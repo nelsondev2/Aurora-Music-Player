@@ -11,11 +11,7 @@
 
 Object.assign(App, {
     /* ============================================================
-     *  Render listas UI
-    },
-
-    /* ============================================================
-     *  Render listas UI
+     *  Portadas de fila y render de listas
      * ============================================================ */
     coverSrcForRow(track, size) {
       if (!track) return null;
@@ -64,10 +60,23 @@ Object.assign(App, {
       const g = ctx.createLinearGradient(0,0,W,H);
       g.addColorStop(0, cover.from); g.addColorStop(1, cover.to);
       ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle = 'rgba(255,255,255,0.9)';
-      ctx.font = "700 " + Math.floor(H*0.5) + "px sans-serif";
+      // Surcos concéntricos sutiles (misma familia que la portada grande)
+      ctx.save();
+      ctx.globalAlpha = 0.14;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      const cx = W / 2, cy = H / 2;
+      const step = Math.max(6, Math.min(W, H) / 7);
+      for (let r = step; r < Math.max(W, H); r += step) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.font = "700 " + Math.floor(H*0.48) + "px Outfit, ui-rounded, sans-serif";
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText((track.title || '?').charAt(0).toUpperCase(), W/2, H/2);
+      ctx.fillText((track.title || '?').charAt(0).toUpperCase(), W/2, H/2 + Math.floor(H*0.02));
     },
 
     async ensureCoverThumbs(track) {
@@ -637,7 +646,7 @@ Object.assign(App, {
       if (!pl || !pl.trackIds) return 0;
       let sum = 0;
       for (const id of pl.trackIds) {
-        const t = this.tracks.find(x => x.id === id);
+        const t = this.getTrackById ? this.getTrackById(id) : this.tracks.find(x => x.id === id);
         if (t && t.duration) sum += t.duration;
       }
       return sum;
@@ -698,10 +707,12 @@ Object.assign(App, {
           const playing = this.isPlaylistPlaying(pl);
           li.className = (target === grid ? 'pl-card' : 'pl-row') + (playing ? ' is-playing' : '');
           const cover = this.getPlaylistCover(pl);
-          const hasArt = (typeof cover === 'string' && cover.startsWith('data:'));
+          // Nunca interpolar una portada sin validar dentro de style="":
+          // una comilla o un `)` permitiría inyectar CSS/HTML desde un backup.
+          const hasArt = typeof cover === 'string' && this._safeImageDataUrl(cover);
           const coverBg = hasArt
             ? `background-image:url('${cover}');background-size:cover;background-position:center;`
-            : `background:linear-gradient(135deg, ${cover.from}, ${cover.to});`;
+            : `background:linear-gradient(135deg, ${cover.from || '#6E5CFF'}, ${cover.to || '#FF7AB6'});`;
           const fallbackIcon = pl.id === this.DEFAULT_PLAYLIST_ID
             ? 'music'
             : (pl.id === 'favoritos' ? 'heart-solid' : 'list-ul');
@@ -747,10 +758,26 @@ Object.assign(App, {
             if (e.target.closest('.row-action, .pl-play-fab')) return;
             if (this._selectPlaylistForAdd) {
               this._selectPlaylistForAdd = false;
+              const batchIds = this._batchAddIds;
+              this._batchAddIds = null;
               const tid = this._trackToAddId || (this.currentTrack && this.currentTrack.id) || null;
               this._trackToAddId = null;
               this.closeSheet('sheetPlaylists');
-              if (tid) this.addTrackToPlaylist(tid, pl.id);
+              if (Array.isArray(batchIds) && batchIds.length) {
+                let added = 0;
+                batchIds.forEach(id => { if (this._addTrackIdToPlaylist(id, pl.id)) added++; });
+                if (added > 0) {
+                  if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
+                  this.persistPlaylist(pl);
+                  this.renderPlaylists();
+                  this.toast(added + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + pl.name);
+                } else {
+                  this.toast(this.t('picker_already_in'));
+                }
+              } else if (tid) {
+                this.addTrackToPlaylist(tid, pl.id);
+              }
+              if (this._batchMode) this.toggleBatchMode(false);
               return;
             }
             this.openEditPlaylist(pl.id);
@@ -776,8 +803,15 @@ Object.assign(App, {
       if (!ok) return;
       this.playlists = this.playlists.filter(p => p.id !== playlistId);
       this.deletePlaylistFromStorage(playlistId);
+      // Si la lista eliminada era el contexto actual, dejarlo en «biblioteca»
+      // para que la barra superior no muestre una lista que ya no existe.
+      if (this.playContext && this.playContext.type === 'playlist' && this.playContext.id === playlistId) {
+        this.playContext = { type: 'all' };
+        if (typeof this.renderCurrentTrack === 'function') this.renderCurrentTrack();
+      }
+      if (this._editingPlaylistId === playlistId) this.closeSheet('sheetEditPlaylist');
       this.renderPlaylists();
-      this.toast(this.t('toast_track_deleted'), 'danger');
+      this.toast(this.t('toast_playlist_deleted'), 'danger');
     },
 
     renderPickTracks() {
@@ -836,6 +870,8 @@ Object.assign(App, {
       this.queue = favTracks.map(t => t.id);
       this.queueIdx = 0;
       this.playContext = { type: 'favorites' };
+      if (this.shuffle) this._applyShuffle();
+      else this._originalQueue = null;
       this.playFromQueue(0);
       this.renderCurrentTrack();
       this.renderQueue();  // refrescar la cola con las pistas de favoritos
@@ -870,10 +906,23 @@ Object.assign(App, {
     /* Añade una pista concreta a una playlist (generalización de
      * addCurrentTrackToPlaylist: permite añadir cualquier pista de la
      * biblioteca, no solo la que está sonando). */
+    /* Primitiva sin toasts: añade si no está. Devuelve true si cambió.
+     * La usan tanto el flujo individual como la selección por lote. */
+    _addTrackIdToPlaylist(trackId, playlistId) {
+      const pl = this.playlists.find(p => p.id === playlistId);
+      if (!pl || !Array.isArray(pl.trackIds)) return false;
+      const t = this.getTrackById ? this.getTrackById(trackId) : this.tracks.find(x => x.id === trackId);
+      if (!t) return false;
+      if (pl.trackIds.includes(trackId)) return false;
+      pl.trackIds.push(trackId);
+      if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
+      return true;
+    },
+
     addTrackToPlaylist(trackId, playlistId) {
       const pl = this.playlists.find(p => p.id === playlistId);
       if (!pl) return;
-      const t = this.tracks.find(x => x.id === trackId);
+      const t = this.getTrackById ? this.getTrackById(trackId) : this.tracks.find(x => x.id === trackId);
       if (!t) {
         this.toast(this.t('toast_pick_at_least_one'));
         return;
@@ -882,8 +931,7 @@ Object.assign(App, {
         this.toast(this.t('toast_already_in_playlist') + ' ♥ ' + pl.name);
         return;
       }
-      pl.trackIds.push(trackId);
-      this._invalidatePlaylistCover(pl);
+      this._addTrackIdToPlaylist(trackId, playlistId);
       this.persistPlaylist(pl);
       this.renderPlaylists();
       // Si el sheet de edición de esa playlist está abierto (debajo),

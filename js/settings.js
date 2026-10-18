@@ -15,13 +15,16 @@ Object.assign(App, {
      * ============================================================ */
     async saveSession() {
       try {
+        // Deduplicación: el intervalo de 5 s corre siempre, pero solo se
+        // escribe en IndexedDB si algo cambió (evita desgaste y bloqueos
+        // de la transacción en móviles). La posición se redondea a 2 s.
         const t = this.currentTrack;
         const session = {
           currentTrackId: t?.id || null,
           currentTrackTitle: t?.title || null,
           currentTrackArtist: t?.artist || null,
           currentTrackAlbum: t?.album || null,
-          currentTrackCover: t?.cover || null,
+          currentTrackCover: this._coverForSession(t),
           currentTrackCoverIsImage: t?.coverIsImage || false,
           currentTrackDuration: t?.duration || 0,
           currentTrackLrc: t?.lrc || null,
@@ -34,22 +37,40 @@ Object.assign(App, {
           originalQueue: this._originalQueue,
           ts: Date.now()
         };
+        const fingerprint = JSON.stringify(Object.assign({}, session, {
+          currentTime: Math.round((session.currentTime || 0) / 2) * 2,
+          ts: 0
+        }));
+        if (fingerprint === this._lastSessionFingerprint && !this.isPlaying) return;
+        this._lastSessionFingerprint = fingerprint;
         await window.AuroraStorage.setSetting('session', session);
       } catch (e) {}
     },
 
+    /* La sesión se guarda cada 5 s: nunca persistir la portada original
+     * (puede ser un dataURL de MBs). Solo degradado o miniatura. */
+    _coverForSession(t) {
+      if (!t || !t.cover) return null;
+      if (typeof t.cover === 'object') return t.cover;
+      return t.coverThumbLg || t.coverThumb || null;
+    },
+
     async restoreSession() {
       try {
+        if (!window.AuroraStorage) return false;
         const session = await window.AuroraStorage.getSetting('session');
-        if (!session || !session.currentTrackId) return false;
+        if (!session || typeof session !== 'object' || !session.currentTrackId) return false;
         // Verificar que la pista todavía existe
         const trackIdx = this.tracks.findIndex(t => t.id === session.currentTrackId);
         if (trackIdx < 0) return false;
         // Restaurar estado
         this.currentTrackIdx = trackIdx;
         this.currentTrack = this.tracks[trackIdx];
-        // Filtrar cola para que solo contenga pistas existentes
-        this.queue = (session.queue || []).filter(id => this.tracks.some(t => t.id === id));
+        // Filtrar cola para que solo contenga pistas existentes y no haya
+        // duplicados (una sesión corrupta podría repetir ids).
+        const known = new Set(this.tracks.map(t => t.id));
+        const restoredQueue = Array.isArray(session.queue) ? session.queue : [];
+        this.queue = [...new Set(restoredQueue.filter(id => known.has(id)))];
         if (this.queue.length === 0) {
           this.queue = this.tracks.map(t => t.id);
         }
@@ -63,19 +84,29 @@ Object.assign(App, {
         } else {
           this._originalQueue = null;
         }
-        if (session.playContext && typeof session.playContext === 'object') {
-          this.playContext = session.playContext;
+        // playContext se usa para decidir la cola y se pinta en la barra:
+        // aceptar solo formas conocidas evita objetos arbitrarios de un backup.
+        const allowedCtx = ['all', 'queue', 'playlist', 'favorites', 'album', 'artist', 'radio'];
+        if (session.playContext && typeof session.playContext === 'object' && allowedCtx.includes(session.playContext.type)) {
+          this.playContext = {
+            type: session.playContext.type,
+            id: typeof session.playContext.id === 'string' ? session.playContext.id : undefined,
+            name: typeof session.playContext.name === 'string' ? session.playContext.name.slice(0, 200) : undefined,
+            artist: typeof session.playContext.artist === 'string' ? session.playContext.artist.slice(0, 200) : undefined
+          };
         }
 
         // Cargar la pista en el audio SIN reproducir (el usuario debe tocar play)
         this.audio.src = this.currentTrack.src;
         this.audio.load();
         // Restaurar posición cuando los metadatos carguen
-        const restoreTime = session.currentTime || 0;
+        const restoreTime = Number(session.currentTime) || 0;
         const onMeta = () => {
-          if (isFinite(restoreTime) && restoreTime > 0 && restoreTime < (this.audio.duration || 0)) {
-            this.audio.currentTime = restoreTime;
-          }
+          try {
+            if (restoreTime > 0 && restoreTime < (this.audio.duration || 0)) {
+              this.audio.currentTime = restoreTime;
+            }
+          } catch (e) {}
           this.updateProgress();
           this.audio.removeEventListener('loadedmetadata', onMeta);
         };
@@ -128,7 +159,7 @@ Object.assign(App, {
         sessionStart: Date.now()
       };
       await this.saveStats();
-      this.renderStats();
+      if (typeof this.renderStats === 'function') this.renderStats();
       this.toast(this.t('stats_reset_toast'));
     },
 
@@ -183,8 +214,9 @@ Object.assign(App, {
 
     /* Devuelve las N pistas más reproducidas */
     getTopTracks(n = 10) {
+      if (!this.stats || !this.stats.plays) return [];
       return Object.entries(this.stats.plays)
-        .map(([id, count]) => ({ track: this.tracks.find(t => t.id === id), count }))
+        .map(([id, count]) => ({ track: this.getTrackById ? this.getTrackById(id) : this.tracks.find(t => t.id === id), count: Number(count) || 0 }))
         .filter(x => x.track)
         .sort((a, b) => b.count - a.count)
         .slice(0, n);
@@ -193,9 +225,10 @@ Object.assign(App, {
     /* Devuelve el artista más escuchado */
     getTopArtists(n = 5) {
       const artistCounts = {};
+      if (!this.stats || !this.stats.plays) return [];
       Object.entries(this.stats.plays).forEach(([id, count]) => {
-        const t = this.tracks.find(x => x.id === id);
-        if (t) artistCounts[t.artist] = (artistCounts[t.artist] || 0) + count;
+        const t = this.getTrackById ? this.getTrackById(id) : this.tracks.find(x => x.id === id);
+        if (t) artistCounts[t.artist] = (artistCounts[t.artist] || 0) + (Number(count) || 0);
       });
       return Object.entries(artistCounts)
         .map(([artist, count]) => ({ artist, count }))
@@ -204,6 +237,8 @@ Object.assign(App, {
     },
 
     fmtDuration(s) {
+      s = Number(s);
+      if (!isFinite(s) || s < 0) s = 0;
       s = Math.floor(s);
       const h = Math.floor(s / 3600);
       const m = Math.floor((s % 3600) / 60);
@@ -229,7 +264,8 @@ Object.assign(App, {
         border: 'rgba(255,255,255,0.08)',
         blurBg: 'rgba(10, 10, 18, 0.85)',
         toastBg: 'rgba(20, 20, 30, 0.95)',
-        toastText: '#ffffff'
+        toastText: '#ffffff',
+        danger: '#E85A5A'
       },
       light: {
         bg0: '#F4F1EA', bg1: '#FFFCF7', bg2: '#EBE6DC', bg3: '#E0D9CC',
@@ -243,7 +279,8 @@ Object.assign(App, {
         border: 'rgba(20,16,12,0.10)',
         blurBg: 'rgba(255, 250, 244, 0.92)',
         toastBg: 'rgba(244, 241, 234, 0.96)',
-        toastText: '#1A1612'
+        toastText: '#1A1612',
+        danger: '#BE3F3F'
       },
       amoled: {
         bg0: '#000000', bg1: '#000000', bg2: '#0a0a0a', bg3: '#141414',
@@ -257,7 +294,8 @@ Object.assign(App, {
         border: 'rgba(255,255,255,0.08)',
         blurBg: 'rgba(0, 0, 0, 0.92)',
         toastBg: 'rgba(12, 12, 12, 0.96)',
-        toastText: '#ffffff'
+        toastText: '#ffffff',
+        danger: '#E85A5A'
       }
     },
     ACCENTS: {
@@ -323,6 +361,7 @@ Object.assign(App, {
       root.style.setProperty('--blur-bg', t.blurBg);
       root.style.setProperty('--toast-bg', t.toastBg);
       root.style.setProperty('--toast-text', t.toastText);
+      if (t.danger) root.style.setProperty('--danger', t.danger);
       root.style.setProperty('--accent', accent);
       root.style.setProperty('--accent-2', a.accent2);
       root.style.setProperty('--accent-fill', fill);
@@ -333,6 +372,9 @@ Object.assign(App, {
         root.style.setProperty('--cover-to', a.to);
       }
       root.setAttribute('data-theme', this.theme);
+      // Semántico (depuración y selectores futuros); el color real va en
+      // las variables --accent*. Antes solo se aplicaba el tema.
+      root.setAttribute('data-accent', this.accent);
 
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta) meta.setAttribute('content', t.bg0);
@@ -373,16 +415,18 @@ Object.assign(App, {
         }
         const nav = (navigator.language || navigator.userLanguage || 'es').slice(0, 2).toLowerCase();
         this.lang = this._isValidLang(nav) ? nav : 'es';
-        this._langAlreadyChosen = true;
-        try { localStorage.setItem('aurora_lang', this.lang); } catch (e2) {}
+        // No se marca como «elegido» ni se persiste: en el primer arranque
+        // init() muestra el onboarding para que el usuario confirme idioma
+        // (bug B8 del PLAN: la función existía pero nunca se llamaba).
+        this._langAlreadyChosen = false;
       } catch (e) {
         this.lang = 'es';
-        this._langAlreadyChosen = true;
+        this._langAlreadyChosen = false;
       }
     },
 
     _isValidLang(code) {
-      return !!(window.SUPPORTED_LANGS || []).find(l => l.code === code);
+      return typeof code === 'string' && !!(window.SUPPORTED_LANGS || []).find(l => l.code === code);
     },
 
     applyLang() {
@@ -440,6 +484,9 @@ Object.assign(App, {
       try { localStorage.setItem('aurora_lang', code); } catch (e) {}
       this.applyLang();
       this.buildLangList();
+      // Refrescar etiquetas dinámicas (no data-i18n) en el nuevo idioma
+      if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
+      if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
       // Si el sheet de idioma está en modo onboarding, restaurar la UI
       // antes de cerrarlo para que la próxima vez se vea normal.
       const sheet = document.getElementById('sheetLanguage');
@@ -537,7 +584,9 @@ Object.assign(App, {
         screen.classList.toggle('aurora-tablet', tablet);
       }
       const nav = document.querySelector('.bottom-nav');
-      if (nav) nav.setAttribute('aria-orientation', wide ? 'vertical' : 'horizontal');
+      // aria-orientation no es válido en <nav>; se expone como data-attr
+      // para CSS y no rompe la validación ARIA.
+      if (nav) nav.setAttribute('data-orientation', wide ? 'vertical' : 'horizontal');
       if (wasWide !== wide && typeof this.showView === 'function') {
         const lyricsOn = !!(document.getElementById('viewLyrics') && document.getElementById('viewLyrics').classList.contains('active'));
         this.showView(lyricsOn ? 'lyrics' : 'home');
@@ -564,5 +613,58 @@ Object.assign(App, {
         });
         ul.appendChild(li);
       });
+    },
+
+    /* Muestra el uso de almacenamiento (IndexedDB) en Ajustes.
+     * Se llama al abrir Ajustes; si la API no existe, se oculta la fila. */
+    async updateStorageUsage() {
+      const label = document.getElementById('storageUsageLabel');
+      if (!label) return;
+      try {
+        if (!navigator.storage || typeof navigator.storage.estimate !== 'function') {
+          label.style.display = 'none';
+          return;
+        }
+        const { usage, quota } = await navigator.storage.estimate();
+        if (typeof usage !== 'number') {
+          label.style.display = 'none';
+          return;
+        }
+        const used = this.fmtBytes(usage);
+        const total = (typeof quota === 'number' && quota > 0) ? ' / ' + this.fmtBytes(quota) : '';
+        // 🔒 = almacenamiento persistente concedido (el sistema no lo borra solo).
+        let lock = '';
+        try {
+          if (this._storagePersisted === undefined && navigator.storage && typeof navigator.storage.persisted === 'function') {
+            this._storagePersisted = await navigator.storage.persisted();
+          }
+          if (this._storagePersisted) lock = ' 🔒';
+        } catch (e) {}
+        label.textContent = this.t('storage_usage')
+          .replace('X', String(this.tracks.length))
+          .replace('Y', used + total) + lock;
+        label.style.display = '';
+      } catch (e) {
+        label.style.display = 'none';
+      }
+    },
+
+    fmtBytes(n) {
+      n = Number(n) || 0;
+      if (n < 1024) return n + ' B';
+      const units = ['KB', 'MB', 'GB', 'TB'];
+      let v = n / 1024;
+      let u = 0;
+      while (v >= 1024 && u < units.length - 1) { v /= 1024; u++; }
+      return (v >= 100 ? Math.round(v) : v.toFixed(1)) + ' ' + units[u];
+    },
+
+    /* «Liberar espacio»: lleva a Ajustes → Almacenamiento para que el
+     * usuario gestione su biblioteca. Se llama al llenarse la cuota. */
+    offerFreeStorage() {
+      try {
+        if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
+        this.openSheet('sheetSettings');
+      } catch (e) {}
     },
 });

@@ -18,8 +18,9 @@ Object.assign(App, {
       if (!cont) return;
       const topTracks = this.getTopTracks(10);
       const topArtists = this.getTopArtists(5);
-      const totalPlays = Object.values(this.stats.plays).reduce((a, b) => a + b, 0);
-      const totalSec = this.stats.totalSeconds;
+      const playsObj = (this.stats && this.stats.plays) || {};
+      const totalPlays = Object.values(playsObj).reduce((a, b) => a + (Number(b) || 0), 0);
+      const totalSec = (this.stats && this.stats.totalSeconds) || 0;
 
       cont.innerHTML = `
         <div class="stats-grid">
@@ -59,7 +60,7 @@ Object.assign(App, {
         ${topTracks.length === 0 ? '<p class="stats-empty">' + this.t('no_results') + '</p>' : ''}
         <ul class="stats-list">
           ${topTracks.map((t, i) => `
-            <li class="stats-row" data-track="${t.track.id}">
+            <li class="stats-row" data-track="${this.esc(t.track.id)}">
               <div class="stats-rank">${i + 1}</div>
               <div class="row-cover"><canvas width="40" height="40"></canvas></div>
               <div class="stats-info">
@@ -106,11 +107,14 @@ Object.assign(App, {
 
     cleanSearchStr(str) {
       if (!str) return '';
+      // \w solo cubre ASCII: en ruso, chino o japonés borraba TODA la
+      // consulta y la búsqueda no encontraba nada. Se usan propiedades
+      // Unicode (letras + números) conservando los 8 idiomas.
       return String(str)
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
-        .replace(/[^\w\s]/g, ' ')
+        .replace(/[^\p{L}\p{N}\s]/gu, ' ')
         .replace(/\s+/g, ' ')
         .trim();
     },
@@ -296,7 +300,9 @@ Object.assign(App, {
       if (topArtists.length) {
         msg += `\n🎤 ${this.t('stats_top_artists')}:\n`;
         topArtists.forEach((a, i) => {
-          msg += `  ${i + 1}. ${a.artist} (${a.plays})\n`;
+          // getTopArtists devuelve {artist, count}; antes se leía .plays
+          // y el resumen compartido decía «undefined».
+          msg += `  ${i + 1}. ${a.artist} (${a.count})\n`;
         });
       }
 
@@ -305,7 +311,7 @@ Object.assign(App, {
         topTracks.forEach((tr, i) => {
           const tName = tr.track ? tr.track.title : 'Track';
           const aName = tr.track ? tr.track.artist : '';
-          msg += `  ${i + 1}. ${tName} · ${aName} (${tr.plays})\n`;
+          msg += `  ${i + 1}. ${tName} · ${aName} (${tr.count})\n`;
         });
       }
 

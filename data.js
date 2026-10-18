@@ -14,20 +14,22 @@ const TRACKS = [];
 const DEFAULT_PLAYLISTS = [];
 
 /* Paleta para generar portadas dinámicas cuando una pista no trae
- * artwork en sus metadatos ID3. */
+ * artwork en sus metadatos ID3.
+ * Familia aurora (noche fría + ámbar/rosa de contraste), no catálogo
+ * Tailwind. El ángulo varía para que el fondo de Now Playing no repita. */
 const COVER_PALETTE = [
   { from: '#6E5CFF', to: '#FF7AB6', angle: 135 },
-  { from: '#F59E0B', to: '#EF4444', angle: 135 },
-  { from: '#06B6D4', to: '#3B82F6', angle: 135 },
-  { from: '#10B981', to: '#06B6D4', angle: 135 },
-  { from: '#F97316', to: '#DC2626', angle: 135 },
-  { from: '#1E40AF', to: '#6366F1', angle: 135 },
-  { from: '#FF7AB6', to: '#8B7CFF', angle: 135 },
-  { from: '#6366F1', to: '#06B6D4', angle: 135 },
-  { from: '#F59E0B', to: '#EF4444', angle: 135 },
-  { from: '#14B8A6', to: '#0EA5E9', angle: 135 },
-  { from: '#A855F7', to: '#6366F1', angle: 135 },
-  { from: '#FB7185', to: '#A855F7', angle: 135 }
+  { from: '#1A508C', to: '#5AD4DC', angle: 135 },
+  { from: '#2846A0', to: '#B48CFF', angle: 120 },
+  { from: '#14285A', to: '#508CDC', angle: 150 },
+  { from: '#0C4A5E', to: '#46C8DC', angle: 120 },
+  { from: '#C45C18', to: '#E8B84A', angle: 135 },
+  { from: '#C8505A', to: '#FFA078', angle: 120 },
+  { from: '#7A1E3C', to: '#E85A7A', angle: 150 },
+  { from: '#2A6B48', to: '#A8C86A', angle: 135 },
+  { from: '#4C2E9E', to: '#8B7CFF', angle: 135 },
+  { from: '#96275C', to: '#E87AB0', angle: 120 },
+  { from: '#2E3A5C', to: '#7C8CFF', angle: 150 }
 ];
 
 /* Texto LRC de muestra para cuando una pista no trae letra.
@@ -1909,6 +1911,16 @@ const I18N = {
     it: 'Il browser ha bloccato la riproduzione. Tocca ▶ per iniziare.',
     ru: 'Браузер заблокировал воспроизведение. Нажмите ▶, чтобы начать.'
   },
+  library_missing_text: {
+    es: 'Esta copia tenía música guardada y ahora está vacía: el sistema pudo borrar el almacenamiento, o estás abriendo otra copia de Aurora (cada copia tiene su propia biblioteca). ¿Importar una copia de seguridad?',
+    en: 'This copy had saved music and is now empty: the system may have cleared storage, or you opened a different Aurora copy (each copy keeps its own library). Import a backup?',
+    pt: 'Esta cópia tinha música guardada e agora está vazia: o sistema pode ter limpado o armazenamento, ou abriste outra cópia do Aurora (cada cópia tem a sua biblioteca). Importar uma cópia de segurança?',
+    zh: '此副本曾保存过音乐，现在却为空：系统可能已清除存储，或你打开了另一个 Aurora 副本（每个副本都有自己的曲库）。要导入备份吗？',
+    ja: 'このコピーには音楽が保存されていたはずですが空です。システムがストレージを消去したか、別の Aurora コピーを開いています（コピーごとにライブラリは別）。バックアップを読み込みますか？',
+    fr: 'Cette copie contenait de la musique et elle est vide : le système a peut-être effacé le stockage, ou vous avez ouvert une autre copie d’Aurora (chaque copie a sa bibliothèque). Importer une sauvegarde ?',
+    it: 'Questa copia aveva musica salvata ed è vuota: il sistema potrebbe aver cancellato lo spazio, oppure hai aperto un’altra copia di Aurora (ogni copia ha la sua libreria). Importare un backup?',
+    ru: 'В этой копии была сохранённая музыка, а теперь пусто: система могла очистить хранилище, либо вы открыли другую копию Aurora (у каждой копии своя библиотека). Импортировать резервную копию?'
+  },
   confirm_ok: {
     es: 'Aceptar',
     en: 'OK',
@@ -2139,6 +2151,66 @@ const I18N = {
     fr: 'Métadonnées seulement (listes, favoris, tags). Pas de fichiers audio.',
     it: 'Solo metadati (playlist, preferiti, tag). Nessun file audio.',
     ru: 'Только метаданные (плейлисты, избранное, теги). Без аудиофайлов.'
+  },
+  relink_pending: {
+    es: 'X pistas sin audio — toca para vincular',
+    en: 'X tracks without audio — tap to link',
+    pt: 'X faixas sem áudio — toca para vincular',
+    zh: 'X 首歌曲缺失音频 — 点击重新关联',
+    ja: '音声のない曲がX件 — タップして関連付け',
+    fr: 'X morceaux sans audio — touchez pour associer',
+    it: 'X brani senza audio — tocca per collegare',
+    ru: 'X треков без аудио — нажмите, чтобы привязать'
+  },
+  relink_done: {
+    es: 'X pistas vinculadas',
+    en: 'X tracks linked',
+    pt: 'X faixas vinculadas',
+    zh: '已关联 X 首',
+    ja: 'X件を関連付けました',
+    fr: 'X morceaux associés',
+    it: 'X brani collegati',
+    ru: 'Привязано треков: X'
+  },
+  toast_track_no_audio: {
+    es: 'Pista sin audio: vuelve a importarla para escucharla',
+    en: 'Track has no audio: import it again to play it',
+    pt: 'Faixa sem áudio: importa-a de novo para ouvir',
+    zh: '歌曲无音频：请重新导入后播放',
+    ja: '音声がありません：再度インポートしてください',
+    fr: 'Morceau sans audio : réimportez-le pour l\'écouter',
+    it: 'Brano senza audio: importalo di nuovo per ascoltarlo',
+    ru: 'Нет аудио: импортируйте трек заново'
+  },
+  relink_badge: {
+    es: 'Sin audio',
+    en: 'No audio',
+    pt: 'Sem áudio',
+    zh: '无音频',
+    ja: '音声なし',
+    fr: 'Sans audio',
+    it: 'Senza audio',
+    ru: 'Без аудио'
+  },
+  bg_notice_text: {
+    es: 'Consejo: usa el botón inicio para salir sin detener la música. El botón atrás cierra Aurora y detiene la reproducción.',
+    en: 'Tip: use the home button to leave without stopping the music. The back button closes Aurora and stops playback.',
+    pt: 'Dica: use o botão de início para sair sem parar a música. O botão de voltar fecha o Aurora e para a reprodução.',
+    zh: '提示：按主屏幕键离开可继续播放音乐。按返回键将关闭 Aurora 并停止播放。',
+    ja: 'ヒント：ホームボタンで離れれば音楽は流れ続けます。戻るボタンでは Aurora が閉じて停止します。',
+    fr: 'Astuce : utilisez le bouton d\'accueil pour partir sans couper la musique. Le bouton retour ferme Aurora et arrête la lecture.',
+    it: 'Suggerimento: usa il tasto home per uscire senza fermare la musica. Il tasto indietro chiude Aurora e interrompe la riproduzione.',
+    ru: 'Совет: кнопка «Домой» сворачивает без остановки музыки. Кнопка «Назад» закрывает Aurora и останавливает воспроизведение.'
+  },
+  bg_notice_ok: {
+    es: 'Entendido',
+    en: 'Got it',
+    pt: 'Entendi',
+    zh: '知道了',
+    ja: '了解',
+    fr: 'Compris',
+    it: 'Capito',
+    ru: 'Понятно'
   },
   settings_free_storage: {
     es: 'Liberar espacio', en: 'Free up space', pt: 'Libertar espaço',
@@ -2528,6 +2600,108 @@ const I18N = {
     es: '¿Eliminar X canciones seleccionadas de la biblioteca?', en: 'Delete X selected songs from library?', pt: 'Excluir X músicas selecionadas da biblioteca?',
     zh: '确定从曲库中删除选中的 X 首歌曲吗？', ja: '選択した X 曲をライブラリから削除しますか？', fr: 'Supprimer les X morceaux sélectionnés de la bibliothèque ?',
     it: 'Eliminare i X brani selezionati dalla libreria?', ru: 'Удалить выбранные X треков из библиотеки?'
+  },
+  batch_updated_toast: {
+    es: 'Etiquetas actualizadas en X pistas', en: 'Tags updated for X tracks', pt: 'Etiquetas atualizadas em X faixas',
+    zh: '已更新 X 首歌曲的标签', ja: 'X 曲のタグを更新しました', fr: 'Tags mis à jour pour X pistes',
+    it: 'Tag aggiornati per X brani', ru: 'Теги обновлены для X треков'
+  },
+  batch_deleted_toast: {
+    es: 'X pistas eliminadas', en: 'X tracks deleted', pt: 'X faixas excluídas',
+    zh: '已删除 X 首歌曲', ja: 'X 曲を削除しました', fr: 'X pistes supprimées',
+    it: 'X brani eliminati', ru: 'Удалено треков: X'
+  },
+  batch_select_all: {
+    es: 'Seleccionar todo', en: 'Select all', pt: 'Selecionar tudo',
+    zh: '全选', ja: 'すべて選択', fr: 'Tout sélectionner', it: 'Seleziona tutto', ru: 'Выбрать всё'
+  },
+  sleep_invalid: {
+    es: 'Introduce un número de minutos válido (1–1440).', en: 'Enter a valid number of minutes (1–1440).',
+    pt: 'Introduza um número de minutos válido (1–1440).', zh: '请输入有效的分钟数（1–1440）。',
+    ja: '有効な分数を入力してください（1–1440）。', fr: 'Saisissez un nombre de minutes valide (1–1440).',
+    it: 'Inserisci un numero di minuti valido (1–1440).', ru: 'Введите корректное число минут (1–1440).'
+  },
+  toast_file_too_large: {
+    es: 'El archivo es demasiado grande (máximo 25 MB).', en: 'File is too large (25 MB max).',
+    pt: 'O ficheiro é demasiado grande (máximo 25 MB).', zh: '文件过大（最大 25 MB）。',
+    ja: 'ファイルが大きすぎます（最大 25 MB）。', fr: 'Fichier trop volumineux (25 Mo max).',
+    it: 'File troppo grande (massimo 25 MB).', ru: 'Файл слишком большой (максимум 25 МБ).'
+  },
+  playlist_name_exists: {
+    es: 'Ya existe una lista con ese nombre.', en: 'A playlist with that name already exists.',
+    pt: 'Já existe uma lista com esse nome.', zh: '已存在同名播放列表。',
+    ja: '同じ名前のプレイリストが既にあります。', fr: 'Une liste portant ce nom existe déjà.',
+    it: 'Esiste già una playlist con questo nome.', ru: 'Плейлист с таким названием уже существует.'
+  },
+  playlist_title: {
+    es: 'Lista', en: 'Playlist', pt: 'Lista', zh: '播放列表',
+    ja: 'プレイリスト', fr: 'Liste', it: 'Playlist', ru: 'Плейлист'
+  },
+  eq_band_label: {
+    es: 'Banda de ecualización X', en: 'Equalizer band X', pt: 'Banda de equalizador X',
+    zh: 'X 均衡器频段', ja: 'イコライザーバンド X', fr: 'Bande d’égalisation X',
+    it: 'Banda di equalizzazione X', ru: 'Полоса эквалайзера X'
+  },
+  lrc_speed_down: {
+    es: 'Bajar velocidad', en: 'Decrease speed', pt: 'Diminuir velocidade',
+    zh: '降低速度', ja: '速度を下げる', fr: 'Réduire la vitesse',
+    it: 'Riduci velocità', ru: 'Уменьшить скорость'
+  },
+  lrc_speed_up: {
+    es: 'Subir velocidad', en: 'Increase speed', pt: 'Aumentar velocidade',
+    zh: '提高速度', ja: '速度を上げる', fr: 'Augmenter la vitesse',
+    it: 'Aumenta velocità', ru: 'Увеличить скорость'
+  },
+  cover_art_aria: {
+    es: 'Portada de X', en: 'Cover art for X', pt: 'Capa de X',
+    zh: 'X 的封面', ja: 'X のカバー', fr: 'Pochette de X', it: 'Copertina di X', ru: 'Обложка X'
+  },
+
+  /* Claves que faltaban y se mostraban como texto crudo en la UI
+   * (auditoría 2026-10). Todas con los 8 idiomas. */
+  delete_multiple_confirm: {
+    es: '¿Eliminar X pistas seleccionadas de la biblioteca?', en: 'Delete X selected tracks from the library?', pt: 'Excluir X faixas selecionadas da biblioteca?',
+    zh: '确定从曲库中删除选中的 X 首歌曲吗？', ja: '選択した X 曲をライブラリから削除しますか？', fr: 'Supprimer les X pistes sélectionnées de la bibliothèque ?',
+    it: 'Eliminare le X tracce selezionate dalla libreria?', ru: 'Удалить выбранные треки (X) из библиотеки?'
+  },
+  unknown_track: {
+    es: 'Pista desconocida', en: 'Unknown track', pt: 'Faixa desconhecida',
+    zh: '未知曲目', ja: '不明な曲', fr: 'Morceau inconnu', it: 'Brano sconosciuto', ru: 'Неизвестный трек'
+  },
+  no_track_playing: {
+    es: 'Sin reproducción', en: 'Nothing playing', pt: 'Nada em reprodução',
+    zh: '没有正在播放的歌曲', ja: '再生中の曲はありません', fr: 'Aucune lecture en cours',
+    it: 'Nessuna riproduzione', ru: 'Ничего не воспроизводится'
+  },
+  progress: {
+    es: 'Progreso', en: 'Progress', pt: 'Progresso',
+    zh: '播放进度', ja: '再生位置', fr: 'Progression', it: 'Avanzamento', ru: 'Прогресс'
+  },
+  back: {
+    es: 'Volver', en: 'Back', pt: 'Voltar',
+    zh: '返回', ja: '戻る', fr: 'Retour', it: 'Indietro', ru: 'Назад'
+  },
+  move: {
+    es: 'Mover', en: 'Move', pt: 'Mover',
+    zh: '移动', ja: '移動', fr: 'Déplacer', it: 'Sposta', ru: 'Переместить'
+  },
+  select_track: {
+    es: 'Seleccionar pista', en: 'Select track', pt: 'Selecionar faixa',
+    zh: '选择歌曲', ja: '曲を選択', fr: 'Sélectionner le morceau', it: 'Seleziona brano', ru: 'Выбрать трек'
+  },
+  toast_playlist_deleted: {
+    es: 'Lista eliminada', en: 'Playlist deleted', pt: 'Lista excluída',
+    zh: '歌单已删除', ja: 'プレイリストを削除しました', fr: 'Liste supprimée', it: 'Playlist eliminata', ru: 'Плейлист удалён'
+  },
+  storage_unavailable: {
+    es: 'El almacenamiento no está disponible; los cambios no se guardarán.',
+    en: 'Storage is unavailable; changes will not be saved.',
+    pt: 'O armazenamento não está disponível; as alterações não serão salvas.',
+    zh: '存储不可用，更改将不会保存。',
+    ja: 'ストレージが利用できないため、変更は保存されません。',
+    fr: 'Le stockage est indisponible ; les modifications ne seront pas enregistrées.',
+    it: 'L’archiviazione non è disponibile; le modifiche non verranno salvate.',
+    ru: 'Хранилище недоступно; изменения не будут сохранены.'
   },
 
 };

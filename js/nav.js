@@ -457,8 +457,13 @@ Object.assign(App, {
       this.playContext = this._browse.type === 'album'
         ? { type: 'album', name: this._browse.title, artist: this._browse.artist || this._browse.subtitle }
         : { type: 'artist', name: this._browse.title };
+      // Igual que playPlaylist(): si shuffle está activo, barajar; si no,
+      // limpiar la cola original para no restaurar una lista ajena.
+      if (this.shuffle) this._applyShuffle();
+      else this._originalQueue = null;
       this.playFromQueue(0);
       this.updateChrome();
+      this.renderQueue();
     },
 
     goToArtist(name) {
@@ -497,16 +502,17 @@ Object.assign(App, {
       const li = document.createElement('li');
       const isCurrent = this.currentTrack && this.currentTrack.id === t.id;
       const isSelected = this._selectedTrackIds && this._selectedTrackIds.has(t.id);
-      li.className = 'track-row' + (isCurrent ? ' current' : '') + (isSelected ? ' selected' : '') + (this._batchMode ? ' batch-mode' : '');
+      const isPending = !!(t && t._needsRelink);
+      li.className = 'track-row' + (isCurrent ? ' current' : '') + (isSelected ? ' selected' : '') + (this._batchMode ? ' batch-mode' : '') + (isPending ? ' is-pending' : '');
       li.dataset.track = t.id;
       li.innerHTML = `
         <div class="row-batch-check" ${this._batchMode ? '' : 'style="display:none"'}>
-          <input type="checkbox" class="batch-checkbox" aria-label="Seleccionar" ${isSelected ? 'checked' : ''} />
+          <input type="checkbox" class="batch-checkbox" aria-label="${this.esc(this.t('select_track'))}" ${isSelected ? 'checked' : ''} />
         </div>
         <div class="row-cover"><canvas width="44" height="44"></canvas></div>
         <div class="row-text">
           <div class="row-title">${this.esc(t.title)}</div>
-          <div class="row-sub">${this.esc(t.artist)}${t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + this.esc(t.album) : ''}</div>
+          <div class="row-sub">${this.esc(t.artist)}${t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + this.esc(t.album) : ''}${isPending ? ' <span class="row-pending-badge">' + this.esc(this.t('relink_badge')) + '</span>' : ''}</div>
         </div>
         <div class="row-duration">${this.fmtTime(t.duration)}</div>
         <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>`;
@@ -632,6 +638,9 @@ Object.assign(App, {
       if (!this._selectedTrackIds) this._selectedTrackIds = new Set();
       if (!this._batchMode) {
         this._selectedTrackIds.clear();
+      } else if (typeof this.setLibraryTab === 'function') {
+        // La barra de lote solo tiene sentido sobre la pestaña de canciones.
+        this.setLibraryTab('songs');
       }
       this.updateBatchUI();
       this.renderLibrary();
@@ -731,12 +740,14 @@ Object.assign(App, {
 
       let count = 0;
       for (const id of this._selectedTrackIds) {
-        const t = this.tracks.find(x => x.id === id);
+        const t = this.getTrackById ? this.getTrackById(id) : this.tracks.find(x => x.id === id);
         if (t) {
           if (newArtist) t.artist = newArtist;
           if (newAlbum) t.album = newAlbum;
-          await this.persistTrack(t);
-          count++;
+          // persistTrack devuelve false si IndexedDB falló (cuota): no
+          // contarlo como actualizado evita un toast mentiroso.
+          const ok = await this.persistTrack(t);
+          if (ok !== false) count++;
         }
       }
 
@@ -754,6 +765,13 @@ Object.assign(App, {
     async batchDeleteTracks() {
       if (!this._selectedTrackIds || !this._selectedTrackIds.size) return;
       const count = this._selectedTrackIds.size;
+      // Antes borraba directamente: un toque accidental eliminaba N pistas
+      // de IndexedDB sin confirmación ni deshacer.
+      const ok = await this.showConfirm({
+        message: this.t('batch_delete_confirm').replace('X', String(count)),
+        okLabel: this.t('confirm_delete')
+      });
+      if (!ok) return;
       const ids = Array.from(this._selectedTrackIds);
       for (const id of ids) {
         await this.deleteTrack(id, { silent: true });
@@ -764,6 +782,22 @@ Object.assign(App, {
       this.renderQueue();
       this.renderFavorites();
       this.renderHome();
-      this.toast(this.t('toast_track_deleted'));
+      this.toast(this.t('batch_deleted_toast').replace('X', String(count)), 'danger');
+    },
+
+    /* Añade todas las pistas seleccionadas a una lista existente. */
+    async batchAddToPlaylist() {
+      if (!this._selectedTrackIds || !this._selectedTrackIds.size) return;
+      const ids = Array.from(this._selectedTrackIds);
+      const pls = this.playlists.slice();
+      if (!pls.length) {
+        this.toast(this.t('no_playlists_yet'));
+        return;
+      }
+      this._batchAddIds = ids;
+      this._selectPlaylistForAdd = true;
+      this.closeSheet('sheetLibrary');
+      this.renderPlaylists();
+      this.openSheet('sheetPlaylists');
     }
 });
