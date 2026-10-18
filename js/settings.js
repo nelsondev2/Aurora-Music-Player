@@ -583,6 +583,14 @@ Object.assign(App, {
         screen.classList.toggle('aurora-wide', wide);
         screen.classList.toggle('aurora-tablet', tablet);
       }
+      // En un .xdc los enlaces externos no abren (el cliente los bloquea):
+      // se sustituye «Código fuente» por la URL en texto para poder copiarla.
+      const aboutSource = document.getElementById('aboutSource');
+      const aboutSourceUrl = document.getElementById('aboutSourceUrl');
+      if (aboutSource && aboutSourceUrl) {
+        aboutSource.style.display = isWebxdc ? 'none' : '';
+        aboutSourceUrl.hidden = !isWebxdc;
+      }
       const nav = document.querySelector('.bottom-nav');
       // aria-orientation no es válido en <nav>; se expone como data-attr
       // para CSS y no rompe la validación ARIA.
