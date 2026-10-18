@@ -474,6 +474,7 @@ Object.assign(App, {
         li.addEventListener('click', (e) => {
           if (e.target.closest('.drag-handle, .queue-remove')) return;
           this.playFromQueue(i);
+          if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
         });
         // Tap-and-hold (500ms) → modo reordenar
         let holdTimer = null;
@@ -859,6 +860,7 @@ Object.assign(App, {
       this.playFromQueue(this.queueIdx);
       this.renderCurrentTrack();  // refresca la barra superior con el contexto
       this.renderQueue();  // refrescar la cola con las pistas de la playlist
+      if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
       this.toast(this.t('toast_now_playing') + ' ' + pl.name);
     },
 
@@ -878,6 +880,7 @@ Object.assign(App, {
       this.playFromQueue(0);
       this.renderCurrentTrack();
       this.renderQueue();  // refrescar la cola con las pistas de favoritos
+      if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
       this.toast(this.t('toast_now_playing') + ' ' + this.t('favorites_playlist_name'));
     },
 

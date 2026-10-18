@@ -235,6 +235,7 @@ Object.assign(App, {
           card.addEventListener('click', () => {
             this.playTrack(id, { type: 'all' });
             this.updateChrome();
+            if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
           });
           this.wireTrackLongPress(card, id);
         } else if (kind === 'playlist') {
@@ -465,6 +466,7 @@ Object.assign(App, {
       this.playFromQueue(0);
       this.updateChrome();
       this.renderQueue();
+      if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
     },
 
     goToArtist(name) {
@@ -526,6 +528,8 @@ Object.assign(App, {
         }
         this.playTrack(t.id, ctx);
         this.updateChrome();
+        // Elegir canción en una lista abre el reproductor.
+        if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
       });
       const menuBtn = li.querySelector('.track-menu-btn');
       if (menuBtn) menuBtn.addEventListener('click', (e) => {

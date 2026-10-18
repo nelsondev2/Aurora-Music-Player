@@ -108,11 +108,8 @@ Object.assign(App, {
       }, 40);
       if (typeof this.updateChrome === 'function') this.updateChrome();
     },
-    closeSheet(id, force) {
+    closeSheet(id) {
       const s = document.getElementById(id);
-      // El onboarding de idioma no se puede cerrar por backdrop/Escape:
-      // el usuario debe elegir. setLang() quita la clase y luego cierra.
-      if (s && s.classList.contains('onboarding') && !force) return;
       if (s) {
         s.classList.remove('open');
         s.setAttribute('aria-hidden', 'true');
@@ -223,6 +220,15 @@ Object.assign(App, {
         this.startLrcRafSync();
       }
       if (typeof this.updateChrome === 'function') this.updateChrome();
+    },
+
+    /* Al elegir una canción en una lista (playlist, cola, favoritos,
+     * biblioteca, buscar, Inicio) se cierra el listado y se abre el
+     * reproductor. Antes la lista se quedaba encima: la canción sonaba pero
+     * el usuario seguía viendo el sheet y parecía que no había pasado nada. */
+    openPlayerForTrackPick() {
+      this.closeAllSheets();
+      this.showView('player');
     },
 
     /* ============================================================

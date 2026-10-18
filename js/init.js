@@ -60,6 +60,7 @@ Object.assign(App, {
       }
       this.setShuffleUI();
       this.setRepeatUI();
+      if (typeof this.updateLrcOffsetUI === 'function') this.updateLrcOffsetUI();
       if (typeof this.updateChrome === 'function') this.updateChrome();
 
       // Guardar sesión cada 5 s. saveSession() deduplica: no escribe si
@@ -122,14 +123,6 @@ Object.assign(App, {
       if (typeof this.maybeShowBackgroundNotice === 'function') this.maybeShowBackgroundNotice();
       if (typeof this.maybeShowLibraryMissingNotice === 'function') this.maybeShowLibraryMissingNotice();
 
-      // Primer arranque: pedir idioma (bug B8: la función existía pero nadie
-      // la llamaba). Se retrasa para no competir con el resto del arranque.
-      if (!this._langAlreadyChosen && typeof this.showLanguageOnboarding === 'function') {
-        setTimeout(() => {
-          if (!this._langAlreadyChosen) this.showLanguageOnboarding();
-        }, 350);
-      }
-
       this._initialized = true;
       document.dispatchEvent(new CustomEvent('aurora:ready', { detail: { tracks: this.tracks.length } }));
       console.log('[Aurora] App inicializada ·', this.tracks.length, 'pistas', restored ? '· sesión restaurada' : '');
@@ -138,7 +131,7 @@ Object.assign(App, {
     /* Consejo de primer arranque en Delta Chat nativo: el webxdc vive en
      * su propia actividad y sigue sonando al pulsar inicio, pero el botón
      * atrás la destruye y detiene la música. Una sola vez y sin tapar
-     * al onboarding de idioma (reintenta si hay un sheet abierto). */
+     * otros avisos (reintenta si hay un sheet abierto). */
     maybeShowBackgroundNotice() {
       try {
         const native = !!(window.webxdc && !window.webxdc._isStub);
@@ -187,32 +180,6 @@ Object.assign(App, {
         };
         setTimeout(() => attempt(8), 1400);
       } catch (e) {}
-    },
-
-    /* Muestra el sheet de idioma en modo "onboarding" (primer arranque).
-     * El botón de cerrar está oculto para obligar al usuario a elegir. */
-    showLanguageOnboarding() {
-      const sheet = document.getElementById('sheetLanguage');
-      if (!sheet) return;
-      // Marcar como onboarding para ocultar el botón de cerrar
-      sheet.classList.add('onboarding');
-      this.buildLangList();
-      // Abrir el sheet
-      this.openSheet('sheetLanguage');
-      // Deshabilitar el backdrop para que no se pueda cerrar tocando fuera
-      const backdrop = sheet.querySelector('.sheet-backdrop');
-      if (backdrop) {
-        backdrop.style.pointerEvents = 'none';
-        backdrop.style.background = 'rgba(0,0,0,0.85)';
-      }
-      // Ocultar el botón "Listo" y el botón X
-      const textBtn = sheet.querySelector('.sheet-header .text-btn');
-      if (textBtn) textBtn.style.display = 'none';
-      const closeBtn = sheet.querySelector('.sheet-header .icon-btn-sm');
-      if (closeBtn) closeBtn.style.display = 'none';
-      // Cambiar el título del sheet
-      const h3 = sheet.querySelector('.sheet-header h3');
-      if (h3) h3.textContent = this.t('welcome_choose_lang');
     },
 
     /* ============================================================

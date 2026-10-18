@@ -153,6 +153,7 @@ Object.assign(App, {
           // playTrack se encarga de setear la cola = pistas de la playlist.
           this.playTrack(t.id, { type: 'playlist', id: pl.id, name: pl.name });
           this.renderQueue();
+          if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
         });
         const menuBtn = li.querySelector('.track-menu-btn');
         if (menuBtn) menuBtn.addEventListener('click', (e) => {

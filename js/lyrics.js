@@ -293,14 +293,9 @@ Object.assign(App, {
           // cur = tiempo actual - offset (offset positivo = letra adelantada)
           const cur = (this.audio.currentTime || 0) - this.lrcOffset;
           this.updateLyricsHighlight(cur);
-          // Loop de sección (#19)
-          if (this.lrcLoop && this.lrcLines[this.lrcLoop.endIdx]) {
-            const endTime = this.lrcLines[this.lrcLoop.endIdx].time;
-            if (cur >= endTime + 0.1) {
-              const startTime = this.lrcLines[this.lrcLoop.startIdx].time;
-              this.audio.currentTime = Math.max(0, startTime + this.lrcOffset);
-            }
-          }
+          // La repetición de sección se aplica en updateProgress(): así sigue
+          // activa aunque el usuario vuelva al reproductor (el RAF solo corre
+          // con la vista de letras abierta).
         }
         this.lrcRafId = requestAnimationFrame(tick);
       };
@@ -567,16 +562,31 @@ Object.assign(App, {
      *  Ajuste de offset manual (#12)
      * ============================================================ */
     adjustLrcOffset(delta) {
-      this.lrcOffset += delta;
+      // Redondear a décimas: sumar 0.5 repetidamente acumula 0.30000000004.
+      this.lrcOffset = Math.round((this.lrcOffset + delta) * 10) / 10;
       // Persistir por pista
       if (this.currentTrack) {
         this.currentTrack.lrcOffset = this.lrcOffset;
         this.persistTrack(this.currentTrack);
       }
-      const sign = this.lrcOffset >= 0 ? '+' : '';
+      this.updateLrcOffsetUI();
+      const sign = this.lrcOffset > 0 ? '+' : '';
       this.toast(this.t('lrc_offset_toast').replace('X', sign + this.lrcOffset.toFixed(1) + 's'));
     },
-    resetLrcOffset() {
+
+    /* Pinta el valor actual del desfase dentro del grupo de botones.
+     * Sin esto el usuario no tenía forma de saber en qué punto estaba. */
+    updateLrcOffsetUI() {
+      const out = document.getElementById('lrcOffsetValue');
+      if (!out) return;
+      const v = Math.round((this.lrcOffset || 0) * 10) / 10;
+      const sign = v > 0 ? '+' : '';
+      out.textContent = sign + v.toFixed(1) + 's';
+      out.classList.toggle('is-zero', v === 0);
+    },
+    /* Restablece TODA la letra: desfase, tamaño, velocidad y bucle.
+     * El desfase suelto se ajusta con − / + del grupo «Desfase». */
+    resetLyricsPrefs() {
       // Reset COMPLETO: deshace todos los cambios hechos en la vista de letras
       // (offset, tamaño de fuente, velocidad, loop)
       // 1. Offset
@@ -585,6 +595,7 @@ Object.assign(App, {
         this.currentTrack.lrcOffset = 0;
         this.persistTrack(this.currentTrack);
       }
+      this.updateLrcOffsetUI();
       // 2. Tamaño de fuente → valor por defecto
       this.setLrcFontSize(19);
       try { localStorage.removeItem('aurora_lrc_fontsize'); } catch (e) {}
@@ -601,7 +612,7 @@ Object.assign(App, {
       }
       // Re-renderizar para aplicar cambios visuales
       this.renderLyrics();
-      this.toast(this.t('lrc_offset_reset'));
+      this.toast(this.t('lrc_reset_done'));
     },
 
     /* ============================================================
@@ -616,6 +627,12 @@ Object.assign(App, {
       const val = this.lrcFontSize + 'px';
       if (scroll) scroll.style.setProperty('--lrc-font-size', val);
       if (content) content.style.setProperty('--lrc-font-size', val);
+      // Reflejar los límites: si ya no se puede subir o bajar, el botón
+      // se desactiva (antes parecía que el toque no hacía nada).
+      const dec = document.getElementById('btnLrcFontDec');
+      const inc = document.getElementById('btnLrcFontInc');
+      if (dec) dec.disabled = this.lrcFontSize <= 12;
+      if (inc) inc.disabled = this.lrcFontSize >= 32;
     },
 
     /* ============================================================
@@ -656,40 +673,89 @@ Object.assign(App, {
     /* ============================================================
      *  Loop de sección (#19)
      * ============================================================ */
+    /* Repetición de sección elegida por el usuario, igual que el A-B del
+     * reproductor: 1.er toque fija A en el instante actual, 2.º fija B y
+     * activa el bucle, 3.er toque lo desactiva.
+     *
+     * Antes se elegía solo: del inicio de la línea actual a 8 líneas
+     * después, y el usuario no podía escoger el rango.
+     */
     toggleLyricsLoop() {
       if (this.lrcLoop) {
         this.clearLyricsLoop();
+        this.toast(this.t('lrc_loop_cleared'));
         return;
       }
-      // Si no hay loop activo, marcar desde la línea actual hasta 10 líneas después
-      if (this.activeLrcIdx < 0 || !this.lrcHasTimed) {
-        this.toast(this.t('lrc_loop_section'));
+      const now = Math.max(0, (this.audio ? this.audio.currentTime || 0 : 0) - (this.lrcOffset || 0));
+      // Ajustar a la línea de letra actual (si la hay) para que el salto
+      // caiga exactamente al principio de una línea.
+      const snap = this._lrcLineTimeAt(now);
+      if (this._lrcLoopA === null || this._lrcLoopA === undefined) {
+        this._lrcLoopA = snap !== null ? snap : now;
+        this._updateLrcLoopIndicator();
+        this.toast(this.t('lrc_loop_a_set').replace('X', this.fmtTime(this._lrcLoopA)));
         return;
       }
-      const endIdx = Math.min(this.activeLrcIdx + 8, this.lrcLines.length - 1);
-      // Buscar la siguiente línea con timestamp para el final
-      let actualEnd = endIdx;
-      for (let i = this.activeLrcIdx + 1; i <= endIdx; i++) {
-        if (this.lrcLines[i] && this.lrcLines[i].timed) actualEnd = i;
+      let end = snap !== null ? snap : now;
+      if (end <= this._lrcLoopA + 0.3) end = this._lrcLoopA + 2; // mínimo 2 s
+      this.lrcLoop = { start: this._lrcLoopA, end };
+      this._lrcLoopA = null;
+      this._updateLrcLoopIndicator();
+      this.toast(this.t('lrc_loop_ab_active')
+        .replace('X', this.fmtTime(this.lrcLoop.start))
+        .replace('Y', this.fmtTime(this.lrcLoop.end)));
+      if (this.audio && (this.audio.currentTime < this.lrcLoop.start ||
+          this.audio.currentTime >= this.lrcLoop.end)) {
+        this.seekToTime(this.lrcLoop.start + (this.lrcOffset || 0));
       }
-      this.lrcLoop = { startIdx: this.activeLrcIdx, endIdx: actualEnd };
+    },
+
+    /* Devuelve el tiempo de la última línea con timestamp <= t (o null). */
+    _lrcLineTimeAt(t) {
+      if (!this.lrcHasTimed || !this.lrcLines || !this.lrcLines.length) return null;
+      let found = null;
+      for (let i = 0; i < this.lrcLines.length; i++) {
+        const l = this.lrcLines[i];
+        // Margen mínimo (20 ms): sin él, 0,1 s antes de una línea ya se
+        // anclaba a la línea siguiente y A quedaba en el futuro.
+        if (l && l.timed && l.time <= t + 0.02) found = l.time;
+        if (l && l.timed && l.time > t + 0.02) break;
+      }
+      return found;
+    },
+
+    /* Indicador superior: muestra A mientras se elige B y el rango completo
+     * cuando el bucle está activo. */
+    _updateLrcLoopIndicator() {
       const indicator = document.getElementById('lyricsLoopIndicator');
       const text = document.getElementById('lyricsLoopText');
-      if (indicator && text) {
-        const startT = this.fmtTime(this.lrcLines[this.activeLrcIdx].time);
-        const endT = this.fmtTime(this.lrcLines[actualEnd].time);
-        text.textContent = this.t('lrc_loop_section') + ': ' + startT + ' → ' + endT;
-        indicator.style.display = 'flex';
-      }
       const btn = document.getElementById('btnLrcLoop');
-      if (btn) btn.classList.add('active');
+      const clearBtn = document.getElementById('btnLrcLoopClear');
+      const hasA = this._lrcLoopA !== null && this._lrcLoopA !== undefined;
+      if (btn) {
+        btn.classList.toggle('active', !!this.lrcLoop);
+        btn.classList.toggle('setting-b', hasA);
+      }
+      if (clearBtn) clearBtn.hidden = !(hasA || this.lrcLoop);
+      if (!indicator || !text) return;
+      if (this.lrcLoop) {
+        text.textContent = this.t('lrc_loop_ab_active')
+          .replace('X', this.fmtTime(this.lrcLoop.start))
+          .replace('Y', this.fmtTime(this.lrcLoop.end));
+        indicator.style.display = 'flex';
+      } else if (hasA) {
+        text.textContent = this.t('lrc_loop_a_set').replace('X', this.fmtTime(this._lrcLoopA)) +
+          ' · ' + this.t('lrc_loop_tap_b');
+        indicator.style.display = 'flex';
+      } else {
+        indicator.style.display = 'none';
+      }
     },
+
     clearLyricsLoop() {
       this.lrcLoop = null;
-      const indicator = document.getElementById('lyricsLoopIndicator');
-      if (indicator) indicator.style.display = 'none';
-      const btn = document.getElementById('btnLrcLoop');
-      if (btn) btn.classList.remove('active');
+      this._lrcLoopA = null;
+      this._updateLrcLoopIndicator();
     },
 
     /* ============================================================
@@ -718,6 +784,17 @@ Object.assign(App, {
         this.lrcOffset = this.currentTrack.lrcOffset;
       } else {
         this.lrcOffset = 0;
+      }
+      this.updateLrcOffsetUI();
+      // Repintar el grupo A-B: al volver a la vista con un bucle activo,
+      // el botón debe seguir marcado aunque renderLyrics() haya vaciado
+      // los elementos.
+      this._updateLrcLoopIndicator();
+      // El rango A-B pertenece a la pista anterior: no arrastrarlo.
+      const trackId = this.currentTrack ? this.currentTrack.id : null;
+      if (this._lrcLoopTrackId !== trackId) {
+        this.clearLyricsLoop();
+        this._lrcLoopTrackId = trackId;
       }
     },
 });

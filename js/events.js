@@ -165,7 +165,7 @@ Object.assign(App, {
       $('btnLrcFontInc').addEventListener('click', () => this.setLrcFontSize(this.lrcFontSize + 2));
       // Offset manual (#12)
       $('btnLrcOffsetMinus').addEventListener('click', () => this.adjustLrcOffset(-0.5));
-      $('btnLrcOffsetReset').addEventListener('click', () => this.resetLrcOffset());
+      $('btnLrcOffsetReset').addEventListener('click', () => this.resetLyricsPrefs());
       $('btnLrcOffsetPlus').addEventListener('click', () => this.adjustLrcOffset(0.5));
       // Loop de sección (#19)
       $('btnLrcLoop').addEventListener('click', () => this.toggleLyricsLoop());
@@ -524,7 +524,10 @@ Object.assign(App, {
       if (ctxPlayNow) ctxPlayNow.addEventListener('click', () => {
         const t = this.menuTrack();
         this.closeSheet('sheetTrackMenu');
-        if (t) this.playTrack(t.id, { type: 'all' });
+        if (t) {
+          this.playTrack(t.id, { type: 'all' });
+          if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
+        }
       });
       const ctxPlayNext = document.getElementById('ctxPlayNext');
       if (ctxPlayNext) ctxPlayNext.addEventListener('click', () => {
@@ -544,7 +547,10 @@ Object.assign(App, {
       if (ctxRadio) ctxRadio.addEventListener('click', () => {
         const t = this.menuTrack();
         this.closeSheet('sheetTrackMenu');
-        if (t) this.startRadio(t.id);
+        if (t) {
+          this.startRadio(t.id);
+          if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
+        }
       });
       const btnRenamePl = document.getElementById('btnRenamePlaylist');
       if (btnRenamePl) btnRenamePl.addEventListener('click', () => this.startRenamePlaylist());
@@ -780,7 +786,6 @@ Object.assign(App, {
           const open = document.querySelectorAll('.sheet.open');
           if (open.length) {
             e.preventDefault();
-            // closeSheet() respeta la clase .onboarding (idioma obligatorio).
             this.closeSheet(open[open.length - 1].id);
           }
           return;

@@ -215,7 +215,15 @@ svg { display: block; }
   .lyrics-toolbar { padding: 3px 4px; gap: 1px; }
   .lt-btn { min-width: 26px; height: 26px; padding: 0 3px; }
   .lt-btn .ico { width: 12px; height: 12px; }
-  .lt-btn span { display: none; }  /* ocultar textos "0.5s" en pantallas pequeñas */
+  /* Los textos «A−/A+» y «Desfase» se conservan: son la única pista de
+     qué hace cada botón. Solo se compactan. */
+  .lt-a-sm { font-size: 10px; }
+  .lt-a-lg { font-size: 15px; }
+  .lt-sign { font-size: 11px; }
+  .lt-group { padding: 1px 2px 1px 4px; gap: 0; }
+  .lt-group-label { font-size: 8px; letter-spacing: 0.04em; }
+  .lt-group .lt-btn { min-width: 22px; padding: 0 3px; }
+  .lt-offset-value { min-width: 32px; font-size: var(--fs-2xs); }
   .lt-sep { display: none; }  /* ocultar separadores para ahorrar espacio */
 }
 
@@ -546,7 +554,13 @@ svg { display: block; }
   background: var(--surface);
   width: 44px;
   height: 44px;
+  /* Tamaño fijo: con títulos largos en pantallas estrechas el botón podía
+     aplastarse y el corazón quedaba pegado al borde derecho. */
+  flex: 0 0 44px;
+  padding: 0;
+  overflow: visible;
 }
+.like-btn .ico { overflow: visible; }
 .like-btn.liked {
   color: var(--accent-2);
   background: rgba(236, 72, 153, 0.16);
@@ -841,9 +855,51 @@ svg { display: block; }
 }
 .lt-btn:active { background: var(--surface); transform: scale(0.92); }
 .lt-btn.active { color: var(--accent); background: var(--surface); }
+/* Esperando el punto B del rango (mismo lenguaje que el A-B del reproductor). */
+.lt-btn.setting-b { color: var(--accent); background: var(--surface); }
+/* .lt-btn es display:flex: el atributo hidden debe poder ocultarlo. */
+.lt-btn[hidden] { display: none; }
+.lt-btn:disabled { opacity: 0.35; pointer-events: none; }
 .lt-btn .ico { width: 13px; height: 13px; }
-.lt-small { font-size: var(--fs-3xs); }
-.lt-big { font-size: var(--fs-caption); }
+/* A− / A+: la «A» cambia de tamaño y el signo va pegado, así los dos
+ * botones de tamaño no se confunden entre sí. */
+.lt-font { gap: 1px; padding: 0 6px; }
+.lt-a { font-family: var(--font-display); font-weight: 800; line-height: 1; }
+.lt-a-sm { font-size: 11px; }
+.lt-a-lg { font-size: 17px; }
+.lt-sign { font-size: 13px; font-weight: 800; line-height: 1; margin-top: -6px; }
+/* Grupo de desfase: una sola caja con etiqueta «Desfase» y el valor
+ * actual entre − y +. Antes eran tres botones sueltos sin relación. */
+.lt-group {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 1px 4px 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  flex-shrink: 0;
+}
+.lt-group-label {
+  font-size: var(--fs-3xs);
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: var(--ls-wide);
+  margin-right: 2px;
+  white-space: nowrap;
+}
+.lt-group .lt-btn { min-width: 24px; height: 26px; padding: 0 4px; }
+.lt-offset-value {
+  min-width: 38px;
+  text-align: center;
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-1);
+}
+.lt-offset-value.is-zero { color: var(--text-3); }
+.lt-reset { color: var(--text-3); }
 .lt-sep {
   width: 1px;
   height: 18px;

@@ -57,7 +57,9 @@
     lrcRafId: null,      // requestAnimationFrame para sync precisa
     lrcUserScrolling: false,  // true cuando el usuario hace scroll manual
     lrcUserScrollTimer: null,
-    lrcLoop: null,       // {startIdx, endIdx} para loop de sección
+    lrcLoop: null,       // {start, end} en segundos: rango A-B elegido por el usuario
+    _lrcLoopA: null,     // inicio A pendiente de cerrar con B
+    _lrcLoopTrackId: null, // pista a la que pertenece el rango A-B
 
     /* #15 #16 Cache de objectURLs y preload */
     _urlCache: new Map(),     // trackId → objectURL (cache para reutilizar)
