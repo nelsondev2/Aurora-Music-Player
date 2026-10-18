@@ -5,6 +5,8 @@
 **Alcance:** código completo de la SPA (24 archivos de producto), servidor Express, persistencia IndexedDB, accesibilidad, configuración, pruebas y despliegue.
 **Entorno de verificación:** Node.js 22.22.3, jsdom 30.1.3, fake-indexeddb 6.2.6, axe-core 4.14.0, Express 4.22.3. Sin Chromium ni k6 en el sandbox (ver Anexo A).
 
+> **Nota de alcance del repositorio (18-10-2026).** Este repositorio se limpió después de generar el informe y ahora contiene únicamente el código de la aplicación. La suite de pruebas, el servidor Node, el CI, el Dockerfile y las herramientas de auditoría se retiraron del árbol (permanecen en el historial de git, commit `24ff6ca`). Los comandos, rutas y cifras de cobertura de este documento describen el árbol completo sobre el que se realizó la auditoría; pueden no estar disponibles en este checkout.
+
 ---
 
 ## 0. Resumen ejecutivo
