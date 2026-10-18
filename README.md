@@ -4,7 +4,7 @@ Reproductor de música **offline-first**. Carga archivos locales (MP3, M4A, FLAC
 
 Abre `index.html` en el navegador. No hace falta build.
 
-**Versión:** 1.1.0 · licencia MIT
+**Versión:** 1.2.0 · licencia MIT
 
 ## Capturas
 
@@ -51,13 +51,36 @@ Abre `index.html` en el navegador. No hace falta build.
 
 ## Tests
 
-```bash
-# Auditoría i18n (falla si una clave no tiene los 8 idiomas)
-node audit-i18n.js
+Requisitos de desarrollo: Node.js >= 22.22 (jsdom 30). El servidor de producción solo necesita Node 22 LTS.
 
-# Suite en el navegador: parseLrc, shuffle, fmtTime, duplicados, i18n
-# Abre tests.html
+```bash
+npm ci                 # instala dependencias de desarrollo
+npm test               # 129 pruebas: unitarias, integración, a11y y e2e
+npm run test:unit      # 48 unitarias (LRC, texto, uploader, i18n, storage…)
+npm run test:integration # 73 de integración (servidor, arranque, biblioteca, reproducción, UI, cableado, listas)
+npm run test:a11y      # 5 con axe-core sobre todas las vistas y hojas
+npm run test:e2e       # 3 recorridos completos (onboarding → importar → reproducir → lista)
+npm run test:coverage  # suite completa + cobertura en coverage/index.html
+npm run test:load      # k6 (requiere k6 instalado; ver tests/load/k6.js)
+npm run lint           # auditoría i18n: 364 claves × 8 idiomas
+npm run audit          # npm audit
 ```
+
+- Estado actual: **129/129 en verde** y `npm audit` sin vulnerabilidades.
+- Cobertura instrumentada (jsdom + módulos Node): ~50 % de sentencias y ~55 % de líneas; el desglose por archivo y las limitaciones están en [`docs/AUDITORIA.md`](docs/AUDITORIA.md).
+- E2E y accesibilidad corren en jsdom (no hay Chromium en CI). La regla `color-contrast` de axe se desactiva porque jsdom no calcula layout; el contraste se revisa con tokens de `styles.css`.
+
+## Producción
+
+La app se sirve tal cual (sin build):
+
+```bash
+npm ci --omit=dev
+PORT=3000 HOST=0.0.0.0 npm start
+# comprobar: curl -fsS http://localhost:3000/api/health
+```
+
+Guía completa (systemd, proxy inverso, HSTS, rollback y checklist de lanzamiento): [`docs/AUDITORIA.md`](docs/AUDITORIA.md).
 
 ## Empaquetar como WebXDC (opcional)
 

@@ -15,6 +15,18 @@
   'use strict';
 
   const Uploader = {
+    /* Traduce sin depender de que App.t esté disponible (uploader también
+     * se usa en pruebas aisladas). */
+    _t(key, fallback) {
+      try {
+        if (window.App && typeof window.App.t === 'function') {
+          const v = window.App.t(key);
+          if (v && v !== key) return v;
+        }
+      } catch (e) {}
+      return fallback;
+    },
+
     ACCEPTED: '.mp3,.m4a,.flac,.wav,.ogg,.webm,.opus,audio/*',
     PALETTE: window.COVER_PALETTE || [
       { from: '#7C3AED', to: '#EC4899', angle: 135 }
@@ -86,8 +98,8 @@
 
       let meta = {
         title: fromName.title || this.cleanName(file.name),
-        artist: fromName.artist || 'Artista desconocido',
-        album: 'Sin álbum',
+        artist: fromName.artist || this._t('unknown_artist', 'Artista desconocido'),
+        album: this._t('no_album', 'Sin álbum'),
         cover: null,
         lrc: null
       };
@@ -283,11 +295,19 @@
       const cleanAudio = this.cleanName(audioFileName).toLowerCase();
       if (lrcsMap[cleanAudio]) return lrcsMap[cleanAudio];
 
-      const normAudio = cleanAudio.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w]/g, '');
+      // \w borraba cirílico/CJK: la letra no se emparejaba con la canción.
+      const norm = (x) => x.normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^\p{L}\p{N}]/gu, '');
+      const normAudio = norm(cleanAudio);
 
       for (const [key, file] of Object.entries(lrcsMap)) {
-        const normKey = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w]/g, '');
-        if (normAudio && normKey && (normAudio === normKey || normAudio.includes(normKey) || normKey.includes(normAudio))) {
+        const normKey = norm(key);
+        if (!normAudio || !normKey) continue;
+        // Evitar falsos positivos con nombres muy cortos («01», «a»).
+        if (normAudio === normKey) return file;
+        if (Math.min(normAudio.length, normKey.length) >= 4 &&
+            (normAudio.includes(normKey) || normKey.includes(normAudio))) {
           return file;
         }
       }
@@ -335,8 +355,8 @@
       return {
         id,
         title: this.cleanName(file.name),
-        artist: 'Artista desconocido',
-        album: 'Sin álbum',
+        artist: this._t('unknown_artist', 'Artista desconocido'),
+        album: this._t('no_album', 'Sin álbum'),
         duration: 0,
         src: URL.createObjectURL(file),
         cover: this.randomCover(),
@@ -632,7 +652,10 @@
       try {
         const encoding = data[0];
         const tsFormat = data[4];  // 1 = milliseconds
-        let pos = 5;
+        // encoding(1) + language(3) + timestampFormat(1) + contentType(1) = 6
+        // Antes empezaba en 5 (contentType), corrompiendo el descriptor si
+        // contentType era 0 y desalineando el primer par texto/tiempo.
+        let pos = 6;
         // Descriptor (null-terminated)
         const descEnd = this.findNullTerminator(data, pos, encoding);
         pos = descEnd + (encoding === 1 || encoding === 2 ? 2 : 1);

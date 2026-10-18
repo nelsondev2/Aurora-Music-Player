@@ -68,7 +68,29 @@ Object.assign(App, {
 
       document.body.appendChild(input);
 
+      // Cancelar el diálogo no dispara `change` en la mayoría de navegadores:
+      // el input quedaba en el DOM para siempre. Se retira al recuperar el
+      // foco, con el evento `cancel` (navegadores nuevos) y con un timeout
+      // de seguridad.
+      let settled = false;
+      let safetyTimer = null;
+      const cleanup = () => {
+        if (settled) return;
+        settled = true;
+        // Sin esto, cada apertura dejaba un timer de 5 minutos vivo
+        // (batería en móvil y procesos colgados en pruebas).
+        if (safetyTimer) { clearTimeout(safetyTimer); safetyTimer = null; }
+        try { input.remove(); } catch (er) {}
+      };
+      input.addEventListener('cancel', cleanup);
+      window.addEventListener('focus', () => {
+        setTimeout(() => { if (!settled && (!input.files || input.files.length === 0)) cleanup(); }, 400);
+      }, { once: true });
+      safetyTimer = setTimeout(cleanup, 5 * 60 * 1000);
+
       input.addEventListener('change', async (e) => {
+        settled = true;
+        if (safetyTimer) { clearTimeout(safetyTimer); safetyTimer = null; }
         const files = e.target.files;
         if (files && files.length > 0) {
           const arr = Array.from(files);
@@ -88,8 +110,8 @@ Object.assign(App, {
             this.toast(this.t('toast_load_failed'));
           }
         }
-        // Limpiar el input del DOM tras usarlo
-        setTimeout(() => { try { input.remove(); } catch (er) {} }, 100);
+        // Limpiar el input del DOM tras usarlo (ya no hace falta retenerlo)
+        try { input.remove(); } catch (er) {}
       });
 
       // click() dentro del gesto de usuario

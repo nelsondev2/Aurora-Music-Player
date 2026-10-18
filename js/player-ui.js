@@ -66,8 +66,7 @@ Object.assign(App, {
       this.drawCover('miniCoverCanvas', t, true);
 
       // Vinilo en lugar de cover si está reproduciendo
-      const ca = document.getElementById('coverArt');
-      if (ca) ca.classList.toggle('playing', this.isPlaying);
+      this.updateCoverA11y();
       if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
 
       // Favorito
@@ -157,6 +156,19 @@ Object.assign(App, {
       }
     },
 
+    /* Nombre accesible y estado de la portada (role=button). Se usa desde
+     * renderCurrentTrack() y updatePlayUI(); antes el bloque estaba
+     * duplicado y podía divergir entre ambos caminos. */
+    updateCoverA11y() {
+      const ca = document.getElementById('coverArt');
+      if (!ca) return;
+      ca.classList.toggle('playing', this.isPlaying);
+      const label = this.isPlaying ? this.t('pause') : this.t('play');
+      const title = this.currentTrack ? ' · ' + this.currentTrack.title : '';
+      ca.setAttribute('aria-label', label + title);
+      ca.setAttribute('aria-pressed', this.isPlaying ? 'true' : 'false');
+    },
+
     updatePlayUI() {
       const play = document.getElementById('btnPlay');
       const playLyrics = document.getElementById('btnPlayLyrics');
@@ -174,8 +186,7 @@ Object.assign(App, {
           b.setAttribute('aria-label', this.t('play'));
         }
       });
-      const ca = document.getElementById('coverArt');
-      if (ca) ca.classList.toggle('playing', this.isPlaying);
+      this.updateCoverA11y();
       if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
 
       // Visualizador en tiempo real

@@ -21,6 +21,13 @@ Object.assign(App, {
      * ============================================================ */
     showConfirm(opts = {}) {
       return new Promise((resolve) => {
+        // Si ya había una confirmación pendiente, resolverla como cancelada:
+        // de lo contrario su Promise quedaría colgada para siempre.
+        if (this._confirmResolver) {
+          const prev = this._confirmResolver;
+          this._confirmResolver = null;
+          try { prev(false); } catch (e) {}
+        }
         const sheet = document.getElementById('sheetConfirm');
         if (!sheet) {
           // Fallback extremo: sin markup, usar el nativo
@@ -32,6 +39,9 @@ Object.assign(App, {
         const okBtn = document.getElementById('btnConfirmOk');
         const cancelBtn = document.getElementById('btnConfirmCancel');
         if (msg) msg.textContent = opts.message || '';
+        // El panel de confirmación no tiene <h3>: se anuncia con el mensaje.
+        const panel = sheet.querySelector('.sheet-panel');
+        if (panel) panel.setAttribute('aria-labelledby', 'confirmMsg');
         if (icon) icon.classList.toggle('hidden', opts.danger === false);
         if (okBtn) {
           okBtn.textContent = opts.okLabel || this.t('confirm_ok');
@@ -69,6 +79,9 @@ Object.assign(App, {
         this._sheetStack.push(id);
       }
       s.classList.add('open');
+      // Quitar inert/aria-hidden del panel que se abre. La capa superior
+      // se recalcula en _syncSheetLayer().
+      try { s.inert = false; } catch (e) { s.removeAttribute('inert'); }
       s.setAttribute('aria-hidden', 'false');
       this._syncSheetLayer();
       const panel = s.querySelector('.sheet-panel');
@@ -76,6 +89,18 @@ Object.assign(App, {
         panel.setAttribute('role', 'dialog');
         panel.setAttribute('aria-modal', 'true');
         if (!panel.hasAttribute('tabindex')) panel.setAttribute('tabindex', '-1');
+        // axe: un role=dialog sin nombre accesible es violación seria.
+        // Se toma el <h3> del sheet; si no existe (p. ej. confirmación),
+        // showConfirm() asigna aria-labelledby al mensaje.
+        if (!panel.hasAttribute('aria-label') && !panel.hasAttribute('aria-labelledby')) {
+          const heading = panel.querySelector('h3');
+          if (heading) {
+            if (!heading.id) heading.id = id + '-title';
+            panel.setAttribute('aria-labelledby', heading.id);
+          } else {
+            panel.setAttribute('aria-label', this.t('app_title'));
+          }
+        }
       }
       const focusable = s.querySelector('button, [href], input:not([type="hidden"]), textarea, select, [tabindex]:not([tabindex="-1"])');
       setTimeout(() => {
@@ -83,11 +108,18 @@ Object.assign(App, {
       }, 40);
       if (typeof this.updateChrome === 'function') this.updateChrome();
     },
-    closeSheet(id) {
+    closeSheet(id, force) {
       const s = document.getElementById(id);
+      // El onboarding de idioma no se puede cerrar por backdrop/Escape:
+      // el usuario debe elegir. setLang() quita la clase y luego cierra.
+      if (s && s.classList.contains('onboarding') && !force) return;
       if (s) {
         s.classList.remove('open');
         s.setAttribute('aria-hidden', 'true');
+        // inert evita que el foco del teclado entre en un sheet cerrado.
+        // (En navegadores antiguos se ignora; el CSS visibility:hidden
+        // ya lo impide).
+        try { s.inert = true; } catch (e) { s.setAttribute('inert', ''); }
         const prev = s._prevFocus;
         s._prevFocus = null;
         if (this._sheetStack) {
@@ -128,7 +160,10 @@ Object.assign(App, {
     },
 
     _syncSheetLayer() {
-      const stack = this._sheetStack || [];
+      const stack = (this._sheetStack || []).filter(sid => {
+        const el = document.getElementById(sid);
+        return !!(el && el.classList.contains('open'));
+      });
       stack.forEach((sid, i) => {
         const el = document.getElementById(sid);
         if (!el) return;
@@ -136,6 +171,14 @@ Object.assign(App, {
           ? 160
           : (el.classList.contains('sheet-tab') ? 90 : 130);
         el.style.zIndex = String(base + i);
+        const isTop = i === stack.length - 1;
+        // Solo el sheet superior debe ser accesible. Los inferiores siguen
+        // visibles pero quedan inertes para teclado y lectores de pantalla.
+        el.setAttribute('aria-hidden', isTop ? 'false' : 'true');
+        try { el.inert = !isTop; } catch (e) {
+          if (isTop) el.removeAttribute('inert');
+          else el.setAttribute('inert', '');
+        }
       });
     },
 
@@ -171,6 +214,14 @@ Object.assign(App, {
         if (isActive) v.classList.add('active');
         else v.classList.remove('active');
       });
+      // Letras: RAF solo mientras la vista está visible.
+      const lyricsOn = name === 'lyrics';
+      if (!lyricsOn && this.lrcRafId) {
+        cancelAnimationFrame(this.lrcRafId);
+        this.lrcRafId = null;
+      } else if (lyricsOn && typeof this.startLrcRafSync === 'function') {
+        this.startLrcRafSync();
+      }
       if (typeof this.updateChrome === 'function') this.updateChrome();
     },
 
@@ -297,7 +348,14 @@ Object.assign(App, {
      * ============================================================ */
     startSleep(minutes) {
       this.cancelSleep();
-      const mins = Math.max(1, parseInt(minutes, 10) || 0);
+      const parsed = parseInt(minutes, 10);
+      // Aceptar solo enteros positivos. Antes, un valor inválido caía en
+      // 1 minuto y apagaba la música sin que el usuario lo esperara.
+      if (!isFinite(parsed) || parsed <= 0) {
+        this.toast(this.t('sleep_invalid'));
+        return false;
+      }
+      const mins = Math.min(24 * 60, parsed);
       this.sleepEndAt = Date.now() + mins * 60 * 1000;
       this.sleepTick = setInterval(() => {
         if (!this.sleepEndAt) return;
@@ -306,6 +364,7 @@ Object.assign(App, {
       }, 1000);
       this.updateSleepStatus();
       this.toast(this.t('toast_sleep_started').replace('X', mins));
+      return true;
     },
     startSleepEndOfTrack() {
       this.cancelSleep();
@@ -370,7 +429,9 @@ Object.assign(App, {
     },
     updateSleepStatus() {
       const el = document.getElementById('sleepStatus');
-      const btn = document.getElementById('btnSleep');
+      // No hay botón dedicado en la barra: el estado se refleja en la fila
+      // «Sleep» del menú Más (y en el sheet si está abierto).
+      const btn = document.getElementById('btnSleep') || document.getElementById('menuSleep');
       const menu = document.getElementById('menuSleep');
       if (this._sleepEndOfTrack) {
         if (el) el.textContent = this.t('sleep_eot_status');
@@ -416,6 +477,9 @@ Object.assign(App, {
     },
 
     esc(s) {
+      // null/undefined no deben convertirse en la cadena "undefined" dentro
+      // de un atributo o de innerHTML.
+      if (s == null) return '';
       return String(s).replace(/[&<>"']/g, m => ({
         '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
       }[m]));

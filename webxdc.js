@@ -31,7 +31,9 @@
         if (message.file.blob instanceof Blob) {
           blob = message.file.blob;
         } else if (typeof message.file.plainText === 'string') {
-          blob = new Blob([message.file.plainText], { type: 'text/plain;charset=utf-8' });
+          blob = new Blob([message.file.plainText], {
+            type: message.file.mimeType || 'text/plain;charset=utf-8'
+          });
         } else if (typeof message.file.base64 === 'string') {
           try {
             const byteCharacters = atob(message.file.base64);
@@ -39,7 +41,9 @@
             for (let i = 0; i < byteCharacters.length; i++) {
               byteNumbers[i] = byteCharacters.charCodeAt(i);
             }
-            blob = new Blob([new Uint8Array(byteNumbers)]);
+            blob = new Blob([new Uint8Array(byteNumbers)], {
+              type: message.file.mimeType || ''
+            });
           } catch (e) {
             console.error('[WebXDC Stub] Error decodificando base64:', e);
           }

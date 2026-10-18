@@ -2,6 +2,36 @@
 
 Formato inspirado en [Keep a Changelog](https://keepachangelog.com/). Versionado semver.
 
+## 1.2.0 — 2026-10-17
+
+Auditoría técnica completa (seguridad, accesibilidad, concurrencia, rendimiento y pruebas).
+
+### Añadido
+- Suite automatizada de 129 pruebas: 48 unitarias, 73 de integración, 5 de accesibilidad (axe-core) y 3 e2e, en jsdom.
+- Cobertura instrumentada (`npm run test:coverage`) con informe HTML y lcov; hook de instrumentación para scripts inyectados en jsdom.
+- Prueba de carga k6 (`tests/load/k6.js`) con escenarios smoke/load, umbrales p95 y comprobación de gzip/ETag.
+- Comprobación de contrato HTML↔JS: todo `getElementById` debe existir o estar en la lista de ids dinámicos.
+
+### Seguridad
+- El servidor deja de exponer el repositorio: lista blanca de archivos y carpetas públicas, `realpath` para bloquear symlinks y rechazo temprano de path traversal codificado.
+- CSP estricta (scripts solo `'self'`), `nosniff`, `Referrer-Policy: no-referrer`, `Permissions-Policy` y HSTS opcional.
+- Rate limit de `/api` con validación de `API_RATE_LIMIT` (un valor inválido ya no lo desactiva) y timeouts normalizados.
+- Sanitización de importaciones: ids seguros, portadas solo raster base64, HTML escapado y listas M3U/JSON sin inyección de saltos.
+- `storage.js`: apertura única (sin conexiones huérfanas), recuperación si IndexedDB se cierra y mensajes de error claros.
+
+### Accesibilidad
+- Corregidas las 7 violaciones de axe: mini-player sin controles anidados, nombres accesibles en portada/botones LRC/volumen, un solo landmark principal, diálogos con nombre, etiquetas de las 5 bandas del ecualizador y `role="presentation"` en cabeceras de sheet.
+
+### Corregido
+- `seekToTime(NaN)` ya no rebobina la pista.
+- El cableado de botones sin markup (EQ/Sleep) se elimina; el modo lote se prueba con clics reales.
+- Borrado por lote con confirmación; borrar una lista en reproducción limpia el contexto; toasts correctos.
+- Exportaciones con MIME correcto (JSON/M3U8) también a través del stub webxdc.
+- `main.js` arranca aunque el script se cargue después de `DOMContentLoaded`.
+- Sesión con guardado deduplicado, flush en `pagehide`/`beforeunload` y respeto a bfcache.
+- Timers y RAF sin fugas: letras solo con la vista activa, input de archivos retirado al cancelar.
+- Versión 1.2.0 centralizada en `App.VERSION` (README y «Acerca de» alineados).
+
 ## [Sin publicar]
 
 ### Añadido

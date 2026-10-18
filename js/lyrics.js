@@ -79,7 +79,7 @@ Object.assign(App, {
           hasTimed = true;
           const lastStampEnd = trimmed.lastIndexOf(stamps[stamps.length - 1].match) + stamps[stamps.length - 1].match.length;
           const rawText = trimmed.substring(lastStampEnd).trim();
-          const words = this.parseKaraokeWords(rawText, Math.max(0, stamps[0].time));
+          const words = this.parseKaraokeWords(rawText, Math.max(0, stamps[0].time), globalOffset);
           const text = this.stripKaraokeTags(rawText);
           for (const stamp of stamps) {
             const line = {
@@ -142,7 +142,8 @@ Object.assign(App, {
 
     /* Palabras con timestamp Enhanced LRC: <mm:ss.xx>palabra
      * Solo si hay al menos 2 tags. No se inventan tiempos. */
-    parseKaraokeWords(text, lineTime) {
+    parseKaraokeWords(text, lineTime, globalOffset) {
+      const off = Number(globalOffset) || 0;
       if (!text || text.indexOf('<') === -1) return null;
       const re = /<(\d{1,2}):(\d{2}(?:\.\d{1,3})?)>/g;
       if (!re.test(text)) return null;
@@ -159,7 +160,9 @@ Object.assign(App, {
           else if (chunk) words.push({ time: lineTime, text: chunk });
         }
         words.push({
-          time: parseInt(m[1], 10) * 60 + parseFloat(m[2]),
+          // [offset:] aplica también a los tags <mm:ss> de karaoke; antes
+          // solo se aplicaba a los timestamps de línea.
+          time: Math.max(0, parseInt(m[1], 10) * 60 + parseFloat(m[2]) + off),
           text: ''
         });
         last = re.lastIndex;
@@ -168,6 +171,7 @@ Object.assign(App, {
         words[words.length - 1].text += text.slice(last);
       }
       const cleaned = words.filter(w => w.text.length);
+      cleaned.forEach(w => { w.time = Math.max(0, w.time); });
       return (tags >= 2 && cleaned.length >= 2) ? cleaned : null;
     },
 
@@ -267,6 +271,9 @@ Object.assign(App, {
       this.startLrcRafSync();
       // Detectar scroll manual del usuario (#13)
       this.wireLyricsUserScroll();
+      // El RAF solo debe correr con la vista de letras activa.
+      const lv = document.getElementById('viewLyrics');
+      if (lv && lv.classList.contains('active')) this.startLrcRafSync();
     },
 
     /* Sincronización precisa con requestAnimationFrame (#22) */
@@ -276,7 +283,10 @@ Object.assign(App, {
       const tick = () => {
         const lyricsView = document.getElementById('viewLyrics');
         if (!lyricsView || !lyricsView.classList.contains('active')) {
-          this.lrcRafId = requestAnimationFrame(tick);
+          // Antes seguía programando RAF para siempre aunque la vista
+          // estuviera oculta (batería/CPU en móvil). Se detiene y showView()
+          // lo reinicia al volver.
+          this.lrcRafId = null;
           return;
         }
         if (this.audio && this.currentTrack) {

@@ -62,8 +62,23 @@ Object.assign(App, {
       this.setRepeatUI();
       if (typeof this.updateChrome === 'function') this.updateChrome();
 
-      // Guardar sesión cada 5s mientras se reproduce
-      setInterval(() => this.saveSession(), 5000);
+      // Guardar sesión cada 5 s. saveSession() deduplica: no escribe si
+      // nada cambió y está en pausa. Se guarda el id para poder limpiarlo.
+      if (this._sessionTimer) clearInterval(this._sessionTimer);
+      this._sessionTimer = setInterval(() => {
+        if (document.visibilityState === 'hidden') return;
+        this.saveSession();
+      }, 5000);
+      // Persistir una última vez al ocultar/cerrar y liberar objectURLs.
+      this._onPageHide = (e) => {
+        // En bfcache (pagehide persisted=true) NO revocar: al volver atrás
+        // los objectURL deben seguir vivos.
+        if (e && e.type === 'pagehide' && e.persisted) return;
+        try { this.saveSession(); } catch (err) {}
+        try { this.releaseAllUrls(); } catch (err) {}
+      };
+      window.addEventListener('pagehide', this._onPageHide);
+      window.addEventListener('beforeunload', this._onPageHide);
 
       // Aplicar idioma a todos los textos estáticos del DOM
       this.applyLang();
@@ -75,6 +90,9 @@ Object.assign(App, {
 
       this.loadPlaybackSettings();
       this.syncPlaybackSettingsUI();
+      // Versión siempre desde App.VERSION (evita el 1.1.1 hardcodeado en HTML)
+      const aboutVer = document.getElementById('aboutVersion');
+      if (aboutVer) aboutVer.textContent = this.VERSION;
       if (typeof this.syncDesktopLayout === 'function') this.syncDesktopLayout();
       // Cargar preferencias de visualizador y preservación de tono
       try {
@@ -104,6 +122,16 @@ Object.assign(App, {
       if (typeof this.maybeShowBackgroundNotice === 'function') this.maybeShowBackgroundNotice();
       if (typeof this.maybeShowLibraryMissingNotice === 'function') this.maybeShowLibraryMissingNotice();
 
+      // Primer arranque: pedir idioma (bug B8: la función existía pero nadie
+      // la llamaba). Se retrasa para no competir con el resto del arranque.
+      if (!this._langAlreadyChosen && typeof this.showLanguageOnboarding === 'function') {
+        setTimeout(() => {
+          if (!this._langAlreadyChosen) this.showLanguageOnboarding();
+        }, 350);
+      }
+
+      this._initialized = true;
+      document.dispatchEvent(new CustomEvent('aurora:ready', { detail: { tracks: this.tracks.length } }));
       console.log('[Aurora] App inicializada ·', this.tracks.length, 'pistas', restored ? '· sesión restaurada' : '');
     },
 
@@ -201,6 +229,7 @@ Object.assign(App, {
       this._storageOk = true;
       try {
         // Tracks
+        if (!window.AuroraStorage) throw new Error('IndexedDB no disponible');
         const stored = await window.AuroraStorage.getAllTracks();
         // Reconstruir objectURLs (no se pueden guardar en IDB)
         this.tracks = stored.map(t => {
@@ -215,6 +244,7 @@ Object.assign(App, {
         this.tracks.forEach((t, i) => {
           if (!t.addedAt) t.addedAt = i + 1;
         });
+        this.invalidateTrackIndex();
       } catch (e) {
         console.warn('[Aurora] Error cargando pistas:', e);
         this.tracks = [];
@@ -281,12 +311,14 @@ Object.assign(App, {
           delete toSave._file;
         }
         await window.AuroraStorage.putTrack(toSave);
+        return true;
       } catch (e) {
         console.warn('[Aurora] No se pudo guardar pista:', e);
         if (this._isQuotaError(e)) {
           this.toast(this.t('toast_storage_full'));
           if (typeof this.offerFreeStorage === 'function') this.offerFreeStorage();
         }
+        return false;
       }
     },
 

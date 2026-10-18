@@ -80,10 +80,10 @@
   
   <!-- Contenedor tipo marco de móvil para mostrar en escritorio -->
   <div class="device-frame">
-    <div class="device-screen" id="deviceScreen">
+    <div class="device-screen" id="deviceScreen" role="main" aria-label="Aurora Music Player">
 
       <!-- ============== PANTALLA: REPRODUCTOR ============== -->
-      <main class="view view-player" id="viewPlayer" data-view="player">
+      <section class="view view-player" id="viewPlayer" data-view="player" aria-label="Reproductor">
 
         <!-- Fondo dinámico con los colores de la portada -->
         <div class="bg-blur" id="bgBlur">
@@ -107,7 +107,7 @@
         <!-- Portada del álbum -->
         <section class="cover-section">
           <div class="cover-glow" id="coverGlow" aria-hidden="true"></div>
-          <div class="cover-art" id="coverArt" role="button" tabindex="0">
+          <div class="cover-art" id="coverArt" role="button" tabindex="0" data-i18n-aria="cover_art_aria" aria-label="Portada del álbum">
             <canvas id="coverCanvasBack" class="cover-canvas-back" width="600" height="600" aria-hidden="true"></canvas>
             <canvas id="coverCanvas" width="600" height="600"></canvas>
             <div class="cover-vinyl" id="coverVinyl">
@@ -137,11 +137,12 @@
 
         <!-- Barra de progreso -->
         <section class="progress-section">
-          <div class="progress-track" id="progressTrack" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Progreso">
+          <div class="progress-track" id="progressTrack" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-i18n-aria="progress" aria-label="Progreso">
             <div class="progress-buffer" id="progressBuffer"></div>
             <div class="progress-fill" id="progressFill">
               <div class="progress-thumb" id="progressThumb"></div>
             </div>
+            <div class="progress-ab-range" id="progressAbRange" hidden></div>
           </div>
           <div class="time-row">
             <span class="time-current" id="timeCurrent">0:00</span>
@@ -195,13 +196,16 @@
           <button class="sec-btn" id="btnVisualizer" data-i18n-aria="visualizer" aria-label="Visualizador" aria-pressed="false">
             <svg class="ico" aria-hidden="true"><use href="#i-chart-simple"></use></svg>
           </button>
+          <button class="sec-btn ab-btn" id="btnABRepeat" type="button" data-i18n-aria="ab_repeat" data-i18n-title="ab_repeat" aria-label="Bucle A-B" aria-pressed="false">
+            <span class="ab-badge">A-B</span>
+          </button>
         </section>
 
-      </main>
+      </section>
 
 
       <!-- ============== PANTALLA: INICIO ============== -->
-      <main class="view view-home active" id="viewHome" data-view="home">
+      <section class="view view-home active" id="viewHome" data-view="home" aria-label="Inicio">
         <header class="home-header">
           <div>
             <p class="home-kicker-static" data-i18n="app_title">Aurora</p>
@@ -212,7 +216,7 @@
           </button>
         </header>
         <div class="home-scroll" id="homeContent"></div>
-      </main>
+      </section>
 
       <!-- ============== PANTALLA: LETRAS LRC ============== -->
       <section class="view view-lyrics" id="viewLyrics" data-view="lyrics">
@@ -263,9 +267,9 @@
             <p id="miniArtist">—</p>
           </div>
           <div class="lyrics-speed" id="lyricsSpeed">
-            <button class="lt-btn" id="btnLrcSpeedDown"><svg class="ico" aria-hidden="true"><use href="#i-minus"></use></svg></button>
+            <button class="lt-btn" id="btnLrcSpeedDown" type="button" data-i18n-aria="lrc_speed_down" aria-label="Bajar velocidad"><svg class="ico" aria-hidden="true"><use href="#i-minus"></use></svg></button>
             <span id="lrcSpeedLabel">1.0×</span>
-            <button class="lt-btn" id="btnLrcSpeedUp"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg></button>
+            <button class="lt-btn" id="btnLrcSpeedUp" type="button" data-i18n-aria="lrc_speed_up" aria-label="Subir velocidad"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg></button>
           </div>
         </section>
 
@@ -319,8 +323,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetQueue"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetQueue" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetQueue" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="queue_title">Cola de reproducción</h3>
             <button class="text-btn" data-close-sheet="sheetQueue" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -340,8 +344,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetPlaylists"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetPlaylists" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetPlaylists" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="your_playlists">Tus listas</h3>
             <button class="text-btn" id="btnNewPlaylist"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg> <span data-i18n="new_playlist">Nueva</span></button>
           </header>
@@ -357,8 +361,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetCreatePlaylist"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetCreatePlaylist" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetCreatePlaylist" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 id="createPlaylistTitle" data-i18n="create_playlist_title">Nueva lista</h3>
             <button class="text-btn" data-close-sheet="sheetCreatePlaylist" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -388,8 +392,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetEditPlaylist"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetEditPlaylist" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetEditPlaylist" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 id="editPlaylistTitle" data-i18n="edit_playlist_title">Editar lista</h3>
             <button class="text-btn" data-close-sheet="sheetEditPlaylist" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -438,8 +442,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetEqualizer"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetEqualizer" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetEqualizer" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="equalizer">Ecualizador</h3>
             <button class="text-btn" data-close-sheet="sheetEqualizer" data-i18n="done_btn">Listo</button>
           </header>
@@ -464,8 +468,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetSleep"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetSleep" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetSleep" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="sleep">Sleep</h3>
             <button class="text-btn" data-close-sheet="sheetSleep" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -491,15 +495,15 @@
         <div class="sheet-backdrop" data-close-sheet="sheetVolume"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetVolume" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetVolume" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="volume">Volumen</h3>
             <button class="text-btn" data-close-sheet="sheetVolume" data-i18n="done_btn">Listo</button>
           </header>
           <div class="sheet-body">
             <div class="volume-row">
               <svg class="ico" aria-hidden="true"><use href="#i-volume-low"></use></svg>
-              <input type="range" min="0" max="100" value="100" id="volumeSlider" class="slider" />
+              <input type="range" min="0" max="100" value="100" id="volumeSlider" class="slider" data-i18n-aria="volume" aria-label="Volumen" />
               <svg class="ico" aria-hidden="true"><use href="#i-volume-high"></use></svg>
             </div>
             <div class="volume-value" id="volumeValue">100%</div>
@@ -512,8 +516,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetLibrary"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetLibrary" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetLibrary" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="library_title">Biblioteca</h3>
             <button class="text-btn" id="btnOpenNewPlaylist"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg> <span data-i18n="new_playlist">Nueva</span></button>
             <button class="text-btn danger" id="btnDeleteAllTracks"><svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg> <span data-i18n="delete_all_btn">Borrar todo</span></button>
@@ -530,6 +534,10 @@
               <button class="lib-sort" type="button" data-sort="artist" data-i18n="lib_sort_artist">Artista</button>
               <button class="lib-sort" type="button" data-sort="recent" data-i18n="lib_sort_recent">Recientes</button>
               <button class="lib-sort" type="button" data-sort="duration" data-i18n="lib_sort_duration">Duración</button>
+              <button class="lib-batch-btn" id="btnBatchSelect" type="button" aria-pressed="false" data-i18n-aria="batch_select" aria-label="Seleccionar">
+                <svg class="ico" aria-hidden="true"><use href="#i-check"></use></svg>
+                <span data-i18n="batch_select">Seleccionar</span>
+              </button>
             </div>
             <div id="libPaneSongs">
               <ul class="track-list" id="libraryTracks"></ul>
@@ -544,6 +552,30 @@
               <ul class="playlist-grid" id="libraryPlaylists"></ul>
             </div>
           </div>
+          <div class="batch-bar" id="batchActionBar" hidden>
+            <div class="batch-bar-head">
+              <span class="batch-count" id="batchCount" aria-live="polite">0</span>
+              <button class="text-btn" id="btnBatchSelectAll" type="button" data-i18n="batch_select_all">Seleccionar todo</button>
+            </div>
+            <div class="batch-bar-actions">
+              <button class="batch-act" id="btnBatchEditTags" type="button" disabled>
+                <svg class="ico" aria-hidden="true"><use href="#i-tags"></use></svg>
+                <span data-i18n="batch_edit_tags">Editar etiquetas</span>
+              </button>
+              <button class="batch-act" id="btnBatchAddPlaylist" type="button" disabled>
+                <svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg>
+                <span data-i18n="batch_add_to_playlist">Añadir a lista</span>
+              </button>
+              <button class="batch-act danger" id="btnBatchDelete" type="button" disabled>
+                <svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>
+                <span data-i18n="batch_delete">Eliminar pistas</span>
+              </button>
+              <button class="batch-act" id="btnBatchCancel" type="button" data-close-sheet="sheetLibrary">
+                <svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg>
+                <span data-i18n="batch_cancel">Cancelar selección</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -552,8 +584,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetSearch"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetSearch" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetSearch" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="search_title">Buscar</h3>
             <button class="text-btn" data-close-sheet="sheetSearch" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -578,8 +610,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetMore"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetMore" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetMore" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="options_title">Opciones</h3>
             <button class="text-btn" data-close-sheet="sheetMore" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -637,8 +669,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetThemes"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetThemes" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetThemes" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="themes_title">Temas y acentos</h3>
             <button class="text-btn" data-close-sheet="sheetThemes" data-i18n="done_btn">Listo</button>
           </header>
@@ -678,8 +710,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetHistory"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetHistory" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetHistory" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="history_title">Historial</h3>
             <button class="text-btn" data-close-sheet="sheetHistory" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -694,8 +726,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetStats"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetStats" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetStats" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="stats_title">Estadísticas</h3>
             <button class="text-btn" id="btnShareStats" data-i18n="stats_share_btn">Compartir</button>
             <button class="text-btn" data-close-sheet="sheetStats" data-i18n="close_btn">Cerrar</button>
@@ -711,8 +743,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetFavorites"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetFavorites" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetFavorites" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="favorites_title">Favoritos</h3>
             <button class="text-btn" data-close-sheet="sheetFavorites" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -731,8 +763,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetLanguage"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetLanguage" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetLanguage" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="language_title">Idioma</h3>
             <button class="text-btn" data-close-sheet="sheetLanguage" data-i18n="done_btn">Listo</button>
           </header>
@@ -748,8 +780,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetSettings"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetSettings" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetSettings" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="settings_title">Ajustes</h3>
             <button class="text-btn" data-close-sheet="sheetSettings" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -763,6 +795,11 @@
               <span data-i18n="settings_norm_volume">Normalizar volumen</span>
               <input type="checkbox" id="toggleNormalize" />
             </label>
+            <label class="settings-row" for="chkPreservePitch">
+              <span data-i18n="settings_preserves_pitch">Preservar tono al cambiar velocidad</span>
+              <input type="checkbox" id="chkPreservePitch" checked />
+            </label>
+            <p class="settings-hint" data-i18n="settings_preserves_pitch_hint">Mantiene el tono natural de la voz sin distorsionar el pitch.</p>
             <p class="settings-label" data-i18n="settings_crossfade">Fundido cruzado</p>
             <div class="xfade-opts" id="xfadeOpts">
               <button class="xfade-opt active" type="button" data-xfade="0" data-i18n="settings_crossfade_off">Off</button>
@@ -821,7 +858,7 @@
             <p class="settings-hint" data-i18n="settings_sleep_fade">El temporizador sleep hace un fade-out de 10 s al apagar.</p>
             <h4 class="section-title" data-i18n="settings_about">Acerca de</h4>
             <div class="about-block" id="aboutBlock">
-              <p class="about-line"><span data-i18n="settings_version">Versión</span> <strong id="aboutVersion">1.1.1</strong></p>
+              <p class="about-line"><span data-i18n="settings_version">Versión</span> <strong id="aboutVersion">1.2.0</strong></p>
               <p class="about-line" data-i18n="settings_license">Licencia MIT</p>
               <a class="menu-row" id="aboutSource" href="https://github.com/nelsondev2/Aurora-Music-Player" target="_blank" rel="noopener">
                 <svg class="ico" aria-hidden="true"><use href="#i-arrow-up-right-from-square"></use></svg>
@@ -838,8 +875,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetShortcuts"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetShortcuts" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetShortcuts" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="shortcuts_title">Atajos de teclado</h3>
             <button class="text-btn" data-close-sheet="sheetShortcuts" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -864,8 +901,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetLrcEditor"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetLrcEditor" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetLrcEditor" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="lrc_edit">Editar letra</h3>
             <button class="text-btn" id="btnLrcExport" data-i18n="lrc_export_btn">Compartir</button>
             <button class="text-btn" id="btnLrcSave" data-i18n="lrc_save">Guardar</button>
@@ -899,8 +936,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetBrowse"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetBrowse" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetBrowse" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 id="browseTitle">—</h3>
             <button class="text-btn" id="btnPlayBrowse" data-i18n="play_all_btn">Reproducir Todo</button>
           </header>
@@ -922,8 +959,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetTrackMenu"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetTrackMenu" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetTrackMenu" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="more_options">Más opciones</h3>
             <button class="text-btn" data-close-sheet="sheetTrackMenu" data-i18n="close_btn">Cerrar</button>
           </header>
@@ -984,8 +1021,8 @@
         <div class="sheet-backdrop" data-close-sheet="sheetEditTrack"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
-          <header class="sheet-header">
-            <button class="icon-btn-sm" data-close-sheet="sheetEditTrack" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetEditTrack" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="edit_track_title">Editar pista</h3>
             <button class="text-btn" id="btnSaveEditTrack" data-i18n="lrc_save">Guardar</button>
           </header>
@@ -1007,9 +1044,36 @@
         </div>
       </div>
 
+      <!-- Edición de etiquetas por lote -->
+      <div class="sheet" id="sheetBatchEditTags">
+        <div class="sheet-backdrop" data-close-sheet="sheetBatchEditTags"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetBatchEditTags" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+            <h3 data-i18n="batch_edit_title">Edición por lote</h3>
+            <button class="text-btn" id="btnSaveBatchEditPrimary" data-i18n="lrc_save">Guardar</button>
+          </header>
+          <div class="sheet-body">
+            <p class="sheet-subtitle" id="batchEditSummary"></p>
+            <p class="settings-hint" data-i18n="batch_edit_hint">Los campos que dejes vacíos no se modificarán.</p>
+            <label class="field">
+              <span data-i18n="field_artist">Artista</span>
+              <input type="text" id="batchEditArtist" maxlength="80" />
+            </label>
+            <label class="field">
+              <span data-i18n="field_album">Álbum</span>
+              <input type="text" id="batchEditAlbum" maxlength="80" />
+            </label>
+            <button class="primary-btn" id="btnSaveBatchEdit" data-i18n="lrc_save">Guardar</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Chrome persistente: mini-player + nav -->
-      <div class="app-chrome" id="appChrome">
-        <div class="mini-player" id="miniPlayer" role="button" tabindex="0" data-i18n-aria="now_playing_label" aria-label="Reproduciendo ahora">
+      <div class="app-chrome" id="appChrome" role="complementary" aria-label="Reproductor">
+        <div class="mini-player" id="miniPlayer" role="group" data-i18n-aria="now_playing_label" aria-label="Reproduciendo ahora">
+          <button class="mini-open" id="miniOpen" type="button" data-i18n-aria="now_playing_label" aria-label="Reproduciendo ahora"></button>
           <div class="mini-progress" id="miniProgress"></div>
           <div class="mini-cover"><canvas id="miniPlayerCover" width="80" height="80"></canvas></div>
           <div class="mini-text">
@@ -1057,7 +1121,7 @@
       <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
       <!-- Audio element oculto (sin crossorigin: rompería objectURLs locales) -->
-      <audio id="audioEl" preload="auto"></audio>
+      <audio id="audioEl" preload="auto" aria-hidden="true" tabindex="-1"></audio>
 
     </div>
   </div>

@@ -3848,3 +3848,165 @@ html.aurora-wide .toast {
   min-height: 44px;
   padding: 4px;
 }
+
+/* =====================================================================
+ *  A-B repeat · selección por lote · preservar tono (v1.2.0)
+ * ===================================================================== */
+
+/* Rango A-B sobre la barra de progreso */
+.progress-ab-range {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(var(--accent-rgb), 0.32);
+  border-left: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Botón A-B en controles secundarios */
+.ab-btn { position: relative; }
+.ab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 30px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.ab-btn.active .ab-badge,
+.ab-btn.setting-b .ab-badge {
+  background: rgba(var(--accent-rgb), 0.18);
+  color: var(--accent);
+}
+
+/* Botón «Seleccionar» dentro de la fila de orden de la biblioteca */
+.lib-batch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px dashed var(--border);
+  background: transparent;
+  color: var(--text-2);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.lib-batch-btn .ico { width: 16px; height: 16px; }
+.lib-batch-btn.active {
+  background: var(--accent-fill);
+  border-color: transparent;
+  color: var(--accent-on-fill);
+}
+
+/* Casillas de selección en las filas */
+.row-batch-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  flex: 0 0 auto;
+}
+.batch-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.track-row.selected { background: rgba(var(--accent-rgb), 0.12); }
+.track-row.batch-mode { cursor: pointer; }
+.track-row.batch-mode .row-duration { opacity: 0.4; }
+
+/* Barra de acciones por lote (fija al pie del sheet de biblioteca) */
+.batch-bar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 16px calc(12px + var(--safe-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--blur-bg);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.batch-bar[hidden] { display: none; }
+.batch-bar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.batch-count {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--text-1);
+}
+.batch-bar-actions {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+.batch-bar-actions::-webkit-scrollbar { display: none; }
+.batch-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-1);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.batch-act .ico { width: 16px; height: 16px; }
+.batch-act:active { background: var(--surface-hi); }
+.batch-act:disabled { opacity: 0.45; cursor: not-allowed; }
+.batch-act.danger { color: var(--danger); }
+
+@media (max-width: 360px) {
+  .batch-act span { display: none; }
+  .batch-act { padding: 9px; }
+}
+
+@media (max-width: 380px) {
+  /* 5 controles secundarios (incluye A-B): reducir separación */
+  .controls-secondary { gap: 12px; }
+}
+
+/* Botón invisible que da acceso por teclado al mini-player sin anidar
+ * controles interactivos (axe: nested-interactive). */
+.mini-open {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: inherit;
+  cursor: pointer;
+}
+.mini-open:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.mini-player > .mini-btn,
+.mini-player > .mini-cover,
+.mini-player > .mini-text { position: relative; z-index: 2; }
+.mini-player > .mini-cover,
+.mini-player > .mini-text { pointer-events: none; }

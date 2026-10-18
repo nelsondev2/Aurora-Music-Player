@@ -1,2 +1,9 @@
 # Artefacto de build (se regenera con python3 build-xdc.py)
 aurora-music-player.xdc
+
+# Dependencias y artefactos de prueba
+node_modules/
+coverage/
+.nyc_output/
+*.log
+.DS_Store

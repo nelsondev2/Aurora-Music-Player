@@ -2601,6 +2601,108 @@ const I18N = {
     zh: '确定从曲库中删除选中的 X 首歌曲吗？', ja: '選択した X 曲をライブラリから削除しますか？', fr: 'Supprimer les X morceaux sélectionnés de la bibliothèque ?',
     it: 'Eliminare i X brani selezionati dalla libreria?', ru: 'Удалить выбранные X треков из библиотеки?'
   },
+  batch_updated_toast: {
+    es: 'Etiquetas actualizadas en X pistas', en: 'Tags updated for X tracks', pt: 'Etiquetas atualizadas em X faixas',
+    zh: '已更新 X 首歌曲的标签', ja: 'X 曲のタグを更新しました', fr: 'Tags mis à jour pour X pistes',
+    it: 'Tag aggiornati per X brani', ru: 'Теги обновлены для X треков'
+  },
+  batch_deleted_toast: {
+    es: 'X pistas eliminadas', en: 'X tracks deleted', pt: 'X faixas excluídas',
+    zh: '已删除 X 首歌曲', ja: 'X 曲を削除しました', fr: 'X pistes supprimées',
+    it: 'X brani eliminati', ru: 'Удалено треков: X'
+  },
+  batch_select_all: {
+    es: 'Seleccionar todo', en: 'Select all', pt: 'Selecionar tudo',
+    zh: '全选', ja: 'すべて選択', fr: 'Tout sélectionner', it: 'Seleziona tutto', ru: 'Выбрать всё'
+  },
+  sleep_invalid: {
+    es: 'Introduce un número de minutos válido (1–1440).', en: 'Enter a valid number of minutes (1–1440).',
+    pt: 'Introduza um número de minutos válido (1–1440).', zh: '请输入有效的分钟数（1–1440）。',
+    ja: '有効な分数を入力してください（1–1440）。', fr: 'Saisissez un nombre de minutes valide (1–1440).',
+    it: 'Inserisci un numero di minuti valido (1–1440).', ru: 'Введите корректное число минут (1–1440).'
+  },
+  toast_file_too_large: {
+    es: 'El archivo es demasiado grande (máximo 25 MB).', en: 'File is too large (25 MB max).',
+    pt: 'O ficheiro é demasiado grande (máximo 25 MB).', zh: '文件过大（最大 25 MB）。',
+    ja: 'ファイルが大きすぎます（最大 25 MB）。', fr: 'Fichier trop volumineux (25 Mo max).',
+    it: 'File troppo grande (massimo 25 MB).', ru: 'Файл слишком большой (максимум 25 МБ).'
+  },
+  playlist_name_exists: {
+    es: 'Ya existe una lista con ese nombre.', en: 'A playlist with that name already exists.',
+    pt: 'Já existe uma lista com esse nome.', zh: '已存在同名播放列表。',
+    ja: '同じ名前のプレイリストが既にあります。', fr: 'Une liste portant ce nom existe déjà.',
+    it: 'Esiste già una playlist con questo nome.', ru: 'Плейлист с таким названием уже существует.'
+  },
+  playlist_title: {
+    es: 'Lista', en: 'Playlist', pt: 'Lista', zh: '播放列表',
+    ja: 'プレイリスト', fr: 'Liste', it: 'Playlist', ru: 'Плейлист'
+  },
+  eq_band_label: {
+    es: 'Banda de ecualización X', en: 'Equalizer band X', pt: 'Banda de equalizador X',
+    zh: 'X 均衡器频段', ja: 'イコライザーバンド X', fr: 'Bande d’égalisation X',
+    it: 'Banda di equalizzazione X', ru: 'Полоса эквалайзера X'
+  },
+  lrc_speed_down: {
+    es: 'Bajar velocidad', en: 'Decrease speed', pt: 'Diminuir velocidade',
+    zh: '降低速度', ja: '速度を下げる', fr: 'Réduire la vitesse',
+    it: 'Riduci velocità', ru: 'Уменьшить скорость'
+  },
+  lrc_speed_up: {
+    es: 'Subir velocidad', en: 'Increase speed', pt: 'Aumentar velocidade',
+    zh: '提高速度', ja: '速度を上げる', fr: 'Augmenter la vitesse',
+    it: 'Aumenta velocità', ru: 'Увеличить скорость'
+  },
+  cover_art_aria: {
+    es: 'Portada de X', en: 'Cover art for X', pt: 'Capa de X',
+    zh: 'X 的封面', ja: 'X のカバー', fr: 'Pochette de X', it: 'Copertina di X', ru: 'Обложка X'
+  },
+
+  /* Claves que faltaban y se mostraban como texto crudo en la UI
+   * (auditoría 2026-10). Todas con los 8 idiomas. */
+  delete_multiple_confirm: {
+    es: '¿Eliminar X pistas seleccionadas de la biblioteca?', en: 'Delete X selected tracks from the library?', pt: 'Excluir X faixas selecionadas da biblioteca?',
+    zh: '确定从曲库中删除选中的 X 首歌曲吗？', ja: '選択した X 曲をライブラリから削除しますか？', fr: 'Supprimer les X pistes sélectionnées de la bibliothèque ?',
+    it: 'Eliminare le X tracce selezionate dalla libreria?', ru: 'Удалить выбранные треки (X) из библиотеки?'
+  },
+  unknown_track: {
+    es: 'Pista desconocida', en: 'Unknown track', pt: 'Faixa desconhecida',
+    zh: '未知曲目', ja: '不明な曲', fr: 'Morceau inconnu', it: 'Brano sconosciuto', ru: 'Неизвестный трек'
+  },
+  no_track_playing: {
+    es: 'Sin reproducción', en: 'Nothing playing', pt: 'Nada em reprodução',
+    zh: '没有正在播放的歌曲', ja: '再生中の曲はありません', fr: 'Aucune lecture en cours',
+    it: 'Nessuna riproduzione', ru: 'Ничего не воспроизводится'
+  },
+  progress: {
+    es: 'Progreso', en: 'Progress', pt: 'Progresso',
+    zh: '播放进度', ja: '再生位置', fr: 'Progression', it: 'Avanzamento', ru: 'Прогресс'
+  },
+  back: {
+    es: 'Volver', en: 'Back', pt: 'Voltar',
+    zh: '返回', ja: '戻る', fr: 'Retour', it: 'Indietro', ru: 'Назад'
+  },
+  move: {
+    es: 'Mover', en: 'Move', pt: 'Mover',
+    zh: '移动', ja: '移動', fr: 'Déplacer', it: 'Sposta', ru: 'Переместить'
+  },
+  select_track: {
+    es: 'Seleccionar pista', en: 'Select track', pt: 'Selecionar faixa',
+    zh: '选择歌曲', ja: '曲を選択', fr: 'Sélectionner le morceau', it: 'Seleziona brano', ru: 'Выбрать трек'
+  },
+  toast_playlist_deleted: {
+    es: 'Lista eliminada', en: 'Playlist deleted', pt: 'Lista excluída',
+    zh: '歌单已删除', ja: 'プレイリストを削除しました', fr: 'Liste supprimée', it: 'Playlist eliminata', ru: 'Плейлист удалён'
+  },
+  storage_unavailable: {
+    es: 'El almacenamiento no está disponible; los cambios no se guardarán.',
+    en: 'Storage is unavailable; changes will not be saved.',
+    pt: 'O armazenamento não está disponível; as alterações não serão salvas.',
+    zh: '存储不可用，更改将不会保存。',
+    ja: 'ストレージが利用できないため、変更は保存されません。',
+    fr: 'Le stockage est indisponible ; les modifications ne seront pas enregistrées.',
+    it: 'L’archiviazione non è disponibile; le modifiche non verranno salvate.',
+    ru: 'Хранилище недоступно; изменения не будут сохранены.'
+  },
 
 };
 

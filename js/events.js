@@ -28,6 +28,11 @@ Object.assign(App, {
       $('btnPlayLyrics').addEventListener('click', () => this.togglePlay());
       $('miniPlayerPlay').addEventListener('click', (e) => { e.stopPropagation(); this.togglePlay(); });
       $('miniPlayerNext').addEventListener('click', (e) => { e.stopPropagation(); this.next(); });
+      const miniOpen = document.getElementById('miniOpen');
+      if (miniOpen) miniOpen.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openNowPlaying();
+      });
       const mini = document.getElementById('miniPlayer');
       if (mini) {
         mini.addEventListener('click', (e) => {
@@ -276,6 +281,10 @@ Object.assign(App, {
           this.savePlaybackSettings();
         });
       });
+      const togglePreservePitch = document.getElementById('chkPreservePitch');
+      if (togglePreservePitch) togglePreservePitch.addEventListener('change', () => {
+        this.setPreservesPitch(togglePreservePitch.checked);
+      });
       const toggleMarquee = document.getElementById('toggleMarquee');
       if (toggleMarquee) toggleMarquee.addEventListener('change', () => {
         this._marqueeEnabled = !!toggleMarquee.checked;
@@ -384,15 +393,15 @@ Object.assign(App, {
         this.closeSheet('sheetMore');
         this.openSheet('sheetSleep');
       });
-      $('btnEqualizer').addEventListener('click', () => this.openSheet('sheetEqualizer'));
+      // (El botón suelto de EQ desapareció: ahora se abre desde el menú ···,
+      // ya cableado arriba como #menuEqualizer.)
       document.querySelectorAll('.eq-preset').forEach(b => {
         b.addEventListener('click', () => this.applyEqPreset(b.dataset.preset));
       });
       const btnResetEq = document.getElementById('btnResetEq');
       if (btnResetEq) btnResetEq.addEventListener('click', () => this.resetEqValues());
 
-      // Sleep
-      $('btnSleep').addEventListener('click', () => this.openSheet('sheetSleep'));
+      // Sleep (el acceso es la fila #menuSleep del menú ···, cableada arriba)
       document.querySelectorAll('.sleep-opt').forEach(b => {
         b.addEventListener('click', () => {
           document.querySelectorAll('.sleep-opt').forEach(x => x.classList.remove('active'));
@@ -455,7 +464,8 @@ Object.assign(App, {
         const name = $('playlistName').value.trim();
         const desc = $('playlistDesc').value.trim();
         if (!name) { this.toast(this.t('toast_name_required')); return; }
-        this.createPlaylist(name, desc, ids);
+        const created = this.createPlaylist(name, desc, ids);
+        if (!created) return; // nombre duplicado: createPlaylist ya avisó
         $('playlistName').value = '';
         $('playlistDesc').value = '';
         document.querySelectorAll('.pick-row').forEach(r => r.classList.remove('checked'));
@@ -598,14 +608,9 @@ Object.assign(App, {
       const btnBatchCancel = document.getElementById('btnBatchCancel');
       if (btnBatchCancel) btnBatchCancel.addEventListener('click', () => this.toggleBatchMode(false));
       const btnBatchDel = document.getElementById('btnBatchDelete');
-      if (btnBatchDel) btnBatchDel.addEventListener('click', async () => {
-        if (!this._selectedTrackIds || !this._selectedTrackIds.size) return;
-        const ok = await this.showConfirm({
-          message: this.t('delete_multiple_confirm') ? this.t('delete_multiple_confirm').replace('X', this._selectedTrackIds.size) : '¿Eliminar las pistas seleccionadas?',
-          okLabel: this.t('confirm_delete')
-        });
-        if (ok) this.batchDeleteTracks();
-      });
+      if (btnBatchDel) btnBatchDel.addEventListener('click', () => this.batchDeleteTracks());
+      const btnBatchAddPl = document.getElementById('btnBatchAddPlaylist');
+      if (btnBatchAddPl) btnBatchAddPl.addEventListener('click', () => this.batchAddToPlaylist());
       const btnSaveBatch = document.getElementById('btnSaveBatchEdit');
       if (btnSaveBatch) btnSaveBatch.addEventListener('click', () => this.saveBatchEditTags());
       const btnSaveBatchP = document.getElementById('btnSaveBatchEditPrimary');
@@ -775,6 +780,7 @@ Object.assign(App, {
           const open = document.querySelectorAll('.sheet.open');
           if (open.length) {
             e.preventDefault();
+            // closeSheet() respeta la clase .onboarding (idioma obligatorio).
             this.closeSheet(open[open.length - 1].id);
           }
           return;
@@ -836,10 +842,14 @@ Object.assign(App, {
           if (this._ignoreEndedUntil && Date.now() < this._ignoreEndedUntil) return;
           if (this._gaplessConsumed) { this._gaplessConsumed = false; return; }
           if (this._xfadeIncoming) { this._xfadeIncoming = false; return; }
+          // El crossfade programa un timer 50 ms antes del final. Si `ended`
+          // llega primero, hay que cancelarlo: si no, se saltaban DOS pistas.
+          if (this._xfadeStarted || this._xfadeTimer) this._cancelCrossfade();
           if (this._sleepEndOfTrack) { this._fireSleep(); return; }
           this.next(true);
         };
         this._onAudioError = (e) => {
+          if (this._xfadeStarted || this._xfadeTimer) this._cancelCrossfade();
           const msg = (e && e.message) || (this.audio && this.audio.error && this.audio.error.message) || 'unknown';
           this._lastError = { msg: 'audio error: ' + msg, ts: Date.now() };
           this._decodeSkipCount = (this._decodeSkipCount || 0) + 1;
