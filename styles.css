@@ -3493,6 +3493,15 @@ button,
   margin: 6px 0;
 }
 .about-block a.menu-row { text-decoration: none; color: inherit; }
+/* WebXDC: URL del código fuente como texto (los enlaces externos no abren) */
+.about-source-url {
+  margin: 6px 0 0;
+  font-size: var(--fs-2xs);
+  color: var(--text-2);
+  word-break: break-all;
+  user-select: text;
+  -webkit-user-select: text;
+}
 .menu-row.danger { color: var(--danger, #ef4444); }
 .menu-row.active { color: var(--accent); }
 .settings-hint {

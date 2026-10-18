@@ -1,6 +1,0 @@
-{
-  "name": "Aurora Music Player",
-  "description": "Offline-first music player with synced lyrics, playlists, equalizer and stats.",
-  "requestFramePermissions": [],
-  "majorCapabilities": []
-}
