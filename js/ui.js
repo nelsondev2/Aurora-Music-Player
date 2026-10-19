@@ -210,7 +210,32 @@ Object.assign(App, {
         if (wide && v.dataset.view === 'player') isActive = name !== 'lyrics';
         if (isActive) v.classList.add('active');
         else v.classList.remove('active');
+        // Una vista oculta solo con opacity/pointer-events seguía en el
+        // orden de tabulación y en el árbol de accesibilidad: se podía
+        // enfocar el reproductor desde Letras o al revés. inert la saca
+        // del foco y aria-hidden del árbol; el CSS además la oculta con
+        // visibility (ver .view en styles.css).
+        try {
+          v.inert = !isActive;
+        } catch (e) {
+          if (isActive) v.removeAttribute('inert');
+          else v.setAttribute('inert', '');
+        }
+        v.setAttribute('aria-hidden', isActive ? 'false' : 'true');
       });
+      // Si el foco estaba dentro de la vista que acaba de ocultarse, no
+      // dejarlo en el vacío: moverlo a la navegación visible.
+      const focused = document.activeElement;
+      if (focused && typeof focused.closest === 'function') {
+        const owner = focused.closest('.view');
+        if (owner && !owner.classList.contains('active')) {
+          const fallback = document.querySelector('.bottom-nav .nav-btn.active') ||
+                           document.querySelector('.bottom-nav .nav-btn');
+          if (fallback) {
+            try { fallback.focus({ preventScroll: true }); } catch (e) {}
+          }
+        }
+      }
       // Letras: RAF solo mientras la vista está visible.
       const lyricsOn = name === 'lyrics';
       if (!lyricsOn && this.lrcRafId) {
@@ -463,22 +488,51 @@ Object.assign(App, {
     /* ============================================================
      *  Toast
      * ============================================================ */
+    /* toast(msg, ms) admite:
+     *   - un número de milisegundos,
+     *   - 'danger',
+     *   - un objeto { ms, danger, action: { label, onClick } }.
+     * La acción (p. ej. «Deshacer») añade un botón al propio toast y
+     * mantiene el aviso visible más tiempo para poder pulsarlo. */
     toast(msg, ms = 2400) {
       const t = document.getElementById('toast');
       if (!t) return;
       let danger = false;
+      let action = null;
       if (ms === 'danger') { danger = true; ms = 2400; }
       else if (ms && typeof ms === 'object') {
         danger = !!ms.danger;
-        ms = ms.ms || 2400;
+        action = ms.action || null;
+        ms = ms.ms || (action ? 6000 : 2400);
       }
+      // textContent limpia el botón de una acción anterior; después se
+      // añade el nuevo para no arrastrar listeners viejos.
       t.textContent = msg;
       t.classList.toggle('is-danger', danger);
+      t.classList.toggle('has-action', !!action);
+      if (action && action.label) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'toast-action';
+        btn.textContent = action.label;
+        btn.addEventListener('click', () => {
+          clearTimeout(this._toastTimer);
+          t.classList.remove('show');
+          t.classList.remove('is-danger');
+          t.classList.remove('has-action');
+          try { if (typeof action.onClick === 'function') action.onClick(); } catch (e) {}
+        });
+        t.appendChild(btn);
+      }
+      // Forzar reflow para que el toast reaparezca aunque ya estuviera
+      // visible con el mismo mensaje (dos borrados seguidos).
+      void t.offsetWidth;
       t.classList.add('show');
       clearTimeout(this._toastTimer);
       this._toastTimer = setTimeout(() => {
         t.classList.remove('show');
         t.classList.remove('is-danger');
+        t.classList.remove('has-action');
       }, ms);
     },
 
@@ -489,5 +543,25 @@ Object.assign(App, {
       return String(s).replace(/[&<>"']/g, m => ({
         '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
       }[m]));
+    },
+
+    /* Markup único de estado vacío. Antes cada lista inventaba el suyo
+     * (texto plano, <li> suelto, párrafo…): ahora todos usan el mismo
+     * icono, titular, explicación y CTA opcional que la bienvenida de
+     * Inicio. Los textos se escapan siempre. */
+    emptyStateHtml(opts = {}) {
+      const icon = opts.icon || 'music';
+      const title = opts.title ? `<h4>${this.esc(opts.title)}</h4>` : '';
+      const text = opts.text ? `<p>${this.esc(opts.text)}</p>` : '';
+      let ctaHtml = '';
+      if (opts.cta && opts.cta.label) {
+        const id = opts.cta.id ? ` id="${this.esc(opts.cta.id)}"` : '';
+        const ctaIcon = opts.cta.icon || 'plus';
+        ctaHtml = `<button class="primary-btn empty-cta" type="button"${id}>
+          <svg class="ico" aria-hidden="true"><use href="#i-${this.esc(ctaIcon)}"></use></svg>
+          <span>${this.esc(opts.cta.label)}</span>
+        </button>`;
+      }
+      return `<div class="empty-icon"><svg class="ico" aria-hidden="true"><use href="#i-${this.esc(icon)}"></use></svg></div>${title}${text}${ctaHtml}${opts.extra || ''}`;
     },
 });

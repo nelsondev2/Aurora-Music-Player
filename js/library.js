@@ -1024,15 +1024,36 @@ Object.assign(App, {
       const idx = this.tracks.findIndex(t => t.id === trackId);
       if (idx < 0) return;
       const wasCurrent = this.currentTrack && this.currentTrack.id === trackId;
-      // Liberar objectURL (la del track y la que pueda haber en la cache #15)
       const t = this.tracks[idx];
-      const cachedUrl = this._urlCache.get(trackId);
-      if (cachedUrl) {
-        try { URL.revokeObjectURL(cachedUrl); } catch (e) {}
-        this._urlCache.delete(trackId);
-      }
-      if (t.src && t.src.startsWith('blob:') && t.src !== cachedUrl) {
-        URL.revokeObjectURL(t.src);
+      const cachedUrl = this._urlCache.get(trackId) || null;
+      // El borrado de una pista se puede deshacer durante 8 s: mientras
+      // tanto NO se revoca el objectURL ni se toca IndexedDB. Así el audio
+      // sigue disponible si el usuario pulsa «Deshacer». Al vencer el
+      // plazo (o al borrar otra pista) se confirma el borrado real.
+      const canUndo = opts.undo !== false;
+      if (canUndo) {
+        // Si había otro borrado pendiente, confirmarlo antes de abrir uno
+        // nuevo: solo se puede deshacer el último.
+        if (typeof this._commitPendingTrackDelete === 'function') this._commitPendingTrackDelete();
+        this._pendingTrackDelete = {
+          track: t,
+          idx,
+          wasCurrent,
+          cachedUrl,
+          favorite: this.favorites.has(trackId),
+          playlistIds: this.playlists.filter(pl => pl.trackIds.indexOf(trackId) >= 0).map(pl => pl.id),
+          timer: null
+        };
+      } else {
+        // Borrado definitivo (lote, «borrar todo»): liberar ya.
+        if (cachedUrl) {
+          try { URL.revokeObjectURL(cachedUrl); } catch (e) {}
+          this._urlCache.delete(trackId);
+        }
+        if (t.src && t.src.startsWith('blob:') && t.src !== cachedUrl) {
+          try { URL.revokeObjectURL(t.src); } catch (e) {}
+        }
+        this.deleteTrackFromStorage(trackId);
       }
       // Limpiar también la cache de ganancia normalizada (#6)
       this._trackGainCache.delete(trackId);
@@ -1060,8 +1081,6 @@ Object.assign(App, {
       // Quitar de favoritos
       this.favorites.delete(trackId);
       this.saveFavorites();
-      // Eliminar de IndexedDB
-      await this.deleteTrackFromStorage(trackId);
       if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
 
       if (wasCurrent) {
@@ -1076,7 +1095,72 @@ Object.assign(App, {
       this.renderFavorites();
       if (typeof this.renderHome === 'function') this.renderHome();
       if (typeof this.updateChrome === 'function') this.updateChrome();
-      this.toast(this.t('toast_track_deleted'), 'danger');
+      if (canUndo) {
+        const pending = this._pendingTrackDelete;
+        pending.timer = setTimeout(() => this._commitPendingTrackDelete(pending), 8000);
+        this.toast(this.t('toast_track_deleted'), {
+          danger: true,
+          ms: 8000,
+          action: { label: this.t('undo'), onClick: () => this._undoDeleteTrack(pending) }
+        });
+      } else {
+        this.toast(this.t('toast_track_deleted'), 'danger');
+      }
+    },
+
+    /* Confirma (irreversible) el borrado pendiente de una pista. */
+    _commitPendingTrackDelete(pending) {
+      const p = pending || this._pendingTrackDelete;
+      if (!p || p.committed) return;
+      // Marca definitiva: si el usuario pulsa «Deshacer» después de que
+      // venza el plazo, no se resucita una pista ya borrada de IndexedDB.
+      p.committed = true;
+      clearTimeout(p.timer);
+      if (this._pendingTrackDelete === p) this._pendingTrackDelete = null;
+      try { if (p.cachedUrl) URL.revokeObjectURL(p.cachedUrl); } catch (e) {}
+      try {
+        if (p.track && p.track.src && p.track.src.startsWith('blob:') && p.track.src !== p.cachedUrl) {
+          URL.revokeObjectURL(p.track.src);
+        }
+      } catch (e) {}
+      this._urlCache.delete(p.track.id);
+      this.deleteTrackFromStorage(p.track.id);
+    },
+
+    /* Deshace el borrado: devuelve la pista a la biblioteca, a sus listas
+     * y a favoritos, en la misma posición que ocupaba. */
+    _undoDeleteTrack(pending) {
+      const p = pending || this._pendingTrackDelete;
+      if (!p || !p.track || p.committed) return;
+      // Si hay otro borrado pendiente distinto, este ya se confirmó.
+      if (this._pendingTrackDelete && this._pendingTrackDelete !== p) return;
+      clearTimeout(p.timer);
+      if (this._pendingTrackDelete === p) this._pendingTrackDelete = null;
+      const t = p.track;
+      const at = Math.max(0, Math.min(p.idx, this.tracks.length));
+      this.tracks.splice(at, 0, t);
+      this.invalidateTrackIndex();
+      this.syncLibCountMarker();
+      p.playlistIds.forEach(plId => {
+        const pl = this.playlists.find(x => x.id === plId);
+        if (pl && pl.trackIds.indexOf(t.id) < 0) {
+          pl.trackIds.push(t.id);
+          if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
+          this.persistPlaylist(pl);
+        }
+      });
+      if (p.favorite) {
+        this.favorites.add(t.id);
+        this.saveFavorites();
+      }
+      if (this.currentTrack && this.currentTrack.id === t.id) this.updateFavoriteUI();
+      this.renderLibrary();
+      this.renderPlaylists();
+      this.renderQueue();
+      this.renderFavorites();
+      if (typeof this.renderHome === 'function') this.renderHome();
+      if (typeof this.updateChrome === 'function') this.updateChrome();
+      this.toast(this.t('toast_restored'));
     },
 
     /* ============================================================
@@ -1092,6 +1176,9 @@ Object.assign(App, {
         okLabel: this.t('confirm_delete')
       });
       if (!okAll) return;
+      // Un borrado individual pendiente de deshacer quedaría vivo después
+      // de vaciar la biblioteca: confirmarlo antes de borrar todo.
+      if (typeof this._commitPendingTrackDelete === 'function') this._commitPendingTrackDelete();
 
       // 1. Detener reproducción si la hay
       if (this.isPlaying) this.stopPlayback();

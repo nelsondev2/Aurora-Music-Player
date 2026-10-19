@@ -133,7 +133,7 @@ Object.assign(App, {
         li.dataset.trackId = id;
         li.dataset.idx = String(i);
         li.innerHTML = `
-          <button class="drag-handle" type="button" aria-label="Mover"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
+          <button class="drag-handle" type="button" aria-label="${this.esc(this.t('move'))}"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
@@ -285,6 +285,8 @@ Object.assign(App, {
         okLabel: this.t('confirm_delete')
       });
       if (!ok) return;
+      // Guardamos el orden exacto para poder deshacer.
+      const previousIds = pl.trackIds.slice();
       pl.trackIds = [];
       this._invalidatePlaylistCover(pl);
       this.persistPlaylist(pl);
@@ -300,13 +302,35 @@ Object.assign(App, {
             setTimeout(() => item.remove(), 200);
           }, i * 20);
         });
-        // Mostrar mensaje de vacío después
+        // Mostrar estado vacío coherente después (mismo componente que
+        // Biblioteca/Favoritos, en su variante compacta).
         setTimeout(() => {
-          ul.innerHTML = '<li class="track-row" style="justify-content:center;color:var(--text-3);font-size:13px;padding:24px">' + this.t('no_tracks_in_playlist') + '</li>';
+          ul.innerHTML = '';
+          const li = document.createElement('li');
+          li.className = 'empty-state compact';
+          li.innerHTML = this.emptyStateHtml({
+            icon: 'list-ul',
+            title: this.t('no_tracks_in_playlist')
+          });
+          ul.appendChild(li);
         }, 300);
       }
       this._updatePlaylistMeta(pl);
-      this.toast(this.t('toast_playlist_cleared'));
+      this.toast(this.t('toast_playlist_cleared'), {
+        ms: 6500,
+        action: {
+          label: this.t('undo'),
+          onClick: () => {
+            pl.trackIds = previousIds.slice();
+            this._invalidatePlaylistCover(pl);
+            this.persistPlaylist(pl);
+            this.renderEditPlaylist();
+            this.renderPlaylists();
+            this._updatePlaylistMeta(pl);
+            this.toast(this.t('toast_restored'));
+          }
+        }
+      });
     },
 
     createPlaylist(name, desc, trackIds) {

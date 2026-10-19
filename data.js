@@ -957,6 +957,18 @@ const I18N = {
   theme_dark: { es: 'Oscuro', en: 'Dark', pt: 'Escuro', zh: '深色', ja: 'ダーク', fr: 'Sombre', it: 'Scuro', ru: 'Тёмная' },
   theme_light: { es: 'Claro', en: 'Light', pt: 'Claro', zh: '浅色', ja: 'ライト', fr: 'Clair', it: 'Chiaro', ru: 'Светлая' },
   theme_amoled: { es: 'AMOLED', en: 'AMOLED', pt: 'AMOLED', zh: 'AMOLED', ja: 'AMOLED', fr: 'AMOLED', it: 'AMOLED', ru: 'AMOLED' },
+  // Tema que sigue la preferencia del sistema (claro/oscuro). Se resuelve
+  // en applyTheme() y se escucha el cambio con matchMedia.
+  theme_system: { es: 'Sistema', en: 'System', pt: 'Sistema', zh: '跟随系统', ja: 'システム', fr: 'Système', it: 'Sistema', ru: 'Системная' },
+  // Acción de deshacer en el toast (borrados con posibilidad de recuperar).
+  undo: { es: 'Deshacer', en: 'Undo', pt: 'Desfazer', zh: '撤销', ja: '元に戻す', fr: 'Annuler', it: 'Annulla', ru: 'Отменить' },
+  toast_restored: { es: 'Restaurado', en: 'Restored', pt: 'Restaurado', zh: '已恢复', ja: '復元しました', fr: 'Restauré', it: 'Ripristinato', ru: 'Восстановлено' },
+  // Etiquetas que estaban fijas en español en el marcado (aria-label).
+  back_btn: { es: 'Volver', en: 'Back', pt: 'Voltar', zh: '返回', ja: '戻る', fr: 'Retour', it: 'Indietro', ru: 'Назад' },
+  view_player: { es: 'Reproductor', en: 'Player', pt: 'Reprodutor', zh: '播放器', ja: 'プレーヤー', fr: 'Lecteur', it: 'Lettore', ru: 'Плеер' },
+  exit_fs: { es: 'Salir de pantalla completa', en: 'Exit full screen', pt: 'Sair da tela cheia', zh: '退出全屏', ja: '全画面表示を終了', fr: 'Quitter le plein écran', it: 'Esci da schermo intero', ru: 'Выйти из полноэкранного режима' },
+  remove: { es: 'Quitar', en: 'Remove', pt: 'Remover', zh: '移除', ja: '削除', fr: 'Retirer', it: 'Rimuovi', ru: 'Убрать' },
+  favorites_empty_title: { es: 'Aún no hay favoritos', en: 'No favorites yet', pt: 'Ainda não há favoritos', zh: '还没有收藏', ja: 'お気に入りはまだありません', fr: 'Pas encore de favoris', it: 'Ancora nessun preferito', ru: 'Пока нет избранного' },
   accent_aurora: { es: 'Aurora', en: 'Aurora', pt: 'Aurora', zh: '极光', ja: 'オーロラ', fr: 'Aurore', it: 'Aurora', ru: 'Сияние' },
   accent_ocean: { es: 'Océano', en: 'Ocean', pt: 'Oceano', zh: '海洋', ja: 'オーシャン', fr: 'Océan', it: 'Oceano', ru: 'Океан' },
   accent_moss: { es: 'Musgo', en: 'Moss', pt: 'Musgo', zh: '苔绿', ja: 'モス', fr: 'Mousse', it: 'Muschio', ru: 'Мох' },

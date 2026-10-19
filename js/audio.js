@@ -899,13 +899,21 @@ Object.assign(App, {
 
     toggleFavorite() {
       if (!this.currentTrack) return;
-      const id = this.currentTrack.id;
-      if (this.favorites.has(id)) this.favorites.delete(id);
-      else this.favorites.add(id);
+      this.toggleFavoriteFor(this.currentTrack.id);
+    },
+
+    /* Alterna el favorito de CUALQUIER pista (no solo la que suena).
+     * Lo usa el menú de pista, porque antes la única forma de marcar una
+     * canción era abrirla en el reproductor y pulsar el corazón. */
+    toggleFavoriteFor(trackId) {
+      const t = this.tracks.find(x => x.id === trackId);
+      if (!t) return;
+      if (this.favorites.has(trackId)) this.favorites.delete(trackId);
+      else this.favorites.add(trackId);
       this.saveFavorites();
-      this.updateFavoriteUI();
+      if (this.currentTrack && this.currentTrack.id === trackId) this.updateFavoriteUI();
       if (typeof this.renderFavorites === 'function') this.renderFavorites();
-      this.toast(this.favorites.has(id) ? this.t('toast_added_fav') : this.t('toast_removed_fav'));
+      this.toast(this.favorites.has(trackId) ? this.t('toast_added_fav') : this.t('toast_removed_fav'));
     },
 
     updateFavoriteUI() {

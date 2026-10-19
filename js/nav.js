@@ -503,6 +503,18 @@ Object.assign(App, {
       if (goAlbum) goAlbum.style.display = (t.album && !this.isPlaceholderAlbum(t.album)) ? '' : 'none';
       const goArtist = document.getElementById('ctxGoArtist');
       if (goArtist) goArtist.style.display = (t.artist && !this.isPlaceholderArtist(t.artist)) ? '' : 'none';
+      // La fila de favorito refleja el estado real de esta pista (el menú
+      // se reutiliza: no puede quedarse con el estado de la anterior).
+      const favRow = document.getElementById('ctxToggleFavorite');
+      const favLabel = document.getElementById('ctxFavoriteLabel');
+      const isFav = this.favorites.has(trackId);
+      if (favRow) {
+        favRow.setAttribute('aria-pressed', isFav ? 'true' : 'false');
+        favRow.classList.toggle('is-fav', isFav);
+        const use = favRow.querySelector('use');
+        if (use) use.setAttribute('href', isFav ? '#i-heart-solid' : '#i-heart');
+      }
+      if (favLabel) favLabel.textContent = this.t('favorite');
       this.openSheet('sheetTrackMenu');
     },
 
@@ -688,7 +700,7 @@ Object.assign(App, {
       if (!ok) return;
       const ids = Array.from(this._selectedTrackIds);
       for (const id of ids) {
-        await this.deleteTrack(id, { silent: true });
+        await this.deleteTrack(id, { silent: true, undo: false });
       }
       this.toggleBatchMode(false);
       this.renderLibrary();

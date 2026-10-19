@@ -79,6 +79,10 @@
     <symbol id="i-expand" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></symbol>
     <symbol id="i-font" viewBox="0 0 24 24"><path fill="currentColor" d="m6 19 6-14 6 14h-2.3l-1.2-3H9.5L8.3 19H6zm4.3-5h3.4L12 8.7 10.3 14z"/></symbol>
     <symbol id="i-grip" viewBox="0 0 24 24"><path fill="currentColor" d="M8 7.5A1.5 1.5 0 1 1 8 4.5 1.5 1.5 0 0 1 8 7.5zm8 0A1.5 1.5 0 1 1 16 4.5 1.5 1.5 0 0 1 16 7.5zM8 13.5A1.5 1.5 0 1 1 8 10.5 1.5 1.5 0 0 1 8 13.5zm8 0A1.5 1.5 0 1 1 16 10.5 1.5 1.5 0 0 1 16 13.5zM8 19.5A1.5 1.5 0 1 1 8 16.5 1.5 1.5 0 0 1 8 19.5zm8 0A1.5 1.5 0 1 1 16 16.5 1.5 1.5 0 0 1 16 19.5z"/></symbol>
+    <!-- Icono propio de Biblioteca: tres libros en un estante. Antes la
+         pestaña usaba #i-grip (un asa de arrastre) y parecía un control
+         para reordenar, no una sección de la app. -->
+    <symbol id="i-library" viewBox="0 0 24 24"><path fill="currentColor" d="M3 4.5A1.5 1.5 0 0 1 4.5 3H6v18H4.5A1.5 1.5 0 0 1 3 19.5v-15zm4.5-1.5h2v18h-2V3zm4.2.9a1 1 0 0 1 .9-.8l1.8-.3a1 1 0 0 1 1.1.8L18 18.3l-1.9.3L11.7 3.9zM19 3h1.5A1.5 1.5 0 0 1 22 4.5v15a1.5 1.5 0 0 1-1.5 1.5H19V3z"/></symbol>
     <symbol id="i-grip-vertical" viewBox="0 0 24 24"><path fill="currentColor" d="M9 7.5A1.5 1.5 0 1 1 9 4.5 1.5 1.5 0 0 1 9 7.5zm6 0A1.5 1.5 0 1 1 15 4.5 1.5 1.5 0 0 1 15 7.5zM9 13.5A1.5 1.5 0 1 1 9 10.5 1.5 1.5 0 0 1 9 13.5zm6 0A1.5 1.5 0 1 1 15 10.5 1.5 1.5 0 0 1 15 13.5zM9 19.5A1.5 1.5 0 1 1 9 16.5 1.5 1.5 0 0 1 9 19.5zm6 0A1.5 1.5 0 1 1 15 16.5 1.5 1.5 0 0 1 15 19.5z"/></symbol>
     <symbol id="i-lock" viewBox="0 0 24 24"><path fill="currentColor" d="M8 10V7a4 4 0 1 1 8 0v3h1.5A1.5 1.5 0 0 1 19 11.5v8A1.5 1.5 0 0 1 17.5 21h-11A1.5 1.5 0 0 1 5 19.5v-8A1.5 1.5 0 0 1 6.5 10H8zm2 0h4V7a2 2 0 1 0-4 0v3z"/></symbol>
     <symbol id="i-tower-broadcast" viewBox="0 0 24 24"><path fill="currentColor" d="M11 3h2v18h-2V3zm-6.5 5.5 1.4 1.4A7 7 0 0 1 5 12a7 7 0 0 1 .9 2.1L4.5 15.5A9 9 0 0 1 3 12a9 9 0 0 1 1.5-3.5zm13.6 0A9 9 0 0 1 21 12a9 9 0 0 1-1.5 3.5l-1.4-1.4A7 7 0 0 0 19 12a7 7 0 0 0-.9-2.1l1.4-1.4zM8.1 10.1 9.5 11.5A3 3 0 0 1 9 12a3 3 0 0 1 .5.5L8.1 13.9A5 5 0 0 1 7 12a5 5 0 0 1 1.1-1.9zm7.8 0A5 5 0 0 1 17 12a5 5 0 0 1-1.1 1.9l-1.4-1.4A3 3 0 0 0 15 12a3 3 0 0 0-.5-.5l1.4-1.4z"/></symbol>
@@ -90,7 +94,7 @@
     <div class="device-screen" id="deviceScreen" role="main" aria-label="Aurora Music Player">
 
       <!-- ============== PANTALLA: REPRODUCTOR ============== -->
-      <section class="view view-player" id="viewPlayer" data-view="player" aria-label="Reproductor">
+      <section class="view view-player" id="viewPlayer" data-view="player" data-i18n-aria="view_player" aria-label="Reproductor">
 
         <!-- Fondo dinámico con los colores de la portada -->
         <div class="bg-blur" id="bgBlur">
@@ -212,15 +216,23 @@
 
 
       <!-- ============== PANTALLA: INICIO ============== -->
-      <section class="view view-home active" id="viewHome" data-view="home" aria-label="Inicio">
+      <section class="view view-home active" id="viewHome" data-view="home" data-i18n-aria="nav_home" aria-label="Inicio">
         <header class="home-header">
           <div>
             <p class="home-kicker-static" data-i18n="app_title">Aurora</p>
             <h1 data-i18n="nav_home">Inicio</h1>
           </div>
-          <button class="icon-btn icon-add" id="btnHomeAdd" data-i18n-aria="load_music" aria-label="Cargar música">
-            <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
-          </button>
+          <div class="home-header-actions">
+            <!-- Ajustes siempre a mano. Antes solo se llegaba desde el menú
+                 «Más opciones» del reproductor, inalcanzable sin una pista
+                 cargada (instalación nueva): la app quedaba sin ajustes. -->
+            <button class="icon-btn" id="btnHomeSettings" data-i18n-aria="settings_title" aria-label="Ajustes">
+              <svg class="ico" aria-hidden="true"><use href="#i-gear"></use></svg>
+            </button>
+            <button class="icon-btn icon-add" id="btnHomeAdd" data-i18n-aria="load_music" aria-label="Cargar música">
+              <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
+            </button>
+          </div>
         </header>
         <div class="home-scroll" id="homeContent"></div>
       </section>
@@ -232,7 +244,7 @@
         </div>
 
         <header class="top-bar lyrics-top-bar">
-          <button class="icon-btn" id="btnBackFromLyrics" aria-label="Volver">
+          <button class="icon-btn" id="btnBackFromLyrics" data-i18n-aria="back_btn" aria-label="Volver">
             <svg class="ico" aria-hidden="true"><use href="#i-chevron-down"></use></svg>
           </button>
           <div class="top-bar-title">
@@ -278,7 +290,7 @@
         </div>
 
         <!-- Botón salir de pantalla completa -->
-        <button class="icon-btn lyrics-exit-fs" id="btnLrcExitFs" aria-label="Salir"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+        <button class="icon-btn lyrics-exit-fs" id="btnLrcExitFs" data-i18n-aria="exit_fs" aria-label="Salir de pantalla completa"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
 
         <!-- Mini portada + info -->
         <section class="lyrics-mini" id="lyricsMini">
@@ -570,6 +582,19 @@
                   <span data-i18n="delete_all_btn">Borrar todo</span>
                 </button>
               </div>
+              <!-- Reproducir toda la sección con el orden visible y barajar
+                   de verdad. En fila propia para no apretar la cabecera en
+                   pantallas de 320 px. -->
+              <div class="lib-song-actions" id="libSongActions">
+                <button class="text-btn" id="btnLibPlayAll" type="button" data-i18n-aria="play_all_btn" aria-label="Reproducir todo">
+                  <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
+                  <span data-i18n="play_all_btn">Reproducir Todo</span>
+                </button>
+                <button class="text-btn" id="btnLibShuffle" type="button" data-i18n-aria="shuffle" aria-label="Aleatorio">
+                  <svg class="ico" aria-hidden="true"><use href="#i-shuffle"></use></svg>
+                  <span data-i18n="shuffle">Aleatorio</span>
+                </button>
+              </div>
               <div class="lib-sort-row" id="libSortRow">
                 <button class="lib-sort active" type="button" data-sort="title" data-i18n="lib_sort_title">Título</button>
                 <button class="lib-sort" type="button" data-sort="artist" data-i18n="lib_sort_artist">Artista</button>
@@ -719,6 +744,10 @@
               <button class="theme-opt" data-theme="amoled">
                 <div class="theme-preview theme-amoled"><div class="tp-bar"></div><div class="tp-circle"></div></div>
                 <span data-i18n="theme_amoled">AMOLED</span>
+              </button>
+              <button class="theme-opt" data-theme="system">
+                <div class="theme-preview theme-system"><div class="tp-bar"></div><div class="tp-circle"></div></div>
+                <span data-i18n="theme_system">Sistema</span>
               </button>
             </div>
 
@@ -1010,6 +1039,10 @@
               <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
               <span data-i18n="ctx_play_now">Reproducir ahora</span>
             </button>
+            <button class="menu-row" id="ctxToggleFavorite" aria-pressed="false">
+              <svg class="ico" aria-hidden="true"><use href="#i-heart"></use></svg>
+              <span id="ctxFavoriteLabel" data-i18n="favorite">Favorito</span>
+            </button>
             <button class="menu-row" id="ctxPlayNext">
               <svg class="ico" aria-hidden="true"><use href="#i-forward"></use></svg>
               <span data-i18n="ctx_play_next">Reproducir siguiente</span>
@@ -1105,7 +1138,7 @@
       </div>
 
       <!-- Chrome persistente: mini-player + nav -->
-      <div class="app-chrome" id="appChrome" role="complementary" aria-label="Reproductor">
+      <div class="app-chrome" id="appChrome" role="complementary" data-i18n-aria="view_player" aria-label="Reproductor">
         <div class="mini-player" id="miniPlayer" role="group" data-i18n-aria="now_playing_label" aria-label="Reproduciendo ahora">
           <button class="mini-open" id="miniOpen" type="button" data-i18n-aria="now_playing_label" aria-label="Reproduciendo ahora"></button>
           <div class="mini-progress" id="miniProgress"></div>
@@ -1136,7 +1169,7 @@
             <span data-i18n="nav_search">Buscar</span>
           </button>
           <button class="nav-btn" data-nav="library">
-            <svg class="ico" aria-hidden="true"><use href="#i-grip"></use></svg>
+            <svg class="ico" aria-hidden="true"><use href="#i-library"></use></svg>
             <span data-i18n="nav_library">Biblioteca</span>
           </button>
         </nav>

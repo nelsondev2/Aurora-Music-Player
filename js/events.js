@@ -48,6 +48,9 @@ Object.assign(App, {
       }
       const btnHomeAdd = document.getElementById('btnHomeAdd');
       if (btnHomeAdd) btnHomeAdd.addEventListener('click', () => this.openFilePicker());
+      // Ajustes desde Inicio: no depende de tener una pista cargada.
+      const btnHomeSettings = document.getElementById('btnHomeSettings');
+      if (btnHomeSettings) btnHomeSettings.addEventListener('click', () => this.openSheet('sheetSettings'));
       const coverArt = document.getElementById('coverArt');
       if (coverArt) {
         let cvX = 0, cvY = 0, cvVol = 1, mode = null, lpTimer = null, pid = null;
@@ -514,9 +517,24 @@ Object.assign(App, {
         b.addEventListener('click', () => this.setLibrarySort(b.dataset.sort));
       });
 
+      // Acciones de la sección Todas las canciones. «Aleatorio» activa el
+      // modo shuffle real de la cola (playLibraryTracks(true)).
+      const btnLibPlayAll = document.getElementById('btnLibPlayAll');
+      if (btnLibPlayAll) btnLibPlayAll.addEventListener('click', () => this.playLibraryTracks(false));
+      const btnLibShuffle = document.getElementById('btnLibShuffle');
+      if (btnLibShuffle) btnLibShuffle.addEventListener('click', () => this.playLibraryTracks(true));
+
       const btnPlayBrowse = document.getElementById('btnPlayBrowse');
       if (btnPlayBrowse) btnPlayBrowse.addEventListener('click', () => this.playBrowse());
 
+      // Favorito desde el menú de pista: funciona sin abrir el reproductor
+      // y para cualquier pista, no solo la que está sonando.
+      const ctxFav = document.getElementById('ctxToggleFavorite');
+      if (ctxFav) ctxFav.addEventListener('click', () => {
+        const t = this.menuTrack();
+        this.closeSheet('sheetTrackMenu');
+        if (t) this.toggleFavoriteFor(t.id);
+      });
       const ctxPlayNow = document.getElementById('ctxPlayNow');
       if (ctxPlayNow) ctxPlayNow.addEventListener('click', () => {
         const t = this.menuTrack();

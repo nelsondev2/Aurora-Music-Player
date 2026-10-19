@@ -252,12 +252,16 @@ Object.assign(App, {
      *  Temas personalizables (#11)
      * ============================================================ */
     THEMES: {
+      // «Sistema» no tiene paleta propia: applyTheme() resuelve la
+      // preferencia real con prefers-color-scheme y usa dark o light.
+      // Tener la clave aquí permite guardarla y validarla como el resto.
+      system: { system: true },
       dark: {
         bg0: '#050509', bg1: '#0a0a12', bg2: '#14141f', bg3: '#1d1d2b',
         text1: '#ffffff',
         text2: 'rgba(255,255,255,0.72)',
         text3: 'rgba(255,255,255,0.48)',
-        text4: 'rgba(255,255,255,0.30)',
+        text4: 'rgba(255,255,255,0.36)',
         surface: 'rgba(255,255,255,0.05)',
         surface2: 'rgba(255,255,255,0.08)',
         surfaceHi: 'rgba(255,255,255,0.12)',
@@ -287,7 +291,7 @@ Object.assign(App, {
         text1: '#ffffff',
         text2: 'rgba(255,255,255,0.72)',
         text3: 'rgba(255,255,255,0.50)',
-        text4: 'rgba(255,255,255,0.34)',
+        text4: 'rgba(255,255,255,0.40)',
         surface: 'rgba(255,255,255,0.06)',
         surface2: 'rgba(255,255,255,0.09)',
         surfaceHi: 'rgba(255,255,255,0.14)',
@@ -298,12 +302,20 @@ Object.assign(App, {
         danger: '#E85A5A'
       }
     },
+    /* Rellenos (fill/fill2) deliberadamente oscuros: sobre ellos va texto
+     * e iconos BLANCOS (--accent-on-fill). Un degradado con el extremo
+     * claro de antes (rosa, turquesa, amarillo) dejaba el texto en 1.6–2.4:1.
+     * Ahora ambos extremos cumplen AA (≥4.5:1 con blanco) en los 5 acentos.
+     * Los tonos brillantes siguen en from/to/accent/accent2, que se usan
+     * como color de texto sobre fondo oscuro o en portadas (sin texto).
+     * fillLight/fillLight2 se usan en tema claro y también cumplen AA
+     * sobre --bg-0/bg-1 claros. */
     ACCENTS: {
-      aurora: { from: '#6E5CFF', to: '#FF7AB6', accent: '#8B7CFF', accent2: '#FF7AB6', fill: '#6B5AE8', fillLight: '#5344C9' },
-      ocean:  { from: '#1A6A88', to: '#3EC8B8', accent: '#3AA8C0', accent2: '#5ED4C4', fill: '#1F7A92', fillLight: '#186878' },
-      moss:   { from: '#2A6B48', to: '#A8C86A', accent: '#5A9A68', accent2: '#B4D07A', fill: '#3D7A52', fillLight: '#2F6844' },
-      amber:  { from: '#C45C18', to: '#E8B84A', accent: '#E09438', accent2: '#F0C46A', fill: '#C87820', fillLight: '#A86218' },
-      cherry: { from: '#A61B3A', to: '#E85A7A', accent: '#D44A68', accent2: '#F090A0', fill: '#B83852', fillLight: '#9A2E44' }
+      aurora: { from: '#6E5CFF', to: '#FF7AB6', accent: '#8B7CFF', accent2: '#FF7AB6', fill: '#5B49D6', fill2: '#4A3BBF', fillLight: '#4E3FC8', fillLight2: '#3E32A8' },
+      ocean:  { from: '#1A6A88', to: '#3EC8B8', accent: '#3AA8C0', accent2: '#5ED4C4', fill: '#1A6B80', fill2: '#146173', fillLight: '#146173', fillLight2: '#0F5867' },
+      moss:   { from: '#2A6B48', to: '#A8C86A', accent: '#5A9A68', accent2: '#B4D07A', fill: '#2F6844', fill2: '#2A5C3B', fillLight: '#2A5C3B', fillLight2: '#24502F' },
+      amber:  { from: '#C45C18', to: '#E8B84A', accent: '#E09438', accent2: '#F0C46A', fill: '#A86218', fill2: '#8A4E0E', fillLight: '#91520F', fillLight2: '#7A440C' },
+      cherry: { from: '#A61B3A', to: '#E85A7A', accent: '#D44A68', accent2: '#F090A0', fill: '#B83852', fill2: '#99243D', fillLight: '#9A2E44', fillLight2: '#8E2036' }
     },
     _ACCENT_ALIASES: { purple: 'aurora', blue: 'ocean', green: 'moss', orange: 'amber', pink: 'cherry' },
 
@@ -334,17 +346,52 @@ Object.assign(App, {
         this.theme = 'dark';
         this.accent = 'aurora';
       }
+      this._bindSystemThemeListener();
       this.applyTheme();
+    },
+
+    /* Devuelve el tema real que se pinta. «system» se resuelve con la
+     * preferencia del sistema en cada momento (no se congela al cargar). */
+    resolveTheme(pref) {
+      const p = pref || this.theme || 'dark';
+      if (p !== 'system') return this.THEMES[p] ? p : 'dark';
+      let prefersLight = false;
+      try {
+        prefersLight = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+      } catch (e) {}
+      return prefersLight ? 'light' : 'dark';
+    },
+
+    /* Escucha el cambio de tema del sistema para repintar si el usuario
+     * eligió «Sistema». Se registra una sola vez. */
+    _bindSystemThemeListener() {
+      if (this._systemThemeMq) return;
+      try {
+        if (!window.matchMedia) return;
+        const mq = window.matchMedia('(prefers-color-scheme: light)');
+        if (!mq || typeof mq.addEventListener !== 'function') return;
+        this._systemThemeMq = mq;
+        mq.addEventListener('change', () => {
+          if (this.theme === 'system') this.applyTheme();
+        });
+      } catch (e) {}
     },
 
     applyTheme() {
       const root = document.documentElement;
-      const t = this.THEMES[this.theme] || this.THEMES.dark;
+      // this.theme es la PREFERENCIA (puede ser «system»); resolved es la
+      // paleta que se aplica realmente.
+      const pref = this.THEMES[this.theme] ? this.theme : 'dark';
+      const resolved = this.resolveTheme(pref);
+      const t = this.THEMES[resolved] || this.THEMES.dark;
       this.accent = this._migrateAccent(this.accent);
       const a = this.ACCENTS[this.accent] || this.ACCENTS.aurora;
-      const light = this.theme === 'light';
+      const light = resolved === 'light';
       const accent = light ? (a.fillLight || a.fill || a.accent) : a.accent;
       const fill = light ? (a.fillLight || a.fill || a.accent) : (a.fill || a.accent);
+      const fill2 = light
+        ? (a.fillLight2 || a.fill2 || a.fillLight || a.fill || a.accent)
+        : (a.fill2 || a.fill || a.accent);
 
       root.style.setProperty('--bg-0', t.bg0);
       root.style.setProperty('--bg-1', t.bg1);
@@ -365,13 +412,19 @@ Object.assign(App, {
       root.style.setProperty('--accent', accent);
       root.style.setProperty('--accent-2', a.accent2);
       root.style.setProperty('--accent-fill', fill);
+      // Segundo extremo del degradado. Antes se usaba --accent-2 (rosa,
+      // turquesa, amarillo…), demasiado claro para texto blanco.
+      root.style.setProperty('--accent-fill-2', fill2);
       root.style.setProperty('--accent-on-fill', '#ffffff');
       root.style.setProperty('--accent-rgb', this._hexToRgb(fill));
       if (!this.currentTrack) {
         root.style.setProperty('--cover-from', a.from);
         root.style.setProperty('--cover-to', a.to);
       }
-      root.setAttribute('data-theme', this.theme);
+      // data-theme refleja la paleta aplicada (dark/light/amoled) para que
+      // el CSS funcione; data-theme-pref conserva la preferencia («system»).
+      root.setAttribute('data-theme', resolved);
+      root.setAttribute('data-theme-pref', pref);
       // Semántico (depuración y selectores futuros); el color real va en
       // las variables --accent*. Antes solo se aplicaba el tema.
       root.setAttribute('data-accent', this.accent);
@@ -381,10 +434,11 @@ Object.assign(App, {
     },
 
     setTheme(theme) {
-      this.theme = theme;
-      try { localStorage.setItem('aurora_theme', theme); } catch (e) {}
+      this.theme = this.THEMES[theme] ? theme : 'dark';
+      try { localStorage.setItem('aurora_theme', this.theme); } catch (e) {}
       this.applyTheme();
-      this.toast(this.t('toast_theme_applied') + ' ' + theme);
+      const label = this.t('theme_' + this.theme);
+      this.toast(this.t('toast_theme_applied') + ' ' + (label !== 'theme_' + this.theme ? label : this.theme));
     },
 
     setAccent(accent) {

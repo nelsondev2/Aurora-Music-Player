@@ -223,7 +223,14 @@ Object.assign(App, {
     renderSearchHistory(ul) {
       const hist = Array.isArray(this._searchHistory) ? this._searchHistory : [];
       if (!hist.length) {
-        ul.innerHTML = '<li class="track-row empty-placeholder">' + this.t('search_placeholder') + '</li>';
+        ul.innerHTML = '';
+        const li = document.createElement('li');
+        li.className = 'empty-state compact';
+        li.innerHTML = this.emptyStateHtml({
+          icon: 'clock-rotate-left',
+          title: this.t('search_placeholder')
+        });
+        ul.appendChild(li);
         return;
       }
       const title = document.createElement('li');
@@ -271,9 +278,27 @@ Object.assign(App, {
         countEl.textContent = n === 0
           ? this.t('favorites_count_zero')
           : (n === 1 ? this.t('favorites_count_one') : this.t('favorites_count_many').replace('X', n));
+        // El estado vacío ya explica que no hay favoritos.
+        countEl.hidden = n === 0;
       }
       if (favTracks.length === 0) {
-        ul.innerHTML = '<li class="track-row" style="justify-content:center;color:var(--text-3);font-size:13px;padding:24px">' + this.t('toast_no_favorites_yet') + '</li>';
+        // Mismo estado vacío que Inicio/Biblioteca: icono, titular,
+        // explicación y una salida clara (ir a la biblioteca).
+        ul.innerHTML = '';
+        const li = document.createElement('li');
+        li.className = 'empty-state fav-empty';
+        li.innerHTML = this.emptyStateHtml({
+          icon: 'heart',
+          title: this.t('favorites_empty_title'),
+          text: this.t('favorites_count_zero'),
+          cta: { id: 'btnFavGoLibrary', label: this.t('nav_library'), icon: 'library' }
+        });
+        const btn = li.querySelector('#btnFavGoLibrary');
+        if (btn) btn.addEventListener('click', () => {
+          this.closeSheet('sheetFavorites');
+          this.goNav('library');
+        });
+        ul.appendChild(li);
         return;
       }
       // Para que pulsar una pista desde favoritos reproduzca TODA la lista

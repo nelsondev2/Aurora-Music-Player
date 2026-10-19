@@ -80,6 +80,11 @@ Object.assign(App, {
         // En bfcache (pagehide persisted=true) NO revocar: al volver atrás
         // los objectURL deben seguir vivos.
         if (e && e.type === 'pagehide' && e.persisted) return;
+        // Un borrado con «Deshacer» pendiente no debe sobrevivir al cierre:
+        // si se cierra la app, se confirma para que la pista/lista no
+        // reaparezca al volver a abrirla.
+        try { if (this._pendingTrackDelete) this._commitPendingTrackDelete(); } catch (err) {}
+        try { if (this._pendingPlaylistDelete) this._commitPendingPlaylistDelete(); } catch (err) {}
         try { this.saveSession(); } catch (err) {}
         try { this.releaseAllUrls(); } catch (err) {}
       };

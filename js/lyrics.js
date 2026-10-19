@@ -197,7 +197,7 @@ Object.assign(App, {
 
       // Aplicar tamaño de fuente guardado
       const scroll = document.getElementById('lyricsScroll');
-      if (scroll) scroll.style.setProperty('--lrc-font-size', this.lrcFontSize + 'px');
+      if (scroll) scroll.style.setProperty('--lrc-font-size', this._lrcFontCss());
 
       if (!t || !t.lrc || (Array.isArray(t.lrc) && t.lrc.length === 0)) {
         this.lrcLines = [];
@@ -618,13 +618,20 @@ Object.assign(App, {
     /* ============================================================
      *  Tamaño de fuente ajustable (#7)
      * ============================================================ */
+    /* El tamaño guardado sigue en «px equivalentes» (12–32) por
+     * compatibilidad con ajustes ya guardados, pero se aplica en rem para
+     * que escale con el tamaño de fuente del sistema. */
+    _lrcFontCss() {
+      return ((Number(this.lrcFontSize) || 19) / 16) + 'rem';
+    },
+
     setLrcFontSize(size) {
       this.lrcFontSize = Math.max(12, Math.min(32, size));
       try { localStorage.setItem('aurora_lrc_fontsize', this.lrcFontSize); } catch (e) {}
       // Setear la variable CSS en todos los contenedores relevantes
       const scroll = document.getElementById('lyricsScroll');
       const content = document.getElementById('lyricsContent');
-      const val = this.lrcFontSize + 'px';
+      const val = this._lrcFontCss();
       if (scroll) scroll.style.setProperty('--lrc-font-size', val);
       if (content) content.style.setProperty('--lrc-font-size', val);
       // Reflejar los límites: si ya no se puede subir o bajar, el botón

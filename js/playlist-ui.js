@@ -451,7 +451,14 @@ Object.assign(App, {
         this.queueIdx = nq >= 0 ? nq : Math.min(this.queueIdx, Math.max(0, this.queue.length - 1));
       }
       if (this.queue.length === 0) {
-        ul.innerHTML = '<li class="track-row" style="justify-content:center;color:var(--text-3);font-size:13px;padding:24px">' + this.t('queue_empty') + '</li>';
+        ul.innerHTML = '';
+        const emptyLi = document.createElement('li');
+        emptyLi.className = 'empty-state compact';
+        emptyLi.innerHTML = this.emptyStateHtml({
+          icon: 'list-ol',
+          title: this.t('queue_empty')
+        });
+        ul.appendChild(emptyLi);
         return;
       }
       const makeQueueRow = (id, i) => {
@@ -461,14 +468,14 @@ Object.assign(App, {
         li.className = 'queue-item' + (i === this.queueIdx ? ' current' : '');
         li.dataset.idx = i;
         li.innerHTML = `
-          <button class="drag-handle" aria-label="Mover"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
+          <button class="drag-handle" aria-label="${this.esc(this.t('move'))}"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)}</div>
           </div>
           <div class="row-duration">${this.fmtTime(t.duration)}</div>
-          <button class="row-action queue-remove" aria-label="Quitar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <button class="row-action queue-remove" aria-label="${this.esc(this.t('remove'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
         `;
         // Click normal → reproducir
         li.addEventListener('click', (e) => {
@@ -630,13 +637,37 @@ Object.assign(App, {
 
     renderLibrary() {
       const ul = document.getElementById('libraryTracks');
-      // Contador de la sección (siempre, también con 0 pistas).
+      const hasTracks = this.tracks.length > 0;
+      // Contador de la sección: con 0 no se muestra (un «0» junto al
+      // estado vacío era ruido). La cabecera se adapta al contenido.
       const countEl = document.getElementById('librarySongsCount');
-      if (countEl) countEl.textContent = String(this.tracks.length);
+      if (countEl) {
+        countEl.textContent = String(this.tracks.length);
+        countEl.hidden = !hasTracks;
+      }
+      const actions = document.getElementById('libSongActions');
+      if (actions) actions.hidden = !hasTracks;
+      const deleteAll = document.getElementById('btnDeleteAllTracks');
+      if (deleteAll) deleteAll.hidden = !hasTracks;
+      const sortRow = document.getElementById('libSortRow');
+      if (sortRow) sortRow.hidden = !hasTracks;
       if (!ul) return;
-      if (this.tracks.length === 0) {
+      if (!hasTracks) {
         this.unbindVirtualList(ul);
-        ul.innerHTML = '<li class="track-row empty-placeholder">' + this.t('no_tracks_loaded') + '</li>';
+        ul.innerHTML = '';
+        const li = document.createElement('li');
+        li.className = 'empty-state lib-empty-cta';
+        // Mismo lenguaje que la bienvenida de Inicio, con la acción
+        // imprescindible: importar música sin salir de la biblioteca.
+        li.innerHTML = this.emptyStateHtml({
+          icon: 'music',
+          title: this.t('empty_library_title'),
+          text: this.t('empty_library_hint'),
+          cta: { id: 'btnEmptyLibraryLoad', label: this.t('load_music'), icon: 'cloud-arrow-up' }
+        });
+        const btn = li.querySelector('#btnEmptyLibraryLoad');
+        if (btn) btn.addEventListener('click', () => this.openFilePicker());
+        ul.appendChild(li);
         return;
       }
       const list = (typeof this.sortedTracks === 'function') ? this.sortedTracks() : this.tracks.slice();
@@ -644,6 +675,27 @@ Object.assign(App, {
         scroller: ul.closest('.sheet-body'),
         rowHeight: 64
       });
+    },
+
+    /* «Reproducir todo» / «Aleatorio» de la sección Todas las canciones.
+     * Usa el orden visible (sortedTracks) y, al barajar, activa de verdad
+     * el modo aleatorio de la cola (no solo cambia el icono). */
+    playLibraryTracks(shouldShuffle) {
+      if (!this.tracks.length) return;
+      const list = (typeof this.sortedTracks === 'function') ? this.sortedTracks() : this.tracks.slice();
+      const ids = list.map(t => t.id).filter(Boolean);
+      if (!ids.length) return;
+      this.shuffle = !!shouldShuffle;
+      this._originalQueue = ids.slice();
+      this.queue = ids.slice();
+      this.queueIdx = 0;
+      this.playContext = { type: 'all' };
+      if (this.shuffle) this._applyShuffle(null);
+      if (typeof this.setShuffleUI === 'function') this.setShuffleUI();
+      this.playFromQueue(0);
+      if (typeof this.renderQueue === 'function') this.renderQueue();
+      if (typeof this.updateChrome === 'function') this.updateChrome();
+      if (typeof this.saveSession === 'function') this.saveSession();
     },
 
     playlistDuration(pl) {
@@ -688,10 +740,15 @@ Object.assign(App, {
         countEl.textContent = n === 0
           ? this.t('playlist_count_zero')
           : (n === 1 ? this.t('playlist_count_one') : this.t('playlist_count_many').replace('X', n));
+        // Con el estado vacío visible, «0 listas» es redundante.
+        countEl.hidden = n === 0;
       }
       // Contador de la sección «Listas de reproducción» de la biblioteca.
       const libCountEl = document.getElementById('libraryPlaylistsCount');
-      if (libCountEl) libCountEl.textContent = String(this.playlists.length);
+      if (libCountEl) {
+        libCountEl.textContent = String(this.playlists.length);
+        libCountEl.hidden = this.playlists.length === 0;
+      }
       [ul, grid].forEach(target => {
         if (!target) return;
         target.innerHTML = '';
@@ -713,8 +770,12 @@ Object.assign(App, {
           // Rejilla de la biblioteca sin listas: mensaje breve. El botón
           // «Nueva» ya está en la cabecera de la misma sección.
           const li = document.createElement('li');
-          li.className = 'lib-empty';
-          li.textContent = this.t('no_playlists_hint');
+          li.className = 'lib-empty empty-state compact';
+          li.innerHTML = this.emptyStateHtml({
+            icon: 'compact-disc',
+            title: this.t('no_playlists_yet'),
+            text: this.t('no_playlists_hint')
+          });
           target.appendChild(li);
           return;
         }
@@ -808,8 +869,12 @@ Object.assign(App, {
         okLabel: this.t('confirm_delete')
       });
       if (!ok) return;
+      // Igual que con las pistas: el borrado se puede deshacer durante
+      // 8 s y el borrado real de IndexedDB se aplaza hasta entonces.
+      if (typeof this._commitPendingPlaylistDelete === 'function') this._commitPendingPlaylistDelete();
+      const idx = this.playlists.findIndex(p => p.id === playlistId);
+      this._pendingPlaylistDelete = { playlist: pl, idx, timer: null };
       this.playlists = this.playlists.filter(p => p.id !== playlistId);
-      this.deletePlaylistFromStorage(playlistId);
       // Si la lista eliminada era el contexto actual, dejarlo en «biblioteca»
       // para que la barra superior no muestre una lista que ya no existe.
       if (this.playContext && this.playContext.type === 'playlist' && this.playContext.id === playlistId) {
@@ -818,7 +883,38 @@ Object.assign(App, {
       }
       if (this._editingPlaylistId === playlistId) this.closeSheet('sheetEditPlaylist');
       this.renderPlaylists();
-      this.toast(this.t('toast_playlist_deleted'), 'danger');
+      const pending = this._pendingPlaylistDelete;
+      pending.timer = setTimeout(() => this._commitPendingPlaylistDelete(pending), 8000);
+      this.toast(this.t('toast_playlist_deleted'), {
+        danger: true,
+        ms: 8000,
+        action: { label: this.t('undo'), onClick: () => this._undoDeletePlaylist(pending) }
+      });
+    },
+
+    _commitPendingPlaylistDelete(pending) {
+      const p = pending || this._pendingPlaylistDelete;
+      if (!p || p.committed) return;
+      p.committed = true;
+      clearTimeout(p.timer);
+      if (this._pendingPlaylistDelete === p) this._pendingPlaylistDelete = null;
+      this.deletePlaylistFromStorage(p.playlist.id);
+    },
+
+    _undoDeletePlaylist(pending) {
+      const p = pending || this._pendingPlaylistDelete;
+      if (!p || !p.playlist || p.committed) return;
+      if (this._pendingPlaylistDelete && this._pendingPlaylistDelete !== p) return;
+      clearTimeout(p.timer);
+      if (this._pendingPlaylistDelete === p) this._pendingPlaylistDelete = null;
+      if (!this.playlists.some(x => x.id === p.playlist.id)) {
+        const at = Math.max(0, Math.min(p.idx, this.playlists.length));
+        this.playlists.splice(at, 0, p.playlist);
+        this.persistPlaylist(p.playlist);
+      }
+      this.renderPlaylists();
+      if (typeof this.renderHome === 'function') this.renderHome();
+      this.toast(this.t('toast_restored'));
     },
 
     renderPickTracks() {
