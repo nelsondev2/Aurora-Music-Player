@@ -14,6 +14,16 @@ Object.assign(App, {
      *  Inicialización
      * ============================================================ */
     async init() {
+      // init() NO es idempotente: cablea listeners globales en
+      // wireEvents(). Si el arranque se dispara dos veces en el mismo
+      // contexto (el cliente WebXDC puede re-evaluar main.js o reemitir
+      // DOMContentLoaded), cada botón queda con el listener duplicado y
+      // los de tipo «interruptor» se anulan a sí mismos: un toque en
+      // play/pausa reproducía y pausaba a la vez, y el de pantalla
+      // completa de Letras entraba y salía en el mismo clic. Por eso el
+      // usuario veía ambos botones «muertos». Una sola pasada, siempre.
+      if (this._initStarted) return;
+      this._initStarted = true;
       this.tracks = [];
       this.audio = document.getElementById('audioEl');
       this.audio.volume = this.volume;

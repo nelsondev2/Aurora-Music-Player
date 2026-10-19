@@ -14,6 +14,11 @@ Object.assign(App, {
      *  Eventos
      * ============================================================ */
     wireEvents() {
+      // Segunda línea de defensa (ver init()): si el cableado ya se hizo,
+      // repetirlo duplicaría cada listener y anularía los botones de tipo
+      // interruptor (play/pausa, pantalla completa, aleatorio…).
+      if (this._wired.events) return;
+      this._wired.events = true;
       // Helper null-safe: si el elemento no existe, devuelve un objeto con
       // addEventListener no-op para que no se rompa el wiring completo.
       const $ = (id) => {
@@ -923,6 +928,8 @@ Object.assign(App, {
     },
 
     wireGestures() {
+      // Ídem que wireEvents(): los gestos tampoco se cablean dos veces.
+      if (this._wired.gestures) return;
       const screen = document.getElementById('deviceScreen');
       let sx = 0, sy = 0, st = 0, swiping = false, swipeFromUi = false;
       // Zonas donde un arrastre NUNCA significa «cambiar de canción» ni

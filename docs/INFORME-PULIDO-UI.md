@@ -18,10 +18,10 @@
 | Contraste de acentos (peor extremo del degradado) | **1.64:1** | **4.75:1** |
 | Objetivo táctil mínimo en controles citados | 28 px | **40 px** (fab 36 px) |
 | `font-size` en px | 22 declaraciones + tokens | **0** |
-| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 318.2 KB** |
+| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 318.8 KB** |
 
 **Paquete final:** `aurora-music-player.xdc`
-**SHA-256:** `4b5a6f66e261ffd55d18283d252c3f1cd6a7c1fb25b2c3656c35436c58453038`
+**SHA-256:** `ca46cd286327af853c9aaa6fabbc8b1f42e1e338182a626f4c20875a4f0d3532`
 **Validación:** `python3 build-xdc.py --check` → «OK el .xdc es válido para Delta Chat / webxdc».
 
 ---
@@ -163,12 +163,12 @@ python3 build-xdc.py --check
 Salida final:
 
 ```
-OK  aurora-music-player.xdc · 28 archivos · 318.2 KB
-    sha256: 4b5a6f66e261ffd55d18283d252c3f1cd6a7c1fb25b2c3656c35436c58453038
+OK  aurora-music-player.xdc · 28 archivos · 318.8 KB
+    sha256: ca46cd286327af853c9aaa6fabbc8b1f42e1e338182a626f4c20875a4f0d3532
     nombre: Aurora Music Player
     código: https://github.com/nelsondev2/Aurora-Music-Player
     icono: icon.png (90.5 KB)
-    archivos: 28 · comprimido: 318.2 KB · sin comprimir: 920.4 KB
+    archivos: 28 · comprimido: 318.8 KB · sin comprimir: 921.7 KB
 OK  el .xdc es válido para Delta Chat / webxdc
 ```
 
@@ -412,4 +412,17 @@ Referencias actualizadas: `index.html` (`css/styles.css`, `js/webxdc.js`, `js/da
 | «Visualizad…» | La `.sec-label` forzaba mayúsculas: «VISUALIZADOR» en caja alta no cabe en su columna (≈61 px a 360 px). Sin `text-transform` y con `letter-spacing: 0` la palabra en caja mixta ocupa ~20 % menos y entra entera; el resto de etiquetas no se resiente. |
 | Cabecera redundante | Fuera la línea «REPRODUCIENDO AHORA» del reproductor (la de Letras, «LETRA SINCRONIZADA», queda). El contexto pasa a una sola frase: `playing_from` + nombre, con la traducción española ajustada a «Reproduciendo de» — «Reproduciendo de Música», «de Favoritos»… La misma frase se usa en el subtítulo de la Cola. Sin contexto sigue «Tu biblioteca». |
 
-**Comprobación** (arnés jsdom externo, fuera del repo): cabecera con lista/álbum → «Reproduciendo de Música», con Favoritos → «Reproduciendo de Favoritos», sin contexto → «Tu biblioteca», en inglés → «Playing from Música»; A-B recorre `A-B → A→ → A⇄B → A-B` con sus clases y su etiqueta pasa a «Loop»/«ループ» al cambiar de idioma; 0 errores de arranque en el repo y en el `.xdc` extraído. Paquete: 28 archivos · 318.2 KB · sha256 `4b5a6f66e261ffd55d18283d252c3f1cd6a7c1fb25b2c3656c35436c58453038`.
+**Comprobación** (arnés jsdom externo, fuera del repo): cabecera con lista/álbum → «Reproduciendo de Música», con Favoritos → «Reproduciendo de Favoritos», sin contexto → «Tu biblioteca», en inglés → «Playing from Música»; A-B recorre `A-B → A→ → A⇄B → A-B` con sus clases y su etiqueta pasa a «Loop»/«ループ» al cambiar de idioma; 0 errores de arranque en el repo y en el `.xdc` extraído. Paquete: 28 archivos · 318.8 KB · sha256 `ca46cd286327af853c9aaa6fabbc8b1f42e1e338182a626f4c20875a4f0d3532`.
+
+---
+
+## 18. Play/pausa y pantalla completa «muertos»: listeners duplicados
+
+**Síntoma (captura del usuario):** el botón play/pausa del reproductor no responde y el de pantalla completa del menú de Letras tampoco. **Causa raíz:** ambos son botones tipo *interruptor* (toggle). Si el arranque se dispara dos veces en el mismo contexto — el cliente WebXDC puede re-evaluar `main.js` o reemitir `DOMContentLoaded` — `wireEvents()` registraba cada listener dos veces: un solo toque pausaba y reanudaba a la vez (y la pantalla completa entraba y salía en el mismo clic), así que «no pasaba nada». Los botones no-toggle (siguiente, abrir hojas…) disimulaban el duplicado. **Reproducido en jsdom** forzando un doble `init()`: cada clic llamaba dos veces a `togglePlay`/`toggleLyricsFullscreen`; con un solo arranque, una.
+
+**Corrección (tres capas, comentarios en el código):**
+1. `App.init()` se ejecuta una sola vez (`_initStarted`): un segundo arranque devuelve al instante.
+2. `wireEvents()` y `wireGestures()` salen si ya están cableados (`_wired.events` / `_wired.gestures`).
+3. `bootAurora()` en `main.js` se protege con `window.__auroraBooted` ante una re-evaluación del script.
+
+**Comprobación** (arnés jsdom externo): con doble arranque simulado, 1 clic = 1 llamada; pausar deja `isPlaying:false` y reanudar lo restablece; pantalla completa entra con un clic (`lyrics-fullscreen`) y sale con el botón ×; arranque normal sin cambios; 0 errores en repo y `.xdc` extraído. Paquete: 28 archivos · 318.8 KB · sha256 `ca46cd286327af853c9aaa6fabbc8b1f42e1e338182a626f4c20875a4f0d3532`.
