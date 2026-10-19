@@ -960,18 +960,10 @@ Object.assign(App, {
           else this.prev();
           if (navigator.vibrate) navigator.vibrate(10);
         }
-        // Swipe vertical: SOLO cierra la vista de letras (deslizar hacia
-        // abajo). La vista de letras se abre exclusivamente con #btnLyrics:
-        // antes, deslizar hacia arriba en cualquier vista (por ejemplo al
-        // hacer scroll en Inicio o en el reproductor) la abría sin pulsar
-        // ningún botón. Si la vista ya está abierta no se hace nada.
-        if (ay > 80 && ay > ax * 1.5 && dt < 700) {
-          const target = e.target;
-          if (target.closest('.sheet, .bottom-nav, #coverArt, #progressTrack')) return;
-          const lyricsView = document.getElementById('viewLyrics');
-          if (!(lyricsView && lyricsView.classList.contains('active'))) return;
-          if (dy > 0) this.showView('player');
-        }
+        // Sin swipe vertical: deslizar hacia abajo ya NO cierra
+        // Letras (a petición del usuario). Era fácil dispararlo sin
+        // querer al hacer scroll por la letra; para salir queda el
+        // botón de volver de la cabecera (y el de pantalla completa).
         // Doble tap en portada → like
       });
 

@@ -1211,11 +1211,18 @@ function contrastAlpha(fg, bgHex) {
       eq(prevs, 1, 'el gesto sobre la letra dejó de retroceder');
     });
 
-    await test('arrastrar la barra hacia abajo no cierra Letras; sobre la letra sí', () => {
+    await test('deslizar hacia abajo ya no cierra Letras en ninguna zona', () => {
       drag(doc.getElementById('lyricsToolbar'), 180, 110, 182, 260);
       assert(doc.getElementById('viewLyrics').classList.contains('active'), 'la barra cerró la vista');
       drag(doc.getElementById('lyricsScroll'), 180, 300, 181, 460);
-      assert(doc.getElementById('viewPlayer').classList.contains('active'), 'el gesto vertical dejó de cerrar');
+      assert(doc.getElementById('viewLyrics').classList.contains('active'), 'deslizar sobre la letra cerró la vista');
+      assert(!doc.getElementById('viewPlayer').classList.contains('active'), 'se abrió el reproductor');
+      eq(nexts + prevs, 2, 'el gesto vertical no debe cambiar de canción');
+    });
+
+    await test('el botón de volver sí sigue cerrando Letras', () => {
+      doc.getElementById('btnBackFromLyrics').click();
+      assert(doc.getElementById('viewPlayer').classList.contains('active'), 'el botón de volver no cerró');
     });
 
     close();

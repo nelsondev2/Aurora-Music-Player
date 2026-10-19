@@ -4,7 +4,7 @@
 **Base:** `ff73b21` (merge del PR #6, biblioteca simplificada)
 **Rama:** `arena/4c26cbd7-aurora-music-player`
 **Alcance elegido:** los 12 puntos de la auditoría de diseño (6 fallos + 6 de pulido), no solo los críticos.
-**Resultado:** 12/12 implementados + rediseño de botones de listas + corrección de los solapes de las capturas + filas de canciones v2 + Letras v2 · **136/136 pruebas automatizadas en verde** · `.xdc` válido para Delta Chat.
+**Resultado:** 12/12 implementados + rediseño de botones de listas + corrección de los solapes de las capturas + filas de canciones v2 + Letras v2 · **137/137 pruebas automatizadas en verde** · `.xdc` válido para Delta Chat.
 
 ---
 
@@ -13,15 +13,15 @@
 | Métrica | Antes (ff73b21) | Ahora |
 |---|---|---|
 | Puntos de diseño corregidos | 0/12 | **12/12** |
-| Pruebas de esta ronda | — | **136** (95 pulido + 27 smoke + 14 axe) |
+| Pruebas de esta ronda | — | **137** (96 pulido + 27 smoke + 14 axe) |
 | Violaciones axe (10 pantallas) | — | **0** |
 | Contraste de acentos (peor extremo del degradado) | **1.64:1** | **4.75:1** |
 | Objetivo táctil mínimo en controles citados | 28 px | **40 px** (fab 36 px) |
 | `font-size` en px | 22 declaraciones + tokens | **0** |
-| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 316.5 KB** |
+| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 316.4 KB** |
 
 **Paquete final:** `aurora-music-player.xdc`
-**SHA-256:** `caff120cc8cf39065f8345e64d9b95bcc385f1fed11f96d1536d98754a857487`
+**SHA-256:** `8a5e745c43ea72f0fb6641a6e88cda7476eb2830ac9fc3f90fcfe4c9bd3de634`
 **Validación:** `python3 build-xdc.py --check` → «OK el .xdc es válido para Delta Chat / webxdc».
 
 ---
@@ -163,12 +163,12 @@ python3 build-xdc.py --check
 Salida final:
 
 ```
-OK  aurora-music-player.xdc · 28 archivos · 316.5 KB
-    sha256: caff120cc8cf39065f8345e64d9b95bcc385f1fed11f96d1536d98754a857487
+OK  aurora-music-player.xdc · 28 archivos · 316.4 KB
+    sha256: 8a5e745c43ea72f0fb6641a6e88cda7476eb2830ac9fc3f90fcfe4c9bd3de634
     nombre: Aurora Music Player
     código: https://github.com/nelsondev2/Aurora-Music-Player
     icono: icon.png (90.5 KB)
-    archivos: 28 · comprimido: 316.5 KB · sin comprimir: 914.9 KB
+    archivos: 28 · comprimido: 316.4 KB · sin comprimir: 914.4 KB
 OK  el .xdc es válido para Delta Chat / webxdc
 ```
 
@@ -351,4 +351,16 @@ Con las nuevas medidas, el texto útil en el editor de lista pasa de ~46 px a ~1
 
 **Pruebas (3, bloque Q):** la regla acotada no envuelve y desplaza, la genérica sigue intacta para Favoritos; las cinco acciones están en la fila en el orden pedido con su texto; y «Subir» y «Renombrar» siguen funcionando dentro de la fila. Se corrigió además una búsqueda sin anclar en el bloque L que cazaba la nueva regla acotada en vez de la base.
 
-**Total actual: 136/136** (95 pulido + 27 smoke + 14 axe), también contra el `.xdc` extraído con `AURORA_ROOT=/tmp/xdc-fila-unica npm test`.
+**Total tras esta sección: 136/136** (95 pulido + 27 smoke + 14 axe), también contra el `.xdc` extraído.
+
+---
+
+## 14. Sin cierre de Letras al deslizar hacia abajo
+
+**Petición:** eliminar en la vista de Letras lo de desplazar hacia abajo para cerrar.
+
+**Cambio (`js/events.js`):** se elimina la rama de swipe vertical de `wireGestures()`: deslizar hacia abajo ya no vuelve al reproductor desde ninguna zona de la vista. Era fácil dispararla sin querer al hacer scroll por la letra. Para salir quedan el botón de volver de la cabecera (`#btnBackFromLyrics`) y, en pantalla completa, el de salir (`#btnLrcExitFs`). El swipe horizontal sobre la letra para cambiar de canción no se toca, ni la protección de la barra de herramientas de la sección 12.
+
+**Pruebas (bloque P actualizado, 5):** deslizar hacia abajo sobre la barra y sobre la letra mantiene la vista abierta y no cambia de canción; el botón de volver sí cierra.
+
+**Total actual: 137/137** (96 pulido + 27 smoke + 14 axe), también contra el `.xdc` extraído con `AURORA_ROOT=/tmp/xdc-sin-swipe npm test`.
