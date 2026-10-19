@@ -1156,6 +1156,69 @@ function contrastAlpha(fg, bgHex) {
     close();
   }
 
+  /* =================================================================
+   * P. Gestos (regresión): arrastrar la barra de herramientas de
+   *    Letras —ahora desplazable— cambiaba de canción, porque el
+   *    gesto global de «deslizar» solo excluía hojas y portada.
+   * ================================================================= */
+  section('P · Gestos: la barra de Letras no cambia de canción');
+  {
+    const { w, doc, App, close } = await boot({ tracks: TRACKS });
+    let nexts = 0, prevs = 0;
+    App.next = () => { nexts++; };
+    App.prev = () => { prevs++; };
+    App.currentTrack = App.tracks[0];
+    App.showView('lyrics');
+
+    const touch = (el, type, x, y) => {
+      const e = new w.Event(type, { bubbles: true, cancelable: true });
+      const pt = { clientX: x, clientY: y };
+      if (type === 'touchend') {
+        Object.defineProperty(e, 'changedTouches', { value: [pt] });
+        Object.defineProperty(e, 'touches', { value: [] });
+      } else {
+        Object.defineProperty(e, 'touches', { value: [pt] });
+      }
+      el.dispatchEvent(e);
+    };
+    const drag = (el, x1, y1, x2, y2) => {
+      touch(el, 'touchstart', x1, y1);
+      touch(el, 'touchend', x2, y2);
+    };
+
+    await test('arrastrar la barra de herramientas a un lado no cambia de canción', () => {
+      const bar = doc.getElementById('lyricsToolbar');
+      drag(bar, 260, 120, 90, 124); // izquierda: antes era «siguiente»
+      drag(bar, 60, 120, 240, 118); // derecha: antes era «anterior»
+      eq(nexts, 0, 'saltó a la siguiente arrastrando la barra');
+      eq(prevs, 0, 'saltó a la anterior arrastrando la barra');
+    });
+
+    await test('arrastrar desde un botón de la barra tampoco cambia de canción', () => {
+      drag(doc.getElementById('btnLrcShare'), 260, 120, 80, 122);
+      // Y desde la barra inferior de controles (el play).
+      drag(doc.getElementById('btnPlayLyrics'), 240, 700, 70, 702);
+      eq(nexts + prevs, 0);
+    });
+
+    await test('deslizar sobre la letra sí sigue cambiando de canción', () => {
+      const area = doc.getElementById('lyricsScroll');
+      drag(area, 260, 400, 90, 404);
+      eq(nexts, 1, 'el gesto sobre la letra dejó de avanzar');
+      drag(area, 60, 400, 250, 398);
+      eq(prevs, 1, 'el gesto sobre la letra dejó de retroceder');
+    });
+
+    await test('arrastrar la barra hacia abajo no cierra Letras; sobre la letra sí', () => {
+      drag(doc.getElementById('lyricsToolbar'), 180, 110, 182, 260);
+      assert(doc.getElementById('viewLyrics').classList.contains('active'), 'la barra cerró la vista');
+      drag(doc.getElementById('lyricsScroll'), 180, 300, 181, 460);
+      assert(doc.getElementById('viewPlayer').classList.contains('active'), 'el gesto vertical dejó de cerrar');
+    });
+
+    close();
+  }
+
   const ok = summary();
   process.exit(ok ? 0 : 1);
 })().catch(e => {

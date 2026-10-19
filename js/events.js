@@ -924,18 +924,28 @@ Object.assign(App, {
 
     wireGestures() {
       const screen = document.getElementById('deviceScreen');
-      let sx = 0, sy = 0, st = 0, swiping = false;
+      let sx = 0, sy = 0, st = 0, swiping = false, swipeFromUi = false;
+      // Zonas donde un arrastre NUNCA significa «cambiar de canción» ni
+      // «cerrar Letras»: la barra de herramientas (ahora desplazable en
+      // horizontal: arrastrarla para ver más ajustes saltaba a la
+      // siguiente canción), la cabecera, la mini-cabecera, la barra de
+      // controles y cualquier control interactivo. El gesto se marca al
+      // nacer (touchstart), porque el dedo puede terminar sobre otro
+      // elemento distinto del que lo empezó.
+      const SWIPE_UI = '.lyrics-toolbar, .lyrics-top-bar, .lyrics-mini, .lyrics-controls, .lyrics-loop-indicator, button, input, textarea, select, a, [role="slider"]';
       screen.addEventListener('touchstart', (e) => {
         if (e.touches.length !== 1) return;
         sx = e.touches[0].clientX;
         sy = e.touches[0].clientY;
         st = Date.now();
         swiping = true;
+        swipeFromUi = !!(e.target && e.target.closest && e.target.closest(SWIPE_UI));
       }, { passive: true });
 
       screen.addEventListener('touchend', (e) => {
         if (!swiping) return;
         swiping = false;
+        if (swipeFromUi) { swipeFromUi = false; return; }
         const dx = e.changedTouches[0].clientX - sx;
         const dy = e.changedTouches[0].clientY - sy;
         const dt = Date.now() - st;
