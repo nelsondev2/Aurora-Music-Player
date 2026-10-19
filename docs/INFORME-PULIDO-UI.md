@@ -18,10 +18,10 @@
 | Contraste de acentos (peor extremo del degradado) | **1.64:1** | **4.75:1** |
 | Objetivo táctil mínimo en controles citados | 28 px | **40 px** (fab 36 px) |
 | `font-size` en px | 22 declaraciones + tokens | **0** |
-| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 321.2 KB** |
+| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 322.3 KB** |
 
 **Paquete final:** `aurora-music-player.xdc`
-**SHA-256:** `a30af437f070ecb111589683f1b4205ba09df3279ebfcd48ded313f4f01280d2`
+**SHA-256:** `5c44e016de10ec4f830f43b1493c21287c64c85d8750e2ecf9987e69a70111e8`
 **Validación:** `python3 build-xdc.py --check` → «OK el .xdc es válido para Delta Chat / webxdc».
 
 ---
@@ -163,12 +163,12 @@ python3 build-xdc.py --check
 Salida final:
 
 ```
-OK  aurora-music-player.xdc · 28 archivos · 321.2 KB
-    sha256: a30af437f070ecb111589683f1b4205ba09df3279ebfcd48ded313f4f01280d2
+OK  aurora-music-player.xdc · 28 archivos · 322.3 KB
+    sha256: 5c44e016de10ec4f830f43b1493c21287c64c85d8750e2ecf9987e69a70111e8
     nombre: Aurora Music Player
     código: https://github.com/nelsondev2/Aurora-Music-Player
     icono: icon.png (90.5 KB)
-    archivos: 28 · comprimido: 321.2 KB · sin comprimir: 928.4 KB
+    archivos: 28 · comprimido: 322.3 KB · sin comprimir: 931.6 KB
 OK  el .xdc es válido para Delta Chat / webxdc
 ```
 
@@ -412,7 +412,7 @@ Referencias actualizadas: `index.html` (`css/styles.css`, `js/webxdc.js`, `js/da
 | «Visualizad…» | La `.sec-label` forzaba mayúsculas: «VISUALIZADOR» en caja alta no cabe en su columna (≈61 px a 360 px). Sin `text-transform` y con `letter-spacing: 0` la palabra en caja mixta ocupa ~20 % menos y entra entera; el resto de etiquetas no se resiente. |
 | Cabecera redundante | Fuera la línea «REPRODUCIENDO AHORA» del reproductor (la de Letras, «LETRA SINCRONIZADA», queda). El contexto pasa a una sola frase: `playing_from` + nombre, con la traducción española ajustada a «Reproduciendo de» — «Reproduciendo de Música», «de Favoritos»… La misma frase se usa en el subtítulo de la Cola. Sin contexto sigue «Tu biblioteca». |
 
-**Comprobación** (arnés jsdom externo, fuera del repo): cabecera con lista/álbum → «Reproduciendo de Música», con Favoritos → «Reproduciendo de Favoritos», sin contexto → «Tu biblioteca», en inglés → «Playing from Música»; A-B recorre `A-B → A→ → A⇄B → A-B` con sus clases y su etiqueta pasa a «Loop»/«ループ» al cambiar de idioma; 0 errores de arranque en el repo y en el `.xdc` extraído. Paquete: 28 archivos · 321.2 KB · sha256 `a30af437f070ecb111589683f1b4205ba09df3279ebfcd48ded313f4f01280d2`.
+**Comprobación** (arnés jsdom externo, fuera del repo): cabecera con lista/álbum → «Reproduciendo de Música», con Favoritos → «Reproduciendo de Favoritos», sin contexto → «Tu biblioteca», en inglés → «Playing from Música»; A-B recorre `A-B → A→ → A⇄B → A-B` con sus clases y su etiqueta pasa a «Loop»/«ループ» al cambiar de idioma; 0 errores de arranque en el repo y en el `.xdc` extraído. Paquete: 28 archivos · 322.3 KB · sha256 `5c44e016de10ec4f830f43b1493c21287c64c85d8750e2ecf9987e69a70111e8`.
 
 ---
 
@@ -425,7 +425,7 @@ Referencias actualizadas: `index.html` (`css/styles.css`, `js/webxdc.js`, `js/da
 2. `wireEvents()` y `wireGestures()` salen si ya están cableados (`_wired.events` / `_wired.gestures`).
 3. `bootAurora()` en `main.js` se protege con `window.__auroraBooted` ante una re-evaluación del script.
 
-**Comprobación** (arnés jsdom externo): con doble arranque simulado, 1 clic = 1 llamada; pausar deja `isPlaying:false` y reanudar lo restablece; pantalla completa entra con un clic (`lyrics-fullscreen`) y sale con el botón ×; arranque normal sin cambios; 0 errores en repo y `.xdc` extraído. Paquete: 28 archivos · 321.2 KB · sha256 `a30af437f070ecb111589683f1b4205ba09df3279ebfcd48ded313f4f01280d2`.
+**Comprobación** (arnés jsdom externo): con doble arranque simulado, 1 clic = 1 llamada; pausar deja `isPlaying:false` y reanudar lo restablece; pantalla completa entra con un clic (`lyrics-fullscreen`) y sale con el botón ×; arranque normal sin cambios; 0 errores en repo y `.xdc` extraído. Paquete: 28 archivos · 322.3 KB · sha256 `5c44e016de10ec4f830f43b1493c21287c64c85d8750e2ecf9987e69a70111e8`.
 
 ---
 
@@ -441,7 +441,7 @@ Referencias actualizadas: `index.html` (`css/styles.css`, `js/webxdc.js`, `js/da
 | Chips incompletos | Se añade **OPUS**: MP3 · FLAC · M4A · WAV · OGG · OPUS, lo que la app reproduce de verdad. |
 | Triple marca | Fuera el wordmark «AURORA» bajo el icono (y su CSS, incluida la regla de tema claro): icono + titular, con más aire sobre el `h2`. |
 
-**Comprobación** (arnés jsdom externo): bienvenida sin wordmark, 6 chips, tres perks con título+descripción, el engranaje abre `sheetSettings`, traducción EN aplicada («With your .lrc files, line by line»), 0 errores en repo y en el `.xdc` extraído. Paquete: 28 archivos · 321.2 KB · sha256 `a30af437f070ecb111589683f1b4205ba09df3279ebfcd48ded313f4f01280d2`.
+**Comprobación** (arnés jsdom externo): bienvenida sin wordmark, 6 chips, tres perks con título+descripción, el engranaje abre `sheetSettings`, traducción EN aplicada («With your .lrc files, line by line»), 0 errores en repo y en el `.xdc` extraído. Paquete: 28 archivos · 322.3 KB · sha256 `5c44e016de10ec4f830f43b1493c21287c64c85d8750e2ecf9987e69a70111e8`.
 
 ---
 
@@ -457,8 +457,25 @@ Referencias actualizadas: `index.html` (`css/styles.css`, `js/webxdc.js`, `js/da
 | Sin salida a la lista completa | Cada sección lleva «Ver todo» (`see_all`, 8 idiomas) que abre la Biblioteca, cableado en `_bindHomeRails` vía `data-see-all`. |
 
 **Comprobación** (arnés jsdom externo): kicker «Aurora»; hero con posición «Retomar en 1:24» y sin posición sin inventar la línea; solo la tarjeta actual lleva `.eq-badge.playing`; «Ver todo» abre la hoja Biblioteca; 0 errores en repo y en el `.xdc` extraído.
-Paquete: 28 archivos · 321.2 KB.
+Paquete: 28 archivos · 322.3 KB.
 
 ## 21. «Reproduciendo desde», no «de»
 
 Ajuste de redacción pedido por el usuario: la frase de contexto vuelve a ser «Reproduciendo desde <lista/contexto>» (clave `playing_from`, es). Se aplica igual en la cabecera del reproductor y en el subtítulo de la Cola. Verificado con el arnés externo: ambas dicen «Reproduciendo desde Música», 0 errores.
+
+---
+
+## 22. Pulido de Biblioteca
+
+**Petición:** «Pasamos ahora a pulir la biblioteca» → opinión (7,5/10) → sí a los seis puntos.
+
+| Punto | Cambio |
+|---|---|
+| Subtítulo con eco | `makeTrackRow` oculta el álbum del subtítulo cuando coincide con el título o con el artista (la misma regla del reproductor): «BALALAIKA / 9Lana», no «9Lana · BALALAIKA». Lo heredan Biblioteca, listas, Buscar, Favoritos y el menú de pista. |
+| «Seleccionar» cortado | El botón de selección por lote sale de la fila con scroll horizontal: nueva `.lib-sort-wrap` con chips desplazables a la izquierda y el botón fijo a la derecha. |
+| Duraciones a saltos | `fmtRowDuration` devuelve un «—» tenue (`.row-duration-na`) cuando la duración es desconocida: la columna mantiene el ritmo sin inventar cifras. |
+| Fila actual poco visible | Título en color de acento (`.track-row.current`/`.queue-item.current`) y el ecualizador de tres barras sobre la miniatura, animado solo si suena — el mismo distintivo de Inicio. El editor de listas conserva su icono propio. |
+| Acciones que se pierden al bajar | Cabecera de «Todas las canciones» + acciones + ordenación en `.lib-songs-sticky` (`position: sticky`, fondo del panel): reproducir todo y reordenar siempre a mano. |
+| Última fila bajo el mini | `#sheetLibrary .sheet-body` gana `padding-bottom: 104px`: el final de la lista siempre queda por encima del mini-reproductor. |
+
+**Comprobación** (arnés jsdom externo): cinco filas de prueba — eco eliminado (álbum=título y álbum=artista ocultos, álbum distinto visible), duraciones `3:10/—/—/2:49/1:40`, fila actual con `.eq-badge.playing` y las demás sin marca, «Seleccionar» fuera del scroll y dentro de `.lib-sort-wrap`, bloque sticky presente con la lista fuera de él; 0 errores en repo y en el `.xdc` extraído. Paquete: 28 archivos · 322.3 KB · sha256 `5c44e016de10ec4f830f43b1493c21287c64c85d8750e2ecf9987e69a70111e8`.

@@ -3138,6 +3138,14 @@ button,
   .eq-badge.playing i { animation: none; height: 7px; }
 }
 .home-card.is-current .home-card-title { color: var(--accent); }
+/* En las filas el distintivo va sobre la miniatura de 48 px. */
+.row-cover { position: relative; }
+.eq-badge-row { right: 4px; bottom: 4px; padding: 3px 4px; }
+/* Fila actual en las listas: título en acento, no solo una barrita al
+ * borde (con el fondo --surface apenas se distinguía de las demás).
+ * Gana a la regla anterior de esta misma hoja por orden de aparición. */
+.queue-item.current .row-title,
+.track-row.current .row-title { color: var(--accent); }
 .home-card-title {
   display: block;
   font-size: var(--fs-sm);
@@ -3225,13 +3233,38 @@ button,
   border-color: transparent;
   color: var(--accent-on-fill);
 }
+/* Fila de ordenación: los chips se desplazan y «Seleccionar» queda
+ * fijo a la derecha, fuera del scroll (antes nacía cortado). */
+.lib-sort-wrap {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
 .lib-sort-row {
+  flex: 1;
+  min-width: 0;
   display: flex;
   gap: 6px;
   overflow-x: auto;
   scrollbar-width: none;
   margin-bottom: 10px;
 }
+.lib-sort-wrap .lib-batch-btn { flex: 0 0 auto; margin-left: 0; }
+/* Cabecera de «Todas las canciones» fija al hacer scroll dentro de la
+ * hoja: reproducir todo y reordenar quedan siempre a mano. El fondo es
+ * el del panel para que las filas pasen por debajo sin transparentar. */
+.lib-songs-sticky {
+  position: sticky;
+  top: -16px;
+  z-index: 7;
+  background: var(--bg-2);
+  padding-top: 6px;
+}
+/* Al final de la lista, que la última fila no quede bajo el
+ * mini-reproductor (56 px + márgenes) al llegar al fondo. */
+#sheetLibrary .sheet-body { padding-bottom: 104px; }
+/* Duración desconocida («—»): casi invisible, solo sostiene la columna. */
+.row-duration-na { color: var(--text-4); }
 .lib-sort-row::-webkit-scrollbar { display: none; }
 .lib-sort {
   min-height: 36px;

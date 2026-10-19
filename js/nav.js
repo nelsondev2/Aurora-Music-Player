@@ -455,7 +455,11 @@ Object.assign(App, {
      * canción dura cero segundos, como se veía en las capturas. */
     fmtRowDuration(t) {
       const d = t && Number(t.duration);
-      return d > 0 ? this.fmtTime(d) : '';
+      if (d > 0) return this.fmtTime(d);
+      // Duración desconocida: un «—» muy tenue mantiene el ritmo de la
+      // columna (dejar el hueco parecía un fallo de pintado). No se
+      // inventa ninguna cifra.
+      return '<span class="row-duration-na" aria-hidden="true">—</span>';
     },
 
     /* ============================================================
@@ -469,14 +473,27 @@ Object.assign(App, {
       const isPending = !!(t && t._needsRelink);
       li.className = 'track-row' + (isCurrent ? ' current' : '') + (isSelected ? ' selected' : '') + (this._batchMode ? ' batch-mode' : '') + (isPending ? ' is-pending' : '');
       li.dataset.track = t.id;
+      // Subtítulo sin eco: el álbum se oculta cuando coincide con el
+      // título o con el artista (sencillos: «BALALAIKA» y debajo
+      // «9Lana · BALALAIKA» decía lo mismo dos veces). Igual que ya
+      // hace el reproductor con su línea de álbum.
+      const normRow = (v) => String(v == null ? '' : v).trim().toLowerCase();
+      const showAlbum = t.album && !this.isPlaceholderAlbum(t.album)
+        && normRow(t.album) !== normRow(t.title)
+        && normRow(t.album) !== normRow(t.artist);
+      // La pista cargada se marca sobre la portada con el ecualizador
+      // (animado solo si está sonando), como en las tarjetas de Inicio.
+      const nowBadge = isCurrent
+        ? `<span class="eq-badge eq-badge-row${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
+        : '';
       li.innerHTML = `
         <div class="row-batch-check" ${this._batchMode ? '' : 'style="display:none"'}>
           <input type="checkbox" class="batch-checkbox" aria-label="${this.esc(this.t('select_track'))}" ${isSelected ? 'checked' : ''} />
         </div>
-        <div class="row-cover"><canvas width="44" height="44"></canvas></div>
+        <div class="row-cover"><canvas width="44" height="44"></canvas>${nowBadge}</div>
         <div class="row-text">
           <div class="row-title">${this.esc(t.title)}</div>
-          <div class="row-sub">${this.esc(t.artist)}${t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + this.esc(t.album) : ''}${isPending ? ' <span class="row-pending-badge">' + this.esc(this.t('relink_badge')) + '</span>' : ''}</div>
+          <div class="row-sub">${this.esc(t.artist)}${showAlbum ? ' · ' + this.esc(t.album) : ''}${isPending ? ' <span class="row-pending-badge">' + this.esc(this.t('relink_badge')) + '</span>' : ''}</div>
         </div>
         <div class="row-duration">${this.fmtRowDuration(t)}</div>
         <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>`;
@@ -543,7 +560,13 @@ Object.assign(App, {
       const title = document.getElementById('trackMenuTitle');
       const sub = document.getElementById('trackMenuSub');
       if (title) title.textContent = t.title;
-      if (sub) sub.textContent = (t.artist || '') + (t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + t.album : '');
+      // Misma regla sin eco que las filas: nada de «artista · álbum»
+      // cuando el álbum repite el título o al propio artista.
+      const normMenu = (v) => String(v == null ? '' : v).trim().toLowerCase();
+      const menuAlbum = t.album && !this.isPlaceholderAlbum(t.album)
+        && normMenu(t.album) !== normMenu(t.title)
+        && normMenu(t.album) !== normMenu(t.artist);
+      if (sub) sub.textContent = (t.artist || '') + (menuAlbum ? ' · ' + t.album : '');
       const cv = document.getElementById('trackMenuCover');
       if (cv) this.drawRowCover(cv, t);
       const goAlbum = document.getElementById('ctxGoAlbum');
