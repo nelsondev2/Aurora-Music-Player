@@ -2172,6 +2172,21 @@ const I18N = {
     zh: '最近搜索', ja: '最近的搜索', fr: 'Recherches récentes',
     it: 'Ricerche recenti', ru: 'Недавние запросы'
   },
+  search_empty_title: {
+    es: 'Sin búsquedas recientes', en: 'No recent searches', pt: 'Sem pesquisas recentes',
+    zh: '暂无最近搜索', ja: '最近の検索はありません', fr: 'Aucune recherche récente',
+    it: 'Nessuna ricerca recente', ru: 'Нет недавних запросов'
+  },
+  search_empty_hint: {
+    es: 'Escribe arriba para buscar por canción, artista o álbum en tu biblioteca.',
+    en: 'Type above to search your library by song, artist or album.',
+    pt: 'Escreve acima para pesquisar por música, artista ou álbum na tua biblioteca.',
+    zh: '在上方输入，按歌曲、艺人或专辑搜索你的曲库。',
+    ja: '上で入力すると、曲名・アーティスト・アルバムでライブラリを検索できます。',
+    fr: 'Saisis ci-dessus pour chercher par titre, artiste ou album dans ta bibliothèque.',
+    it: 'Scrivi sopra per cercare per brano, artista o album nella tua libreria.',
+    ru: 'Введите выше, чтобы искать по треку, исполнителю или альбому в библиотеке.'
+  },
   search_section_songs: {
     es: 'Canciones', en: 'Songs', pt: 'Músicas',
     zh: '歌曲', ja: '曲', fr: 'Titres',

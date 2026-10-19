@@ -855,6 +855,112 @@ function contrastAlpha(fg, bgHex) {
     close();
   }
 
+  /* =================================================================
+   * M. Regresión de las capturas (2026-10-19): estados vacíos que se
+   *    solapaban y botón «Nueva» (crear listas) sin funcionar.
+   *
+   * Causa raíz: existían DOS reglas «.empty-state». La segunda
+   * (pensada solo para #emptyState del reproductor) ponía
+   * «position:absolute; inset:0; z-index:10» y, por ir después en la
+   * cascada, convertía cada vacío de Biblioteca/Buscar/Favoritos en
+   * una capa a pantalla completa: se solapaban, tapaban las filas y
+   * bloqueaban los toques. jsdom no aplica CSS, así que aquí se
+   * parsea styles.css y se verifica el comportamiento por DOM.
+   * ================================================================= */
+  section('M · Regresión capturas: vacíos solapados y crear listas');
+  {
+    const s = css();
+
+    await test('CSS: ningún «.empty-state» sin acotar es absoluto', () => {
+      const re = /(^|\n)\.empty-state\s*\{([^}]*)\}/g;
+      let m; let seen = 0;
+      while ((m = re.exec(s))) {
+        seen++;
+        notIncludes(m[2], 'position: absolute', 'un .empty-state sigue siendo capa');
+        includes(m[2], 'position: relative', 'el .empty-state base debe ir en flujo');
+      }
+      assert(seen >= 1, 'no se encontró la regla base .empty-state');
+    });
+
+    await test('CSS: solo #emptyState (reproductor) es capa a pantalla completa', () => {
+      const i = s.indexOf('#emptyState {');
+      assert(i > 0, 'falta el bloque #emptyState');
+      const block = s.slice(i, s.indexOf('}', i));
+      includes(block, 'position: absolute');
+      includes(block, 'inset: 0');
+    });
+
+    await test('CSS: los vacíos de listas quedan en flujo y el del carril es breve', () => {
+      includes(s, '.playlist-rail > .empty-state');
+      includes(s, 'inset: auto');
+      const i = s.indexOf('.playlist-rail > .empty-state.compact {');
+      assert(i > 0, 'falta la regla breve del carril');
+      includes(s.slice(i, s.indexOf('}', i)), 'flex: 1 0 100%');
+    });
+
+    const { doc, App, close } = await boot({ tracks: [] });
+
+    await test('Biblioteca vacía: cada vacío ocupa su sección, sin capas cruzadas', () => {
+      const plEmpty = doc.querySelector('#libraryPlaylists > .empty-state');
+      const trEmpty = doc.querySelector('#libraryTracks > .empty-state');
+      assert(plEmpty, 'sin vacío de listas en su sección');
+      assert(trEmpty, 'sin vacío de canciones en su sección');
+      eq(plEmpty.parentElement.id, 'libraryPlaylists');
+      eq(trEmpty.parentElement.id, 'libraryTracks');
+      includes(plEmpty.textContent, 'Sin listas todavía');
+      includes(trEmpty.textContent, 'Tu biblioteca está vacía');
+    });
+
+    await test('Buscar sin historial no duplica el placeholder como titular', () => {
+      App.runSearch('', 'all');
+      const el = doc.querySelector('#searchResults > .empty-state');
+      assert(el, 'sin vacío de búsqueda');
+      includes(el.textContent, 'Sin búsquedas recientes');
+      notIncludes(el.querySelector('h4').textContent, 'Canción, artista');
+    });
+
+    await test('«+ Nueva» de Biblioteca abre el sheet de crear lista', () => {
+      App.goNav('library');
+      doc.getElementById('btnOpenNewPlaylist').click();
+      assert(doc.getElementById('sheetCreatePlaylist').classList.contains('open'), 'no abrió crear lista');
+    });
+
+    await test('guardar crea la lista y desaparece el vacío del carril', () => {
+      doc.getElementById('playlistName').value = 'Lista de prueba';
+      doc.getElementById('playlistDesc').value = '';
+      doc.getElementById('btnSavePlaylist').click();
+      eq(App.playlists.map(p => p.name), ['Lista de prueba']);
+      assert(!doc.getElementById('sheetCreatePlaylist').classList.contains('open'), 'el sheet no se cerró');
+      assert(!doc.querySelector('#libraryPlaylists > .empty-state'), 'sigue el vacío de listas');
+      assert(doc.querySelector('#libraryPlaylists .pl-card'), 'la lista no está en el carril');
+      assert(doc.querySelector('#playlistList .pl-row'), 'la lista no está en «Tus listas»');
+    });
+
+    await test('«Nueva» de «Tus listas» también abre el creador', () => {
+      App.closeAllSheets();
+      App.openSheet('sheetPlaylists');
+      doc.getElementById('btnNewPlaylist').click();
+      assert(doc.getElementById('sheetCreatePlaylist').classList.contains('open'), 'no abrió crear lista');
+      App.closeSheet('sheetCreatePlaylist');
+      App.closeAllSheets();
+    });
+
+    close();
+  }
+
+  {
+    // Escenario exacto de la captura 1: 1 canción y 0 listas.
+    const { doc, App, close } = await boot({ tracks: [TRACKS[0]] });
+    await test('con 1 canción y 0 listas: la fila se ve y «Nueva» responde', () => {
+      eq(doc.querySelectorAll('#libraryTracks .track-row').length, 1);
+      assert(!doc.querySelector('#libraryTracks > .empty-state'), 'vacío de canciones con pistas');
+      assert(doc.querySelector('#libraryPlaylists > .empty-state'), 'falta el aviso de listas');
+      doc.getElementById('btnOpenNewPlaylist').click();
+      assert(doc.getElementById('sheetCreatePlaylist').classList.contains('open'), '«Nueva» no abrió');
+    });
+    close();
+  }
+
   const ok = summary();
   process.exit(ok ? 0 : 1);
 })().catch(e => {

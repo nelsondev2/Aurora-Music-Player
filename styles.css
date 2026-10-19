@@ -1999,9 +1999,17 @@ svg { display: block; }
 }
 
 /* =====================================================================
- *  Estado vacío
+ *  Estado vacío del reproductor (#emptyState)
+ *
+ *  OJO: esta variante a pantalla completa SOLO es la del reproductor
+ *  sin pistas. Antes el selector era «.empty-state» a secas y, al estar
+ *  declarado después que el bloque en flujo, convertía TODOS los
+ *  estados vacíos (Biblioteca, Buscar, Favoritos, cola, listas) en
+ *  capas absolutas «inset: 0» sobre el panel entero: se solapaban
+ *  entre sí, tapaban las filas y bloqueaban los toques (incluido el
+ *  botón «Nueva» de listas). Por eso va acotado a #emptyState.
  * ===================================================================== */
-.empty-state {
+#emptyState {
   position: absolute;
   inset: 0;
   z-index: 10;
@@ -2012,14 +2020,14 @@ svg { display: block; }
   padding: 40px 30px calc(var(--bottom-nav-h) + var(--safe-bottom) + 40px);
   text-align: center;
 }
-.empty-state h2 {
+#emptyState h2 {
   font-family: var(--font-display);
   font-size: var(--fs-title);
   font-weight: 700;
   margin-bottom: 8px;
 }
 .empty-state .empty-cta { margin-top: 6px; }
-.empty-state p {
+#emptyState p {
   font-size: var(--fs-body);
   color: var(--text-3);
   margin-bottom: 8px;
@@ -4341,6 +4349,33 @@ html.aurora-wide .toast {
 .track-list > .empty-state,
 .queue-list > .empty-state,
 .playlist-list > .empty-state { list-style: none; }
+/* Los estados vacíos dentro de listas van EN FLUJO, nunca como capa:
+ * ocupan su sitio en la lista, no tapan filas ni interceptan toques de
+ * los botones vecinos (regresión de las capturas: «Sin listas todavía»
+ * sobre las canciones y «Nueva» sin responder). Solo #emptyState, el
+ * del reproductor, es absoluto (ver su bloque). */
+.track-list > .empty-state,
+.queue-list > .empty-state,
+.playlist-list > .empty-state,
+.playlist-rail > .empty-state {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+/* En el carril de listas el vacío es un aviso breve, no un héroe:
+ * si ocupara media pantalla empujaría las canciones fuera de vista. */
+.playlist-rail > .empty-state.compact {
+  flex: 1 0 100%;
+  padding: 20px 16px;
+}
+.playlist-rail > .empty-state.compact .empty-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+.playlist-rail > .empty-state.compact .empty-icon .ico { width: 20px; height: 20px; }
 .empty-state.compact {
   padding: 32px 16px;
   gap: 10px;

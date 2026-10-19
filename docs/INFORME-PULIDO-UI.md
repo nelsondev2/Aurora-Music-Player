@@ -4,7 +4,7 @@
 **Base:** `ff73b21` (merge del PR #6, biblioteca simplificada)
 **Rama:** `arena/4c26cbd7-aurora-music-player`
 **Alcance elegido:** los 12 puntos de la auditoría de diseño (6 fallos + 6 de pulido), no solo los críticos.
-**Resultado:** 12/12 implementados + rediseño de botones de listas · **106/106 pruebas automatizadas en verde** · `.xdc` válido para Delta Chat.
+**Resultado:** 12/12 implementados + rediseño de botones de listas + corrección de los solapes de las capturas · **115/115 pruebas automatizadas en verde** · `.xdc` válido para Delta Chat.
 
 ---
 
@@ -13,15 +13,15 @@
 | Métrica | Antes (ff73b21) | Ahora |
 |---|---|---|
 | Puntos de diseño corregidos | 0/12 | **12/12** |
-| Pruebas de esta ronda | — | **106** (65 pulido + 27 smoke + 14 axe) |
-| Violaciones axe (9 pantallas) | — | **0** |
+| Pruebas de esta ronda | — | **115** (74 pulido + 27 smoke + 14 axe) |
+| Violaciones axe (10 pantallas) | — | **0** |
 | Contraste de acentos (peor extremo del degradado) | **1.64:1** | **4.75:1** |
 | Objetivo táctil mínimo en controles citados | 28 px | **40 px** (fab 36 px) |
 | `font-size` en px | 22 declaraciones + tokens | **0** |
-| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 312.0 KB** |
+| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 313.0 KB** |
 
 **Paquete final:** `aurora-music-player.xdc`
-**SHA-256:** `e04c096b950f16821a79db3c7602820034459223a97c4ec10c4c3f1be71ca34d`
+**SHA-256:** `5319974d0f2fb17acb3ad8d1920c9b18bddeae7191c316a5f2a74d8ef033af1e`
 **Validación:** `python3 build-xdc.py --check` → «OK el .xdc es válido para Delta Chat / webxdc».
 
 ---
@@ -163,12 +163,12 @@ python3 build-xdc.py --check
 Salida final:
 
 ```
-OK  aurora-music-player.xdc · 28 archivos · 312.0 KB
-    sha256: e04c096b950f16821a79db3c7602820034459223a97c4ec10c4c3f1be71ca34d
+OK  aurora-music-player.xdc · 28 archivos · 313.0 KB
+    sha256: 5319974d0f2fb17acb3ad8d1920c9b18bddeae7191c316a5f2a74d8ef033af1e
     nombre: Aurora Music Player
     código: https://github.com/nelsondev2/Aurora-Music-Player
     icono: icon.png (90.5 KB)
-    archivos: 28 · comprimido: 312.0 KB · sin comprimir: 900.5 KB
+    archivos: 28 · comprimido: 313.0 KB · sin comprimir: 903.2 KB
 OK  el .xdc es válido para Delta Chat / webxdc
 ```
 
@@ -219,4 +219,41 @@ Al revisar los botones aparecieron cuatro usos del degradado brillante con conte
 - Contraste: `--accent-text-2` y los cuatro selectores residuales.
 - axe: el **editor de lista** entra como décima pantalla auditada (0 violaciones).
 
-**Total actual: 106/106** (65 pulido + 27 smoke + 14 axe), ejecutadas también contra el `.xdc` extraído.
+**Total tras esta sección: 106/106** (65 pulido + 27 smoke + 14 axe).
+
+---
+
+## 9. Corrección de las capturas (2026-10-19): vacíos solapados y «Nueva» sin funcionar
+
+**Reporte:** tres capturas en ArcaneChat (Biblioteca con 1 canción, Buscar y Biblioteca vacía) con iconos/títulos flotando sobre el contenido, y el botón de crear listas sin responder.
+
+### 9.1 Causa raíz (única para casi todo)
+
+En `styles.css` existían **dos** reglas para el mismo selector `.empty-state`:
+
+1. ~línea 1236: en flujo (`position: relative`, pensada para estados vacíos dentro de listas).
+2. ~línea 2004: `position: absolute; inset: 0; z-index: 10` (pensada **solo** para `#emptyState`, la pantalla vacía del reproductor).
+
+La segunda ganaba en la cascada para **todos** los `.empty-state`. Así, cada estado vacío dentro de un `<li>` (listas de Biblioteca, canciones, historial de Buscar, Favoritos, cola) se convertía en una capa a pantalla completa anclada al `.sheet-panel`:
+
+- **Captura 1 (Biblioteca, 1 canción):** el vacío «Sin listas todavía» del carril tapaba la fila MONOLOG, los chips de orden y parte de «Aleatorio».
+- **Captura 2 (Buscar):** el vacío del historial flotaba sobre los filtros, con el placeholder del input como titular gigante.
+- **Captura 3 (Biblioteca vacía):** los vacíos de listas y de canciones, ambos absolutos, se imprimían uno sobre otro («Tu biblioteca está vacía» + «Sin listas todavía» + botón entre medias).
+- **«Nueva» no funcionaba:** la lógica siempre fue correcta (verificado por DOM: abre, guarda y pinta la lista), pero la capa invisible del estado vacío cubría todo el panel e interceptaba los toques antes de que llegaran al botón.
+
+### 9.2 Corrección
+
+| Archivo | Cambio |
+|---|---|
+| `styles.css` | La regla absoluta pasa a `#emptyState` (solo el reproductor). Refuerzo en el bloque de pulido: los `.empty-state` hijos de `.track-list`, `.queue-list`, `.playlist-list` y `.playlist-rail` quedan `position: relative; inset: auto; z-index: auto; width: 100%`. El vacío del carril se hace breve (icono 44 px, `padding: 20px 16px`, `flex: 1 0 100%`) para no empujar las canciones fuera de vista. |
+| `js/stats-ui.js` + `data.js` | El vacío de Buscar ya no reutiliza `search_placeholder` como titular: nuevas claves `search_empty_title` / `search_empty_hint` en los 8 idiomas («Sin búsquedas recientes» + explicación). |
+
+No se tocó la lógica de crear listas: no tenía ningún fallo. Al retirar la capa que bloqueaba los toques, tanto «+ Nueva» de Biblioteca como «Nueva» de «Tus listas» (y el CTA del propio vacío) vuelven a funcionar.
+
+### 9.3 Pruebas añadidas (9, bloque M de `verificacion/ui-polish.js`)
+
+- CSS: ningún `.empty-state` sin acotar es absoluto; solo `#emptyState` lo es; los vacíos de listas van en flujo y el del carril es breve.
+- DOM: Biblioteca vacía muestra cada vacío en su sección; Buscar no duplica el placeholder; con 1 canción y 0 listas la fila se ve y el vacío queda en su carril.
+- Comportamiento: «+ Nueva» abre el creador, guardar crea la lista (aparece en el carril y en «Tus listas») y el vacío desaparece; «Nueva» de «Tus listas» también abre.
+
+**Total actual: 115/115** (74 pulido + 27 smoke + 14 axe), ejecutadas también contra el `.xdc` extraído con `AURORA_ROOT=/tmp/xdc-fix npm test`.

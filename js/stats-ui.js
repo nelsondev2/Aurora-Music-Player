@@ -228,7 +228,11 @@ Object.assign(App, {
         li.className = 'empty-state compact';
         li.innerHTML = this.emptyStateHtml({
           icon: 'clock-rotate-left',
-          title: this.t('search_placeholder')
+          // Antes se reutilizaba el placeholder del input como titular:
+          // se veía «Canción, artista o ál…» en grande, duplicado con
+          // el propio campo de búsqueda de encima.
+          title: this.t('search_empty_title'),
+          text: this.t('search_empty_hint')
         });
         ul.appendChild(li);
         return;
