@@ -3049,14 +3049,34 @@ button,
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* «Retomar en 1:24»: lo que la tarjeta aporta frente al mini-player. */
+.home-hero-text .home-hero-resume {
+  color: var(--accent);
+  font-weight: 700;
+}
 .home-hero-chevron { color: var(--text-4); font-size: var(--fs-body); }
 .home-section { margin-bottom: 22px; }
+.home-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
 .home-section-title {
   font-size: 1rem;
   font-weight: 800;
   font-family: var(--font-display);
-  margin: 0 0 10px;
+  margin: 0;
 }
+.home-see-all {
+  flex: 0 0 auto;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--text-3);
+  padding: 4px 2px;
+}
+.home-see-all:active { color: var(--accent); }
 .home-rail {
   display: flex;
   gap: 12px;
@@ -3069,13 +3089,16 @@ button,
 }
 .home-rail::-webkit-scrollbar { display: none; }
 .home-card {
-  flex: 0 0 132px;
-  width: 132px;
+  /* 116 px (antes 132): en Inicio caben tres secciones de un vistazo
+   * en vez de dos y media, sin que las portadas pierdan presencia. */
+  flex: 0 0 116px;
+  width: 116px;
   text-align: left;
 }
 .home-card-cover {
-  width: 132px;
-  height: 132px;
+  position: relative;
+  width: 116px;
+  height: 116px;
   border-radius: 14px;
   overflow: hidden;
   background: var(--surface);
@@ -3083,6 +3106,38 @@ button,
   box-shadow: 0 10px 22px rgba(0,0,0,0.28);
 }
 .home-card-cover canvas { width: 100%; height: 100%; display: block; }
+/* Marca de «esta es la pista cargada» sobre la portada: ecualizador de
+ * tres barras en la esquina; solo se mueve si está sonando. */
+.eq-badge {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 18px;
+  padding: 4px 5px;
+  box-sizing: border-box;
+  border-radius: 7px;
+  background: rgba(5, 5, 12, 0.72);
+}
+.eq-badge i {
+  width: 3px;
+  height: 5px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+.eq-badge.playing i { animation: eqBounce 0.9s ease-in-out infinite; }
+.eq-badge.playing i:nth-child(2) { animation-delay: 0.25s; }
+.eq-badge.playing i:nth-child(3) { animation-delay: 0.5s; }
+@keyframes eqBounce {
+  0%, 100% { height: 4px; }
+  50% { height: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .eq-badge.playing i { animation: none; height: 7px; }
+}
+.home-card.is-current .home-card-title { color: var(--accent); }
 .home-card-title {
   display: block;
   font-size: var(--fs-sm);

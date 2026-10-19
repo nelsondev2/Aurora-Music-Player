@@ -171,6 +171,15 @@ Object.assign(App, {
       const t = this.currentTrack;
       let hero = '';
       if (t) {
+        // La tarjeta «Continuar» es la misma pista que muestra el
+        // mini-reproductor: para que aporte algo más que un duplicado,
+        // si hay posición de reproducción enseña dónde retomar
+        // («Retomar en 1:24»). Sin posición queda título y artista.
+        const pos = (this.audio && this.audio.currentTime) || 0;
+        const dur = (this.audio && this.audio.duration) || t.duration || 0;
+        const resumeLine = (pos > 5 && (!dur || pos < dur - 2))
+          ? `<span class="home-hero-resume">${this.esc(this.t('home_resume_at').replace('X', this.fmtTime(pos)))}</span>`
+          : '';
         hero = `
           <button class="home-hero" id="homeHero" type="button">
             <div class="home-hero-cover"><canvas id="homeHeroCanvas" width="160" height="160"></canvas></div>
@@ -178,6 +187,7 @@ Object.assign(App, {
               <span class="home-kicker">${this.esc(this.t('home_continue'))}</span>
               <strong>${this.esc(t.title)}</strong>
               <span>${this.esc(t.artist || this.t('unknown_artist'))}</span>
+              ${resumeLine}
             </div>
             <svg class="ico home-hero-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>
           </button>`;
@@ -201,18 +211,34 @@ Object.assign(App, {
       this._bindHomeRails();
     },
 
+    /* Cabecera de sección con «Ver todo»: lleva a Biblioteca, donde
+     * viven la lista completa de canciones y la de listas. */
+    _sectionHead(title) {
+      return `<div class="home-section-head">
+        <h3 class="home-section-title">${this.esc(title)}</h3>
+        <button class="home-see-all" type="button" data-see-all="library">${this.esc(this.t('see_all'))}</button>
+      </div>`;
+    },
+
     _homeRail(id, title, tracks, kind) {
       if (!tracks || !tracks.length) return '';
+      const curId = this.currentTrack && this.currentTrack.id;
       const items = tracks.map(t => {
         if (!t) return '';
-        return `<button class="home-card" type="button" data-kind="${kind}" data-id="${this.esc(t.id)}">
-          <div class="home-card-cover"><canvas width="120" height="120"></canvas></div>
+        // La pista cargada se marca en su tarjeta: distintivo de
+        // ecualizador sobre la portada (animado solo si está sonando).
+        const isCur = t.id === curId;
+        const nowBadge = isCur
+          ? `<span class="eq-badge${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
+          : '';
+        return `<button class="home-card${isCur ? ' is-current' : ''}" type="button" data-kind="${kind}" data-id="${this.esc(t.id)}">
+          <div class="home-card-cover"><canvas width="120" height="120"></canvas>${nowBadge}</div>
           <span class="home-card-title">${this.esc(t.title)}</span>
           <span class="home-card-sub">${this.esc(t.artist || '')}</span>
         </button>`;
       }).join('');
       return `<section class="home-section">
-        <h3 class="home-section-title">${this.esc(title)}</h3>
+        ${this._sectionHead(title)}
         <div class="home-rail" id="${id}">${items}</div>
       </section>`;
     },
@@ -228,12 +254,16 @@ Object.assign(App, {
         </button>`;
       }).join('');
       return `<section class="home-section">
-        <h3 class="home-section-title">${this.esc(this.t('home_playlists'))}</h3>
+        ${this._sectionHead(this.t('home_playlists'))}
         <div class="home-rail" id="homePlaylists">${items}</div>
       </section>`;
     },
 
     _bindHomeRails() {
+      // «Ver todo» de cada sección → Biblioteca.
+      document.querySelectorAll('#homeContent [data-see-all]').forEach(btn => {
+        btn.addEventListener('click', () => this.goNav(btn.dataset.seeAll));
+      });
       document.querySelectorAll('#homeContent .home-card').forEach(card => {
         const kind = card.dataset.kind;
         const id = card.dataset.id;

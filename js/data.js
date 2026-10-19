@@ -53,15 +53,17 @@ const SUPPORTED_LANGS = [
 
 const I18N = {
   /* ---------- App general ---------- */
+  /* Solo «Aurora»: no existe una versión «Pro» (ni otra que no lo sea),
+   * así que el antiguo «Aurora · Reproductor Pro» prometía de más. */
   app_title: {
-    es: 'Aurora · Reproductor Pro',
-    en: 'Aurora · Player Pro',
-    pt: 'Aurora · Player Pro',
-    zh: 'Aurora · 专业播放器',
-    ja: 'Aurora · プロプレーヤー',
-    fr: 'Aurora · Player Pro',
-    it: 'Aurora · Player Pro',
-    ru: 'Aurora · Про-плеер'
+    es: 'Aurora',
+    en: 'Aurora',
+    pt: 'Aurora',
+    zh: 'Aurora',
+    ja: 'Aurora',
+    fr: 'Aurora',
+    it: 'Aurora',
+    ru: 'Aurora'
   },
   now_playing_label: {
     es: 'REPRODUCIENDO AHORA',
@@ -2022,6 +2024,16 @@ const I18N = {
     es: 'Más escuchadas', en: 'Most played', pt: 'Mais ouvidas',
     zh: '最常播放', ja: 'よく聴く曲', fr: 'Les plus écoutées',
     it: 'Più ascoltate', ru: 'Самые слушаемые'
+  },
+  home_resume_at: {
+    es: 'Retomar en X', en: 'Resume at X', pt: 'Retomar em X',
+    zh: '从 X 继续', ja: 'X から再開', fr: 'Reprendre à X',
+    it: 'Riprendi da X', ru: 'Продолжить с X'
+  },
+  see_all: {
+    es: 'Ver todo', en: 'See all', pt: 'Ver tudo',
+    zh: '查看全部', ja: 'すべて見る', fr: 'Tout voir',
+    it: 'Vedi tutto', ru: 'Показать все'
   },
   lib_sort_title: {
     es: 'Título', en: 'Title', pt: 'Título',

@@ -18,10 +18,10 @@
 | Contraste de acentos (peor extremo del degradado) | **1.64:1** | **4.75:1** |
 | Objetivo táctil mínimo en controles citados | 28 px | **40 px** (fab 36 px) |
 | `font-size` en px | 22 declaraciones + tokens | **0** |
-| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 320.0 KB** |
+| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 321.2 KB** |
 
 **Paquete final:** `aurora-music-player.xdc`
-**SHA-256:** `7cccef2ed7097e45b86718fbf75c7044de32371ff755a33a57b3dfdcf6eea2c8`
+**SHA-256:** `f694a7aac3faca6e54e591e4c6ed39d0ec733eaf23c3361adae50a141162b2b8`
 **Validación:** `python3 build-xdc.py --check` → «OK el .xdc es válido para Delta Chat / webxdc».
 
 ---
@@ -163,12 +163,12 @@ python3 build-xdc.py --check
 Salida final:
 
 ```
-OK  aurora-music-player.xdc · 28 archivos · 320.0 KB
-    sha256: 7cccef2ed7097e45b86718fbf75c7044de32371ff755a33a57b3dfdcf6eea2c8
+OK  aurora-music-player.xdc · 28 archivos · 321.2 KB
+    sha256: f694a7aac3faca6e54e591e4c6ed39d0ec733eaf23c3361adae50a141162b2b8
     nombre: Aurora Music Player
     código: https://github.com/nelsondev2/Aurora-Music-Player
     icono: icon.png (90.5 KB)
-    archivos: 28 · comprimido: 320.0 KB · sin comprimir: 924.8 KB
+    archivos: 28 · comprimido: 321.2 KB · sin comprimir: 928.4 KB
 OK  el .xdc es válido para Delta Chat / webxdc
 ```
 
@@ -412,7 +412,7 @@ Referencias actualizadas: `index.html` (`css/styles.css`, `js/webxdc.js`, `js/da
 | «Visualizad…» | La `.sec-label` forzaba mayúsculas: «VISUALIZADOR» en caja alta no cabe en su columna (≈61 px a 360 px). Sin `text-transform` y con `letter-spacing: 0` la palabra en caja mixta ocupa ~20 % menos y entra entera; el resto de etiquetas no se resiente. |
 | Cabecera redundante | Fuera la línea «REPRODUCIENDO AHORA» del reproductor (la de Letras, «LETRA SINCRONIZADA», queda). El contexto pasa a una sola frase: `playing_from` + nombre, con la traducción española ajustada a «Reproduciendo de» — «Reproduciendo de Música», «de Favoritos»… La misma frase se usa en el subtítulo de la Cola. Sin contexto sigue «Tu biblioteca». |
 
-**Comprobación** (arnés jsdom externo, fuera del repo): cabecera con lista/álbum → «Reproduciendo de Música», con Favoritos → «Reproduciendo de Favoritos», sin contexto → «Tu biblioteca», en inglés → «Playing from Música»; A-B recorre `A-B → A→ → A⇄B → A-B` con sus clases y su etiqueta pasa a «Loop»/«ループ» al cambiar de idioma; 0 errores de arranque en el repo y en el `.xdc` extraído. Paquete: 28 archivos · 320.0 KB · sha256 `7cccef2ed7097e45b86718fbf75c7044de32371ff755a33a57b3dfdcf6eea2c8`.
+**Comprobación** (arnés jsdom externo, fuera del repo): cabecera con lista/álbum → «Reproduciendo de Música», con Favoritos → «Reproduciendo de Favoritos», sin contexto → «Tu biblioteca», en inglés → «Playing from Música»; A-B recorre `A-B → A→ → A⇄B → A-B` con sus clases y su etiqueta pasa a «Loop»/«ループ» al cambiar de idioma; 0 errores de arranque en el repo y en el `.xdc` extraído. Paquete: 28 archivos · 321.2 KB · sha256 `f694a7aac3faca6e54e591e4c6ed39d0ec733eaf23c3361adae50a141162b2b8`.
 
 ---
 
@@ -425,7 +425,7 @@ Referencias actualizadas: `index.html` (`css/styles.css`, `js/webxdc.js`, `js/da
 2. `wireEvents()` y `wireGestures()` salen si ya están cableados (`_wired.events` / `_wired.gestures`).
 3. `bootAurora()` en `main.js` se protege con `window.__auroraBooted` ante una re-evaluación del script.
 
-**Comprobación** (arnés jsdom externo): con doble arranque simulado, 1 clic = 1 llamada; pausar deja `isPlaying:false` y reanudar lo restablece; pantalla completa entra con un clic (`lyrics-fullscreen`) y sale con el botón ×; arranque normal sin cambios; 0 errores en repo y `.xdc` extraído. Paquete: 28 archivos · 320.0 KB · sha256 `7cccef2ed7097e45b86718fbf75c7044de32371ff755a33a57b3dfdcf6eea2c8`.
+**Comprobación** (arnés jsdom externo): con doble arranque simulado, 1 clic = 1 llamada; pausar deja `isPlaying:false` y reanudar lo restablece; pantalla completa entra con un clic (`lyrics-fullscreen`) y sale con el botón ×; arranque normal sin cambios; 0 errores en repo y `.xdc` extraído. Paquete: 28 archivos · 321.2 KB · sha256 `f694a7aac3faca6e54e591e4c6ed39d0ec733eaf23c3361adae50a141162b2b8`.
 
 ---
 
@@ -441,4 +441,20 @@ Referencias actualizadas: `index.html` (`css/styles.css`, `js/webxdc.js`, `js/da
 | Chips incompletos | Se añade **OPUS**: MP3 · FLAC · M4A · WAV · OGG · OPUS, lo que la app reproduce de verdad. |
 | Triple marca | Fuera el wordmark «AURORA» bajo el icono (y su CSS, incluida la regla de tema claro): icono + titular, con más aire sobre el `h2`. |
 
-**Comprobación** (arnés jsdom externo): bienvenida sin wordmark, 6 chips, tres perks con título+descripción, el engranaje abre `sheetSettings`, traducción EN aplicada («With your .lrc files, line by line»), 0 errores en repo y en el `.xdc` extraído. Paquete: 28 archivos · 320.0 KB · sha256 `7cccef2ed7097e45b86718fbf75c7044de32371ff755a33a57b3dfdcf6eea2c8`.
+**Comprobación** (arnés jsdom externo): bienvenida sin wordmark, 6 chips, tres perks con título+descripción, el engranaje abre `sheetSettings`, traducción EN aplicada («With your .lrc files, line by line»), 0 errores en repo y en el `.xdc` extraído. Paquete: 28 archivos · 321.2 KB · sha256 `f694a7aac3faca6e54e591e4c6ed39d0ec733eaf23c3361adae50a141162b2b8`.
+
+---
+
+## 20. Inicio con música: hero que aporta, fuera el «Pro», densidad y «Ver todo»
+
+**Petición:** opinión de Inicio ya con música (8/10) → «Adelante» con los cuatro puntos.
+
+| Punto | Cambio |
+|---|---|
+| Hero duplicaba al mini | La tarjeta «Continuar escuchando» muestra, si hay posición de reproducción (>5 s y no casi al final), la línea «Retomar en X» (`home_resume_at`, 8 idiomas) en color de acento: ahora aporta el dato que el mini-reproductor no enseña. |
+| «AURORA · REPRODUCTOR PRO» | `app_title` pasa a ser solo «Aurora» en los 8 idiomas: no hay versión Pro ni otra que no lo sea. |
+| Densidad | Tarjetas de carril de 132 → 116 px: caben tres secciones de un vistazo. Y la pista cargada se marca en su tarjeta con un ecualizador de tres barras sobre la portada (animado solo si suena, quieto con `prefers-reduced-motion`) y el título en acento. |
+| Sin salida a la lista completa | Cada sección lleva «Ver todo» (`see_all`, 8 idiomas) que abre la Biblioteca, cableado en `_bindHomeRails` vía `data-see-all`. |
+
+**Comprobación** (arnés jsdom externo): kicker «Aurora»; hero con posición «Retomar en 1:24» y sin posición sin inventar la línea; solo la tarjeta actual lleva `.eq-badge.playing`; «Ver todo» abre la hoja Biblioteca; 0 errores en repo y en el `.xdc` extraído.
+Paquete: 28 archivos · 321.2 KB.
