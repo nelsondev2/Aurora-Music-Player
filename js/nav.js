@@ -128,6 +128,11 @@ Object.assign(App, {
       const homeView = document.getElementById('viewHome');
       if (homeView) homeView.classList.toggle('is-empty', !this.tracks.length);
       if (!this.tracks.length) {
+        // Bienvenida de primer arranque. Sin wordmark «AURORA» bajo el
+        // icono (el icono ya es la marca), con Ajustes a mano —la cabecera
+        // de Inicio se oculta en este estado y dejaba la app sin ajustes
+        // hasta cargar música— y perks informativos con descripción,
+        // para que no parezcan botones que no hacen nada.
         root.innerHTML = `
           <div class="home-welcome">
             <div class="home-welcome-aurora" aria-hidden="true">
@@ -135,10 +140,12 @@ Object.assign(App, {
               <span class="hw-orb hw-orb-b"></span>
               <span class="hw-orb hw-orb-c"></span>
             </div>
+            <button class="icon-btn home-welcome-settings" id="btnHomeWelcomeSettings" type="button" data-i18n-aria="settings_title" aria-label="Ajustes">
+              <svg class="ico" aria-hidden="true"><use href="#i-gear"></use></svg>
+            </button>
             <div class="home-welcome-mark">
               <img src="icon.png" alt="" width="88" height="88">
             </div>
-            <p class="home-welcome-brand">Aurora</p>
             <h2>${this.esc(this.t('home_welcome_title'))}</h2>
             <p class="home-welcome-lead">${this.esc(this.t('home_welcome_lead'))}</p>
             <button class="primary-btn home-welcome-cta" id="btnHomeLoad" type="button">
@@ -146,16 +153,18 @@ Object.assign(App, {
               <span>${this.esc(this.t('load_music'))}</span>
             </button>
             <ul class="home-welcome-formats" aria-label="${this.esc(this.t('empty_format_hint'))}">
-              <li>MP3</li><li>FLAC</li><li>M4A</li><li>WAV</li><li>OGG</li>
+              <li>MP3</li><li>FLAC</li><li>M4A</li><li>WAV</li><li>OGG</li><li>OPUS</li>
             </ul>
             <div class="home-welcome-perks">
-              <div><svg class="ico" aria-hidden="true"><use href="#i-align-left"></use></svg><span>${this.esc(this.t('home_perk_lyrics'))}</span></div>
-              <div><svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg><span>${this.esc(this.t('home_perk_playlists'))}</span></div>
-              <div><svg class="ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>${this.esc(this.t('home_perk_offline'))}</span></div>
+              <div><svg class="ico" aria-hidden="true"><use href="#i-align-left"></use></svg><span class="hw-perk-text"><strong>${this.esc(this.t('home_perk_lyrics'))}</strong><small>${this.esc(this.t('home_perk_lyrics_desc'))}</small></span></div>
+              <div><svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg><span class="hw-perk-text"><strong>${this.esc(this.t('home_perk_playlists'))}</strong><small>${this.esc(this.t('home_perk_playlists_desc'))}</small></span></div>
+              <div><svg class="ico" aria-hidden="true"><use href="#i-lock"></use></svg><span class="hw-perk-text"><strong>${this.esc(this.t('home_perk_offline'))}</strong><small>${this.esc(this.t('home_perk_offline_desc'))}</small></span></div>
             </div>
           </div>`;
         const btn = document.getElementById('btnHomeLoad');
         if (btn) btn.addEventListener('click', () => this.openFilePicker());
+        const btnSettings = document.getElementById('btnHomeWelcomeSettings');
+        if (btnSettings) btnSettings.addEventListener('click', () => this.openSheet('sheetSettings'));
         return;
       }
 

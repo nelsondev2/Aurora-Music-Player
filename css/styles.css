@@ -3582,6 +3582,9 @@ button,
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* El bloque se centra en vertical: agrupado arriba dejaba el tercio
+   * inferior de la pantalla en negro vacío. */
+  justify-content: center;
   text-align: center;
   min-height: 100%;
   padding: 8px 6px 20px;
@@ -3589,10 +3592,21 @@ button,
 }
 .home-welcome-aurora {
   position: absolute;
-  inset: -8% -40% 38%;
+  /* La aurora respira por toda la pantalla (antes moría al 62 % y la
+   * mitad inferior era negro plano); las orbes quedan arriba y la de
+   * en medio tiñe el centro sin tapar el texto (va tras él, z-index 0). */
+  inset: -10% -40%;
   pointer-events: none;
   filter: blur(48px);
-  opacity: 0.95;
+  opacity: 0.85;
+}
+/* Ajustes siempre alcanzables, también sin música cargada: en este
+ * estado la cabecera de Inicio se oculta y con ella iba su engranaje. */
+.home-welcome-settings {
+  position: absolute;
+  top: calc(var(--safe-top) + 4px);
+  right: 4px;
+  z-index: 2;
 }
 .hw-orb {
   position: absolute;
@@ -3642,20 +3656,8 @@ button,
   display: block;
   object-fit: cover;
 }
-.home-welcome-brand {
-  position: relative;
-  z-index: 1;
-  margin: 16px 0 0;
-  font-family: var(--font-display);
-  font-size: var(--fs-caption);
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  font-weight: 800;
-  background: linear-gradient(90deg, var(--accent), var(--accent-text-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+/* (Sin wordmark «AURORA» bajo el icono: el icono ya es la marca y el
+ * texto repetía marca por tercera vez antes del titular.) */
 .home-welcome h2 {
   position: relative;
   z-index: 1;
@@ -3664,7 +3666,8 @@ button,
   font-weight: 800;
   letter-spacing: var(--ls-display);
   line-height: 1.12;
-  margin: 10px 16px 0;
+  /* Al desaparecer el wordmark, el titular respira más bajo el icono. */
+  margin: 20px 16px 0;
   max-width: 280px;
   color: var(--text-1);
 }
@@ -3723,13 +3726,30 @@ button,
   align-items: center;
   gap: 10px;
   text-align: left;
-  padding: 10px 12px;
+  padding: 8px 12px;
   border-radius: 14px;
   background: var(--surface);
   border: 1px solid var(--border);
+  color: var(--text-1);
+}
+/* Título + descripción en dos líneas: se lee como información, no como
+ * un botón en espera (antes era una tarjeta grande con un solo texto). */
+.hw-perk-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.hw-perk-text strong {
   font-size: var(--fs-sm);
   font-weight: 600;
-  color: var(--text-1);
+  line-height: 1.25;
+}
+.hw-perk-text small {
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-3);
 }
 .home-welcome-perks .ico {
   width: 28px;
@@ -3833,7 +3853,6 @@ button,
   border-top-color: rgba(20, 16, 12, 0.10);
 }
 :root[data-theme="light"] .lrc-line.active { color: #1A1612; }
-:root[data-theme="light"] .home-welcome-brand { color: var(--accent); }
 :root[data-theme="light"] .ctrl-play { color: var(--accent-on-fill); }
 :root[data-theme="light"] .primary-btn { color: var(--accent-on-fill); }
 :root[data-theme="light"] .icon-add { color: var(--text-1); }

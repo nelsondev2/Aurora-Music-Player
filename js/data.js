@@ -2395,6 +2395,24 @@ const I18N = {
     zh: '本地且私密', ja: 'ローカルでプライベート', fr: 'Local et privé',
     it: 'Locale e privato', ru: 'Локально и приватно'
   },
+  /* Descripciones de una línea bajo cada ventaja de la bienvenida: la
+   * ventaja sola parecía un botón; con descripción se lee como lo que
+   * es, información. */
+  home_perk_lyrics_desc: {
+    es: 'Con tus archivos .lrc, línea a línea', en: 'With your .lrc files, line by line', pt: 'Com seus arquivos .lrc, linha a linha',
+    zh: '使用 .lrc 文件逐行同步', ja: '.lrcファイルで一行ずつ同期', fr: 'Avec vos fichiers .lrc, ligne par ligne',
+    it: 'Con i tuoi file .lrc, riga per riga', ru: 'С файлами .lrc — строка за строкой'
+  },
+  home_perk_playlists_desc: {
+    es: 'Crea listas y marca favoritos', en: 'Build playlists and save favorites', pt: 'Crie listas e salve favoritos',
+    zh: '创建歌单并收藏喜欢的歌曲', ja: 'プレイリスト作成とお気に入り登録', fr: 'Créez des listes et des favoris',
+    it: 'Crea liste e salva i preferiti', ru: 'Создавайте плейлисты и отмечайте избранное'
+  },
+  home_perk_offline_desc: {
+    es: 'Todo queda en tu teléfono', en: 'Everything stays on your phone', pt: 'Tudo fica no seu telefone',
+    zh: '一切都只保存在手机中', ja: 'データはすべて端末の中だけ', fr: 'Tout reste sur votre téléphone',
+    it: 'Tutto resta sul tuo telefono', ru: 'Всё хранится только на телефоне'
+  },
 
   shortcuts_title: {
     es: 'Atajos de teclado', en: 'Keyboard shortcuts', pt: 'Atalhos de teclado',
