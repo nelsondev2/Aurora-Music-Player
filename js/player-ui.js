@@ -55,7 +55,7 @@ Object.assign(App, {
       // mini-cabecera). Su barra inferior sí muestra la duración total.
       const lrcTotal = document.getElementById('lyricsTimeTotal');
       if (lrcTotal) lrcTotal.textContent = this.fmtTime(t.duration);
-      // Cabecera en una sola frase: «Reproduciendo de <contexto>»
+      // Cabecera en una sola frase: «Reproduciendo desde <contexto>»
       // (la lista, Favoritos, el álbum…). Sin contexto se queda el
       // texto neutro de la biblioteca. El título no va aquí: ya va en
       // grande bajo la portada; completo queda en el tooltip.

@@ -431,7 +431,7 @@ Object.assign(App, {
       const ul = document.getElementById('queueList');
       if (!ul) return;
       ul.innerHTML = '';
-      // Subtítulo con el contexto actual ("Reproduciendo de X"),
+      // Subtítulo con el contexto actual ("Reproduciendo desde X"),
       // la misma frase que usa la cabecera del reproductor.
       const ctxLabel = document.getElementById('queueContextLabel');
       if (ctxLabel) {

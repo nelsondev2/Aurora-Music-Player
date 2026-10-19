@@ -1527,7 +1527,7 @@ const I18N = {
     it: 'traccia/e aggiunta/e a', ru: 'трек(ов) добавлено в'
   },
   playing_from: {
-    es: 'Reproduciendo de', en: 'Playing from', pt: 'Reproduzindo de', zh: '播放来源',
+    es: 'Reproduciendo desde', en: 'Playing from', pt: 'Reproduzindo de', zh: '播放来源',
     ja: '再生元:', fr: 'Lecture depuis', it: 'Riproduzione da', ru: 'Воспроизведение из'
   },
   favorites_playlist_name: {
