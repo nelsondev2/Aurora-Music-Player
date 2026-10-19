@@ -399,4 +399,146 @@ Object.assign(App, {
         this.toast(this.t('toast_share_error'));
       }
     },
+
+    /* ============================================================
+     *  Importar playlist M3U/M3U8 (la otra mitad del formato)
+     * ============================================================
+     *  Parsea el texto de un .m3u/.m3u8: cabecera #EXTM3U, nombre en
+     *  #PLAYLIST: (si viene) y entradas #EXTINF:duración,Artista - Título
+     *  seguidas de la ruta del archivo. Sin esa directiva (M3U simple)
+     *  las entradas son solo rutas. Devuelve { name, entries }. */
+    parseM3U(text) {
+      const clean = String(text == null ? '' : text).replace(/^﻿/, '');
+      const lines = clean.split(/\r\n|\r|\n/);
+      let name = '';
+      const entries = [];
+      let pending = null;
+      for (const raw of lines) {
+        const line = String(raw).trim();
+        if (!line) continue;
+        if (line.startsWith('#')) {
+          const up = line.toUpperCase();
+          if (up.startsWith('#PLAYLIST:')) {
+            name = line.slice('#PLAYLIST:'.length).trim();
+          } else if (up.startsWith('#EXTINF:')) {
+            const rest = line.slice('#EXTINF:'.length);
+            const comma = rest.indexOf(',');
+            let dur = -1;
+            let label = '';
+            if (comma >= 0) {
+              dur = parseInt(rest.slice(0, comma), 10);
+              label = rest.slice(comma + 1).trim();
+            }
+            let artist = '';
+            let title = label;
+            const sep = label.indexOf(' - ');
+            if (sep > 0) {
+              artist = label.slice(0, sep).trim();
+              title = label.slice(sep + 3).trim();
+            }
+            pending = { duration: isNaN(dur) ? -1 : dur, artist, title };
+          }
+          continue;
+        }
+        // Línea de ruta: quitar esquema file:// y decodificar %XX.
+        let file = line;
+        if (/^file:\/\//i.test(file)) {
+          file = file.replace(/^file:\/\/(localhost)?/i, '');
+          // file:///C:/... → C:/... (en Unix se conserva la ruta absoluta)
+          if (/^\/[a-zA-Z]:/.test(file)) file = file.slice(1);
+        }
+        try { file = decodeURIComponent(file); } catch (e) { /* ruta sin codificar */ }
+        entries.push({
+          file,
+          duration: pending ? pending.duration : -1,
+          artist: pending ? pending.artist : '',
+          title: pending ? pending.title : ''
+        });
+        pending = null;
+      }
+      return { name, entries };
+    },
+
+    /* Empareja las entradas con las pistas de la biblioteca.
+     * Orden de preferencia: 1) nombre de archivo (basename, sin
+     * importar la carpeta de origen), 2) «Artista - Título» de #EXTINF,
+     * 3) título solo si es único en la biblioteca. Las repetidas en el
+     * propio M3U cuentan una vez. Devuelve { ids, matched }. */
+    matchM3UEntries(entries) {
+      const norm = (s) => String(s == null ? '' : s).toLowerCase().trim().replace(/\s+/g, ' ');
+      const base = (p) => norm(String(p == null ? '' : p).split(/[\\/]/).pop());
+      const byFile = new Map();
+      const byArtistTitle = new Map();
+      const byTitle = new Map();
+      (this.tracks || []).forEach(t => {
+        if (t.fileName) byFile.set(base(t.fileName), t);
+        byArtistTitle.set(norm((t.artist || '') + ' - ' + (t.title || '')), t);
+        const nt = norm(t.title);
+        if (!byTitle.has(nt)) byTitle.set(nt, []);
+        byTitle.get(nt).push(t);
+      });
+      const ids = [];
+      const seen = new Set();
+      let matched = 0;
+      (entries || []).forEach(e => {
+        let tr = byFile.get(base(e.file)) || null;
+        if (!tr && e.title && e.artist) tr = byArtistTitle.get(norm(e.artist + ' - ' + e.title)) || null;
+        if (!tr && e.title) {
+          const cands = byTitle.get(norm(e.title)) || [];
+          if (cands.length === 1) tr = cands[0];
+        }
+        if (tr) {
+          matched++;
+          if (!seen.has(tr.id)) {
+            seen.add(tr.id);
+            ids.push(tr.id);
+          }
+        }
+      });
+      return { ids, matched };
+    },
+
+    /* Crea la lista desde el texto M3U ya leído. fallbackName suele ser
+     * el nombre del archivo sin extensión. Avisos honestos: si ninguna
+     * entrada está en la biblioteca no se crea una lista vacía. */
+    importM3U(text, fallbackName) {
+      const parsed = this.parseM3U(text);
+      if (!parsed.entries.length) {
+        this.toast(this.t('toast_m3u_empty'));
+        return null;
+      }
+      const result = this.matchM3UEntries(parsed.entries);
+      if (!result.ids.length) {
+        this.toast(this.t('toast_m3u_none'));
+        return null;
+      }
+      let plName = (parsed.name || fallbackName || this.t('imported_playlist_name')).trim().slice(0, 80);
+      if (!plName) plName = this.t('imported_playlist_name');
+      // createPlaylist rechaza nombres duplicados: buscar uno libre.
+      let candidate = plName;
+      let n = 2;
+      const nameTaken = (nm) => this.playlists.some(p => (p.name || '').trim().toLowerCase() === nm.toLowerCase());
+      while (nameTaken(candidate)) candidate = plName + ' (' + (n++) + ')';
+      const pl = this.createPlaylist(candidate, '', result.ids);
+      if (pl) {
+        if (typeof this.renderLibrarySections === 'function') this.renderLibrarySections();
+        if (typeof this.renderHome === 'function') this.renderHome();
+        this.toast(this.t('toast_m3u_imported')
+          .replace('N', pl.name)
+          .replace('X', String(result.matched))
+          .replace('Y', String(parsed.entries.length)));
+      }
+      return pl;
+    },
+
+    async importM3UFile(file) {
+      try {
+        const text = await file.text();
+        return this.importM3U(text, String(file.name || '').replace(/\.m3u8?$/i, ''));
+      } catch (e) {
+        console.warn('[Aurora] No se pudo leer el .m3u:', e);
+        this.toast(this.t('toast_load_error'));
+        return null;
+      }
+    },
 });

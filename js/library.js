@@ -34,11 +34,24 @@ Object.assign(App, {
         return;
       }
       this._importing = true;
-      const count = fileList.length;
+      // Los .m3u/.m3u8 no son audio: se convierten en listas (contra las
+      // pistas ya presentes) y no pasan por el importador de pistas. Así,
+      // «Cargar música» también sirve para traer listas de fuera.
+      const allFiles = Array.from(fileList);
+      const m3uFiles = allFiles.filter(f => /\.m3u8?$/i.test(f.name || ''));
+      const mediaFiles = allFiles.filter(f => !/\.m3u8?$/i.test(f.name || ''));
+      for (const m3uFile of m3uFiles) {
+        await this.importM3UFile(m3uFile);
+      }
+      if (!mediaFiles.length) {
+        this._importing = false;
+        return;
+      }
+      const count = mediaFiles.length;
       this._importCancelled = false;
       this.showImportOverlay(0, count, '');
       try {
-        const newTracks = await window.AuroraUploader.processFiles(fileList, {
+        const newTracks = await window.AuroraUploader.processFiles(mediaFiles, {
           onProgress: (i, n, name) => this.updateImportOverlay(i, n, name),
           isCancelled: () => this._importCancelled
         });

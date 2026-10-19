@@ -428,6 +428,22 @@ Object.assign(App, {
       $('btnOpenNewPlaylist').addEventListener('click', () => {
         this.openCreatePlaylistSheet();
       });
+      // Importar lista .m3u/.m3u8: selector de un solo archivo; el
+      // parseo y la creación viven en playlist-edit.js (importM3UFile).
+      const btnImportM3u = document.getElementById('btnImportM3u');
+      if (btnImportM3u) btnImportM3u.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.m3u,.m3u8,audio/x-mpegurl,application/x-mpegurl';
+        input.style.display = 'none';
+        document.body.appendChild(input);
+        input.addEventListener('change', async () => {
+          const file = input.files && input.files[0];
+          input.remove();
+          if (file) await this.importM3UFile(file);
+        });
+        input.click();
+      });
       // Botón "Borrar todo" en biblioteca
       const btnDeleteAll = document.getElementById('btnDeleteAllTracks');
       if (btnDeleteAll) btnDeleteAll.addEventListener('click', () => this.deleteAllTracks());

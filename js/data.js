@@ -345,6 +345,33 @@ const I18N = {
     it: 'Le tue liste',
     ru: 'Ваши списки'
   },
+  /* Importación de listas M3U (la exportación ya existía como
+   * «Compartir lista»). Placeholders: N = nombre, X/Y = encontradas/total. */
+  m3u_import_btn: {
+    es: 'Importar .m3u', en: 'Import .m3u', pt: 'Importar .m3u',
+    zh: '导入 .m3u', ja: '.m3u を読み込む', fr: 'Importer un .m3u',
+    it: 'Importa .m3u', ru: 'Импорт .m3u'
+  },
+  imported_playlist_name: {
+    es: 'Lista importada', en: 'Imported playlist', pt: 'Lista importada',
+    zh: '导入的歌单', ja: '読み込んだリスト', fr: 'Liste importée',
+    it: 'Lista importata', ru: 'Импортированный плейлист'
+  },
+  toast_m3u_imported: {
+    es: 'Lista «N» importada: X de Y canciones encontradas', en: 'Playlist “N” imported: X of Y songs found', pt: 'Lista «N» importada: X de Y músicas encontradas',
+    zh: '已导入歌单“N”：找到 X / Y 首', ja: 'リスト「N」を読み込みました：Y曲中X曲が見つかりました', fr: 'Liste « N » importée : X titres trouvés sur Y',
+    it: 'Lista «N» importata: X di Y brani trovati', ru: 'Плейлист «N» импортирован: найдено X из Y'
+  },
+  toast_m3u_none: {
+    es: 'Ninguna canción de esa lista está en tu biblioteca', en: 'None of that playlist’s songs are in your library', pt: 'Nenhuma música dessa lista está na sua biblioteca',
+    zh: '该歌单的歌曲都不在你的音乐库中', ja: 'そのリストの曲はライブラリにありません', fr: 'Aucun titre de cette liste n’est dans votre bibliothèque',
+    it: 'Nessun brano di quella lista è nella tua libreria', ru: 'Ни одной песни из этого плейлиста нет в библиотеке'
+  },
+  toast_m3u_empty: {
+    es: 'Ese archivo no contiene ninguna lista válida', en: 'That file doesn’t contain a valid playlist', pt: 'Esse arquivo não contém uma lista válida',
+    zh: '该文件不包含有效的歌单', ja: 'そのファイルに有効なリストがありません', fr: 'Ce fichier ne contient pas de liste valide',
+    it: 'Quel file non contiene una lista valida', ru: 'В этом файле нет корректного плейлиста'
+  },
   new_playlist: {
     es: 'Nueva',
     en: 'New',

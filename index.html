@@ -605,6 +605,13 @@
                   <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
                   <span data-i18n="new_playlist">Nueva</span>
                 </button>
+                <!-- Importar una lista .m3u/.m3u8 de otro reproductor:
+                     se crea como lista nueva con las canciones que
+                     ya estén en la biblioteca. -->
+                <button class="text-btn" id="btnImportM3u" type="button">
+                  <svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg>
+                  <span data-i18n="m3u_import_btn">Importar .m3u</span>
+                </button>
               </div>
               <ul class="playlist-rail" id="libraryPlaylists" tabindex="0" data-i18n-aria="library_playlists_section" aria-label="Listas de reproducción"></ul>
             </section>

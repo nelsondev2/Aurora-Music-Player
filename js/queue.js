@@ -64,7 +64,8 @@ Object.assign(App, {
         input.setAttribute('mozdirectory', '');
         input.setAttribute('nwdirectory', '');
       } else {
-        input.accept = acceptedTypes + ',.lrc,.txt';
+        // Audio, letras sueltas y listas .m3u (se importan como listas).
+        input.accept = acceptedTypes + ',.lrc,.txt,.m3u,.m3u8';
       }
 
       document.body.appendChild(input);
