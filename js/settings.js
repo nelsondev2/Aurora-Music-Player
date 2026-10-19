@@ -415,6 +415,11 @@ Object.assign(App, {
       // Segundo extremo del degradado. Antes se usaba --accent-2 (rosa,
       // turquesa, amarillo…), demasiado claro para texto blanco.
       root.style.setProperty('--accent-fill-2', fill2);
+      // Segundo extremo para degradados de texto sobre el fondo: brillante
+      // en oscuro, oscuro en claro (siempre ≥4.5:1 como texto normal).
+      root.style.setProperty('--accent-text-2', light
+        ? (a.fillLight2 || a.fillLight || a.fill || a.accent)
+        : (a.accent2 || a.accent));
       root.style.setProperty('--accent-on-fill', '#ffffff');
       root.style.setProperty('--accent-rgb', this._hexToRgb(fill));
       if (!this.currentTrack) {

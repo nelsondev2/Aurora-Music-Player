@@ -433,36 +433,43 @@
             <button class="text-btn" data-close-sheet="sheetEditPlaylist" data-i18n="close_btn">Cerrar</button>
           </header>
           <div class="sheet-body">
+            <!-- Cabecera tipo «hero»: la portada y el botón de reproducir
+                 son lo único que compite por la atención. Antes había seis
+                 tarjetas del mismo peso (dos de ellas rojas), que se veían
+                 como un muro de botones. -->
             <div class="edit-pl-header">
               <div class="edit-pl-cover" id="editPlaylistCover"><svg class="ico" aria-hidden="true"><use href="#i-music"></use></svg></div>
               <div class="edit-pl-info">
                 <h4 id="editPlaylistName">—</h4>
                 <p id="editPlaylistMeta">—</p>
               </div>
-            </div>
-            <div class="edit-pl-actions">
-              <button class="pl-action-btn pl-action-play" id="btnPlayPlaylistNow">
-                <span class="pl-action-ico"><svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg></span>
-                <span data-i18n="play_all_btn">Reproducir Todo</span>
+              <button class="pl-hero-play" id="btnPlayPlaylistNow" type="button"
+                      data-i18n-aria="play_all_btn" aria-label="Reproducir todo">
+                <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
               </button>
-              <button class="pl-action-btn" id="btnUploadToPlaylist">
-                <span class="pl-action-ico"><svg class="ico" aria-hidden="true"><use href="#i-cloud-arrow-up"></use></svg></span>
+            </div>
+            <!-- Acciones secundarias: pastillas ligeras de una sola línea.
+                 Las destructivas van separadas al final y solo se tiñen al
+                 interactuar (no dos bloques rojos permanentes). -->
+            <div class="edit-pl-actions">
+              <button class="pl-action-btn" id="btnUploadToPlaylist" type="button">
+                <svg class="ico" aria-hidden="true"><use href="#i-cloud-arrow-up"></use></svg>
                 <span data-i18n="upload_to_playlist_btn">Subir canciones</span>
               </button>
-              <button class="pl-action-btn pl-action-danger" id="btnClearPlaylist">
-                <span class="pl-action-ico"><svg class="ico" aria-hidden="true"><use href="#i-broom"></use></svg></span>
-                <span data-i18n="clear_playlist_btn">Borrar todo</span>
-              </button>
-              <button class="pl-action-btn" id="btnRenamePlaylist">
-                <span class="pl-action-ico"><svg class="ico" aria-hidden="true"><use href="#i-pen"></use></svg></span>
+              <button class="pl-action-btn" id="btnRenamePlaylist" type="button">
+                <svg class="ico" aria-hidden="true"><use href="#i-pen"></use></svg>
                 <span data-i18n="rename_playlist_btn">Renombrar</span>
               </button>
-              <button class="pl-action-btn" id="btnExportPlaylist">
-                <span class="pl-action-ico"><svg class="ico" aria-hidden="true"><use href="#i-paper-plane"></use></svg></span>
+              <button class="pl-action-btn" id="btnExportPlaylist" type="button">
+                <svg class="ico" aria-hidden="true"><use href="#i-paper-plane"></use></svg>
                 <span data-i18n="share_playlist_btn">Compartir lista</span>
               </button>
-              <button class="pl-action-btn pl-action-danger" id="btnDeletePlaylistFull" style="display:none">
-                <span class="pl-action-ico"><svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg></span>
+              <button class="pl-action-btn pl-action-danger" id="btnClearPlaylist" type="button">
+                <svg class="ico" aria-hidden="true"><use href="#i-broom"></use></svg>
+                <span data-i18n="clear_btn">Vaciar</span>
+              </button>
+              <button class="pl-action-btn pl-action-danger" id="btnDeletePlaylistFull" type="button" style="display:none">
+                <svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>
                 <span data-i18n="delete_playlist_btn">Eliminar lista</span>
               </button>
             </div>

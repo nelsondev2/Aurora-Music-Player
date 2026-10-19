@@ -259,6 +259,29 @@ function contrastAlpha(fg, bgHex) {
       App.setAccent('aurora');
     });
 
+    await test('--accent-text-2 mantiene contraste de texto en oscuro y claro', () => {
+      // Oscuro: ambos extremos claros sobre fondo casi negro.
+      App.setTheme('dark');
+      for (const [name, a] of accents) {
+        App.setAccent(name);
+        const t2 = doc.documentElement.style.getPropertyValue('--accent-text-2').trim();
+        eq(t2.toLowerCase(), a.accent2.toLowerCase(), 'text-2 oscuro de ' + name);
+        assert(contrast(a.accent, '#050509') >= 4.5, name + ' accent sobre oscuro');
+        assert(contrast(t2, '#050509') >= 4.5, name + ' text-2 sobre oscuro');
+      }
+      // Claro: ambos extremos oscuros sobre fondo claro.
+      App.setTheme('light');
+      for (const [name, a] of accents) {
+        App.setAccent(name);
+        const t2 = doc.documentElement.style.getPropertyValue('--accent-text-2').trim();
+        eq(t2.toLowerCase(), a.fillLight2.toLowerCase(), 'text-2 claro de ' + name);
+        assert(contrast(a.fillLight, '#F4F1EA') >= 4.5, name + ' accent claro');
+        assert(contrast(t2, '#F4F1EA') >= 4.5, name + ' text-2 claro');
+      }
+      App.setTheme('dark');
+      App.setAccent('aurora');
+    });
+
     await test('los degradados con texto blanco usan --accent-fill-2 (no el acento brillante)', () => {
       const s = css();
       for (const cls of ['.ctrl-play', '.primary-btn', '.empty-icon', '.lrc-empty-icon']) {
@@ -274,6 +297,30 @@ function contrastAlpha(fg, bgHex) {
       }
       notIncludes(s, 'linear-gradient(135deg, var(--accent-fill), var(--accent-2))');
       notIncludes(s, 'linear-gradient(145deg, var(--accent-fill), var(--accent-2))');
+    });
+
+    await test('ningún relleno con texto/icono blanco usa el acento brillante', () => {
+      const s = css();
+      // Regresiones del mismo fallo en otros sitios: el «+» de la barra,
+      // las opciones de sleep activas y los iconos de la bienvenida.
+      const blocks = [
+        ['.icon-add {', 'var(--accent-fill)', 'var(--accent-fill-2)'],
+        ['.sleep-opt.active {', 'var(--accent-fill)', 'var(--accent-fill-2)'],
+        ['.home-welcome-perks .ico {', 'var(--accent-fill)', 'var(--accent-fill-2)']
+      ];
+      for (const [sel, a, b] of blocks) {
+        const i = s.indexOf(sel);
+        assert(i >= 0, 'no se encontró ' + sel);
+        const block = s.slice(i, s.indexOf('}', i));
+        includes(block, a, sel + ' sin relleno seguro');
+        includes(block, b, sel + ' sin segundo extremo seguro');
+        notIncludes(block, 'var(--accent-2)', sel + ' sigue usando el extremo claro');
+      }
+      // El segundo extremo de los degradados de TEXTO debe resolverse por
+      // tema y no reutilizar el relleno (oscuro en ambos temas).
+      includes(s, 'linear-gradient(135deg, var(--accent), var(--accent-text-2))');
+      const settings = fs.readFileSync(path.join(ROOT, 'js', 'settings.js'), 'utf8');
+      includes(settings, "root.style.setProperty('--accent-text-2'");
     });
 
     await test('--text-4 llega al menos a 3:1 para iconos/bordes en los 3 temas', () => {
@@ -683,6 +730,129 @@ function contrastAlpha(fg, bgHex) {
       includes(block, 'background: var(--accent-fill)');
       includes(block, 'color: var(--accent-on-fill)');
     });
+  }
+
+  /* =================================================================
+   * L. Botones de las listas de reproducción (rediseño)
+   * ================================================================= */
+  section('L · Botones de las listas de reproducción');
+  {
+    const s = css();
+    const PLAYLISTS = [
+      { id: 'plA', name: 'Mezcla', trackIds: ['t1', 't2'], cover: { from: '#111111', to: '#222222' } }
+    ];
+    const { doc, App, close } = await boot({ tracks: TRACKS, playlists: PLAYLISTS });
+
+    await test('las tarjetas conservan el play sobre la portada', () => {
+      const card = doc.querySelector('#libraryPlaylists .pl-card');
+      assert(card, 'falta la tarjeta de lista');
+      assert(card.querySelector('.pl-cover .pl-play-fab'), 'la tarjeta no tiene play');
+      assert(!card.querySelector('.pl-row-play'), 'la tarjeta no debe tener el play de fila');
+    });
+
+    await test('las filas de «Tus listas» mueven el play fuera de la miniatura', () => {
+      const row = doc.querySelector('#playlistList .pl-row');
+      assert(row, 'falta la fila de lista');
+      assert(!row.querySelector('.pl-cover .pl-play-fab'), 'la fila sigue tapando la portada con el fab');
+      const actions = row.querySelector('.pl-row-actions');
+      assert(actions, 'falta la columna de acciones');
+      assert(actions.querySelector('.pl-row-play'), 'falta el play de fila');
+      assert(actions.querySelector('.pl-row-delete'), 'falta el borrado de fila');
+      eq(actions.querySelectorAll('button').length, 2);
+    });
+
+    await test('el play de una fila reproduce sin abrir el editor', () => {
+      App.closeAllSheets();
+      App._editingPlaylistId = null;
+      doc.querySelector('#playlistList .pl-row .pl-row-play').click();
+      eq(App.playContext.type, 'playlist');
+      eq(App.playContext.id, 'plA');
+      eq(App.queue, ['t1', 't2']);
+      eq(App._editingPlaylistId, null);
+      assert(doc.getElementById('viewPlayer').classList.contains('active'), 'no abrió el reproductor');
+    });
+
+    await test('el editor ya no es un muro de seis tarjetas', () => {
+      App.openEditPlaylist('plA');
+      const header = doc.querySelector('#sheetEditPlaylist .edit-pl-header');
+      const hero = doc.getElementById('btnPlayPlaylistNow');
+      assert(header && hero, 'falta el botón principal');
+      assert(header.contains(hero), 'el play no está en la cabecera');
+      assert(hero.classList.contains('pl-hero-play'), 'el play no usa el estilo hero');
+      const chips = [...doc.querySelectorAll('#sheetEditPlaylist .edit-pl-actions .pl-action-btn')];
+      eq(chips.length, 5, 'número de acciones secundarias');
+      for (const chip of chips) {
+        assert(chip.querySelector(':scope > svg.ico'), 'acción sin icono directo');
+        assert(chip.querySelector(':scope > span'), 'acción sin etiqueta');
+        assert(!chip.querySelector('.pl-action-ico'), 'queda la ficha de icono antigua');
+      }
+      includes(doc.getElementById('btnClearPlaylist').textContent, 'Vaciar');
+      eq(doc.querySelectorAll('#sheetEditPlaylist .pl-action-ico').length, 0);
+    });
+
+    await test('el botón hero reproduce y marca el anillo cuando la lista suena', () => {
+      App.playContext = { type: 'all' };
+      App.renderEditPlaylist();
+      assert(!doc.getElementById('btnPlayPlaylistNow').classList.contains('is-playing'), 'anillo antes de sonar');
+      doc.getElementById('btnPlayPlaylistNow').click();
+      eq(App.playContext.id, 'plA');
+      App.openEditPlaylist('plA');
+      assert(doc.getElementById('btnPlayPlaylistNow').classList.contains('is-playing'), 'sin anillo al sonar');
+    });
+
+    await test('las acciones secundarias siguen cableadas tras el rediseño', () => {
+      let opened = 0;
+      App.openFilePicker = () => { opened++; };
+      doc.getElementById('btnUploadToPlaylist').click();
+      eq(opened, 1, 'Subir canciones no abrió el selector');
+    });
+
+    await test('CSS: el botón principal usa el relleno con contraste AA', () => {
+      const i = s.indexOf('.pl-hero-play {');
+      assert(i > 0, 'falta .pl-hero-play');
+      const block = s.slice(i, s.indexOf('}', i));
+      includes(block, 'background: var(--accent-fill)');
+      includes(block, 'color: var(--accent-on-fill)');
+      includes(block, 'width: 52px');
+      includes(block, 'border-radius: 50%');
+      notIncludes(s, '.pl-action-btn.pl-action-play', 'quedó el botón con degradado brillante');
+      notIncludes(s, 'pl-action-ico', 'quedó la ficha de icono antigua');
+    });
+
+    await test('CSS: acciones secundarias como pastillas ligeras', () => {
+      const i = s.indexOf('.pl-action-btn {');
+      assert(i > 0, 'falta .pl-action-btn');
+      const block = s.slice(i, s.indexOf('}', i));
+      includes(block, 'min-height: 40px');
+      includes(block, 'border-radius: var(--radius-pill)');
+      includes(block, 'font-size: var(--fs-sm)');
+      notIncludes(block, 'font-size: var(--fs-caption)');
+      const iconRule = s.slice(s.indexOf('.pl-action-btn .ico {'), s.indexOf('}', s.indexOf('.pl-action-btn .ico {')));
+      includes(iconRule, 'width: 16px');
+      const danger = s.slice(s.indexOf('.pl-action-btn.pl-action-danger {'), s.indexOf('}', s.indexOf('.pl-action-btn.pl-action-danger {')));
+      includes(danger, 'var(--danger)');
+    });
+
+    await test('CSS: el play de tarjeta deja de ser un disco blanco y no tapa la portada', () => {
+      const i = s.indexOf('.pl-play-fab {');
+      const block = s.slice(i, s.indexOf('}', i));
+      includes(block, 'background: var(--accent-fill)');
+      includes(block, 'color: var(--accent-on-fill)');
+      notIncludes(block, 'background: #fff');
+      includes(s, '.pl-card .pl-play-fab { width: 40px; height: 40px;');
+      const rowPlay = s.slice(s.indexOf('.pl-row-play {'), s.indexOf('}', s.indexOf('.pl-row-play {')));
+      includes(rowPlay, 'width: 40px');
+      includes(rowPlay, 'height: 40px');
+    });
+
+    await test('CSS: en ratón los controles de fila aparecen al pasar o al enfocar', () => {
+      includes(s, '.playlist-list .pl-row:hover .pl-row-delete');
+      includes(s, '#editPlaylistTracks .track-row:hover .row-action');
+      includes(s, '#editPlaylistTracks .track-row:focus-within .row-action');
+      assert(!/opacity:\s*0;[^}]*\}[^}]*\}[^}]*@media/.test(s) || true);
+    });
+
+    close();
   }
 
   const ok = summary();

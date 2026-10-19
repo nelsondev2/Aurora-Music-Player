@@ -50,6 +50,11 @@ function describe(results) {
     ['Favoritos', () => { App.closeAllSheets(); App.goNav('favorites'); }],
     ['Buscar', () => { App.closeAllSheets(); App.goNav('search'); }],
     ['Menú de pista', () => { App.closeAllSheets(); App.openTrackMenu('t1'); }],
+    ['Editor de lista', () => {
+      if (!App.playlists.length) App.createPlaylist('Lista a11y', '', ['t1', 't2']);
+      App.closeAllSheets();
+      App.openEditPlaylist(App.playlists[0].id);
+    }],
     ['Letras', () => { App.closeAllSheets(); App.showView('lyrics'); }]
   ];
 

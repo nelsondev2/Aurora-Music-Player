@@ -797,29 +797,49 @@ Object.assign(App, {
           const live = playing
             ? '<span class="pl-live"><span class="pl-bars"><i></i><i></i><i></i></span></span>'
             : '';
+          // En las tarjetas (carril de la biblioteca) el play va sobre la
+          // portada como disco de acento. En las filas de «Tus listas» la
+          // miniatura es pequeña y el disco la tapaba: el play pasa a una
+          // columna de acciones propia, junto al borrado.
+          const fabHtml = target === grid
+            ? `<button class="pl-play-fab" type="button" aria-label="${this.esc(this.t('play_all_btn'))}">
+                 <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
+               </button>`
+            : '';
           const coverHtml = `
             <div class="pl-cover${hasArt ? ' has-art' : ''}" data-pl-cover="${this.esc(pl.id)}">
               <div class="pl-cover-grad" style="${coverBg}" data-pl-cover="${this.esc(pl.id)}"></div>
               ${hasArt ? '' : this.ico(fallbackIcon, 'pl-cover-icon')}
               ${live}
-              <button class="pl-play-fab" type="button" aria-label="${this.esc(this.t('play_all_btn'))}">
-                <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
-              </button>
+              ${fabHtml}
             </div>
           `;
           if (target === grid) {
             li.innerHTML = coverHtml + `<div class="pl-card-info"><h4>${this.esc(pl.name)}</h4><p>${this.esc(tracksLabel)}</p>${badge}</div>`;
           } else {
             li.innerHTML = coverHtml + `<div class="pl-info"><h4>${this.esc(pl.name)}</h4><p>${this.esc(tracksLabel)}</p></div>`;
+            const actions = document.createElement('div');
+            actions.className = 'pl-row-actions';
+            const playBtn = document.createElement('button');
+            playBtn.type = 'button';
+            playBtn.className = 'pl-row-play';
+            playBtn.setAttribute('aria-label', this.t('play_all_btn'));
+            playBtn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>';
+            playBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              this.playPlaylist(pl.id);
+            });
             const delBtn = document.createElement('button');
-            delBtn.className = 'row-action';
+            delBtn.type = 'button';
+            delBtn.className = 'row-action pl-row-delete';
             delBtn.setAttribute('aria-label', this.t('delete_playlist_btn'));
             delBtn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>';
             delBtn.addEventListener('click', (e) => {
               e.stopPropagation();
               this.deletePlaylist(pl.id);
             });
-            li.appendChild(delBtn);
+            actions.append(playBtn, delBtn);
+            li.appendChild(actions);
           }
           const fab = li.querySelector('.pl-play-fab');
           if (fab) fab.addEventListener('click', (e) => {
@@ -827,7 +847,7 @@ Object.assign(App, {
             this.playPlaylist(pl.id);
           });
           li.addEventListener('click', (e) => {
-            if (e.target.closest('.row-action, .pl-play-fab')) return;
+            if (e.target.closest('.row-action, .pl-play-fab, .pl-row-play')) return;
             if (this._selectPlaylistForAdd) {
               this._selectPlaylistForAdd = false;
               const batchIds = this._batchAddIds;

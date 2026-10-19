@@ -35,6 +35,9 @@
   --accent-3:    #E8B84A;
   --accent-fill: #5B49D6;
   --accent-fill-2: #4A3BBF;
+  /* Segundo color para degradados de TEXTO sobre el fondo (no sobre
+     relleno): claro y legible en oscuro, oscuro en tema claro. */
+  --accent-text-2: #FF7AB6;
   --accent-on-fill: #ffffff;
   --accent-rgb:  139, 124, 255;
   --success:     #3D9B7A;
@@ -1465,6 +1468,9 @@ svg { display: block; }
   height: auto;
   color: rgba(255,255,255,0.92);
 }
+/* Play de las tarjetas de lista. Antes era un círculo blanco grande que
+ * tapaba la portada y competía con ella; ahora es un disco de acento
+ * (texto/icono blanco con contraste AA) integrado en la esquina. */
 .pl-play-fab {
   position: absolute;
   right: 6px;
@@ -1475,15 +1481,59 @@ svg { display: block; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
-  color: #111;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.35);
-  opacity: 0.96;
+  background: var(--accent-fill);
+  color: var(--accent-on-fill);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.38),
+              inset 0 1px 0 rgba(255,255,255,0.18);
   z-index: 2;
-  transition: transform .15s;
+  transition: transform .15s, background .2s;
 }
 .pl-play-fab .ico { width: 14px; height: 14px; margin-left: 1px; }
 .pl-play-fab:active { transform: scale(0.9); }
+@media (hover: hover) and (pointer: fine) {
+  .pl-card:hover .pl-play-fab { transform: scale(1.07); }
+}
+
+/* Acciones de cada fila de lista en «Tus listas»: el play sale de la
+ * miniatura (donde un disco de 36 px tapaba casi toda la portada) y se
+ * coloca en una columna propia, junto al borrado. */
+.pl-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.pl-row-play {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--accent);
+  transition: background .15s, color .15s, transform .15s;
+}
+.pl-row-play .ico { width: 16px; height: 16px; margin-left: 2px; }
+.pl-row-play:active { transform: scale(0.92); }
+@media (hover: hover) and (pointer: fine) {
+  .pl-row-play:hover {
+    background: var(--accent-fill);
+    color: var(--accent-on-fill);
+  }
+  /* En escritorio el borrado aparece al pasar por la fila: menos ruido
+   * por defecto. En táctil (sin hover) sigue siempre visible. */
+  .playlist-list .pl-row .pl-row-delete {
+    opacity: 0;
+    transition: opacity .15s, color .15s, background .15s;
+  }
+  .playlist-list .pl-row:hover .pl-row-delete,
+  .playlist-list .pl-row:focus-within .pl-row-delete { opacity: 1; }
+  .playlist-list .pl-row .pl-row-delete:hover {
+    color: var(--danger);
+    background: rgba(239, 68, 68, 0.12);
+  }
+}
 .pl-live {
   position: absolute;
   top: 6px;
@@ -1565,8 +1615,8 @@ svg { display: block; }
   border-radius: 14px;
   box-shadow: 0 12px 28px rgba(0,0,0,0.32);
 }
-.pl-card .pl-play-fab { width: 36px; height: 36px; right: 10px; bottom: 10px; }
-.pl-card .pl-play-fab .ico { width: 13px; height: 13px; }
+.pl-card .pl-play-fab { width: 40px; height: 40px; right: 10px; bottom: 10px; }
+.pl-card .pl-play-fab .ico { width: 15px; height: 15px; }
 .pl-card-info { padding: 0 4px; }
 .pl-card-info h4 {
   font-size: var(--fs-body);
@@ -1711,7 +1761,9 @@ svg { display: block; }
 }
 .sleep-opt:active { transform: scale(0.95); }
 .sleep-opt.active {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  /* Texto blanco: relleno con contraste AA, no el acento brillante. */
+  background: linear-gradient(135deg, var(--accent-fill), var(--accent-fill-2));
+  color: var(--accent-on-fill);
   border-color: transparent;
 }
 .sleep-status {
@@ -2005,6 +2057,38 @@ svg { display: block; }
 .drag-handle:active { cursor: grabbing; color: var(--text-1); background: var(--surface); }
 .queue-item .row-action.queue-remove { width: 30px; height: 30px; }
 
+/* Filas de una lista: los controles se aligeran. El asa de arrastre y
+ * los dos botones de acción siguen ocupando 40 px (objetivo táctil),
+ * pero su icono es más pequeño y su color pasa a --text-3; con ratón
+ * aparecen al pasar por la fila y en cuanto recibe el foco. */
+#editPlaylistTracks .row-action {
+  color: var(--text-3);
+}
+#editPlaylistTracks .row-action .ico { width: 16px; height: 16px; }
+#editPlaylistTracks .remove-from-pl:active {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.12);
+}
+@media (hover: hover) and (pointer: fine) {
+  #editPlaylistTracks .track-row .row-action,
+  #editPlaylistTracks .track-row .drag-handle {
+    opacity: 0;
+    transition: opacity .15s, color .15s, background .15s;
+  }
+  #editPlaylistTracks .track-row:hover .row-action,
+  #editPlaylistTracks .track-row:hover .drag-handle,
+  #editPlaylistTracks .track-row:focus-within .row-action,
+  #editPlaylistTracks .track-row:focus-within .drag-handle { opacity: 1; }
+  #editPlaylistTracks .remove-from-pl:hover {
+    color: var(--danger);
+    background: rgba(239, 68, 68, 0.12);
+  }
+  #editPlaylistTracks .track-menu-btn:hover {
+    color: var(--text-1);
+    background: var(--surface);
+  }
+}
+
 .queue-item.reorder-mode {
   background: var(--surface-2);
   outline: 1px solid var(--accent);
@@ -2019,10 +2103,11 @@ svg { display: block; }
 .queue-item.drop-above { box-shadow: inset 0 3px 0 var(--accent); }
 .queue-item.drop-below { box-shadow: inset 0 -3px 0 var(--accent); }
 
-/* Botón "+" en top bar destacado */
+/* Botón "+" en top bar destacado. Usa el par de relleno seguro: con
+ * --accent-2 el extremo rosa dejaba el icono blanco en 2.41:1. */
 .icon-add {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: #fff !important;
+  background: linear-gradient(135deg, var(--accent-fill), var(--accent-fill-2));
+  color: var(--accent-on-fill) !important;
   box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.4);
 }
 .icon-add:active { transform: scale(0.92); }
@@ -2147,7 +2232,9 @@ svg { display: block; }
   font-size: 1.75rem;
   font-weight: 800;
   font-family: var(--font-display);
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  /* Texto grande (≥24 px bold): 3:1 mínimo. El segundo extremo cambia
+   * con el tema para seguir teniendo contraste sobre el fondo. */
+  background: linear-gradient(135deg, var(--accent), var(--accent-text-2));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -2321,12 +2408,12 @@ svg { display: block; }
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 .edit-pl-cover {
-  width: 80px;
-  height: 80px;
-  border-radius: 14px;
+  width: 76px;
+  height: 76px;
+  border-radius: 18px;
   overflow: hidden;
   flex-shrink: 0;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
@@ -2335,7 +2422,7 @@ svg { display: block; }
   justify-content: center;
   color: #fff;
   font-size: 1.75rem;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.32);
 }
 .edit-pl-cover canvas {
   display: block;
@@ -2353,8 +2440,10 @@ svg { display: block; }
   min-width: 0;
 }
 .edit-pl-info h4 {
-  font-size: var(--fs-title);
+  font-family: var(--font-display);
+  font-size: var(--fs-subtitle);
   font-weight: 700;
+  letter-spacing: var(--ls-tight);
   color: var(--text-1);
   white-space: nowrap;
   overflow: hidden;
@@ -2366,61 +2455,81 @@ svg { display: block; }
   margin-top: 4px;
 }
 
-/* Fila de acciones de la playlist */
-.edit-pl-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 18px;
-}
-.pl-action-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text-1);
-  font-size: var(--fs-caption);
-  font-weight: 650;
-  letter-spacing: 0.01em;
-  text-align: left;
-  transition: transform .15s, background .15s, border-color .15s;
-}
-.pl-action-btn:active { transform: scale(0.97); background: var(--surface-2); }
-.pl-action-ico {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+/* Botón principal de la lista: un solo círculo de acento, alineado con
+ * la portada. Usa el par de relleno seguro (texto blanco ≥ 4.5:1) y no
+ * el gradiente brillante que tenía antes. */
+.pl-hero-play {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--accent-fill);
+  color: var(--accent-on-fill);
+  box-shadow: 0 10px 24px rgba(var(--accent-rgb), 0.34);
+  transition: transform .15s, box-shadow .2s, background .2s;
+}
+.pl-hero-play .ico { width: 20px; height: 20px; margin-left: 2px; }
+.pl-hero-play:active { transform: scale(0.94); }
+/* Anillo fino cuando la lista es la que está sonando: informa sin
+ * convertirse en un segundo color de fondo. */
+.pl-hero-play.is-playing {
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.26),
+              0 10px 24px rgba(var(--accent-rgb), 0.34);
+}
+
+/* Fila de acciones secundarias: pastillas ligeras, no tarjetas. */
+.edit-pl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.pl-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 8px 14px 8px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background .15s, border-color .15s, color .15s, transform .15s;
+}
+.pl-action-btn .ico {
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
-  background: var(--surface-hi);
   color: var(--accent);
 }
-.pl-action-ico .ico { width: 14px; height: 14px; }
-.pl-action-btn.pl-action-play {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  border-color: transparent;
-  color: #fff;
-  box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.28);
-}
-.pl-action-btn.pl-action-play .pl-action-ico {
-  background: rgba(255,255,255,0.2);
-  color: #fff;
-}
-.pl-action-btn.pl-action-danger { color: var(--text-1); }
-.pl-action-btn.pl-action-danger .pl-action-ico {
-  color: var(--danger);
-  background: rgba(239, 68, 68, 0.12);
-}
+.pl-action-btn:active { transform: scale(0.97); background: var(--surface-2); }
+.pl-action-btn.pl-action-danger { color: var(--danger); }
+.pl-action-btn.pl-action-danger .ico { color: var(--danger); }
 .pl-action-btn.pl-action-danger:active {
   background: rgba(239, 68, 68, 0.10);
   border-color: rgba(239, 68, 68, 0.28);
+}
+@media (hover: hover) and (pointer: fine) {
+  .pl-hero-play:hover { transform: scale(1.05); }
+  .pl-action-btn:hover {
+    color: var(--text-1);
+    background: var(--surface-2);
+    border-color: var(--surface-hi);
+  }
+  .pl-action-btn.pl-action-danger:hover {
+    color: var(--danger);
+    background: rgba(239, 68, 68, 0.10);
+    border-color: rgba(239, 68, 68, 0.28);
+  }
 }
 
 /* Variantes compactas usadas en otros sitios */
@@ -3514,7 +3623,7 @@ button,
   letter-spacing: 0.28em;
   text-transform: uppercase;
   font-weight: 800;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  background: linear-gradient(90deg, var(--accent), var(--accent-text-2));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -3601,8 +3710,9 @@ button,
   box-sizing: border-box;
   display: inline-block;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: #fff;
+  /* Icono blanco: relleno AA (antes el extremo rosa daba 2.41:1). */
+  background: linear-gradient(135deg, var(--accent-fill), var(--accent-fill-2));
+  color: var(--accent-on-fill);
   flex-shrink: 0;
 }
 
@@ -3988,6 +4098,14 @@ html.aurora-wide .lib-sort-row {
   overflow: visible;
   flex-wrap: wrap;
 }
+/* Editor de lista: misma anchura de lectura que la biblioteca para que
+ * las pastillas y las filas no queden pegadas al borde izquierdo de una
+ * pantalla ultrapanorámica. */
+html.aurora-wide #sheetEditPlaylist .sheet-body {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
 html.aurora-wide .toast {
   left: calc(var(--np-col) + var(--side-col) + (100% - var(--np-col) - var(--side-col)) / 2);
   bottom: 24px;
@@ -4273,4 +4391,8 @@ html.aurora-wide .toast {
 /* Con 4 temas la rejilla puede quedar en 2×2 en pantallas muy estrechas. */
 @media (max-width: 360px) {
   .theme-grid { grid-template-columns: repeat(2, 1fr); }
+  /* Cabecera del editor de lista: mantener aire para el nombre. */
+  .edit-pl-cover { width: 64px; height: 64px; border-radius: 16px; }
+  .pl-hero-play { width: 48px; height: 48px; }
+  .pl-hero-play .ico { width: 18px; height: 18px; }
 }

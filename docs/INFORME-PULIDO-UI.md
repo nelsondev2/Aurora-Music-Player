@@ -4,7 +4,7 @@
 **Base:** `ff73b21` (merge del PR #6, biblioteca simplificada)
 **Rama:** `arena/4c26cbd7-aurora-music-player`
 **Alcance elegido:** los 12 puntos de la auditoría de diseño (6 fallos + 6 de pulido), no solo los críticos.
-**Resultado:** 12/12 implementados · **93/93 pruebas automatizadas en verde** · `.xdc` válido para Delta Chat.
+**Resultado:** 12/12 implementados + rediseño de botones de listas · **106/106 pruebas automatizadas en verde** · `.xdc` válido para Delta Chat.
 
 ---
 
@@ -13,15 +13,15 @@
 | Métrica | Antes (ff73b21) | Ahora |
 |---|---|---|
 | Puntos de diseño corregidos | 0/12 | **12/12** |
-| Pruebas de esta ronda | — | **93** (53 pulido + 27 smoke + 13 axe) |
+| Pruebas de esta ronda | — | **106** (65 pulido + 27 smoke + 14 axe) |
 | Violaciones axe (9 pantallas) | — | **0** |
 | Contraste de acentos (peor extremo del degradado) | **1.64:1** | **4.75:1** |
 | Objetivo táctil mínimo en controles citados | 28 px | **40 px** (fab 36 px) |
 | `font-size` en px | 22 declaraciones + tokens | **0** |
-| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 310.1 KB** |
+| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 312.0 KB** |
 
 **Paquete final:** `aurora-music-player.xdc`
-**SHA-256:** `ecaa7273794075609e9856a0cfcf6383b5cee8fe365df49f3738ace650f65bf0`
+**SHA-256:** `e04c096b950f16821a79db3c7602820034459223a97c4ec10c4c3f1be71ca34d`
 **Validación:** `python3 build-xdc.py --check` → «OK el .xdc es válido para Delta Chat / webxdc».
 
 ---
@@ -104,9 +104,9 @@ Se usa para iconos, bordes de casillas y chevrons (no para texto principal). Se 
 
 | Suite | Pruebas | Qué demuestra |
 |---|---:|---|
-| `verificacion/ui-polish.js` | **53** | Los 12 hallazgos: comportamiento real en jsdom + comprobaciones del CSS y contraste calculado. |
+| `verificacion/ui-polish.js` | **65** | Los 12 hallazgos y el rediseño de botones de listas: comportamiento real en jsdom + comprobaciones del CSS y contraste calculado. |
 | `verificacion/smoke.js` | **27** | Arranque, biblioteca, reproducción, cola, búsqueda, favoritos, listas, letras, estadísticas, idioma y temas. |
-| `verificacion/a11y.js` | **13** | axe-core en 9 pantallas (Inicio, Reproductor, Biblioteca, Ajustes, Temas, Favoritos, Buscar, menú de pista, Letras) + diálogos y nav. **0 violaciones**. |
+| `verificacion/a11y.js` | **14** | axe-core en 10 pantallas (Inicio, Reproductor, Biblioteca, Ajustes, Temas, Favoritos, Buscar, menú de pista, Letras, editor de lista) + diálogos y nav. **0 violaciones**. |
 
 ### 5.2 Ejecución
 
@@ -132,17 +132,17 @@ jsdom **no aplica `styles.css`**; por eso `color-contrast` de axe se desactiva y
 
 ```
 data.js              13 +   (claves i18n × 8 idiomas)
-index.html           51 +/− (engranaje, icono, acciones, tema, favorito)
-styles.css          300 +/− (contraste, rem, táctil, wide, estados vacíos, toast)
+index.html           90 +/− (engranaje, icono, acciones, tema, favorito, botones de lista)
+styles.css          546 +/− (contraste, rem, táctil, wide, estados vacíos, toast, botones de lista)
 js/audio.js          18 +/− (favorito por pista)
 js/events.js         18 +   (cableado nuevo)
 js/init.js            5 +   (confirmar borrados al cerrar)
 js/library.js       109 +/− (deshacer borrado de pista)
 js/lyrics.js         11 +/− (tamaño LRC en rem)
 js/nav.js            14 +/− (favorito en el menú)
-js/playlist-edit.js  32 +/− (deshacer vaciado + i18n)
-js/playlist-ui.js   120 +/− (acciones, estados vacíos, deshacer, i18n)
-js/settings.js       80 +/− (tema Sistema y paletas AA)
+js/playlist-edit.js  36 +/− (deshacer vaciado + i18n + estado del hero)
+js/playlist-ui.js   152 +/− (acciones, estados vacíos, deshacer, i18n, acciones de fila)
+js/settings.js       85 +/− (tema Sistema, paletas AA y --accent-text-2)
 js/stats-ui.js       29 +/− (favoritos vacío)
 js/ui.js             76 +/− (inert, emptyStateHtml, toast con acción)
 verificacion/        nuevas suites (no entran en el .xdc)
@@ -163,11 +163,60 @@ python3 build-xdc.py --check
 Salida final:
 
 ```
-OK  aurora-music-player.xdc · 28 archivos · 310.1 KB
-    sha256: ecaa7273794075609e9856a0cfcf6383b5cee8fe365df49f3738ace650f65bf0
+OK  aurora-music-player.xdc · 28 archivos · 312.0 KB
+    sha256: e04c096b950f16821a79db3c7602820034459223a97c4ec10c4c3f1be71ca34d
     nombre: Aurora Music Player
     código: https://github.com/nelsondev2/Aurora-Music-Player
     icono: icon.png (90.5 KB)
-    archivos: 28 · comprimido: 310.1 KB · sin comprimir: 893.6 KB
+    archivos: 28 · comprimido: 312.0 KB · sin comprimir: 900.5 KB
 OK  el .xdc es válido para Delta Chat / webxdc
 ```
+
+
+---
+
+## 8. Revisión posterior: botones de las listas de reproducción
+
+**Petición:** «los botones dentro de las listas de reproducción son toscos y horribles».
+
+### 8.1 Qué había
+
+- **Editor de lista:** seis tarjetas del mismo tamaño (2×3), cada una con una ficha de icono de 34 px y texto de 12 px. Dos eran rojas permanentes y la de «Reproducir» usaba el degradado brillante `--accent → --accent-2` con texto blanco: **1.64–2.41:1 en el extremo claro**, el mismo fallo de contraste corregido antes en otros botones.
+- **«Tus listas»:** cada fila llevaba un disco blanco de 36 px sobre una miniatura de 58 px (tapaba la portada) más un botón de borrado siempre visible.
+- **Filas de pistas dentro de una lista:** asa de arrastre + menú + quitar, los tres con el mismo peso visual, sin jerarquía.
+
+### 8.2 Qué se hizo
+
+| Zona | Antes | Ahora |
+|---|---|---|
+| Editor · acción principal | Tarjeta con degradado brillante y texto | **Círculo de 52 px** junto a la portada, con `--accent-fill` (blanco ≥ 4.5:1) y anillo fino cuando esa lista está sonando. |
+| Editor · acciones secundarias | 6 tarjetas 2×3 con fichas de icono | **Pastillas ligeras** de 40 px (icono 16 px + etiqueta 13 px), fondo `surface`, borde sutil; hover/foco con realce. |
+| Editor · destructivas | Dos bloques rojos permanentes | Texto y icono en `--danger`; solo se tiñen al pulsar/pasar. «Borrar todo» pasa a **«Vaciar»** para no confundirse con «Eliminar lista». |
+| «Tus listas» · play | Disco blanco sobre la miniatura | **Botón circular en columna propia** (40 px), tinte de acento; la portada queda limpia. |
+| «Tus listas» · borrado | Siempre visible | En ratón aparece al pasar por la fila o al enfocar (`focus-within`); en táctil sigue visible. |
+| Tarjetas de la biblioteca | Disco blanco de 36 px | Disco de acento de 40 px con icono blanco, sombra suave y realce al pasar. |
+| Filas del editor | Tres controles con el mismo peso | Iconos de 16 px en `--text-3`, visibles al pasar/enfocar con ratón; 40 px de área táctil. |
+| Escritorio ancho | Editor pegado al borde | Cuerpo limitado a 760 px centrados. |
+
+### 8.3 Fallos de contraste residuales corregidos de paso
+
+Al revisar los botones aparecieron cuatro usos del degradado brillante con contenido blanco que seguían por debajo de AA:
+
+| Selector | Problema | Corrección |
+|---|---|---|
+| `.icon-add` («+» de la barra) | Icono blanco hasta 2.41:1 | `--accent-fill` → `--accent-fill-2` |
+| `.sleep-opt.active` | Texto blanco hasta 2.41:1 | Relleno seguro + `--accent-on-fill` |
+| `.home-welcome-perks .ico` | Icono blanco hasta 2.41:1 | Relleno seguro |
+| `.stat-value` / `.home-welcome-brand` | Degradado de texto que en tema claro caía a 2.14:1 | Nueva variable **`--accent-text-2`**, resuelta por tema (brillante en oscuro, oscura en claro) |
+
+`--accent-text-2` se calcula en `applyTheme()`: `accent2` en oscuro/AMOLED y `fillLight2` en claro. Las pruebas verifican ambos extremos con la fórmula WCAG en los 5 acentos y los 2 temas.
+
+### 8.4 Pruebas añadidas (13)
+
+- Estructura: tarjetas con fab, filas sin fab y con columna de acciones.
+- Comportamiento: el play de fila reproduce sin abrir el editor; el hero reproduce y marca el anillo; «Subir canciones» sigue abriendo el selector.
+- CSS: relleno AA del hero, pastillas de 40 px, ausencia de `.pl-action-ico`/`.pl-action-play`, disco de acento, revelado por hover/foco.
+- Contraste: `--accent-text-2` y los cuatro selectores residuales.
+- axe: el **editor de lista** entra como décima pantalla auditada (0 violaciones).
+
+**Total actual: 106/106** (65 pulido + 27 smoke + 14 axe), ejecutadas también contra el `.xdc` extraído.

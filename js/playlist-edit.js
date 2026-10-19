@@ -97,6 +97,10 @@ Object.assign(App, {
         nameEl.onclick = () => this.startRenamePlaylist();
       }
       if (metaEl) metaEl.textContent = this.playlistMetaLabel(pl);
+      // El botón «hero» de reproducir refleja si esta lista es la que
+      // suena (anillo de acento), igual que la portada.
+      const heroPlay = document.getElementById('btnPlayPlaylistNow');
+      if (heroPlay) heroPlay.classList.toggle('is-playing', this.isPlaylistPlaying(pl));
       if (coverEl) {
         const cover = this.getPlaylistCover(pl);
         coverEl.classList.toggle('is-playing', this.isPlaylistPlaying(pl));
