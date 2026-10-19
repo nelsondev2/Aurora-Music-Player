@@ -4,7 +4,7 @@
 **Base:** `ff73b21` (merge del PR #6, biblioteca simplificada)
 **Rama:** `arena/4c26cbd7-aurora-music-player`
 **Alcance elegido:** los 12 puntos de la auditoría de diseño (6 fallos + 6 de pulido), no solo los críticos.
-**Resultado:** 12/12 implementados + rediseño de botones de listas + corrección de los solapes de las capturas + filas de canciones v2 + Letras v2 · **137/137 pruebas automatizadas en verde** · `.xdc` válido para Delta Chat.
+**Resultado:** 12/12 implementados + rediseño de botones de listas + corrección de los solapes de las capturas + filas de canciones v2 + Letras v2 + Reproductor v2 · **143/143 pruebas automatizadas en verde** · `.xdc` válido para Delta Chat.
 
 ---
 
@@ -13,15 +13,15 @@
 | Métrica | Antes (ff73b21) | Ahora |
 |---|---|---|
 | Puntos de diseño corregidos | 0/12 | **12/12** |
-| Pruebas de esta ronda | — | **137** (96 pulido + 27 smoke + 14 axe) |
+| Pruebas de esta ronda | — | **143** (102 pulido + 27 smoke + 14 axe) |
 | Violaciones axe (10 pantallas) | — | **0** |
 | Contraste de acentos (peor extremo del degradado) | **1.64:1** | **4.75:1** |
 | Objetivo táctil mínimo en controles citados | 28 px | **40 px** (fab 36 px) |
 | `font-size` en px | 22 declaraciones + tokens | **0** |
-| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 316.4 KB** |
+| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 317.7 KB** |
 
 **Paquete final:** `aurora-music-player.xdc`
-**SHA-256:** `8a5e745c43ea72f0fb6641a6e88cda7476eb2830ac9fc3f90fcfe4c9bd3de634`
+**SHA-256:** `d2d8c90bd48d08670fbf74091b4af515136f54558c8e70d93f89b1d0444d6178`
 **Validación:** `python3 build-xdc.py --check` → «OK el .xdc es válido para Delta Chat / webxdc».
 
 ---
@@ -163,12 +163,12 @@ python3 build-xdc.py --check
 Salida final:
 
 ```
-OK  aurora-music-player.xdc · 28 archivos · 316.4 KB
-    sha256: 8a5e745c43ea72f0fb6641a6e88cda7476eb2830ac9fc3f90fcfe4c9bd3de634
+OK  aurora-music-player.xdc · 28 archivos · 317.7 KB
+    sha256: d2d8c90bd48d08670fbf74091b4af515136f54558c8e70d93f89b1d0444d6178
     nombre: Aurora Music Player
     código: https://github.com/nelsondev2/Aurora-Music-Player
     icono: icon.png (90.5 KB)
-    archivos: 28 · comprimido: 316.4 KB · sin comprimir: 914.4 KB
+    archivos: 28 · comprimido: 317.7 KB · sin comprimir: 919.2 KB
 OK  el .xdc es válido para Delta Chat / webxdc
 ```
 
@@ -363,4 +363,23 @@ Con las nuevas medidas, el texto útil en el editor de lista pasa de ~46 px a ~1
 
 **Pruebas (bloque P actualizado, 5):** deslizar hacia abajo sobre la barra y sobre la letra mantiene la vista abierta y no cambia de canción; el botón de volver sí cierra.
 
-**Total actual: 137/137** (96 pulido + 27 smoke + 14 axe), también contra el `.xdc` extraído con `AURORA_ROOT=/tmp/xdc-sin-swipe npm test`.
+**Total tras esta sección: 137/137** (96 pulido + 27 smoke + 14 axe), también contra el `.xdc` extraído.
+
+---
+
+## 15. Reproductor v2
+
+**Petición:** tras la crítica de la captura del reproductor («¿Qué te parece la interfaz?» → «Adelante»), se aplican los seis puntos acordados.
+
+| Punto | Cambio |
+|---|---|
+| Cabecera sin duplicar | `#nowPlayingContext` ya no repite el título (que va en grande bajo la portada): muestra «Reproduciendo desde · <contexto>» con `getPlayContextLabel()`, o «Tu biblioteca» si no hay contexto. El título completo queda en el tooltip. |
+| «+» sobrio | `#btnBack` pierde la clase `icon-add` (el disco de acento de 40 px que competía con la portada y se confundía con un «volver»): queda un botón de superficie. Inicio conserva su disco, donde cargar música sí es la acción principal. |
+| Álbum que aporta | En `renderCurrentTrack()` el álbum se oculta si coincide con el título o con el artista (comparación normalizada), el caso del sencillo de la captura. |
+| Progreso preciso | El área de toque pasa a 22 px con la línea visible de 4 px centrada (`::before`), el tirador se insinúa siempre (13 px, acento con borde blanco) y crece al arrastrar, y el relleno usa el acento uniforme en vez del degradado de portada que viraba a rosa. El buffer y el rango A–B se centran igual. |
+| Transporte reequilibrado | Grupo centrado (`justify-content: center`, huecos fluidos), aleatorio/repetir a 44 px en `--text-2` con punto de acento cuando están activos, anterior/siguiente a 48 px y play a 68 px con sombra más suave. |
+| Secundaria con etiquetas | Letras, Cola, Volumen y Visualizador ganan etiqueta `.sec-label` traducida (`data-i18n` con la misma clave que su `aria-label`); A–B ya se lee en su distintivo. En pantallas bajas la portada cede a 30dvh antes que los controles. |
+
+**Pruebas (6, bloque R):** CSS de progreso/transporte/etiquetas; la cabecera pinta «Reproduciendo desde · Mi música» y no el título; el álbum igual al título se oculta y uno distinto se muestra; el «+» del reproductor no es disco y el de Inicio sí; y las cuatro etiquetas existen con su clave i18n.
+
+**Total actual: 143/143** (102 pulido + 27 smoke + 14 axe), también contra el `.xdc` extraído con `AURORA_ROOT=/tmp/xdc-player-v2 npm test`.

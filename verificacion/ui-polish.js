@@ -1280,6 +1280,78 @@ function contrastAlpha(fg, bgHex) {
     close();
   }
 
+  /* =================================================================
+   * R. Reproductor v2: contexto en la cabecera, álbum sin duplicar,
+   *    progreso preciso, transporte reequilibrado y secundaria con
+   *    etiquetas.
+   * ================================================================= */
+  section('R · Reproductor v2');
+  {
+    const s = css();
+    const v2 = s.indexOf('Reproductor v2');
+    assert(v2 > 0, 'falta la sección Reproductor v2');
+    const seg = s.slice(v2);
+
+    await test('CSS: progreso con área de toque de 22 px y tirador insinuado', () => {
+      includes(seg, 'height: 22px');
+      includes(seg, '.progress-track::before');
+      includes(seg, 'background: linear-gradient(90deg, var(--accent-fill), var(--accent-fill-2))');
+      includes(seg, 'transform: translateY(-50%) scale(0.75)');
+      includes(seg, 'scale(1.15)');
+    });
+
+    await test('CSS: transporte centrado y secundaria con etiquetas', () => {
+      includes(seg, 'justify-content: center');
+      includes(seg, 'width: 44px');
+      includes(seg, '.ctrl-shuffle.active::after');
+      includes(seg, '.sec-label');
+      includes(seg, '#btnBack { background: var(--surface); }');
+    });
+
+    const SAME = [Object.assign({}, TRACKS[0], { title: 'Frente', album: 'Frente', artist: 'Nova' })];
+    const { doc, App, close } = await boot({ tracks: SAME });
+
+    await test('la cabecera muestra el contexto, no el título repetido', () => {
+      App.playContext = { type: 'playlist', name: 'Mi música' };
+      App.currentTrack = App.tracks[0];
+      App.renderCurrentTrack();
+      const ctx = doc.getElementById('nowPlayingContext');
+      includes(ctx.textContent, 'Mi música');
+      notIncludes(ctx.textContent, 'Frente</'); // el título no va como texto de cabecera
+      eq(ctx.textContent.includes('·'), true, 'sin separador de contexto');
+      eq(doc.getElementById('trackTitle').textContent, 'Frente');
+    });
+
+    await test('el álbum igual al título se oculta; si aporta, se muestra', () => {
+      eq(doc.getElementById('trackAlbum').style.display, 'none');
+      App.currentTrack = Object.assign({}, App.tracks[0], { album: 'Aurora' });
+      App.tracks[0] = App.currentTrack;
+      App.renderCurrentTrack();
+      eq(doc.getElementById('trackAlbum').style.display, '');
+      eq(doc.getElementById('trackAlbum').textContent, 'Aurora');
+    });
+
+    await test('el «+» del reproductor ya no es el disco de acento (Inicio sí lo conserva)', () => {
+      assert(!doc.getElementById('btnBack').classList.contains('icon-add'), 'el + sigue siendo disco');
+      assert(doc.getElementById('btnHomeAdd').classList.contains('icon-add'), 'Inicio perdió su acción principal');
+    });
+
+    await test('la fila secundaria tiene etiqueta visible en sus botones', () => {
+      const expected = { btnLyrics: 'Letras', btnQueue: 'Cola', btnVolume: 'Volumen', btnVisualizer: 'Visualizador' };
+      for (const [id, label] of Object.entries(expected)) {
+        const el = doc.getElementById(id);
+        const lab = el.querySelector('.sec-label');
+        assert(lab, '#' + id + ' sin etiqueta');
+        eq(lab.textContent, label, '#' + id);
+        eq(lab.getAttribute('data-i18n'), el.getAttribute('data-i18n-aria'), '#' + id + ' etiqueta sin i18n');
+      }
+      // A-B ya se lee en su distintivo.
+      includes(doc.getElementById('btnABRepeat').textContent, 'A-B');
+    });
+
+    close();
+  }
+
   const ok = summary();
   process.exit(ok ? 0 : 1);
 })().catch(e => {

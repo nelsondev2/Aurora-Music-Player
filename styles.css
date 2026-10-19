@@ -4725,3 +4725,149 @@ html.aurora-wide .toast {
   .lyrics-scroll { padding-left: 12px; padding-right: 12px; }
   .lyrics-control-row { gap: 28px; }
 }
+
+/* =====================================================================
+ *  Reproductor v2 — cabecera con contexto, progreso preciso,
+ *  transporte reequilibrado y secundaria con etiquetas
+ *
+ *  De la revisión de la captura: el título se repetía en la cabecera
+ *  y bajo la portada; el «+» era un disco de acento que competía con
+ *  la portada; la barra medía 3 px sin tirador visible; aleatorio y
+ *  repetir parecían deshabilitados y la fila secundaria eran cinco
+ *  iconos sin nombre.
+ * ===================================================================== */
+
+/* «+» sobrio: superficie, no el disco de acento (ese se queda en
+ * Inicio, donde cargar música es la acción principal). */
+#btnBack { background: var(--surface); }
+#btnBack:active { background: var(--surface-2); }
+
+/* --- Progreso: la línea visible sigue fina, pero el área de toque
+ * mide 22 px y el tirador siempre se insinúa (crece al arrastrar). */
+.progress-section { padding-top: 4px; }
+.progress-track {
+  height: 22px;
+  background: transparent;
+}
+.progress-track::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  background: var(--surface-2);
+  border-radius: var(--radius-pill);
+}
+.progress-track:hover,
+.progress-track:focus-visible,
+.progress-track.dragging { height: 22px; }
+.progress-track:hover::before,
+.progress-track:focus-visible::before,
+.progress-track.dragging::before { height: 6px; }
+.progress-fill {
+  top: 50%;
+  bottom: auto;
+  height: 4px;
+  transform: translateY(-50%);
+  /* Acento uniforme: el degradado con los colores de la portada
+   * cambiaba a rosa a mitad de barra sin significar nada. */
+  background: linear-gradient(90deg, var(--accent-fill), var(--accent-fill-2));
+}
+.progress-buffer {
+  top: 50%;
+  bottom: auto;
+  height: 4px;
+  transform: translateY(-50%);
+}
+.progress-ab-range {
+  top: 50%;
+  bottom: auto;
+  height: 6px;
+  transform: translateY(-50%);
+}
+.progress-thumb {
+  width: 13px;
+  height: 13px;
+  right: -7px;
+  background: var(--accent);
+  border: 2px solid #fff;
+  transform: translateY(-50%) scale(0.75);
+}
+.progress-track.dragging .progress-thumb,
+.progress-track:hover .progress-thumb,
+.progress-track:focus-visible .progress-thumb { transform: translateY(-50%) scale(1.15); }
+.time-row { margin-top: 3px; }
+
+/* --- Transporte: grupo centrado, no cinco botones a los extremos.
+ * Aleatorio/repetir a 44 px en --text-2 (ya no parecen bloqueados)
+ * y con punto indicador cuando están activos, además del color. */
+.controls-main {
+  justify-content: center;
+  gap: clamp(8px, 3.5vw, 20px);
+}
+.ctrl-shuffle,
+.ctrl-repeat {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  color: var(--text-2);
+}
+.ctrl-shuffle.active::after,
+.ctrl-repeat.active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translateX(-50%);
+}
+.ctrl-prev,
+.ctrl-next { width: 48px; height: 48px; }
+.ctrl-play {
+  width: 68px;
+  height: 68px;
+  box-shadow: 0 10px 24px rgba(var(--accent-rgb), 0.3);
+}
+
+/* --- Secundaria con nombre: icono encima, etiqueta debajo. La fila
+ * deja de ser cinco cuadrados crípticos (A-B ya trae su distintivo). */
+.controls-secondary {
+  gap: 6px;
+  padding-top: 2px;
+  min-height: 56px;
+}
+.sec-btn { gap: 3px; }
+.sec-btn .ico {
+  width: 36px;
+  height: 36px;
+  padding: 9px;
+  margin-bottom: 0;
+}
+.sec-label {
+  font-size: var(--fs-3xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sec-btn.active .sec-label { color: var(--accent); }
+
+/* Pantallas bajas: la portada cede antes que los controles. */
+@media (max-height: 720px) {
+  .cover-art { width: min(78vw, 30dvh, 280px); }
+  .ctrl-play { width: 62px; height: 62px; }
+  .controls-secondary { min-height: 50px; padding-bottom: 6px; }
+}
+@media (max-width: 360px) {
+  .controls-main { gap: 6px; }
+  .ctrl-play { width: 64px; height: 64px; }
+}

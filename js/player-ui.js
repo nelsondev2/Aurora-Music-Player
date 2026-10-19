@@ -38,7 +38,13 @@ Object.assign(App, {
       this.setMarqueeText(document.getElementById('trackArtist'), t.artist || this.t('unknown_artist'));
       const albumEl = document.getElementById('trackAlbum');
       if (albumEl) {
-        const hasAlbum = t.album && !this.isPlaceholderAlbum(t.album);
+        // El álbum se oculta si no aporta nada: vacío/marcador, o igual
+        // al título (típico en sencillos: el mismo nombre dos veces)
+        // o al artista. La comparación ignora mayúsculas y espacios.
+        const normTxt = (v) => String(v == null ? '' : v).trim().toLowerCase();
+        const hasAlbum = t.album && !this.isPlaceholderAlbum(t.album)
+          && normTxt(t.album) !== normTxt(t.title)
+          && normTxt(t.album) !== normTxt(t.artist);
         albumEl.textContent = hasAlbum ? t.album : '';
         albumEl.style.display = hasAlbum ? '' : 'none';
       }
@@ -49,23 +55,18 @@ Object.assign(App, {
       // mini-cabecera). Su barra inferior sí muestra la duración total.
       const lrcTotal = document.getElementById('lyricsTimeTotal');
       if (lrcTotal) lrcTotal.textContent = this.fmtTime(t.duration);
-      // Cabecera: bajo «REPRODUCIENDO AHORA» va el TÍTULO de la pista en curso.
-      // Antes se mostraba el álbum o el contexto («Reproduciendo desde X»), que
-      // se leía como si fuera el nombre de la canción. El contexto no se pierde:
-      // queda en el tooltip y, visible, en el sheet de la cola (#queueContextLabel).
+      // Cabecera: bajo «REPRODUCIENDO AHORA» va el CONTEXTO («desde
+      // Biblioteca / una lista / Favoritos»), no el título: el título
+      // ya va en grande bajo la portada y repetirlo aquí era ruido.
+      // El título completo queda en el tooltip de la cabecera.
       const ctxEl = document.getElementById('nowPlayingContext');
       if (ctxEl) {
-        ctxEl.textContent = t.title || this.t('unknown_track');
-        const ctxLabel = this.getPlayContextLabel();
-        let detail = '';
-        if (ctxLabel) {
-          detail = this.t('playing_from') + ' · ' + ctxLabel;
-        } else if (t.album && !this.isPlaceholderAlbum(t.album)) {
-          detail = t.album;
-        } else if (t.artist) {
-          detail = t.artist;
-        }
-        if (detail) ctxEl.setAttribute('title', detail);
+        const ctxLabel = (typeof this.getPlayContextLabel === 'function') ? this.getPlayContextLabel() : null;
+        ctxEl.textContent = ctxLabel
+          ? this.t('playing_from') + ' · ' + ctxLabel
+          : this.t('your_library');
+        const fullTitle = (t.title || '') + (t.artist ? ' — ' + t.artist : '');
+        if (fullTitle) ctxEl.setAttribute('title', fullTitle);
         else ctxEl.removeAttribute('title');
       }
 

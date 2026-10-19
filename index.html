@@ -106,7 +106,10 @@
 
         <!-- Barra superior -->
         <header class="top-bar">
-          <button class="icon-btn icon-add" id="btnBack" data-i18n-aria="load_music" aria-label="Cargar música">
+          <!-- Cargar música: botón sobrio de 40 px. Antes era el disco
+               de acento (icon-add), que competía con la portada y se
+               confundía con un «volver» por su posición. -->
+          <button class="icon-btn" id="btnBack" data-i18n-aria="load_music" aria-label="Cargar música">
             <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
           </button>
           <div class="top-bar-title">
@@ -200,15 +203,19 @@
         <section class="controls-secondary">
           <button class="sec-btn" id="btnLyrics" data-i18n-aria="lyrics" aria-label="Letras">
             <svg class="ico" aria-hidden="true"><use href="#i-align-left"></use></svg>
+            <span class="sec-label" data-i18n="lyrics">Letras</span>
           </button>
           <button class="sec-btn" id="btnQueue" data-i18n-aria="queue" aria-label="Cola">
             <svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg>
+            <span class="sec-label" data-i18n="queue">Cola</span>
           </button>
           <button class="sec-btn" id="btnVolume" data-i18n-aria="volume" aria-label="Volumen">
             <svg class="ico" aria-hidden="true"><use href="#i-volume-high"></use></svg>
+            <span class="sec-label" data-i18n="volume">Volumen</span>
           </button>
           <button class="sec-btn" id="btnVisualizer" data-i18n-aria="visualizer" aria-label="Visualizador" aria-pressed="false">
             <svg class="ico" aria-hidden="true"><use href="#i-chart-simple"></use></svg>
+            <span class="sec-label" data-i18n="visualizer">Visualizador</span>
           </button>
           <button class="sec-btn ab-btn" id="btnABRepeat" type="button" data-i18n-aria="ab_repeat" data-i18n-title="ab_repeat" aria-label="Bucle A-B" aria-pressed="false">
             <span class="ab-badge">A-B</span>
@@ -1239,6 +1246,10 @@
   <script src="js/nav.js"></script>
   <script src="js/events.js"></script>
   <script src="js/stats-ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
+c="js/stats-ui.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
