@@ -2496,6 +2496,26 @@ svg { display: block; }
   gap: 8px;
   margin-bottom: 18px;
 }
+/* Editor de lista: una sola línea desplazable, como la barra de
+ * Letras. Las cinco acciones (subir, renombrar, compartir, vaciar y
+ * eliminar) ya no saltan a dos filas: las pastillas no se encogen ni
+ * parten su texto y lo que no cabe se alcanza deslizando. Acotado al
+ * editor: Favoritos reutiliza .edit-pl-actions para su botón de
+ * reproducir y no debe heredar la fila.
+ * El fundido del borde derecho avisa de que hay más acciones fuera
+ * de pantalla sin necesidad de una flecha. */
+#sheetEditPlaylist .edit-pl-actions {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  margin-bottom: 16px;
+  -webkit-mask-image: linear-gradient(90deg, #000 93%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000 93%, transparent 100%);
+}
+#sheetEditPlaylist .edit-pl-actions::-webkit-scrollbar { display: none; }
+#sheetEditPlaylist .pl-action-btn { flex: 0 0 auto; }
 .pl-action-btn {
   display: inline-flex;
   align-items: center;

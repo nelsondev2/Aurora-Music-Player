@@ -4,7 +4,7 @@
 **Base:** `ff73b21` (merge del PR #6, biblioteca simplificada)
 **Rama:** `arena/4c26cbd7-aurora-music-player`
 **Alcance elegido:** los 12 puntos de la auditoría de diseño (6 fallos + 6 de pulido), no solo los críticos.
-**Resultado:** 12/12 implementados + rediseño de botones de listas + corrección de los solapes de las capturas + filas de canciones v2 + Letras v2 · **133/133 pruebas automatizadas en verde** · `.xdc` válido para Delta Chat.
+**Resultado:** 12/12 implementados + rediseño de botones de listas + corrección de los solapes de las capturas + filas de canciones v2 + Letras v2 · **136/136 pruebas automatizadas en verde** · `.xdc` válido para Delta Chat.
 
 ---
 
@@ -13,15 +13,15 @@
 | Métrica | Antes (ff73b21) | Ahora |
 |---|---|---|
 | Puntos de diseño corregidos | 0/12 | **12/12** |
-| Pruebas de esta ronda | — | **133** (92 pulido + 27 smoke + 14 axe) |
+| Pruebas de esta ronda | — | **136** (95 pulido + 27 smoke + 14 axe) |
 | Violaciones axe (10 pantallas) | — | **0** |
 | Contraste de acentos (peor extremo del degradado) | **1.64:1** | **4.75:1** |
 | Objetivo táctil mínimo en controles citados | 28 px | **40 px** (fab 36 px) |
 | `font-size` en px | 22 declaraciones + tokens | **0** |
-| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 316.1 KB** |
+| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 316.5 KB** |
 
 **Paquete final:** `aurora-music-player.xdc`
-**SHA-256:** `82f80b227792449b85fe6ccff5fe7aec47b7f89e1c0216a72e6496c460e3290e`
+**SHA-256:** `caff120cc8cf39065f8345e64d9b95bcc385f1fed11f96d1536d98754a857487`
 **Validación:** `python3 build-xdc.py --check` → «OK el .xdc es válido para Delta Chat / webxdc».
 
 ---
@@ -163,12 +163,12 @@ python3 build-xdc.py --check
 Salida final:
 
 ```
-OK  aurora-music-player.xdc · 28 archivos · 316.1 KB
-    sha256: 82f80b227792449b85fe6ccff5fe7aec47b7f89e1c0216a72e6496c460e3290e
+OK  aurora-music-player.xdc · 28 archivos · 316.5 KB
+    sha256: caff120cc8cf39065f8345e64d9b95bcc385f1fed11f96d1536d98754a857487
     nombre: Aurora Music Player
     código: https://github.com/nelsondev2/Aurora-Music-Player
     icono: icon.png (90.5 KB)
-    archivos: 28 · comprimido: 316.1 KB · sin comprimir: 913.9 KB
+    archivos: 28 · comprimido: 316.5 KB · sin comprimir: 914.9 KB
 OK  el .xdc es válido para Delta Chat / webxdc
 ```
 
@@ -339,4 +339,16 @@ Con las nuevas medidas, el texto útil en el editor de lista pasa de ~46 px a ~1
 
 **Pruebas (4, bloque P):** se simulan arrastres táctiles reales sobre la barra, sobre un botón de la barra, sobre el play y sobre el área de la letra. Sin la corrección, las 4 fallan; con ella, la barra no cambia de canción ni cierra, y el gesto sobre la letra conserva su comportamiento.
 
-**Total actual: 133/133** (92 pulido + 27 smoke + 14 axe), también contra el `.xdc` extraído con `AURORA_ROOT=/tmp/xdc-gestos npm test`.
+**Total tras esta sección: 133/133** (92 pulido + 27 smoke + 14 axe), también contra el `.xdc` extraído.
+
+---
+
+## 13. Acciones de la lista en una sola línea
+
+**Petición:** aplicar a los botones de dentro de la lista (subir, renombrar, compartir, vaciar y eliminar) lo mismo que a la barra de Letras: una sola línea.
+
+**Cambio (`styles.css`, acotado a `#sheetEditPlaylist .edit-pl-actions`):** la fila deja de envolverse (`flex-wrap: nowrap`) y pasa a desplazarse en horizontal sin barra visible, con las pastillas sin encoger (`flex: 0 0 auto`) para que ninguna etiqueta se parta ni se recorte. Un fundido en el borde derecho avisa de que hay más acciones fuera de pantalla. El acotado importa: Favoritos reutiliza `.edit-pl-actions` para su «Reproducir Todo» y conserva su comportamiento. Las cinco acciones mantienen orden, texto, iconos y el contraste de las destructivas.
+
+**Pruebas (3, bloque Q):** la regla acotada no envuelve y desplaza, la genérica sigue intacta para Favoritos; las cinco acciones están en la fila en el orden pedido con su texto; y «Subir» y «Renombrar» siguen funcionando dentro de la fila. Se corrigió además una búsqueda sin anclar en el bloque L que cazaba la nueva regla acotada en vez de la base.
+
+**Total actual: 136/136** (95 pulido + 27 smoke + 14 axe), también contra el `.xdc` extraído con `AURORA_ROOT=/tmp/xdc-fila-unica npm test`.

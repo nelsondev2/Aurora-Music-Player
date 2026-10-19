@@ -820,7 +820,9 @@ function contrastAlpha(fg, bgHex) {
     });
 
     await test('CSS: acciones secundarias como pastillas ligeras', () => {
-      const i = s.indexOf('.pl-action-btn {');
+      // Anclado a principio de línea: «#sheetEditPlaylist .pl-action-btn»
+      // (la fila única) contiene la misma subcadena y va antes en la hoja.
+      const i = s.indexOf('\n.pl-action-btn {');
       assert(i > 0, 'falta .pl-action-btn');
       const block = s.slice(i, s.indexOf('}', i));
       includes(block, 'min-height: 40px');
@@ -1214,6 +1216,58 @@ function contrastAlpha(fg, bgHex) {
       assert(doc.getElementById('viewLyrics').classList.contains('active'), 'la barra cerró la vista');
       drag(doc.getElementById('lyricsScroll'), 180, 300, 181, 460);
       assert(doc.getElementById('viewPlayer').classList.contains('active'), 'el gesto vertical dejó de cerrar');
+    });
+
+    close();
+  }
+
+  /* =================================================================
+   * Q. Acciones de la lista en una sola línea (misma receta que la
+   *    barra de Letras): subir, renombrar, compartir, vaciar y
+   *    eliminar ya no saltan a dos filas.
+   * ================================================================= */
+  section('Q · Acciones de lista en una sola línea');
+  {
+    const s = css();
+    await test('CSS: la fila del editor no envuelve y se desplaza en horizontal', () => {
+      const i = s.indexOf('#sheetEditPlaylist .edit-pl-actions {');
+      assert(i > 0, 'falta la regla acotada al editor');
+      const block = s.slice(i, s.indexOf('}', i));
+      includes(block, 'flex-wrap: nowrap');
+      includes(block, 'overflow-x: auto');
+      includes(block, 'scrollbar-width: none');
+      includes(s, '#sheetEditPlaylist .edit-pl-actions::-webkit-scrollbar { display: none; }');
+      includes(s, '#sheetEditPlaylist .pl-action-btn { flex: 0 0 auto; }');
+      // La regla genérica sigue en su sitio: Favoritos reutiliza la
+      // clase para «Reproducir Todo» y no debe heredar la fila.
+      const base = s.slice(s.indexOf('\n.edit-pl-actions {'), s.indexOf('}', s.indexOf('\n.edit-pl-actions {')));
+      includes(base, 'flex-wrap: wrap');
+    });
+
+    const PLS = [{ id: 'plQ', name: 'Mezcla Q', trackIds: ['t1'], cover: { from: '#111111', to: '#222222' } }];
+    const { doc, App, close } = await boot({ tracks: TRACKS, playlists: PLS });
+
+    await test('las cinco acciones están en la fila, en orden y con su texto', () => {
+      App.openEditPlaylist('plQ');
+      const btns = [...doc.querySelectorAll('#sheetEditPlaylist .edit-pl-actions .pl-action-btn')];
+      eq(btns.map(b => b.id),
+        ['btnUploadToPlaylist', 'btnRenamePlaylist', 'btnExportPlaylist', 'btnClearPlaylist', 'btnDeletePlaylistFull']);
+      const textos = btns.map(b => b.textContent.trim());
+      includes(textos[0], 'Subir canciones');
+      includes(textos[1], 'Renombrar');
+      includes(textos[2], 'Compartir lista');
+      includes(textos[3], 'Vaciar');
+      includes(textos[4], 'Eliminar lista');
+      eq(doc.querySelectorAll('#sheetEditPlaylist .edit-pl-actions').length, 1);
+    });
+
+    await test('las acciones siguen funcionando dentro de la fila única', () => {
+      let opened = 0;
+      App.openFilePicker = () => { opened++; };
+      doc.getElementById('btnUploadToPlaylist').click();
+      eq(opened, 1, 'Subir no abrió el selector');
+      doc.getElementById('btnRenamePlaylist').click();
+      assert(doc.querySelector('#sheetEditPlaylist .edit-pl-name-input'), 'Renombrar no abrió el editor de nombre');
     });
 
     close();
