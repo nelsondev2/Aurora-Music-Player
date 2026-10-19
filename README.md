@@ -56,16 +56,16 @@ En navegador se usa el stub de `webxdc.js`: las exportaciones se descargan como 
 | Ruta | Qué es |
 |---|---|
 | `index.html` | Markup de la app (vistas, hojas, sprite de iconos) |
-| `styles.css` | Estilos, temas y acentos |
-| `data.js` | Traducciones (8 idiomas) y utilidades de datos |
-| `storage.js` | Persistencia en IndexedDB |
-| `uploader.js` | Lectura de archivos, ID3 y LRC |
-| `webxdc.js` | Stub de compatibilidad WebXDC (navegador) |
-| `js/` | Módulos de la app (audio, UI, listas, letras, ajustes…) |
-| `assets/` | Fuente Outfit, iconos y jsmediatags |
+| `css/styles.css` | Estilos, temas y acentos (toda la CSS vive en `css/`) |
+| `js/data.js` | Traducciones (8 idiomas) y utilidades de datos |
+| `js/storage.js` | Persistencia en IndexedDB |
+| `js/uploader.js` | Lectura de archivos, ID3 y LRC |
+| `js/webxdc.js` | Stub de compatibilidad WebXDC (navegador) |
+| `js/` | Todo el JavaScript propio: módulos de la app (audio, UI, listas, letras, ajustes…) |
+| `assets/` | Fuente Outfit, iconos y jsmediatags (`assets/js/`) |
 | `build-xdc.py` | Empaquetado y validación del `.xdc` |
 | `manifest.toml`, `icon.png` | Metadatos e icono del WebXDC |
 | `README.md`, `LICENSE` | Documentación y licencia |
-| `docs/AUDITORIA.md` | Informe de la auditoría técnica 1.2.0 |
+| `docs/AUDITORIA.md`, `docs/INFORME-PULIDO-UI.md` | Informes de auditoría y del pulido de interfaz |
 
 El repositorio contiene únicamente la aplicación y su empaquetador: no incluye servidor Node, suite de pruebas, CI ni dependencias externas.

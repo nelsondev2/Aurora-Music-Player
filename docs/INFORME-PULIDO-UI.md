@@ -21,7 +21,7 @@
 | Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 317.7 KB** |
 
 **Paquete final:** `aurora-music-player.xdc`
-**SHA-256:** `d2d8c90bd48d08670fbf74091b4af515136f54558c8e70d93f89b1d0444d6178`
+**SHA-256:** `c112edbfc04e6b2862986f043970ea9896bac705eb8ed44bcd024eccdbb347b1`
 **Validación:** `python3 build-xdc.py --check` → «OK el .xdc es válido para Delta Chat / webxdc».
 
 ---
@@ -164,7 +164,7 @@ Salida final:
 
 ```
 OK  aurora-music-player.xdc · 28 archivos · 317.7 KB
-    sha256: d2d8c90bd48d08670fbf74091b4af515136f54558c8e70d93f89b1d0444d6178
+    sha256: c112edbfc04e6b2862986f043970ea9896bac705eb8ed44bcd024eccdbb347b1
     nombre: Aurora Music Player
     código: https://github.com/nelsondev2/Aurora-Music-Player
     icono: icon.png (90.5 KB)
@@ -383,3 +383,19 @@ Con las nuevas medidas, el texto útil en el editor de lista pasa de ~46 px a ~1
 **Pruebas (6, bloque R):** CSS de progreso/transporte/etiquetas; la cabecera pinta «Reproduciendo desde · Mi música» y no el título; el álbum igual al título se oculta y uno distinto se muestra; el «+» del reproductor no es disco y el de Inicio sí; y las cuatro etiquetas existen con su clave i18n.
 
 **Total actual: 143/143** (102 pulido + 27 smoke + 14 axe), también contra el `.xdc` extraído con `AURORA_ROOT=/tmp/xdc-player-v2 npm test`.
+
+---
+
+## 16. Organización del repositorio
+
+**Petición:** eliminar todos los archivos de prueba y ubicar cada tecnología en su carpeta. **Decisiones documentadas:** la suite `verificacion/` se elimina por completo del repo (se confirmó en verde, 143/143, justo antes de borrarla y se conserva solo esta constancia); la librería vendorizada `jsmediatags.min.js` se queda en `assets/js/` por ser código de terceros ya dentro de una carpeta `js` — todo el JavaScript **propio** vive en `js/`; y los informes de `docs/` no se reescriben porque son el registro histórico de cada fase.
+
+| Antes | Después |
+|---|---|
+| `styles.css` (raíz) | `css/styles.css` |
+| `data.js`, `storage.js`, `uploader.js`, `webxdc.js` (raíz) | `js/` junto a los demás módulos |
+| `verificacion/` (9 archivos + dependencias) | eliminada |
+
+Referencias actualizadas: `index.html` (`css/styles.css`, `js/webxdc.js`, `js/data.js`, `js/storage.js`, `js/uploader.js`), `build-xdc.py` (empaqueta por directorios `css/` y `js/` y valida el stub en `js/webxdc.js`) y la tabla de contenido del `README.md`. Al revisar `index.html` se eliminó además un fragmento duplicado tras el `</html>` (83 bytes que volvían a cargar `js/main.js`).
+
+**Comprobación sin suite permanente:** sintaxis de los 19 JS con `node --check`; arranque real con un arnés externo temporal (copia fuera del repo) cargando los 20 scripts desde sus rutas nuevas — `App` viva, 0 errores — tanto en el repo como en el `.xdc` extraído; y validación del paquete con `build-xdc.py --check` (28 archivos, mismo tamaño e inventario que antes, sin ningún archivo de prueba dentro).

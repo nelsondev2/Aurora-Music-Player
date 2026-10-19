@@ -33,13 +33,9 @@ APP_ENTRIES = [
     "manifest.toml",   # nombre visible y código fuente
     "icon.png",        # icono del chat
     "LICENSE",
-    "styles.css",
-    "data.js",
-    "storage.js",
-    "uploader.js",
-    "webxdc.js",       # stub con guarda: nunca pisa la API del cliente
-    "js",
-    "assets",
+    "css",             # todas las hojas de estilo
+    "js",              # todo el JS propio (incl. el stub webxdc.js)
+    "assets",          # JS vendorizado (js/jsmediatags.min.js) y demás
 ]
 
 # Fecha fija en las entradas → builds reproducibles (mismo contenido,
@@ -174,7 +170,7 @@ def validate_sources(files):
                           % (width, MIN_ICON, MAX_ICON))
 
     html = read_text("index.html")
-    css = read_text("styles.css") if "styles.css" in names else ""
+    css = read_text("css/styles.css") if "css/styles.css" in names else ""
 
     for ref in sorted(local_refs(html) | css_refs(css)):
         if ref.startswith("/"):
@@ -186,8 +182,8 @@ def validate_sources(files):
         ok = fail("carga remota «%s»: un .xdc funciona sin red" % url)
 
     # La API la inyecta el cliente; el stub solo debe actuar si no existe.
-    if "webxdc.js" in names:
-        stub = read_text("webxdc.js")
+    if "js/webxdc.js" in names:
+        stub = read_text("js/webxdc.js")
         if "if (window.webxdc) return;" not in stub:
             ok = fail("webxdc.js debe salir si window.webxdc ya existe "
                       "(nunca debe pisar la API del cliente)")
