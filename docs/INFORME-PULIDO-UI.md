@@ -4,7 +4,7 @@
 **Base:** `ff73b21` (merge del PR #6, biblioteca simplificada)
 **Rama:** `arena/4c26cbd7-aurora-music-player`
 **Alcance elegido:** los 12 puntos de la auditoría de diseño (6 fallos + 6 de pulido), no solo los críticos.
-**Resultado:** 12/12 implementados + rediseño de botones de listas + corrección de los solapes de las capturas + filas de canciones v2 · **121/121 pruebas automatizadas en verde** · `.xdc` válido para Delta Chat.
+**Resultado:** 12/12 implementados + rediseño de botones de listas + corrección de los solapes de las capturas + filas de canciones v2 + Letras v2 · **129/129 pruebas automatizadas en verde** · `.xdc` válido para Delta Chat.
 
 ---
 
@@ -13,15 +13,15 @@
 | Métrica | Antes (ff73b21) | Ahora |
 |---|---|---|
 | Puntos de diseño corregidos | 0/12 | **12/12** |
-| Pruebas de esta ronda | — | **121** (80 pulido + 27 smoke + 14 axe) |
+| Pruebas de esta ronda | — | **129** (88 pulido + 27 smoke + 14 axe) |
 | Violaciones axe (10 pantallas) | — | **0** |
 | Contraste de acentos (peor extremo del degradado) | **1.64:1** | **4.75:1** |
 | Objetivo táctil mínimo en controles citados | 28 px | **40 px** (fab 36 px) |
 | `font-size` en px | 22 declaraciones + tokens | **0** |
-| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 314.1 KB** |
+| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 315.8 KB** |
 
 **Paquete final:** `aurora-music-player.xdc`
-**SHA-256:** `d700975cf15dedbcc24cb933ee37e2378c6ffbe572daa9cd234eb5654633ca1c`
+**SHA-256:** `8497bd97d3b611e5346753bdd25869d23324c6a5a64354c3bc633d8e9d8d4949`
 **Validación:** `python3 build-xdc.py --check` → «OK el .xdc es válido para Delta Chat / webxdc».
 
 ---
@@ -163,12 +163,12 @@ python3 build-xdc.py --check
 Salida final:
 
 ```
-OK  aurora-music-player.xdc · 28 archivos · 314.1 KB
-    sha256: d700975cf15dedbcc24cb933ee37e2378c6ffbe572daa9cd234eb5654633ca1c
+OK  aurora-music-player.xdc · 28 archivos · 315.8 KB
+    sha256: 8497bd97d3b611e5346753bdd25869d23324c6a5a64354c3bc633d8e9d8d4949
     nombre: Aurora Music Player
     código: https://github.com/nelsondev2/Aurora-Music-Player
     icono: icon.png (90.5 KB)
-    archivos: 28 · comprimido: 314.1 KB · sin comprimir: 906.6 KB
+    archivos: 28 · comprimido: 315.8 KB · sin comprimir: 913.1 KB
 OK  el .xdc es válido para Delta Chat / webxdc
 ```
 
@@ -289,4 +289,40 @@ Con las nuevas medidas, el texto útil en el editor de lista pasa de ~46 px a ~1
 - DOM: con una pista de 3:24 y otra sin duración, ninguna de las tres listas pinta «0:00»; las tres comparten portada/texto/duración y conservan asa, menú y quitar donde toca.
 - Favoritos: el vacío no contiene ningún botón.
 
-**Total actual: 121/121** (80 pulido + 27 smoke + 14 axe), ejecutadas también contra el `.xdc` extraído con `AURORA_ROOT=/tmp/xdc-filas npm test`.
+**Total tras esta sección: 121/121** (80 pulido + 27 smoke + 14 axe), ejecutadas también contra el `.xdc` extraído.
+
+---
+
+## 11. Letras v2 (captura 2026-10-19)
+
+**Petición:** «aquí hay bastante que pulir también en la interfaz», sobre la vista de letra sincronizada.
+
+### 11.1 Diagnóstico de la captura
+
+1. **Cabecera duplicada:** arriba «Yoake no uta — jo0ji» y justo debajo, otra vez título y artista junto a la portada.
+2. **Barra de herramientas rota:** 11 controles sueltos (A−, A+, Desfase, repetir, restablecer, pantalla completa, cargar, editar, compartir) que en 360 px saltaban a dos filas y dejaban iconos huérfanos flotando.
+3. **La velocidad apretaba la mini-cabecera:** `− 1.0× +` compartía fila con portada y título.
+4. **Controles sobre el texto:** anterior/pausa/siguiente flotaban en absoluto sobre la última línea visible, que quedaba atrapada bajo la pausa.
+5. **Silencios como versos:** cada línea vacía se pintaba con una ♪ a tamaño completo, con el hueco de un verso (en la captura, tres notas enormes separando frases).
+6. **Lectura fatigosa:** huecos de 16 px entre líneas, líneas lejanas al 55% de opacidad sobre un degradado morado al 60%: casi ilegibles.
+
+### 11.2 Qué se hizo
+
+| Zona | Cambio |
+|---|---|
+| Cabecera | Solo queda la etiqueta «Letra sincronizada». Se elimina `#lyricsTrackName` y su asignación en `renderCurrentTrack()`: la identidad vive una sola vez, en la mini-cabecera. |
+| Herramientas | Una **sola fila desplazable** con 5 grupos en pastilla: tamaño de letra, desfase, velocidad, repetir/restablecer y acciones (pantalla completa, cargar, editar, compartir). Todos los botones conservan su `id` y su comportamiento. |
+| Velocidad | Se muda de la mini-cabecera a la barra, con los demás ajustes. La mini-cabecera queda en portada 44 px + título/artista, con un filete inferior. |
+| Controles | De flotantes a **barra atracada** en la columna (`position: relative`, fondo `--blur-bg` esmerilado y borde superior). La letra hace scroll por su carril y nunca queda bajo la pausa. El play usa el degradado seguro `--accent-fill → --accent-fill-2`. |
+| Progreso | La barra estrena una línea fina de progreso con tiempos (actual/total), alimentada por el mismo `updateProgress()` del reproductor (`#lyricsProgressFill`, `#lyricsTimeCurrent`, `#lyricsTimeTotal`). |
+| Líneas | Hueco de 11 px, ancho máximo 620 px, línea activa con fondo de acento al 12% y crecimiento del 12% (antes 18%, que hacía saltar el texto). Lejanas al 70–85% (antes 55%). Fondo degradado al 42% (antes 60%). |
+| Silencios | `.lrc-line.empty` al 58% del tamaño, opacidad 0.35 y sin altura de verso; si es el silencio activo sube al 72% en color de acento, sin fondo. |
+
+### 11.3 Pruebas añadidas (8, bloque O de `verificacion/ui-polish.js`)
+
+- CSS: fila sin saltos con grupos, controles atracados (no absolutos), silencios discretos y lejanas legibles.
+- DOM: no existe la línea duplicada de cabecera; la velocidad está en la barra y sube/baja (1.0× → 1.1× → 1.0×); los 10 ajustes/acciones siguen presentes y agrupados en 5 pastillas.
+- Render: una LRC con silencio intermedio lo pinta como interludio `♪` con clase `empty`.
+- Progreso: con el audio a 50 s de 200, la barra marca 25%, `0:50` y `3:20`.
+
+**Total actual: 129/129** (88 pulido + 27 smoke + 14 axe), ejecutadas también contra el `.xdc` extraído con `AURORA_ROOT=/tmp/xdc-letras npm test`.

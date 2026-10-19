@@ -251,45 +251,55 @@
             <svg class="ico" aria-hidden="true"><use href="#i-chevron-down"></use></svg>
           </button>
           <div class="top-bar-title">
+            <!-- Solo la etiqueta de la vista: título y artista ya van en
+                 la mini-cabecera de debajo. Antes se duplicaban aquí. -->
             <span class="now-playing-label" data-i18n="synced_lyrics">LETRA SINCRONIZADA</span>
-            <span class="now-playing-context" id="lyricsTrackName">—</span>
           </div>
           <button class="icon-btn" id="btnLyricsMore" data-i18n-aria="more_options" aria-label="Más opciones">
             <svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg>
           </button>
         </header>
 
-        <!-- Barra de herramientas de letras -->
+        <!-- Barra de herramientas de letras: una sola fila desplazable
+             con los ajustes agrupados en pastillas (tamaño, desfase y
+             velocidad) y las acciones al final. Antes los 11 controles
+             sueltos saltaban a dos filas y quedaban iconos huérfanos
+             flotando sobre la letra. -->
         <div class="lyrics-toolbar" id="lyricsToolbar">
-          <!-- Tamaño de letra: A− y A+ con la «A» a distinto tamaño; antes
-               los dos botones mostraban el mismo icono y la misma letra y
-               parecían el mismo control. -->
-          <button class="lt-btn lt-font" id="btnLrcFontDec" data-i18n-aria="lrc_font_dec" data-i18n-title="lrc_font_dec" aria-label="Reducir letra" title="Reducir letra">
-            <span class="lt-a lt-a-sm" aria-hidden="true">A</span><span class="lt-sign" aria-hidden="true">−</span>
-          </button>
-          <button class="lt-btn lt-font" id="btnLrcFontInc" data-i18n-aria="lrc_font_inc" data-i18n-title="lrc_font_inc" aria-label="Aumentar letra" title="Aumentar letra">
-            <span class="lt-a lt-a-lg" aria-hidden="true">A</span><span class="lt-sign" aria-hidden="true">+</span>
-          </button>
-          <span class="lt-sep"></span>
-          <!-- Desfase de la letra: − y + van en un grupo con etiqueta
-               visible y el valor actual en medio, para que se vea que
-               ambos pertenecen al mismo ajuste. -->
+          <!-- Tamaño de letra: A− y A+ con la «A» a distinto tamaño. -->
+          <div class="lt-cluster" role="group" data-i18n-aria="lrc_font_size" aria-label="Tamaño de letra">
+            <button class="lt-btn lt-font" id="btnLrcFontDec" data-i18n-aria="lrc_font_dec" data-i18n-title="lrc_font_dec" aria-label="Reducir letra" title="Reducir letra">
+              <span class="lt-a lt-a-sm" aria-hidden="true">A</span><span class="lt-sign" aria-hidden="true">−</span>
+            </button>
+            <button class="lt-btn lt-font" id="btnLrcFontInc" data-i18n-aria="lrc_font_inc" data-i18n-title="lrc_font_inc" aria-label="Aumentar letra" title="Aumentar letra">
+              <span class="lt-a lt-a-lg" aria-hidden="true">A</span><span class="lt-sign" aria-hidden="true">+</span>
+            </button>
+          </div>
+          <!-- Desfase de la letra: − y + con etiqueta y valor en medio. -->
           <div class="lt-group" id="lrcOffsetGroup" role="group" data-i18n-aria="lrc_offset_group" aria-label="Desfase de la letra">
             <span class="lt-group-label" data-i18n="lrc_offset_short">Desfase</span>
             <button class="lt-btn" id="btnLrcOffsetMinus" data-i18n-aria="lrc_offset_minus_aria" data-i18n-title="lrc_offset_minus_aria" aria-label="Retrasar la letra 0.5 s" title="Retrasar 0.5 s">−</button>
             <output class="lt-offset-value" id="lrcOffsetValue" aria-live="polite">0.0s</output>
             <button class="lt-btn" id="btnLrcOffsetPlus" data-i18n-aria="lrc_offset_plus_aria" data-i18n-title="lrc_offset_plus_aria" aria-label="Adelantar la letra 0.5 s" title="Adelantar 0.5 s">+</button>
           </div>
-          <span class="lt-sep"></span>
-          <button class="lt-btn" id="btnLrcLoop" data-i18n-aria="lrc_loop_section" data-i18n-title="lrc_loop_section" aria-label="Repetir sección" title="Repetir sección"><svg class="ico" aria-hidden="true"><use href="#i-repeat"></use></svg></button>
-          <!-- Restablecer TODA la letra (no solo el desfase): fuera del
-               grupo para que no parezca parte del ajuste de desfase. -->
-          <button class="lt-btn lt-reset" id="btnLrcOffsetReset" data-i18n-aria="lrc_reset_all" data-i18n-title="lrc_reset_all" aria-label="Restablecer letra" title="Restablecer letra"><svg class="ico" aria-hidden="true"><use href="#i-rotate-left"></use></svg></button>
-          <span class="lt-sep"></span>
-          <button class="lt-btn" id="btnLrcFullscreen" data-i18n-title="lrc_fullscreen" title="Pantalla completa"><svg class="ico" aria-hidden="true"><use href="#i-expand"></use></svg></button>
-          <button class="lt-btn" id="btnLrcLoadFile" data-i18n-title="lrc_load_file" title="Cargar .lrc"><svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg></button>
-          <button class="lt-btn" id="btnLrcEdit" data-i18n-title="lrc_edit" title="Editar"><svg class="ico" aria-hidden="true"><use href="#i-pen"></use></svg></button>
-          <button class="lt-btn" id="btnLrcShare" data-i18n-title="lrc_share_tooltip" title="Compartir letra"><svg class="ico" aria-hidden="true"><use href="#i-paper-plane"></use></svg></button>
+          <!-- Velocidad de reproducción: vivía junto a la portada y
+               apretaba el título; es un ajuste y va con los demás. -->
+          <div class="lt-cluster lyrics-speed" id="lyricsSpeed" role="group" data-i18n-aria="lrc_speed" aria-label="Velocidad">
+            <button class="lt-btn" id="btnLrcSpeedDown" type="button" data-i18n-aria="lrc_speed_down" aria-label="Bajar velocidad"><svg class="ico" aria-hidden="true"><use href="#i-minus"></use></svg></button>
+            <span id="lrcSpeedLabel">1.0×</span>
+            <button class="lt-btn" id="btnLrcSpeedUp" type="button" data-i18n-aria="lrc_speed_up" aria-label="Subir velocidad"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg></button>
+          </div>
+          <div class="lt-cluster">
+            <button class="lt-btn" id="btnLrcLoop" data-i18n-aria="lrc_loop_section" data-i18n-title="lrc_loop_section" aria-label="Repetir sección" title="Repetir sección"><svg class="ico" aria-hidden="true"><use href="#i-repeat"></use></svg></button>
+            <!-- Restablecer TODA la letra (no solo el desfase). -->
+            <button class="lt-btn lt-reset" id="btnLrcOffsetReset" data-i18n-aria="lrc_reset_all" data-i18n-title="lrc_reset_all" aria-label="Restablecer letra" title="Restablecer letra"><svg class="ico" aria-hidden="true"><use href="#i-rotate-left"></use></svg></button>
+          </div>
+          <div class="lt-cluster lt-actions">
+            <button class="lt-btn" id="btnLrcFullscreen" data-i18n-title="lrc_fullscreen" title="Pantalla completa"><svg class="ico" aria-hidden="true"><use href="#i-expand"></use></svg></button>
+            <button class="lt-btn" id="btnLrcLoadFile" data-i18n-title="lrc_load_file" title="Cargar .lrc"><svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg></button>
+            <button class="lt-btn" id="btnLrcEdit" data-i18n-title="lrc_edit" title="Editar"><svg class="ico" aria-hidden="true"><use href="#i-pen"></use></svg></button>
+            <button class="lt-btn" id="btnLrcShare" data-i18n-title="lrc_share_tooltip" title="Compartir letra"><svg class="ico" aria-hidden="true"><use href="#i-paper-plane"></use></svg></button>
+          </div>
         </div>
 
         <!-- Botón salir de pantalla completa -->
@@ -303,11 +313,6 @@
           <div class="mini-info">
             <h2 id="miniTitle">—</h2>
             <p id="miniArtist">—</p>
-          </div>
-          <div class="lyrics-speed" id="lyricsSpeed">
-            <button class="lt-btn" id="btnLrcSpeedDown" type="button" data-i18n-aria="lrc_speed_down" aria-label="Bajar velocidad"><svg class="ico" aria-hidden="true"><use href="#i-minus"></use></svg></button>
-            <span id="lrcSpeedLabel">1.0×</span>
-            <button class="lt-btn" id="btnLrcSpeedUp" type="button" data-i18n-aria="lrc_speed_up" aria-label="Subir velocidad"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg></button>
           </div>
         </section>
 
@@ -340,18 +345,26 @@
           <button class="lt-btn" id="btnLrcLoopClear"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
         </div>
 
-        <!-- Controles compactos -->
+        <!-- Controles: barra atracada al borde inferior (ya no flota
+             sobre la letra) con una línea de progreso fina. -->
         <section class="lyrics-controls">
-          <button class="ctrl-btn ctrl-prev" id="btnPrevLyrics" data-i18n-aria="previous" aria-label="Anterior">
-            <svg class="ico" aria-hidden="true"><use href="#i-backward-step"></use></svg>
-          </button>
-          <button class="ctrl-btn ctrl-play ctrl-play-sm" id="btnPlayLyrics" data-i18n-aria="play" aria-label="Reproducir">
-            <svg class="ico icon-play" aria-hidden="true"><use href="#i-play"></use></svg>
-            <svg class="ico icon-pause" style="display:none" aria-hidden="true"><use href="#i-pause"></use></svg>
-          </button>
-          <button class="ctrl-btn ctrl-next" id="btnNextLyrics" data-i18n-aria="next" aria-label="Siguiente">
-            <svg class="ico" aria-hidden="true"><use href="#i-forward-step"></use></svg>
-          </button>
+          <div class="lyrics-progress" aria-hidden="true">
+            <span class="lyrics-time" id="lyricsTimeCurrent">0:00</span>
+            <div class="lyrics-progress-track"><div class="lyrics-progress-fill" id="lyricsProgressFill"></div></div>
+            <span class="lyrics-time" id="lyricsTimeTotal">0:00</span>
+          </div>
+          <div class="lyrics-control-row">
+            <button class="ctrl-btn ctrl-prev" id="btnPrevLyrics" data-i18n-aria="previous" aria-label="Anterior">
+              <svg class="ico" aria-hidden="true"><use href="#i-backward-step"></use></svg>
+            </button>
+            <button class="ctrl-btn ctrl-play ctrl-play-sm" id="btnPlayLyrics" data-i18n-aria="play" aria-label="Reproducir">
+              <svg class="ico icon-play" aria-hidden="true"><use href="#i-play"></use></svg>
+              <svg class="ico icon-pause" style="display:none" aria-hidden="true"><use href="#i-pause"></use></svg>
+            </button>
+            <button class="ctrl-btn ctrl-next" id="btnNextLyrics" data-i18n-aria="next" aria-label="Siguiente">
+              <svg class="ico" aria-hidden="true"><use href="#i-forward-step"></use></svg>
+            </button>
+          </div>
         </section>
       </section>
 

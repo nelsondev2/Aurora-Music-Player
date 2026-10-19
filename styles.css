@@ -4530,3 +4530,178 @@ html.aurora-wide .toast {
     flex-basis: 34px;
   }
 }
+
+/* =====================================================================
+ *  Letras v2 — cabecera sin duplicar, herramientas agrupadas y
+ *  controles atracados (captura 2026-10-19)
+ *
+ *  Problemas de la captura: la cabecera repetía título — artista que
+ *  ya mostraba la mini-cabecera; los 11 botones sueltos de la barra
+ *  saltaban a dos filas con iconos huérfanos; los controles de
+ *  reproducción flotaban sobre la última línea; cada silencio se
+ *  pintaba como una ♪ del tamaño de un verso y las líneas lejanas
+ *  quedaban casi ilegibles sobre el degradado.
+ * ===================================================================== */
+
+/* El fondo acompaña, no compite con el texto. */
+.lyrics-bg .bg-gradient { opacity: 0.42; }
+
+.lyrics-top-bar { padding-bottom: 6px; }
+.lyrics-top-bar .now-playing-label { letter-spacing: 0.16em; }
+
+/* Una fila, desplazable, con los ajustes en pastillas. Sin saltos de
+ * línea: lo que no cabe se alcanza deslizando, como en el resto de
+ * barras de chips de la app. */
+.lyrics-toolbar {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 8px;
+  padding: 4px 2px 8px;
+  scrollbar-width: none;
+}
+.lyrics-toolbar::-webkit-scrollbar { display: none; }
+.lt-cluster {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.lyrics-toolbar .lt-btn {
+  min-width: 36px;
+  height: 36px;
+  border-radius: 999px;
+}
+.lyrics-toolbar .lt-btn .ico { width: 15px; height: 15px; }
+.lyrics-toolbar .lt-group {
+  padding: 3px 5px 3px 10px;
+  flex-shrink: 0;
+}
+.lyrics-toolbar .lt-group .lt-btn { min-width: 28px; height: 30px; }
+.lyrics-speed { gap: 2px; }
+.lyrics-speed .lt-btn { min-width: 30px; height: 30px; }
+
+/* Mini-cabecera: solo identidad (la velocidad ya vive en la barra). */
+.lyrics-mini {
+  gap: 10px;
+  padding: 6px 2px 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+.lyrics-mini .mini-cover { width: 44px; height: 44px; border-radius: 10px; }
+
+/* Lectura: menos aire, líneas lejanas legibles y foco claro sin
+ * saltos bruscos de tamaño (la activa crece solo un 12%). */
+.lyrics-scroll {
+  padding: 38vh 18px 38vh;
+  mask-image: linear-gradient(180deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 9%, #000 91%, transparent 100%);
+}
+.lyrics-content {
+  gap: 11px;
+  max-width: 620px;
+  margin: 0 auto;
+  width: 100%;
+}
+.lrc-line {
+  color: var(--text-2);
+  opacity: 0.6;
+  line-height: 1.38;
+  padding: 3px 10px;
+  border-radius: 14px;
+  max-width: 94%;
+}
+.lrc-line.near { color: var(--text-2); opacity: 0.85; }
+.lrc-line.near-2 { color: var(--text-3); opacity: 0.7; }
+.lrc-line.active {
+  color: var(--text-1);
+  opacity: 1;
+  font-size: calc(var(--lrc-font-size, 1.125rem) * 1.12);
+  background: rgba(var(--accent-rgb), 0.12);
+}
+.lrc-line .lrc-translation { margin-top: 2px; line-height: 1.4; }
+/* Silencios e interludios: una nota pequeña, no un verso más. */
+.lrc-line.empty {
+  min-height: 0;
+  padding: 0 8px;
+  font-size: calc(var(--lrc-font-size, 1.125rem) * 0.58);
+  line-height: 1;
+  opacity: 0.35;
+  color: var(--text-3);
+}
+.lrc-line.empty.active {
+  font-size: calc(var(--lrc-font-size, 1.125rem) * 0.72);
+  color: var(--accent);
+  background: transparent;
+  opacity: 0.8;
+}
+
+/* Controles atracados: ocupan su sitio en la columna, con fondo
+ * esmerilado; la letra hace scroll por encima y nunca queda texto
+ * atrapado bajo el botón de pausa. */
+.lyrics-controls {
+  position: relative;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  z-index: 6;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 18px calc(var(--safe-bottom) + 10px);
+  background: var(--blur-bg);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-top: 1px solid var(--border);
+}
+.lyrics-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.lyrics-time {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+}
+.lyrics-time:last-child { text-align: right; }
+.lyrics-progress-track {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--surface-hi);
+  overflow: hidden;
+}
+.lyrics-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width .25s linear;
+}
+.lyrics-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 34px;
+}
+.lyrics-controls .ctrl-play {
+  background: linear-gradient(135deg, var(--accent-fill), var(--accent-fill-2));
+  color: var(--accent-on-fill);
+}
+/* El indicador de bucle se apoya sobre la barra, no sobre la letra. */
+.lyrics-loop-indicator { bottom: calc(var(--safe-bottom) + 132px); }
+
+@media (max-width: 360px) {
+  .lyrics-toolbar .lt-btn { min-width: 34px; height: 34px; }
+  .lyrics-scroll { padding-left: 12px; padding-right: 12px; }
+  .lyrics-control-row { gap: 28px; }
+}

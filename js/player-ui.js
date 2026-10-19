@@ -45,7 +45,10 @@ Object.assign(App, {
       document.getElementById('timeTotal').textContent = this.fmtTime(t.duration);
       document.getElementById('miniTitle').textContent = t.title;
       document.getElementById('miniArtist').textContent = t.artist;
-      document.getElementById('lyricsTrackName').textContent = t.title + ' — ' + t.artist;
+      // La cabecera de Letras ya no repite título — artista (va en la
+      // mini-cabecera). Su barra inferior sí muestra la duración total.
+      const lrcTotal = document.getElementById('lyricsTimeTotal');
+      if (lrcTotal) lrcTotal.textContent = this.fmtTime(t.duration);
       // Cabecera: bajo «REPRODUCIENDO AHORA» va el TÍTULO de la pista en curso.
       // Antes se mostraba el álbum o el contexto («Reproduciendo desde X»), que
       // se leía como si fuera el nombre de la canción. El contexto no se pierde:
@@ -251,6 +254,13 @@ Object.assign(App, {
       const fill = document.getElementById('progressFill');
       const curEl = document.getElementById('timeCurrent');
       if (fill) fill.style.width = pct + '%';
+      // Barra de progreso de la vista de Letras (misma fuente de verdad).
+      const lrcFill = document.getElementById('lyricsProgressFill');
+      if (lrcFill) lrcFill.style.width = pct + '%';
+      const lrcCur = document.getElementById('lyricsTimeCurrent');
+      if (lrcCur) lrcCur.textContent = this.fmtTime(cur);
+      const lrcTot = document.getElementById('lyricsTimeTotal');
+      if (lrcTot && dur > 0) lrcTot.textContent = this.fmtTime(dur);
       const mini = document.getElementById('miniProgress');
       if (mini) mini.style.width = pct + '%';
       if (curEl) curEl.textContent = this.fmtTime(cur);

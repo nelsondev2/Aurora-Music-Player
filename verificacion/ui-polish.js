@@ -1066,6 +1066,96 @@ function contrastAlpha(fg, bgHex) {
     close();
   }
 
+  /* =================================================================
+   * O. Letras v2 (captura 2026-10-19): cabecera sin duplicar,
+   *    herramientas agrupadas, controles atracados y silencios
+   *    discretos.
+   * ================================================================= */
+  section('O · Letras v2');
+  {
+    const s = css();
+    const v2 = s.indexOf('Letras v2');
+    assert(v2 > 0, 'falta la sección Letras v2');
+    const seg = s.slice(v2);
+
+    await test('CSS: la barra de herramientas es una fila agrupada, sin saltos', () => {
+      includes(seg, 'flex-wrap: nowrap');
+      includes(seg, 'overflow-x: auto');
+      includes(seg, '.lt-cluster');
+      includes(seg, 'border-radius: 999px');
+    });
+
+    await test('CSS: controles atracados y progreso fino sobre la barra', () => {
+      includes(seg, '.lyrics-controls');
+      includes(seg, 'position: relative');
+      includes(seg, 'border-top: 1px solid var(--border)');
+      includes(seg, '.lyrics-progress-fill');
+      notIncludes(seg.slice(seg.indexOf('.lyrics-controls'), seg.indexOf('.lyrics-progress')), 'position: absolute');
+    });
+
+    await test('CSS: silencios pequeños y líneas lejanas más legibles', () => {
+      const empty = seg.slice(seg.indexOf('.lrc-line.empty {'), seg.indexOf('}', seg.indexOf('.lrc-line.empty {')));
+      includes(empty, 'opacity: 0.35');
+      includes(seg, '.lrc-line.near-2 { color: var(--text-3); opacity: 0.7; }');
+      includes(seg, 'rgba(var(--accent-rgb), 0.12)');
+    });
+
+    const LRC_TRACK = [{
+      id: 'tlrc', title: 'Yoake no uta', artist: 'jo0ji', album: 'X', duration: 200, addedAt: 9, src: null,
+      lrc: ['[00:01.00]Aunque ya casi amanece', '[00:05.00]', '[00:09.00]La niebla no se disipa']
+    }];
+    const { doc, App, close } = await boot({ tracks: LRC_TRACK });
+
+    await test('la cabecera ya no duplica título y artista', () => {
+      assert(!doc.getElementById('lyricsTrackName'), 'sigue la línea duplicada');
+      eq(doc.getElementById('miniTitle').textContent, 'Yoake no uta');
+      eq(doc.getElementById('miniArtist').textContent, 'jo0ji');
+      assert(!doc.querySelector('#lyricsMini #lyricsSpeed'), 'la velocidad sigue junto a la portada');
+    });
+
+    await test('la velocidad vive en la barra y sigue funcionando', () => {
+      const speed = doc.querySelector('#lyricsToolbar #lyricsSpeed');
+      assert(speed, 'la velocidad no está en la barra');
+      doc.getElementById('btnLrcSpeedUp').click();
+      eq(doc.getElementById('lrcSpeedLabel').textContent, '1.1×');
+      doc.getElementById('btnLrcSpeedDown').click();
+      eq(doc.getElementById('lrcSpeedLabel').textContent, '1.0×');
+    });
+
+    await test('todos los ajustes y acciones conservan su botón', () => {
+      const ids = ['btnLrcFontDec', 'btnLrcFontInc', 'btnLrcOffsetMinus', 'btnLrcOffsetPlus',
+        'btnLrcLoop', 'btnLrcOffsetReset', 'btnLrcFullscreen', 'btnLrcLoadFile', 'btnLrcEdit', 'btnLrcShare'];
+      for (const id of ids) {
+        const el = doc.getElementById(id);
+        assert(el, 'falta #' + id);
+        assert(el.closest('.lt-cluster, .lt-group'), '#' + id + ' fuera de su grupo');
+      }
+      eq(doc.querySelectorAll('#lyricsToolbar .lt-cluster, #lyricsToolbar .lt-group').length, 5);
+    });
+
+    await test('los silencios se renderizan como interludio, no como verso', () => {
+      App.currentTrack = App.tracks[0];
+      App.renderLyrics();
+      const lines = doc.querySelectorAll('#lyricsContent .lrc-line');
+      eq(lines.length, 3);
+      assert(lines[1].classList.contains('empty'), 'el silencio no lleva clase empty');
+      eq(lines[1].textContent, '♪');
+    });
+
+    await test('la barra inferior muestra progreso y tiempos reales', () => {
+      App.audio.currentTime = 50;
+      App.updateProgress();
+      eq(doc.getElementById('lyricsProgressFill').style.width, '25%');
+      eq(doc.getElementById('lyricsTimeCurrent').textContent, '0:50');
+      eq(doc.getElementById('lyricsTimeTotal').textContent, '3:20');
+      const dock = doc.querySelector('.lyrics-controls');
+      assert(dock.querySelector('.lyrics-control-row #btnPlayLyrics'), 'sin play en la barra');
+      assert(dock.querySelector('#lyricsProgressFill'), 'sin progreso en la barra');
+    });
+
+    close();
+  }
+
   const ok = summary();
   process.exit(ok ? 0 : 1);
 })().catch(e => {
