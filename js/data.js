@@ -1525,7 +1525,7 @@ const I18N = {
     it: 'traccia/e aggiunta/e a', ru: 'трек(ов) добавлено в'
   },
   playing_from: {
-    es: 'Reproduciendo desde', en: 'Playing from', pt: 'Reproduzindo de', zh: '播放来源',
+    es: 'Reproduciendo de', en: 'Playing from', pt: 'Reproduzindo de', zh: '播放来源',
     ja: '再生元:', fr: 'Lecture depuis', it: 'Riproduzione da', ru: 'Воспроизведение из'
   },
   favorites_playlist_name: {
@@ -2590,6 +2590,13 @@ const I18N = {
     es: 'Bucle A-B', en: 'A-B Loop', pt: 'Loop A-B',
     zh: 'A-B 循环', ja: 'A-B ループ', fr: 'Boucle A-B',
     it: 'Loop A-B', ru: 'Петля A-B'
+  },
+  /* Etiqueta corta bajo el botón A-B: junto al distintivo «A-B» se lee
+   * «Bucle A-B» sin ocupar el ancho completo de la fila secundaria. */
+  ab_label: {
+    es: 'Bucle', en: 'Loop', pt: 'Loop',
+    zh: '循环', ja: 'ループ', fr: 'Boucle',
+    it: 'Loop', ru: 'Петля'
   },
   ab_set_a: {
     es: 'Punto A fijado en X. Pulsa para fijar B', en: 'Point A set at X. Tap to set B', pt: 'Ponto A fixado em X. Toque para fixar B',

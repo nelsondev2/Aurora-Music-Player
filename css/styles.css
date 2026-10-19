@@ -4214,21 +4214,25 @@ html.aurora-wide .toast {
   z-index: 0;
 }
 
-/* Botón A-B en controles secundarios */
+/* Botón A-B en controles secundarios. El distintivo ocupa el puesto
+ * del icono: misma caja de 36×36 y radio 12 que los .ico de la fila,
+ * con su etiqueta .sec-label debajo (sin ella quedaba descuadrado). */
 .ab-btn { position: relative; }
 .ab-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 34px;
-  height: 30px;
-  padding: 0 6px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  padding: 0 2px;
+  box-sizing: border-box;
+  border-radius: 12px;
   background: var(--surface);
   color: var(--text-2);
-  font-size: 0.625rem;
+  font-size: 0.5625rem;
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 .ab-btn.active .ab-badge,
 .ab-btn.setting-b .ab-badge {
@@ -4834,8 +4838,8 @@ html.aurora-wide .toast {
   box-shadow: 0 10px 24px rgba(var(--accent-rgb), 0.3);
 }
 
-/* --- Secundaria con nombre: icono encima, etiqueta debajo. La fila
- * deja de ser cinco cuadrados crípticos (A-B ya trae su distintivo). */
+/* --- Secundaria con nombre: icono encima, etiqueta debajo, los cinco
+ * botones con la misma estructura (A-B incluido: distintivo + «Bucle»). */
 .controls-secondary {
   gap: 6px;
   padding-top: 2px;
@@ -4848,11 +4852,14 @@ html.aurora-wide .toast {
   padding: 9px;
   margin-bottom: 0;
 }
+/* Sin mayúsculas forzadas: en caja alta «VISUALIZADOR» no cabía en su
+ * columna (≈61 px a 360 px de pantalla) y salía «Visualizad…». En caja
+ * mixta la misma palabra ocupa un ~20 % menos y entra entera; el
+ * letter-spacing a 0 ayuda sin cambiar el tamaño legible. */
 .sec-label {
   font-size: var(--fs-3xs);
   font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--text-3);
   white-space: nowrap;
   max-width: 100%;

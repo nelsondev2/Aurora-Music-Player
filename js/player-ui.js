@@ -55,15 +55,15 @@ Object.assign(App, {
       // mini-cabecera). Su barra inferior sí muestra la duración total.
       const lrcTotal = document.getElementById('lyricsTimeTotal');
       if (lrcTotal) lrcTotal.textContent = this.fmtTime(t.duration);
-      // Cabecera: bajo «REPRODUCIENDO AHORA» va el CONTEXTO («desde
-      // Biblioteca / una lista / Favoritos»), no el título: el título
-      // ya va en grande bajo la portada y repetirlo aquí era ruido.
-      // El título completo queda en el tooltip de la cabecera.
+      // Cabecera en una sola frase: «Reproduciendo de <contexto>»
+      // (la lista, Favoritos, el álbum…). Sin contexto se queda el
+      // texto neutro de la biblioteca. El título no va aquí: ya va en
+      // grande bajo la portada; completo queda en el tooltip.
       const ctxEl = document.getElementById('nowPlayingContext');
       if (ctxEl) {
         const ctxLabel = (typeof this.getPlayContextLabel === 'function') ? this.getPlayContextLabel() : null;
         ctxEl.textContent = ctxLabel
-          ? this.t('playing_from') + ' · ' + ctxLabel
+          ? this.t('playing_from') + ' ' + ctxLabel
           : this.t('your_library');
         const fullTitle = (t.title || '') + (t.artist ? ' — ' + t.artist : '');
         if (fullTitle) ctxEl.setAttribute('title', fullTitle);

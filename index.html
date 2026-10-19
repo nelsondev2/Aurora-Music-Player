@@ -113,7 +113,9 @@
             <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
           </button>
           <div class="top-bar-title">
-            <span class="now-playing-label" data-i18n="now_playing_label">REPRODUCIENDO AHORA</span>
+            <!-- Una sola línea: «Reproduciendo de <contexto>». Antes había
+                 un «REPRODUCIENDO AHORA» encima y «Reproduciendo desde · X»
+                 debajo: «reproduciendo» dos veces sonaba redundante. -->
             <span class="now-playing-context" id="nowPlayingContext" data-i18n="your_library">Tu biblioteca</span>
           </div>
           <button class="icon-btn" id="btnMore" data-i18n-aria="more_options" aria-label="Más opciones">
@@ -218,7 +220,11 @@
             <span class="sec-label" data-i18n="visualizer">Visualizador</span>
           </button>
           <button class="sec-btn ab-btn" id="btnABRepeat" type="button" data-i18n-aria="ab_repeat" data-i18n-title="ab_repeat" aria-label="Bucle A-B" aria-pressed="false">
+            <!-- Misma estructura que los demás secundarios: «icono»
+                 (el distintivo A-B, del tamaño de los .ico) y etiqueta
+                 debajo. Sin etiqueta quedaba descuadrado en la fila. -->
             <span class="ab-badge">A-B</span>
+            <span class="sec-label" data-i18n="ab_label">Bucle</span>
           </button>
         </section>
 

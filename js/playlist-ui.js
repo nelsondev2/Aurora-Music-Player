@@ -431,12 +431,13 @@ Object.assign(App, {
       const ul = document.getElementById('queueList');
       if (!ul) return;
       ul.innerHTML = '';
-      // Subtítulo con el contexto actual ("Reproduciendo desde X")
+      // Subtítulo con el contexto actual ("Reproduciendo de X"),
+      // la misma frase que usa la cabecera del reproductor.
       const ctxLabel = document.getElementById('queueContextLabel');
       if (ctxLabel) {
         const cl = this.getPlayContextLabel();
         if (cl) {
-          ctxLabel.textContent = this.t('playing_from') + ' · ' + cl;
+          ctxLabel.textContent = this.t('playing_from') + ' ' + cl;
           ctxLabel.style.display = '';
         } else {
           ctxLabel.textContent = '';

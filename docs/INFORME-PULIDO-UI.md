@@ -18,10 +18,10 @@
 | Contraste de acentos (peor extremo del degradado) | **1.64:1** | **4.75:1** |
 | Objetivo táctil mínimo en controles citados | 28 px | **40 px** (fab 36 px) |
 | `font-size` en px | 22 declaraciones + tokens | **0** |
-| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 317.7 KB** |
+| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 318.2 KB** |
 
 **Paquete final:** `aurora-music-player.xdc`
-**SHA-256:** `c112edbfc04e6b2862986f043970ea9896bac705eb8ed44bcd024eccdbb347b1`
+**SHA-256:** `4b5a6f66e261ffd55d18283d252c3f1cd6a7c1fb25b2c3656c35436c58453038`
 **Validación:** `python3 build-xdc.py --check` → «OK el .xdc es válido para Delta Chat / webxdc».
 
 ---
@@ -163,12 +163,12 @@ python3 build-xdc.py --check
 Salida final:
 
 ```
-OK  aurora-music-player.xdc · 28 archivos · 317.7 KB
-    sha256: c112edbfc04e6b2862986f043970ea9896bac705eb8ed44bcd024eccdbb347b1
+OK  aurora-music-player.xdc · 28 archivos · 318.2 KB
+    sha256: 4b5a6f66e261ffd55d18283d252c3f1cd6a7c1fb25b2c3656c35436c58453038
     nombre: Aurora Music Player
     código: https://github.com/nelsondev2/Aurora-Music-Player
     icono: icon.png (90.5 KB)
-    archivos: 28 · comprimido: 317.7 KB · sin comprimir: 919.2 KB
+    archivos: 28 · comprimido: 318.2 KB · sin comprimir: 920.4 KB
 OK  el .xdc es válido para Delta Chat / webxdc
 ```
 
@@ -399,3 +399,17 @@ Con las nuevas medidas, el texto útil en el editor de lista pasa de ~46 px a ~1
 Referencias actualizadas: `index.html` (`css/styles.css`, `js/webxdc.js`, `js/data.js`, `js/storage.js`, `js/uploader.js`), `build-xdc.py` (empaqueta por directorios `css/` y `js/` y valida el stub en `js/webxdc.js`) y la tabla de contenido del `README.md`. Al revisar `index.html` se eliminó además un fragmento duplicado tras el `</html>` (83 bytes que volvían a cargar `js/main.js`).
 
 **Comprobación sin suite permanente:** sintaxis de los 19 JS con `node --check`; arranque real con un arnés externo temporal (copia fuera del repo) cargando los 20 scripts desde sus rutas nuevas — `App` viva, 0 errores — tanto en el repo como en el `.xdc` extraído; y validación del paquete con `build-xdc.py --check` (28 archivos, mismo tamaño e inventario que antes, sin ningún archivo de prueba dentro).
+
+---
+
+## 17. Tres retoques del reproductor (captura del usuario)
+
+**Petición:** el A-B «descuadra» con los otros secundarios; la etiqueta del visualizador sale «Visualizad…»; y arriba se lee «REPRODUCIENDO AHORA / Reproduciendo desde · Musica», redundante.
+
+| Punto | Causa y cambio |
+|---|---|
+| A-B descuadrado | Era el único secundario sin etiqueta y con distintivo de 34×30 frente a cajas de icono de 36×36: quedaba centrado a otra altura y sin texto debajo. Ahora el distintivo es 36×36 (radio 12, como los `.ico`) y lleva `.sec-label` con la clave nueva `ab_label` («Bucle» en es; junto al distintivo se lee «Bucle A-B»). Los estados `A→`/`A⇄B` y `aria-pressed` no cambian. |
+| «Visualizad…» | La `.sec-label` forzaba mayúsculas: «VISUALIZADOR» en caja alta no cabe en su columna (≈61 px a 360 px). Sin `text-transform` y con `letter-spacing: 0` la palabra en caja mixta ocupa ~20 % menos y entra entera; el resto de etiquetas no se resiente. |
+| Cabecera redundante | Fuera la línea «REPRODUCIENDO AHORA» del reproductor (la de Letras, «LETRA SINCRONIZADA», queda). El contexto pasa a una sola frase: `playing_from` + nombre, con la traducción española ajustada a «Reproduciendo de» — «Reproduciendo de Música», «de Favoritos»… La misma frase se usa en el subtítulo de la Cola. Sin contexto sigue «Tu biblioteca». |
+
+**Comprobación** (arnés jsdom externo, fuera del repo): cabecera con lista/álbum → «Reproduciendo de Música», con Favoritos → «Reproduciendo de Favoritos», sin contexto → «Tu biblioteca», en inglés → «Playing from Música»; A-B recorre `A-B → A→ → A⇄B → A-B` con sus clases y su etiqueta pasa a «Loop»/«ループ» al cambiar de idioma; 0 errores de arranque en el repo y en el `.xdc` extraído. Paquete: 28 archivos · 318.2 KB · sha256 `4b5a6f66e261ffd55d18283d252c3f1cd6a7c1fb25b2c3656c35436c58453038`.
