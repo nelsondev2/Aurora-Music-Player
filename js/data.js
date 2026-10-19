@@ -2383,14 +2383,16 @@ const I18N = {
     ru: 'Твоя музыка здесь'
   },
   home_welcome_lead: {
-    es: 'Carga canciones del teléfono. Sin cuenta, sin nube, sin anuncios.',
-    en: 'Load songs from your phone. No account, no cloud, no ads.',
-    pt: 'Carregue músicas do telemóvel. Sem conta, sem nuvem, sem anúncios.',
-    zh: '从手机加载歌曲。无需账号、云端或广告。',
-    ja: 'スマホから曲を読み込む。アカウントもクラウドも広告もなし。',
-    fr: 'Chargez des titres depuis le téléphone. Sans compte, sans cloud, sans pubs.',
-    it: 'Carica brani dal telefono. Niente account, cloud o pubblicità.',
-    ru: 'Загрузите песни с телефона. Без аккаунта, облака и рекламы.'
+    /* Neutro de plataforma: la app también se usa en Delta Chat de
+     * escritorio, así que nada de «del teléfono»: «tu dispositivo». */
+    es: 'Carga canciones desde tu dispositivo. Sin cuenta, sin nube, sin anuncios.',
+    en: 'Load songs from your device. No account, no cloud, no ads.',
+    pt: 'Carregue músicas do seu dispositivo. Sem conta, sem nuvem, sem anúncios.',
+    zh: '从你的设备加载歌曲。无需账号、云端或广告。',
+    ja: 'デバイスから曲を読み込む。アカウントもクラウドも広告もなし。',
+    fr: 'Chargez des titres depuis votre appareil. Sans compte, sans cloud, sans pubs.',
+    it: 'Carica brani dal tuo dispositivo. Niente account, cloud o pubblicità.',
+    ru: 'Загрузите песни со своего устройства. Без аккаунта, облака и рекламы.'
   },
   home_perk_lyrics: {
     es: 'Letras sincronizadas', en: 'Synced lyrics', pt: 'Letra sincronizada',
@@ -2421,9 +2423,10 @@ const I18N = {
     it: 'Crea liste e salva i preferiti', ru: 'Создавайте плейлисты и отмечайте избранное'
   },
   home_perk_offline_desc: {
-    es: 'Todo queda en tu teléfono', en: 'Everything stays on your phone', pt: 'Tudo fica no seu telefone',
-    zh: '一切都只保存在手机中', ja: 'データはすべて端末の中だけ', fr: 'Tout reste sur votre téléphone',
-    it: 'Tutto resta sul tuo telefono', ru: 'Всё хранится только на телефоне'
+    /* También neutro: en PC «tu teléfono» no tiene sentido. */
+    es: 'Todo queda en tu dispositivo', en: 'Everything stays on your device', pt: 'Tudo fica no seu dispositivo',
+    zh: '一切都只保存在你的设备中', ja: 'データはすべて端末の中だけ', fr: 'Tout reste sur votre appareil',
+    it: 'Tutto resta sul tuo dispositivo', ru: 'Всё хранится только на вашем устройстве'
   },
 
   shortcuts_title: {
