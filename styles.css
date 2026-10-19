@@ -4431,3 +4431,102 @@ html.aurora-wide .toast {
   .pl-hero-play { width: 48px; height: 48px; }
   .pl-hero-play .ico { width: 18px; height: 18px; }
 }
+
+/* =====================================================================
+ *  Filas de canciones v2 — Cola, listas y «Todas las canciones»
+ *
+ *  Problema (capturas): el asa de arrastre (min 40 px), la portada de
+ *  48 px y dos botones de 40 px con huecos de 12 px se comían más de
+ *  la mitad de una fila de ~320 px: los títulos salían como «Us…» o
+ *  «Aspi…» y la lista se leía como una columna de iconos, no de
+ *  canciones. Este bloque unifica el patrón en las tres pantallas:
+ *  portada al tamaño real del canvas (44, sin reescalar), asa estrecha
+ *  y discreta, acciones de 36 px y huecos de 8–10 px. La altura total
+ *  se mantiene en 60–64 px para no descuadrar las listas virtuales
+ *  (rowHeight: 64). Decisión documentada: las acciones pasan de 40 a
+ *  36 px visuales; la fila completa (≥60 px) sigue siendo el objetivo
+ *  de toque principal y cada botón conserva su nombre accesible.
+ * ===================================================================== */
+.track-list,
+.queue-list { gap: 2px; }
+.queue-item,
+.track-row,
+.pick-row {
+  gap: 9px;
+  padding: 7px 6px 7px 10px;
+  min-height: 60px;
+  border-radius: 14px;
+}
+.queue-item.current::before,
+.track-row.current::before { top: 14px; bottom: 14px; width: 3px; }
+.row-cover {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+.row-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+.row-title { font-size: var(--fs-body); line-height: 1.3; }
+.row-sub { line-height: 1.35; }
+.row-duration {
+  flex-shrink: 0;
+  min-width: 30px;
+  text-align: right;
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.02em;
+}
+.row-action {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+}
+.row-action .ico { width: 17px; height: 17px; }
+/* Asa de arrastre: columna fina y tenue. Sigue siendo el gesto de
+ * reordenar (mantiene 40 px de alto), pero ya no roba el texto. */
+.drag-handle {
+  width: 20px;
+  min-width: 20px;
+  height: 40px;
+  min-height: 40px;
+  margin-left: -5px;
+  border-radius: 8px;
+  opacity: 0.55;
+}
+.drag-handle .ico { width: 13px; height: 13px; }
+.queue-item .row-action.queue-remove,
+#editPlaylistTracks .row-action {
+  width: 36px;
+  height: 36px;
+  flex-basis: 36px;
+}
+#editPlaylistTracks .row-action .ico { width: 16px; height: 16px; }
+.track-row.current .row-duration,
+.queue-item.current .row-duration { color: var(--text-2); }
+
+/* «Vaciar» de la cola: pastilla discreta alineada a la derecha, no la
+ * barra a todo ancho que encabezaba la lista como un botón primario. */
+#sheetQueue #btnClearQueue {
+  display: flex;
+  width: fit-content;
+  margin: 0 0 12px auto;
+}
+
+/* Pantallas muy estrechas: portada algo menor antes que recortar el
+ * título hasta dejarlo ilegible. */
+@media (max-width: 360px) {
+  .queue-item,
+  .track-row,
+  .pick-row { gap: 7px; padding-left: 8px; }
+  .row-cover { width: 40px; height: 40px; border-radius: 9px; }
+  .row-action,
+  .queue-item .row-action.queue-remove,
+  #editPlaylistTracks .row-action {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
+}

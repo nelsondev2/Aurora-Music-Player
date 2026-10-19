@@ -4,7 +4,7 @@
 **Base:** `ff73b21` (merge del PR #6, biblioteca simplificada)
 **Rama:** `arena/4c26cbd7-aurora-music-player`
 **Alcance elegido:** los 12 puntos de la auditoría de diseño (6 fallos + 6 de pulido), no solo los críticos.
-**Resultado:** 12/12 implementados + rediseño de botones de listas + corrección de los solapes de las capturas · **115/115 pruebas automatizadas en verde** · `.xdc` válido para Delta Chat.
+**Resultado:** 12/12 implementados + rediseño de botones de listas + corrección de los solapes de las capturas + filas de canciones v2 · **121/121 pruebas automatizadas en verde** · `.xdc` válido para Delta Chat.
 
 ---
 
@@ -13,15 +13,15 @@
 | Métrica | Antes (ff73b21) | Ahora |
 |---|---|---|
 | Puntos de diseño corregidos | 0/12 | **12/12** |
-| Pruebas de esta ronda | — | **115** (74 pulido + 27 smoke + 14 axe) |
+| Pruebas de esta ronda | — | **121** (80 pulido + 27 smoke + 14 axe) |
 | Violaciones axe (10 pantallas) | — | **0** |
 | Contraste de acentos (peor extremo del degradado) | **1.64:1** | **4.75:1** |
 | Objetivo táctil mínimo en controles citados | 28 px | **40 px** (fab 36 px) |
 | `font-size` en px | 22 declaraciones + tokens | **0** |
-| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 313.0 KB** |
+| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 314.1 KB** |
 
 **Paquete final:** `aurora-music-player.xdc`
-**SHA-256:** `5319974d0f2fb17acb3ad8d1920c9b18bddeae7191c316a5f2a74d8ef033af1e`
+**SHA-256:** `d700975cf15dedbcc24cb933ee37e2378c6ffbe572daa9cd234eb5654633ca1c`
 **Validación:** `python3 build-xdc.py --check` → «OK el .xdc es válido para Delta Chat / webxdc».
 
 ---
@@ -163,12 +163,12 @@ python3 build-xdc.py --check
 Salida final:
 
 ```
-OK  aurora-music-player.xdc · 28 archivos · 313.0 KB
-    sha256: 5319974d0f2fb17acb3ad8d1920c9b18bddeae7191c316a5f2a74d8ef033af1e
+OK  aurora-music-player.xdc · 28 archivos · 314.1 KB
+    sha256: d700975cf15dedbcc24cb933ee37e2378c6ffbe572daa9cd234eb5654633ca1c
     nombre: Aurora Music Player
     código: https://github.com/nelsondev2/Aurora-Music-Player
     icono: icon.png (90.5 KB)
-    archivos: 28 · comprimido: 313.0 KB · sin comprimir: 903.2 KB
+    archivos: 28 · comprimido: 314.1 KB · sin comprimir: 906.6 KB
 OK  el .xdc es válido para Delta Chat / webxdc
 ```
 
@@ -256,4 +256,37 @@ No se tocó la lógica de crear listas: no tenía ningún fallo. Al retirar la c
 - DOM: Biblioteca vacía muestra cada vacío en su sección; Buscar no duplica el placeholder; con 1 canción y 0 listas la fila se ve y el vacío queda en su carril.
 - Comportamiento: «+ Nueva» abre el creador, guardar crea la lista (aparece en el carril y en «Tus listas») y el vacío desaparece; «Nueva» de «Tus listas» también abre.
 
-**Total actual: 115/115** (74 pulido + 27 smoke + 14 axe), ejecutadas también contra el `.xdc` extraído con `AURORA_ROOT=/tmp/xdc-fix npm test`.
+**Total tras esta sección: 115/115** (74 pulido + 27 smoke + 14 axe), ejecutadas también contra el `.xdc` extraído.
+
+---
+
+## 10. Filas de canciones v2, icono de Vaciar y Favoritos (capturas 2026-10-19)
+
+**Petición:** pulir la lista de canciones en la cola, en las listas y en «Todas las canciones»; el icono de vaciar lista es horrible; eliminar el botón de ir a Biblioteca en Favoritos.
+
+### 10.1 Diagnóstico de las filas
+
+Las tres pantallas ya compartían el patrón `.track-row`/`.queue-item`, pero con medidas pensadas para escritorio: asa de arrastre de mínimo 40 px, portada de 48 px (sobre un canvas de 44, reescalado), dos acciones de 40 px y huecos de 12 px. En una fila útil de ~320 px, lo fijo sumaba ~274 px en el editor de lista: el título quedaba en ~46 px («Us…», «Aspi…»). Además, las pistas sin metadatos mostraban «0:00», como si duraran cero segundos.
+
+### 10.2 Qué se hizo
+
+| Zona | Cambio |
+|---|---|
+| Patrón de fila (Cola, listas, Todas las canciones, Buscar, Favoritos, historial) | Huecos de 9 px, padding 7 px, alto mínimo 60 px (las listas virtuales siguen con `rowHeight: 64`), radio 14 px, portada **44×44** (tamaño real del canvas), texto en columna con línea 1.3/1.35, duración pequeña alineada a la derecha con números tabulares. |
+| Asa de arrastre | Columna fina de **20 px** (40 de alto), icono de 13 px y opacidad 0.55: sigue reordenando, ya no roba el título. |
+| Acciones de fila (menú, quitar, quitar de la cola) | **36 px** visuales, icono 16–17 px. Decisión documentada: se baja de 40 a 36 px a cambio de ~70 px más para el texto; la fila (≥60 px) sigue siendo el objetivo principal y cada botón conserva su `aria-label`. |
+| Duración desconocida | Nuevo `App.fmtRowDuration(t)`: con duración 0/ausente la celda queda vacía. Usado en Biblioteca, Cola, editor de lista e historial. El reproductor sigue mostrando el total con `fmtTime`. |
+| Icono de Vaciar | Eliminada la escoba (`#i-broom`, ilegible a 13–16 px). Nuevo `#i-clear-list`: tres líneas con una ×, en trazo. Aplicado en Vaciar cola, Vaciar lista y «Liberar espacio». |
+| «Vaciar» de la cola | De barra a todo ancho a pastilla discreta `fit-content` alineada a la derecha. |
+| Favoritos vacío | Sin botón «Biblioteca» (`#btnFavGoLibrary` eliminado): Favoritos y Biblioteca ya son pestañas vecinas en la barra inferior. Queda icono, titular y explicación. En pantallas ≤360 px la portada baja a 40 px y las acciones a 34 px antes que seguir recortando el título. |
+
+Con las nuevas medidas, el texto útil en el editor de lista pasa de ~46 px a ~120 px en un móvil de 360 px.
+
+### 10.3 Pruebas añadidas (6, bloque N de `verificacion/ui-polish.js`)
+
+- CSS: fila unificada (44/9/60), asa de 20 px, acciones de 36 px y «Vaciar» de la cola como pastilla.
+- Icono: existe `#i-clear-list`, lo usan los 3 botones y no queda `#i-broom`.
+- DOM: con una pista de 3:24 y otra sin duración, ninguna de las tres listas pinta «0:00»; las tres comparten portada/texto/duración y conservan asa, menú y quitar donde toca.
+- Favoritos: el vacío no contiene ningún botón.
+
+**Total actual: 121/121** (80 pulido + 27 smoke + 14 axe), ejecutadas también contra el `.xdc` extraído con `AURORA_ROOT=/tmp/xdc-filas npm test`.

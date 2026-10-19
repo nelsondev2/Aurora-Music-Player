@@ -60,7 +60,10 @@
     <symbol id="i-language" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm7.4 9h-3.1a15 15 0 0 0-1.4-5.3A8 8 0 0 1 19.4 11zM12 4c.8 1.4 1.6 3.4 2 7H10c.4-3.6 1.2-5.6 2-7zM4.6 13h3.1a15 15 0 0 0 1.4 5.3A8 8 0 0 1 4.6 13zM7.7 11H4.6A8 8 0 0 1 9.1 5.7 15 15 0 0 0 7.7 11zM12 20c-.8-1.4-1.6-3.4-2-7h4c-.4 3.6-1.2 5.6-2 7zm2.9-1.7A15 15 0 0 0 16.3 13h3.1a8 8 0 0 1-4.5 5.3z"/></symbol>
     <symbol id="i-keyboard" viewBox="0 0 24 24"><path fill="currentColor" d="M2 6.5A2.5 2.5 0 0 1 4.5 4h15A2.5 2.5 0 0 1 22 6.5v11A2.5 2.5 0 0 1 19.5 20h-15A2.5 2.5 0 0 1 2 17.5v-11zM5 8v2h2V8H5zm3 0v2h2V8H8zm3 0v2h2V8h-2zm3 0v2h2V8h-2zm3 0v2h2V8h-2zM5 11v2h2v-2H5zm3 0v2h8v-2H8zm9 0v2h2v-2h-2zM5 14v2h14v-2H5z"/></symbol>
     <symbol id="i-tags" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5.5A2.5 2.5 0 0 1 5.5 3H11l10 10-8.5 8.5L3 11.5V5.5zM8 8.5A1.5 1.5 0 1 0 8 5.5 1.5 1.5 0 0 0 8 8.5z"/></symbol>
-    <symbol id="i-broom" viewBox="0 0 24 24"><path fill="currentColor" d="m15.2 3 1.4 1.4-2.1 2.1 4 4 2.1-2.1 1.4 1.4-3.5 3.5-1.4-1.4.7-.7-4-4-.7.7-1.4-1.4L15.2 3zM4 14l6.5-1.5 5 5L14 24H4l3.5-6.5L4 14z"/></symbol>
+    <!-- «Vaciar»: lista con una ×. La escoba anterior a 13–16 px se leía
+         como una mancha inclinada; este trazo se entiende sin ambigüedad
+         en Vaciar cola/lista y en «Liberar espacio». -->
+    <symbol id="i-clear-list" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3.5 6h11M3.5 12h11M3.5 18h6"/><path d="m15.8 15.8 4.7 4.7m0-4.7-4.7 4.7"/></g></symbol>
     <symbol id="i-file-export" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h7l5 5v6h-2V8h-5V3H6v18h6v2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm10 11 5 4-5 4v-3h-5v-2h5v-3z"/></symbol>
     <symbol id="i-file-import" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h7l5 5v6h-2V8h-5V3H6v18h6v2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm15 15-5-4v3h-5v2h5v3l5-4z"/></symbol>
     <symbol id="i-file-arrow-up" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h7l5 5v15H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5L13 3.5zM11 11v6h2v-6h2.5L12 7.5 8.5 11H11z"/></symbol>
@@ -366,7 +369,7 @@
           <div class="sheet-body">
             <p class="sheet-subtitle" id="queueContextLabel"></p>
             <button class="primary-btn ghost compact" id="btnClearQueue" type="button">
-              <svg class="ico" aria-hidden="true"><use href="#i-broom"></use></svg>
+              <svg class="ico" aria-hidden="true"><use href="#i-clear-list"></use></svg>
               <span data-i18n="clear_btn">Vaciar</span>
             </button>
             <ul class="queue-list" id="queueList"></ul>
@@ -465,7 +468,7 @@
                 <span data-i18n="share_playlist_btn">Compartir lista</span>
               </button>
               <button class="pl-action-btn pl-action-danger" id="btnClearPlaylist" type="button">
-                <svg class="ico" aria-hidden="true"><use href="#i-broom"></use></svg>
+                <svg class="ico" aria-hidden="true"><use href="#i-clear-list"></use></svg>
                 <span data-i18n="clear_btn">Vaciar</span>
               </button>
               <button class="pl-action-btn pl-action-danger" id="btnDeletePlaylistFull" type="button" style="display:none">
@@ -902,7 +905,7 @@
             </button>
             <p class="sheet-subtitle" id="storageUsageLabel"></p>
             <button class="menu-row" id="menuFreeStorage">
-              <svg class="ico" aria-hidden="true"><use href="#i-broom"></use></svg>
+              <svg class="ico" aria-hidden="true"><use href="#i-clear-list"></use></svg>
               <span data-i18n="settings_free_storage">Liberar espacio</span>
             </button>
             <button class="menu-row" id="menuExportLibrary">

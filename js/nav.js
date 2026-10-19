@@ -411,6 +411,14 @@ Object.assign(App, {
       });
     },
 
+    /* Duración para celdas de fila: si aún no se conocen los metadatos
+     * (0/ausente) se deja la celda vacía. Mostrar «0:00» sugería que la
+     * canción dura cero segundos, como se veía en las capturas. */
+    fmtRowDuration(t) {
+      const d = t && Number(t.duration);
+      return d > 0 ? this.fmtTime(d) : '';
+    },
+
     /* ============================================================
      *  Fila de pista + menú contextual
      * ============================================================ */
@@ -431,7 +439,7 @@ Object.assign(App, {
           <div class="row-title">${this.esc(t.title)}</div>
           <div class="row-sub">${this.esc(t.artist)}${t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + this.esc(t.album) : ''}${isPending ? ' <span class="row-pending-badge">' + this.esc(this.t('relink_badge')) + '</span>' : ''}</div>
         </div>
-        <div class="row-duration">${this.fmtTime(t.duration)}</div>
+        <div class="row-duration">${this.fmtRowDuration(t)}</div>
         <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>`;
       const ctx = opts.playContext || { type: 'all' };
       li.addEventListener('click', (e) => {

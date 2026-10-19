@@ -286,21 +286,16 @@ Object.assign(App, {
         countEl.hidden = n === 0;
       }
       if (favTracks.length === 0) {
-        // Mismo estado vacío que Inicio/Biblioteca: icono, titular,
-        // explicación y una salida clara (ir a la biblioteca).
+        // Estado vacío sin botón de «ir a Biblioteca»: Favoritos ya es
+        // una pestaña junto a Biblioteca en la barra inferior, así que
+        // el CTA era un rodeo innecesario (petición expresa del usuario).
         ul.innerHTML = '';
         const li = document.createElement('li');
         li.className = 'empty-state fav-empty';
         li.innerHTML = this.emptyStateHtml({
           icon: 'heart',
           title: this.t('favorites_empty_title'),
-          text: this.t('favorites_count_zero'),
-          cta: { id: 'btnFavGoLibrary', label: this.t('nav_library'), icon: 'library' }
-        });
-        const btn = li.querySelector('#btnFavGoLibrary');
-        if (btn) btn.addEventListener('click', () => {
-          this.closeSheet('sheetFavorites');
-          this.goNav('library');
+          text: this.t('favorites_count_zero')
         });
         ul.appendChild(li);
         return;

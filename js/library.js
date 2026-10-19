@@ -480,7 +480,7 @@ Object.assign(App, {
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)}</div>
           </div>
-          <div class="row-duration">${this.fmtTime(t.duration)}</div>
+          <div class="row-duration">${this.fmtRowDuration(t)}</div>
           <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>
         </li>`;
       });

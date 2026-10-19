@@ -483,21 +483,21 @@ function contrastAlpha(fg, bgHex) {
       const lib = doc.querySelector('#libraryTracks .empty-state');
       App.renderFavorites();
       const fav = doc.querySelector('#favoritesList .empty-state');
-      for (const [name, el] of [['biblioteca', lib], ['favoritos', fav]]) {
+      // La biblioteca conserva su CTA (importar); Favoritos ya no lleva
+      // botón a Biblioteca (petición del usuario, ver bloque N).
+      for (const [name, el, withCta] of [['biblioteca', lib, true], ['favoritos', fav, false]]) {
         assert(el, name + ' sin estado vacío');
         assert(el.querySelector('.empty-icon'), name + ' sin icono');
         assert(el.querySelector('h4'), name + ' sin titular');
         assert(el.querySelector('p'), name + ' sin explicación');
-        assert(el.querySelector('.primary-btn'), name + ' sin CTA');
+        if (withCta) assert(el.querySelector('.primary-btn'), name + ' sin CTA');
+        else assert(!el.querySelector('.primary-btn'), name + ' no debe llevar CTA');
       }
-      includes(fav.textContent, 'Biblioteca');
     });
 
-    await test('Favoritos ofrece volver a la biblioteca', () => {
-      const btn = doc.getElementById('btnFavGoLibrary');
-      assert(btn, 'sin CTA a biblioteca');
-      btn.click();
-      assert(doc.getElementById('sheetLibrary').classList.contains('open'), 'no abrió Biblioteca');
+    await test('Favoritos vacío ya no muestra el botón de ir a Biblioteca', () => {
+      assert(!doc.getElementById('btnFavGoLibrary'), 'sigue el botón eliminado');
+      assert(!doc.querySelector('#favoritesList .primary-btn'), 'queda un CTA en Favoritos');
     });
 
     await test('la cola vacía y el historial de búsqueda usan el componente compacto', () => {
@@ -958,6 +958,111 @@ function contrastAlpha(fg, bgHex) {
       doc.getElementById('btnOpenNewPlaylist').click();
       assert(doc.getElementById('sheetCreatePlaylist').classList.contains('open'), '«Nueva» no abrió');
     });
+    close();
+  }
+
+  /* =================================================================
+   * N. Filas de canciones v2 (capturas 2026-10-19): Cola, listas y
+   *    «Todas las canciones» comparten patrón; icono de Vaciar nuevo;
+   *    Favoritos sin botón a Biblioteca; sin «0:00» falsos.
+   * ================================================================= */
+  section('N · Filas de canciones, icono Vaciar y Favoritos');
+  {
+    const s = css();
+    // Bloque dentro de la sección «Filas de canciones v2» (al final de
+    // la hoja): es el que gana en la cascada, no el de la media query.
+    const v2Start = s.indexOf('Filas de canciones v2');
+    assert(v2Start > 0, 'falta la sección de filas v2');
+    const lastBlock = (sel) => {
+      const i = s.indexOf(sel, v2Start);
+      assert(i >= 0, 'falta ' + sel + ' en la sección v2');
+      return s.slice(i, s.indexOf('}', i));
+    };
+
+    await test('CSS: fila unificada compacta (portada 44, huecos 9, alto 60)', () => {
+      const row = lastBlock('.pick-row {');
+      includes(row, 'gap: 9px');
+      includes(row, 'min-height: 60px');
+      includes(row, 'border-radius: 14px');
+      const cover = lastBlock('.row-cover {');
+      includes(cover, 'width: 44px');
+      includes(cover, 'height: 44px');
+    });
+
+    await test('CSS: el asa ya no roba 40 px y las acciones son de 36 px', () => {
+      const handle = lastBlock('.drag-handle {');
+      includes(handle, 'width: 20px');
+      includes(handle, 'min-width: 20px');
+      const action = lastBlock('.row-action {');
+      includes(action, 'width: 36px');
+      includes(action, 'height: 36px');
+      includes(s, '#sheetQueue #btnClearQueue');
+      includes(s, 'width: fit-content');
+    });
+
+    const MIXED = [
+      Object.assign({}, TRACKS[0], { duration: 204 }),
+      Object.assign({}, TRACKS[1], { duration: 0 })
+    ];
+    const PLS = [{ id: 'plN', name: 'Mezcla N', trackIds: ['t1', 't2'], cover: { from: '#111111', to: '#222222' } }];
+    const { doc, App, close } = await boot({ tracks: MIXED, playlists: PLS });
+
+    await test('el icono de Vaciar es la lista con ×, no la escoba', () => {
+      assert(doc.querySelector('#i-clear-list'), 'falta el símbolo #i-clear-list');
+      // Sus 3 botones (cola, lista y «Liberar espacio»).
+      assert((HTML.match(/#i-clear-list/g) || []).length >= 3, 'faltan usos del icono nuevo');
+      notIncludes(HTML, '#i-broom', 'queda la escoba anterior');
+      for (const id of ['btnClearQueue', 'btnClearPlaylist']) {
+        const use = doc.querySelector('#' + id + ' use');
+        assert(use, id + ' sin icono');
+        eq(use.getAttribute('href'), '#i-clear-list', id + ' no usa el icono nuevo');
+      }
+    });
+
+    await test('sin duración conocida no se pinta «0:00» en ninguna lista', () => {
+      // Biblioteca («Todas las canciones»)
+      const libRows = doc.querySelectorAll('#libraryTracks .track-row');
+      eq(libRows.length, 2);
+      includes(libRows[0].querySelector('.row-duration').textContent, '3:24');
+      eq(libRows[1].querySelector('.row-duration').textContent.trim(), '');
+      // Cola
+      App.queue = ['t1', 't2']; App.queueIdx = 0; App.renderQueue();
+      const qRows = doc.querySelectorAll('#queueList .queue-item');
+      eq(qRows.length, 2);
+      eq(qRows[1].querySelector('.row-duration').textContent.trim(), '');
+      // Editor de lista
+      App.openEditPlaylist('plN');
+      const eRows = doc.querySelectorAll('#editPlaylistTracks .track-row');
+      eq(eRows.length, 2);
+      eq(eRows[1].querySelector('.row-duration').textContent.trim(), '');
+      notIncludes(doc.getElementById('editPlaylistTracks').textContent, '0:00');
+    });
+
+    await test('las tres listas comparten el patrón de fila (portada + texto + duración)', () => {
+      for (const sel of ['#libraryTracks .track-row', '#queueList .queue-item', '#editPlaylistTracks .track-row']) {
+        const row = doc.querySelector(sel);
+        assert(row, 'sin fila en ' + sel);
+        assert(row.querySelector('.row-cover canvas'), sel + ' sin portada');
+        assert(row.querySelector('.row-text .row-title'), sel + ' sin título');
+        assert(row.querySelector('.row-text .row-sub'), sel + ' sin subtítulo');
+        assert(row.querySelector('.row-duration'), sel + ' sin celda de duración');
+      }
+      // La cola y el editor conservan su asa de reordenar.
+      assert(doc.querySelector('#queueList .drag-handle'), 'la cola perdió el asa');
+      assert(doc.querySelector('#editPlaylistTracks .drag-handle'), 'la lista perdió el asa');
+      // El editor conserva menú y quitar de la lista.
+      assert(doc.querySelector('#editPlaylistTracks .track-menu-btn'), 'la lista perdió el menú');
+      assert(doc.querySelector('#editPlaylistTracks .remove-from-pl'), 'la lista perdió «quitar»');
+    });
+
+    await test('Favoritos vacío sin botón a Biblioteca (y Biblioteca sí lo conserva)', () => {
+      App.renderFavorites();
+      const fav = doc.querySelector('#favoritesList .empty-state');
+      assert(fav, 'sin vacío de favoritos');
+      assert(!fav.querySelector('button'), 'Favoritos no debe llevar botón');
+      assert(!doc.getElementById('btnFavGoLibrary'), 'sigue #btnFavGoLibrary');
+    });
+
     close();
   }
 
