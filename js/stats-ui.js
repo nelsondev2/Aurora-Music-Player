@@ -194,7 +194,7 @@ Object.assign(App, {
           artists.forEach(ar => {
             const li = document.createElement('li');
             li.className = 'artist-row';
-            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(ar.name)}</div><div class="row-sub">${ar.tracks.length} ${this.esc(this.t('tracks_count'))}</div></div><svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
+            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(ar.name)}</div><div class="row-sub">${this.esc(this.fmtTracksCount(ar.tracks.length))}</div></div><svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
             li.addEventListener('click', () => this.goToArtist(ar.name));
             ul.appendChild(li);
           });
@@ -204,7 +204,7 @@ Object.assign(App, {
           albums.forEach(al => {
             const li = document.createElement('li');
             li.className = 'artist-row';
-            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(al.name)}</div><div class="row-sub">${this.esc(al.artist)} · ${al.tracks.length} ${this.esc(this.t('tracks_count'))}</div></div><svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
+            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(al.name)}</div><div class="row-sub">${this.esc(al.artist)} · ${this.esc(this.fmtTracksCount(al.tracks.length))}</div></div><svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
             li.addEventListener('click', () => this.goToAlbum(al.name, al.artist));
             ul.appendChild(li);
           });

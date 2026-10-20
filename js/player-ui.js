@@ -104,19 +104,29 @@ Object.assign(App, {
       // Si la portada es una imagen (dataURL), dibujarla
       const isImage = track.coverIsImage || (typeof track.cover === 'string' && track.cover.startsWith('data:'));
       if (isImage) {
-        const img = new Image();
-        img.onload = () => {
-          ctx.clearRect(0, 0, w, h);
-          // Modo "cover"
-          const ratio = Math.max(w / img.width, h / img.height);
-          const dw = img.width * ratio, dh = img.height * ratio;
-          ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
-        };
-        img.src = typeof track.cover === 'string' ? track.cover : (track.cover.dataURL || '');
-        // Fondo provisional mientras carga
-        ctx.fillStyle = '#222';
-        ctx.fillRect(0, 0, w, h);
-        return;
+        /* Las pistas restauradas de una copia pueden traer `coverIsImage`
+         * sin el campo `cover` (el backup no lo exporta); antes se leía
+         * `track.cover.dataURL` sin proteger y la vista del reproductor
+         * reventaba. Se usa la miniatura disponible y, si no hay nada
+         * dibujable, se cae al gradiente como en las filas. */
+        const src = typeof track.cover === 'string' ? track.cover
+          : (this.coverSrcForRow ? this.coverSrcForRow(track, Math.max(w, h)) : null)
+            || (track.cover && track.cover.dataURL) || '';
+        if (src) {
+          const img = new Image();
+          img.onload = () => {
+            ctx.clearRect(0, 0, w, h);
+            // Modo "cover"
+            const ratio = Math.max(w / img.width, h / img.height);
+            const dw = img.width * ratio, dh = img.height * ratio;
+            ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+          };
+          img.src = src;
+          // Fondo provisional mientras carga
+          ctx.fillStyle = '#222';
+          ctx.fillRect(0, 0, w, h);
+          return;
+        }
       }
 
       // Generar gradiente dinámico

@@ -547,6 +547,15 @@ Object.assign(App, {
       });
       // Atributo lang del <html>
       document.documentElement.setAttribute('lang', this.lang);
+      // Las bandas del EQ crean su aria-label al construirse (pueden
+      // nacer antes de resolver el idioma y quedarse en español para
+      // siempre): se re-etiquetan con el idioma actual en cada applyLang
+      // (hallazgo A4 de la revisión externa).
+      document.querySelectorAll('#eqBands input[type="range"]').forEach(inp => {
+        const wrap = inp.parentElement;
+        const lab = wrap && wrap.querySelector('.eq-band-label');
+        if (lab) inp.setAttribute('aria-label', this.t('eq_band_label').replace('X', lab.textContent.trim()));
+      });
       // Nota: document.title es ignorado en WebXDC; el nombre viene de manifest.toml
       // Re-renderizar listas dinámicas para que se traduzcan
       try {
@@ -624,6 +633,12 @@ Object.assign(App, {
       document.querySelectorAll('.xfade-opt').forEach(b => {
         b.classList.toggle('active', Number(b.dataset.xfade) === xf);
       });
+      const sVal = document.getElementById('settingsSpeedVal');
+      if (sVal) sVal.textContent = (this.playbackRate || 1).toFixed(1) + '×';
+      const bDown = document.getElementById('btnSpeedDown');
+      if (bDown) bDown.disabled = (this.playbackRate || 1) <= 0.5;
+      const bUp = document.getElementById('btnSpeedUp');
+      if (bUp) bUp.disabled = (this.playbackRate || 1) >= 2.0;
       const ver = document.getElementById('aboutVersion');
       if (ver) {
         let vText = this.VERSION || '1.0.0';

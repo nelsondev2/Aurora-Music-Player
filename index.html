@@ -701,7 +701,7 @@
           </header>
           <div class="sheet-body">
             <label class="field">
-              <input type="search" id="searchInput" data-i18n-ph="search_placeholder" placeholder="Canción, artista o álbum" />
+              <input type="search" id="searchInput" data-i18n-ph="search_placeholder" data-i18n-aria="search_title" aria-label="Buscar" placeholder="Canción, artista o álbum" />
             </label>
             <!-- #9 Filtros de búsqueda -->
             <div class="search-filters" id="searchFilters">
@@ -785,7 +785,7 @@
             <span class="sheet-header-spacer" aria-hidden="true"></span>
           </header>
           <div class="sheet-body">
-            <h4 class="section-title" data-i18n="themes_title">Tema</h4>
+            <h4 class="section-title" data-i18n="theme_section">Tema</h4>
             <div class="theme-grid" id="themeGrid">
               <button class="theme-opt" data-theme="dark">
                 <div class="theme-preview theme-dark"><div class="tp-bar"></div><div class="tp-circle"></div></div>
@@ -805,7 +805,7 @@
               </button>
             </div>
 
-            <h4 class="section-title" data-i18n="themes_title">Color de acento</h4>
+            <h4 class="section-title" data-i18n="accent_section">Color de acento</h4>
             <div class="accent-grid" id="accentGrid">
               <button class="accent-opt" data-accent="aurora" type="button"><span data-i18n="accent_aurora">Aurora</span></button>
               <button class="accent-opt" data-accent="ocean" type="button"><span data-i18n="accent_ocean">Océano</span></button>
@@ -914,6 +914,12 @@
               <input type="checkbox" id="chkPreservePitch" checked />
             </label>
             <p class="settings-hint" data-i18n="settings_preserves_pitch_hint">Mantiene el tono natural de la voz sin distorsionar el pitch.</p>
+            <p class="settings-label" data-i18n="settings_speed">Velocidad de reproducción</p>
+            <div class="speed-stepper">
+              <button class="icon-btn-sm" id="btnSpeedDown" type="button" data-i18n-aria="lrc_speed_down" aria-label="Bajar velocidad"><svg class="ico" aria-hidden="true"><use href="#i-minus"></use></svg></button>
+              <span class="speed-val" id="settingsSpeedVal">1.0×</span>
+              <button class="icon-btn-sm" id="btnSpeedUp" type="button" data-i18n-aria="lrc_speed_up" aria-label="Subir velocidad"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg></button>
+            </div>
             <p class="settings-label" data-i18n="settings_crossfade">Fundido cruzado</p>
             <div class="xfade-opts" id="xfadeOpts">
               <button class="xfade-opt active" type="button" data-xfade="0" data-i18n="settings_crossfade_off">Off</button>
@@ -956,7 +962,7 @@
               <svg class="ico" aria-hidden="true"><use href="#i-file-export"></use></svg>
               <span data-i18n="settings_export">Exportar biblioteca</span>
             </button>
-            <p class="settings-hint" data-i18n="settings_export_hint">Solo metadatos (listas, favoritos, etiquetas). No incluye los archivos de audio.</p>
+            <p class="settings-hint" data-i18n="settings_export_hint">Listas, favoritos, ajustes y dónde ibas escuchando. Sin el audio: en el otro dispositivo tendrás que importar también las canciones.</p>
             <button class="menu-row" id="menuImportLibrary">
               <svg class="ico" aria-hidden="true"><use href="#i-file-import"></use></svg>
               <span data-i18n="settings_import">Importar biblioteca</span>

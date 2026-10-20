@@ -732,7 +732,9 @@ svg { display: block; }
   font-size: var(--fs-2xs);
   font-weight: 600;
   letter-spacing: 0.03em;
-  text-transform: uppercase;
+  /* Sin text-transform: heredaba mayúsculas a .sec-label y
+   * «VISUALIZADOR» no cabía en su columna (hallazgo M3). Las etiquetas
+   * del diccionario ya vienen en su caja correcta. */
   transition: color .2s, background .2s, transform .15s;
   flex: 1;
   flex-shrink: 1;
@@ -1463,9 +1465,11 @@ svg { display: block; }
 .pl-cover .pl-cover-grad { position: absolute; inset: 0; }
 .pl-cover-icon {
   position: absolute;
-  inset: 28%;
-  width: auto;
-  height: auto;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 38%;
+  height: 38%;
   color: rgba(255,255,255,0.92);
 }
 /* Play de las tarjetas de lista. Antes era un círculo blanco grande que
@@ -3374,6 +3378,20 @@ button,
   gap: 8px;
   margin: 0 0 8px;
 }
+/* Stepper de velocidad en Ajustes (el mismo ajuste que el pill de
+ * Letras; ambos se mantienen sincronizados en setPlaybackRate). */
+.speed-stepper {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 2px 2px 14px;
+}
+.speed-stepper .speed-val {
+  font-weight: 700;
+  min-width: 52px;
+  text-align: center;
+}
+.speed-stepper .icon-btn-sm:disabled { opacity: 0.35; }
 .xfade-opt {
   padding: 10px 6px;
   background: var(--surface);
@@ -3942,7 +3960,10 @@ button,
 }
 :root[data-theme="light"] .lrc-line.active { color: #1A1612; }
 :root[data-theme="light"] .ctrl-play { color: var(--accent-on-fill); }
-:root[data-theme="light"] .primary-btn { color: var(--accent-on-fill); }
+/* Solo los primarios «de verdad»: los .ghost llevan texto --text-1 sobre
+ * superficie; esta regla sin :not(.ghost) los dejaba blancos sobre casi
+ * blanco en tema claro (hallazgo A1 de la revisión externa). */
+:root[data-theme="light"] .primary-btn:not(.ghost) { color: var(--accent-on-fill); }
 :root[data-theme="light"] .icon-add { color: var(--text-1); }
 :root[data-theme="light"] .device-screen { background: var(--bg-0); }
 :root[data-theme="light"] .tests-log {
@@ -4621,10 +4642,10 @@ html.aurora-wide .toast {
  * robar protagonismo al texto. touch-action:none evita que el
  * navegador interprete el gesto como scroll de la hoja. */
 .drag-handle {
-  width: 34px;
-  min-width: 34px;
-  height: 40px;
-  min-height: 40px;
+  width: 40px;
+  min-width: 40px;
+  height: 44px;
+  min-height: 44px;
   margin-left: -5px;
   border-radius: 8px;
   opacity: 0.55;

@@ -614,3 +614,79 @@ Sin cambios de comportamiento: mismos resultados y mismos contextos de reproducc
 **Comprobación**: estrés repetido sobre el repo y el `.xdc` extraído (0 errores); regresión de búsqueda 5/5 (tokens cruzados título+artista, filtros, invalidación de la caché al editar); batería completa sin regresiones (auditoría 26/26, backup 26/26, portada 21/21, letras 15/15, cola 11/11, cierres 15/15, i18n 399×8).
 
 **Pendiente (solo puede hacerlo el usuario, en su dispositivo)**: instalar este `.xdc` en Delta Chat, importar una carpeta grande y comprobar que la biblioteca se desplaza sin tirones, que al reabrir la app todo sigue ahí (sesión y biblioteca), y que en Ajustes → Almacenamiento aparece el uso con el 🔒 si el sistema concedió la persistencia. Si algo va lento ahí, la superficie concreta ya tiene su medición de referencia en esta sección.
+
+## 32. Triaje del informe de QA externo (2026-10-20)
+
+Informe recibido favorable («Apto para uso general», 0 errores de consola del
+revisor) con deuda concentrada en accesibilidad. Cada hallazgo se verificó
+contra el código antes de tocar nada; resultado:
+
+**Confirmados y corregidos**
+
+- **A1 — Ghost de bienvenida invisible en tema claro.** Cierto: la regla
+  `:not(.primary-btn)…` de contorno/borde/sombra del tema claro (especificidad
+  mayor) ganaba al `.primary-btn.ghost`. Ahora la regla es
+  `:root[data-theme="light"] .primary-btn:not(.ghost)`: el ghost conserva su
+  aspecto en claro y en oscuro.
+- **A2 — Doble salto de ±5 s con las flechas sobre el slider.** Cierto: el
+  handler global de `keydown` no excluía `[role="slider"]`, así que el slider
+  hacía su salto nativo y además el global sumaba los 5 s. Añadida la guardia
+  `e.target.closest('[role="slider"]')`. Verificado: un solo salto.
+- **A3 — Velocidad solo editable desde Letras.** Cierto. Nuevo stepper
+  −/velocidad/+ en Ajustes → Reproducción (clave `settings_speed`), sincronizado
+  en ambos sentidos con el de Letras y con botones deshabilitados en 0,5×/2,0×.
+- **A4 — Aria sin localizar.** Cierto en dos sitios: el engranaje de la
+  bienvenida llevaba «Abrir Ajustes» fijo (ahora `t('settings_title')`) y las
+  bandas del ecualizador se etiquetaban al construirlas, sin refrescar al
+  cambiar de idioma (ahora `applyLang()` las re-etiqueta: «Banda 1»↔«Band 1»).
+- **A5 — Icono de canciones gigantesco portada.** Cierto: `.pl-cover-icon`
+  intentaba 28 % con `inset` pero `width/height:auto` lo dejaba sin tamaño
+  efectivo. Ahora centrado explícito al 38 % del cuadrado.
+- **M1 — Singular de «pistas».** Cierto. Nueva clave `track_count_one` (×8) y
+  helper `fmtTracksCount(n)`: «1 pista» / «1 track». Usado en la tarjeta de
+  Inicio, el subtítulo de Explorar, los metadatos de listas y los resultados.
+- **M2 — Dos secciones con el mismo título.** Cierto. Nuevas claves
+  `theme_section` y `accent_section` (×8): «Tema» y «Color de acento» ya no
+  comparten `themes_title`.
+- **M3 — Etiquetas laterales en mayúsculas duras.** La causa no era el
+  `uppercase` de `.sec-label` (no lo tenía): lo heredaba de `.sec-btn`
+  (`text-transform: uppercase` en el botón contenedor). Eliminado allí; los
+  acentos («Álbumes», «MÁS ESCUCHADAS») ya no heredan esa transformación.
+- **M4 — Asa de arrastre pequeña.** Amplada de 34×40 a 40×44 px.
+- **M5 — Buscador sin nombre accesible.** `#searchInput` tiene ahora
+  `aria-label` localizado («Buscar», `data-i18n-aria="search_title"`).
+
+**Tratado con aviso (sin modal)**
+
+- **A6 — La copia no avisa de que falta el audio.** No se añadió el modal
+  previo que sugería el informe (evita fricción en un flujo que ya tiene su
+  pantalla), pero el aviso Visible en Ajustes (`settings_export_hint`, ×8) y su
+  fallback en el HTML dicen ahora expresamente que las canciones **no viajan**
+  en la copia y que habrá que importarlas también en el otro dispositivo.
+
+**Sin acción**
+
+- **I1 — Service Worker / funcionamiento sin conexión.** La app es una WebXDC:
+  Delta Chat sirve los archivos localmente dentro del paquete; no hay red que
+  cachear ni manifiesto que instalar. Se queda fuera de alcance salvo petición
+  expresa.
+
+**Hallazgo extra durante la regresión (no estaba en el informe)**
+
+- `drawCover()` leía `track.cover.dataURL` sin proteger. Las pistas
+  restauradas de una copia traen `coverIsImage` pero no el campo `cover` (el
+  backup no lo exporta): al abrir el reproductor con una de ellas sonando, la
+  vista reventaba con un TypeError. Ahora se usa la miniatura disponible y, si
+  no hay imagen dibujable, se cae al gradiente generado.
+
+Verificación: nueva regresión específica del informe **21/21** (CSS de
+A1/A5/M3/M4 inspeccionado, un solo salto con el slider enfocado, stepper de
+Ajustes sincronizado con límites, aria de bienvenida y EQ en ES/EN, M2 y M1,
+0 errores), regresión general reconstruida **9/9** (doble arranque, búsqueda
+con singular, arrastre de cola, copia v2, letra .lrc automática y portada con
+repaint usando la pista en curso), diccionario **403 claves ×8 sin huecos**.
+Todo repetido sobre el `.xdc` extraído: idéntico resultado.
+
+**Pendiente del usuario**: probar en su dispositivo (Delta Android/Desktop/iOS):
+velocidad desde Ajustes sin abrir Letras, slider sin doble salto, tema claro en
+la bienvenida, arrastrar la cola y el 🔒 de persistencia en sesiones largas.

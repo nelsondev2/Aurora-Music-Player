@@ -140,7 +140,7 @@ Object.assign(App, {
               <span class="hw-orb hw-orb-b"></span>
               <span class="hw-orb hw-orb-c"></span>
             </div>
-            <button class="icon-btn home-welcome-settings" id="btnHomeWelcomeSettings" type="button" data-i18n-aria="settings_title" aria-label="Ajustes">
+            <button class="icon-btn home-welcome-settings" id="btnHomeWelcomeSettings" type="button" data-i18n-aria="settings_title" aria-label="${this.esc(this.t('settings_title'))}">
               <svg class="ico" aria-hidden="true"><use href="#i-gear"></use></svg>
             </button>
             <div class="home-welcome-mark">
@@ -250,7 +250,7 @@ Object.assign(App, {
         return `<button class="home-card" type="button" data-kind="playlist" data-id="${this.esc(pl.id)}">
           <div class="home-card-cover" data-pl="${this.esc(pl.id)}" data-pl-cover="${this.esc(pl.id)}"></div>
           <span class="home-card-title">${this.esc(pl.name)}</span>
-          <span class="home-card-sub">${n} ${this.esc(this.t('tracks_count'))}</span>
+          <span class="home-card-sub">${this.esc(this.fmtTracksCount(n))}</span>
         </button>`;
       }).join('');
       return `<section class="home-section">
@@ -377,7 +377,7 @@ Object.assign(App, {
       const title = document.getElementById('browseTitle');
       const sub = document.getElementById('browseSubtitle');
       if (title) title.textContent = opts.title || '';
-      if (sub) sub.textContent = opts.subtitle || ((opts.tracks || []).length + ' ' + this.t('tracks_count'));
+      if (sub) sub.textContent = opts.subtitle || this.fmtTracksCount((opts.tracks || []).length);
       const coverEl = document.getElementById('browseCover');
       if (coverEl) {
         coverEl.innerHTML = '<canvas width="160" height="160"></canvas>';

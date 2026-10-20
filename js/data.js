@@ -464,6 +464,18 @@ const I18N = {
     it: 'Temi e accenti',
     ru: 'Темы и акценты'
   },
+  theme_section: {
+    es: 'Tema', en: 'Theme', pt: 'Tema',
+    zh: '主题', ja: 'テーマ', fr: 'Thème', it: 'Tema', ru: 'Тема'
+  },
+  accent_section: {
+    es: 'Color de acento', en: 'Accent color', pt: 'Cor de destaque',
+    zh: '强调色', ja: 'アクセントカラー', fr: 'Couleur d’accent', it: 'Colore accento', ru: 'Цвет акцента'
+  },
+  settings_speed: {
+    es: 'Velocidad de reproducción', en: 'Playback speed', pt: 'Velocidade de reprodução',
+    zh: '播放速度', ja: '再生速度', fr: 'Vitesse de lecture', it: 'Velocità di riproduzione', ru: 'Скорость воспроизведения'
+  },
   stats_title: {
     es: 'Estadísticas',
     en: 'Statistics',
@@ -1073,6 +1085,10 @@ const I18N = {
   },
   min_short: { es: 'min', en: 'min', pt: 'min', zh: '分钟', ja: '分', fr: 'min', it: 'min', ru: 'мин' },
   hour_short: { es: 'h', en: 'h', pt: 'h', zh: '时', ja: '時間', fr: 'h', it: 'h', ru: 'ч' },
+  track_count_one: {
+    es: '1 pista', en: '1 track', pt: '1 faixa',
+    zh: '1 首音轨', ja: '1 トラック', fr: '1 piste', it: '1 brano', ru: '1 трек'
+  },
   tracks_count: {
     es: 'pistas',
     en: 'tracks',
@@ -2256,14 +2272,14 @@ const I18N = {
     it: 'Cancella cronologia', ru: 'Очистить историю'
   },
   settings_export_hint: {
-    es: 'Listas, favoritos, ajustes y dónde ibas escuchando. No incluye los archivos de audio.',
-    en: 'Playlists, favorites, settings and where you left off. Audio files are not included.',
-    pt: 'Listas, favoritos, definições e onde ias a ouvir. Sem ficheiros de áudio.',
-    zh: '播放列表、收藏、设置和收听位置。不包含音频文件。',
-    ja: 'リスト・お気に入り・設定・再生位置。音声ファイルは含まれません。',
-    fr: 'Listes, favoris, réglages et position d’écoute. Sans fichiers audio.',
-    it: 'Playlist, preferiti, impostazioni e posizione di ascolto. Nessun file audio.',
-    ru: 'Плейлисты, избранное, настройки и позиция прослушивания. Без аудиофайлов.'
+    es: 'Listas, favoritos, ajustes y dónde ibas escuchando. Sin el audio: en el otro dispositivo tendrás que importar también las canciones.',
+    en: 'Playlists, favorites, settings and where you left off. No audio included: on the other device you will also need to import the songs.',
+    pt: 'Listas, favoritos, definições e onde ias a ouvir. Sem o áudio: no outro dispositivo também terás de importar as músicas.',
+    zh: '播放列表、收藏、设置和收听位置。不含音频：在另一台设备上还需要导入歌曲文件。',
+    ja: 'リスト・お気に入り・設定・再生位置。音声は含まれません：別の端末では曲ファイルのインポートも必要です。',
+    fr: 'Listes, favoris, réglages et position d’écoute. Sans l’audio : sur l’autre appareil, il faudra aussi importer les chansons.',
+    it: 'Playlist, preferiti, impostazioni e posizione di ascolto. Senza audio: sull’altro dispositivo dovrai importare anche i brani.',
+    ru: 'Плейлисты, избранное, настройки и позиция прослушивания. Без аудио: на другом устройстве нужно будет также импортировать песни.'
   },
   relink_pending: {
     es: 'X pistas sin audio — toca para vincular',

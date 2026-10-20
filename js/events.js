@@ -293,6 +293,17 @@ Object.assign(App, {
       if (togglePreservePitch) togglePreservePitch.addEventListener('change', () => {
         this.setPreservesPitch(togglePreservePitch.checked);
       });
+      // Velocidad de reproducción también desde Ajustes (antes solo
+      // existía en la pantalla de Letras: hallazgo A3). Es el mismo
+      // ajuste; setPlaybackRate sincroniza ambas etiquetas.
+      const btnSpeedDown = document.getElementById('btnSpeedDown');
+      if (btnSpeedDown) btnSpeedDown.addEventListener('click', () => {
+        this.setPlaybackRate(this.playbackRate - 0.1);
+      });
+      const btnSpeedUp = document.getElementById('btnSpeedUp');
+      if (btnSpeedUp) btnSpeedUp.addEventListener('click', () => {
+        this.setPlaybackRate(this.playbackRate + 0.1);
+      });
       const toggleMarquee = document.getElementById('toggleMarquee');
       if (toggleMarquee) toggleMarquee.addEventListener('change', () => {
         this._marqueeEnabled = !!toggleMarquee.checked;
@@ -843,6 +854,10 @@ Object.assign(App, {
           return;
         }
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        // El slider de progreso es un div[role=slider] con su propio
+        // manejo de flechas (±5 s): si el evento también llega aquí, el
+        // salto se duplica (hallazgo A2 de la revisión externa).
+        if (e.target.closest && e.target.closest('[role="slider"]')) return;
         if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
           e.preventDefault();
           const sh = document.getElementById('sheetShortcuts');

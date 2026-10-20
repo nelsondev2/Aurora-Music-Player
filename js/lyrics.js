@@ -670,6 +670,14 @@ Object.assign(App, {
       }
       const label = document.getElementById('lrcSpeedLabel');
       if (label) label.textContent = this.playbackRate.toFixed(1) + '×';
+      // El mismo ajuste se ofrece en Ajustes → Reproducción (A3):
+      // ambas etiquetas y los topes del stepper quedan sincronizados.
+      const sVal = document.getElementById('settingsSpeedVal');
+      if (sVal) sVal.textContent = this.playbackRate.toFixed(1) + '×';
+      const bDown = document.getElementById('btnSpeedDown');
+      if (bDown) bDown.disabled = this.playbackRate <= 0.5;
+      const bUp = document.getElementById('btnSpeedUp');
+      if (bUp) bUp.disabled = this.playbackRate >= 2.0;
       try { localStorage.setItem('aurora_playback_rate', this.playbackRate); } catch (e) {}
       if (this.currentTrack) {
         this.currentTrack.lrcSpeed = this.playbackRate;

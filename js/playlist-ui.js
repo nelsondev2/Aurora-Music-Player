@@ -882,10 +882,16 @@ Object.assign(App, {
       return !!(this.playContext && this.playContext.type === 'playlist' && this.playContext.id === pl.id);
     },
 
+    /* «1 pista» / «N pistas»: el plural a secas («1 pistas») salía en
+     * tarjetas de lista, explorar y resultados de búsqueda (M1). */
+    fmtTracksCount(n) {
+      return n === 1 ? this.t('track_count_one') : n + ' ' + this.t('tracks_count');
+    },
+
     playlistMetaLabel(pl) {
       const n = (pl.trackIds || []).length;
       const dur = this.fmtDurationLabel(this.playlistDuration(pl));
-      let s = n + ' ' + this.t('tracks_count');
+      let s = this.fmtTracksCount(n);
       if (dur) s += ' · ' + dur;
       if (pl.description) s += ' · ' + pl.description;
       return s;
