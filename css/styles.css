@@ -2097,10 +2097,6 @@ svg { display: block; }
   }
 }
 
-.queue-item.reorder-mode {
-  background: var(--surface-2);
-  outline: 1px solid var(--accent);
-}
 .queue-item.dragging {
   opacity: 0.85;
   background: var(--surface-hi);
@@ -4620,16 +4616,19 @@ html.aurora-wide .toast {
   flex: 0 0 36px;
 }
 .row-action .ico { width: 17px; height: 17px; }
-/* Asa de arrastre: columna fina y tenue. Sigue siendo el gesto de
- * reordenar (mantiene 40 px de alto), pero ya no roba el texto. */
+/* Asa de arrastre: objetivo táctil real (34×40 px) para poder
+ * agarrarla con el dedo sin precisión; el icono sigue tenue para no
+ * robar protagonismo al texto. touch-action:none evita que el
+ * navegador interprete el gesto como scroll de la hoja. */
 .drag-handle {
-  width: 20px;
-  min-width: 20px;
+  width: 34px;
+  min-width: 34px;
   height: 40px;
   min-height: 40px;
   margin-left: -5px;
   border-radius: 8px;
   opacity: 0.55;
+  touch-action: none;
 }
 .drag-handle .ico { width: 13px; height: 13px; }
 .queue-item .row-action.queue-remove,

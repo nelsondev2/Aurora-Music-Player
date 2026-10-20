@@ -410,6 +410,9 @@ Object.assign(App, {
       Array.from(ul.children).forEach(ch => {
         if (ch === spacer) return;
         const idx = parseInt(ch.dataset.virtIdx, 10);
+        // La fila que se está arrastrando no se retira aunque salga de
+        // la ventana al hacer autoscroll: desaparecería a mitad de gesto.
+        if (state.dragIdx != null && idx === state.dragIdx) { keep.add(idx); return; }
         if (idx < start || idx >= end) ch.remove();
         else keep.add(idx);
       });
@@ -484,24 +487,6 @@ Object.assign(App, {
           this.playFromQueue(i);
           if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
         });
-        // Tap-and-hold (500ms) → modo reordenar
-        let holdTimer = null;
-        const startHold = (e) => {
-          if (e.target.closest('.drag-handle, .queue-remove')) return;
-          holdTimer = setTimeout(() => {
-            li.classList.add('reorder-mode');
-            this.toast(this.t('toast_reorder_mode'), 2000);
-            if (navigator.vibrate) navigator.vibrate(30);
-          }, 500);
-        };
-        const cancelHold = () => { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; } };
-        li.addEventListener('touchstart', startHold, { passive: true });
-        li.addEventListener('touchend', cancelHold);
-        li.addEventListener('touchmove', cancelHold, { passive: true });
-        li.addEventListener('mousedown', startHold);
-        li.addEventListener('mouseup', cancelHold);
-        li.addEventListener('mouseleave', cancelHold);
-
         // Quitar de la cola
         li.querySelector('.queue-remove').addEventListener('click', (e) => {
           e.stopPropagation();
@@ -538,86 +523,155 @@ Object.assign(App, {
       });
     },
 
-    /* Reordenar con drag handle (touch + mouse) */
+    /* Reordenar arrastrando el asa (Pointer Events: un solo camino
+     * para dedo y ratón, con captura del puntero para no perder el
+     * gesto al salir de la fila).
+     * - La fila sigue al dedo con transform; una línea de acento marca
+     *   el hueco destino (una sola fila cada vez).
+     * - Cerca del borde superior/inferior la lista se desplaza sola
+     *   (autoscroll) para poder llevar una pista lejos incluso en
+     *   colas largas; con lista virtualizada (>80) la fila arrastrada
+     *   se marca en el estado (dragIdx) para que el repintado al
+     *   desplazar no la elimine del DOM a mitad de gesto.
+     * - Al soltar se calcula el índice final con el modelo de
+     *   inserción (el hueco antes/después de cada fila) y se aplica:
+     *   en la cola, también a _originalQueue si el aleatorio está
+     *   activo (para que al desactivarlo no se pierda el orden nuevo)
+     *   y se guarda la sesión al momento. */
     wireDragHandle(li, idx, ul, itemSelector, opts) {
       const handle = li.querySelector('.drag-handle');
       if (!handle) return;
+      const scroller = ul.closest('.sheet-body') || ul.parentElement;
       let dragging = false;
-      let startY = 0, startIdx = idx;
-      let ghost = null;
-      const items = () => Array.from(ul.querySelectorAll(itemSelector));
+      let startY = 0;
+      let startIdx = idx;
+      let startScroll = 0;
+      let lastY = 0;
+      let scrollTimer = null;
 
-      const onStart = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        dragging = true;
-        startY = (e.touches ? e.touches[0].clientY : e.clientY);
-        startIdx = parseInt(li.dataset.idx, 10);
-        li.classList.add('dragging');
-        if (navigator.vibrate) navigator.vibrate(15);
-      };
-      const onMove = (e) => {
-        if (!dragging) return;
-        const y = (e.touches ? e.touches[0].clientY : e.clientY);
-        const dy = y - startY;
-        li.style.transform = `translateY(${dy}px)`;
-        li.style.zIndex = '10';
-        // Resaltar destino
-        const mid = li.offsetTop + li.offsetHeight/2 + dy;
-        items().forEach(it => {
-          if (it === li) return;
-          const t = it.offsetTop + it.offsetHeight/2;
-          it.classList.toggle('drop-above', t > mid && parseInt(it.dataset.idx,10) < startIdx);
-          it.classList.toggle('drop-below', t < mid && parseInt(it.dataset.idx,10) > startIdx);
-        });
-      };
-      const onEnd = (e) => {
-        if (!dragging) return;
-        dragging = false;
-        li.style.transform = '';
-        li.style.zIndex = '';
-        li.classList.remove('dragging');
-        const y = (e.changedTouches ? e.changedTouches[0].clientY : e.clientY);
-        // Determinar nuevo índice
-        let newIdx = startIdx;
-        const siblings = items();
-        for (let i = 0; i < siblings.length; i++) {
-          const it = siblings[i];
-          if (it === li) continue;
-          const t = it.offsetTop + it.offsetHeight/2;
-          if (y < t) { newIdx = parseInt(it.dataset.idx, 10); break; }
-          newIdx = parseInt(it.dataset.idx, 10);
-        }
-        items().forEach(it => it.classList.remove('drop-above','drop-below'));
-        // Reordenar
-        if (newIdx !== startIdx) {
-          if (opts && typeof opts.onReorder === 'function') {
-            opts.onReorder(startIdx, newIdx);
-          } else {
-            const moved = this.queue.splice(startIdx, 1)[0];
-            this.queue.splice(newIdx, 0, moved);
-            if (this.queueIdx === startIdx) this.queueIdx = newIdx;
-            else if (startIdx < this.queueIdx && newIdx >= this.queueIdx) this.queueIdx--;
-            else if (startIdx > this.queueIdx && newIdx <= this.queueIdx) this.queueIdx++;
-            this.renderQueue();
+      const items = () => Array.from(ul.querySelectorAll(itemSelector));
+      const targetIndexFor = (clientY) => {
+        const rows = items().filter(it => it !== li);
+        if (!rows.length) return startIdx;
+        let placed = null;
+        for (const it of rows) {
+          const r = it.getBoundingClientRect();
+          if (clientY < r.top + r.height / 2) {
+            placed = parseInt(it.dataset.idx, 10);
+            break;
           }
         }
+        if (placed === null) placed = parseInt(rows[rows.length - 1].dataset.idx, 10) + 1;
+        if (isNaN(placed)) return startIdx;
+        // «placed» es el hueco de inserción sin la fila arrastrada:
+        // se convierte a índice final tras extraerla de startIdx.
+        let to = placed > startIdx ? placed - 1 : placed;
+        const maxIdx = (opts && opts.maxIndex != null)
+          ? opts.maxIndex
+          : this.queue.length - 1;
+        return Math.max(0, Math.min(maxIdx, to));
+      };
+      const markTarget = (clientY) => {
+        const to = targetIndexFor(clientY);
+        items().forEach(it => {
+          if (it === li) return;
+          const i = parseInt(it.dataset.idx, 10);
+          // El hueco destino es antes de la fila «to» (o después de la
+          // última si se suelta al final): se marca solo esa fila.
+          it.classList.toggle('drop-above', i === to && to <= startIdx);
+          it.classList.toggle('drop-below', i === to && to > startIdx);
+        });
+        return to;
+      };
+      const clearMarks = () => items().forEach(it => it.classList.remove('drop-above', 'drop-below'));
+      const stopAutoScroll = () => {
+        if (scrollTimer) { clearInterval(scrollTimer); scrollTimer = null; }
+      };
+      // Sin compensación, al desplazarse la lista la fila se despegaría
+      // del dedo: el transform suma lo que el contenido haya bajado.
+      const paintDrag = () => {
+        const scrolled = scroller ? scroller.scrollTop - startScroll : 0;
+        li.style.transform = `translateY(${lastY - startY + scrolled}px)`;
+      };
+      const autoScroll = (clientY) => {
+        if (!scroller || scroller === ul) return;
+        const r = scroller.getBoundingClientRect();
+        const EDGE = 56;
+        const STEP = 14;
+        let dy = 0;
+        if (clientY < r.top + EDGE) dy = -STEP;
+        else if (clientY > r.bottom - EDGE) dy = STEP;
+        if (!dy) { stopAutoScroll(); return; }
+        if (scrollTimer) return;
+        // Aunque el dedo no se mueva, cada tick recoloca la fila y
+        // recalcula el destino con las filas recién pintadas.
+        scrollTimer = setInterval(() => {
+          scroller.scrollTop += dy;
+          paintDrag();
+          markTarget(lastY);
+        }, 16);
       };
 
-      handle.addEventListener('touchstart', onStart, { passive: false });
-      handle.addEventListener('touchmove', onMove, { passive: false });
-      handle.addEventListener('touchend', onEnd);
-      handle.addEventListener('mousedown', onStart);
-      const onWinMove = (e) => onMove(e);
-      const onWinUp = (e) => {
-        onEnd(e);
-        window.removeEventListener('mousemove', onWinMove);
-        window.removeEventListener('mouseup', onWinUp);
-      };
-      handle.addEventListener('mousedown', () => {
-        window.addEventListener('mousemove', onWinMove);
-        window.addEventListener('mouseup', onWinUp);
+      handle.addEventListener('pointerdown', (e) => {
+        if (dragging) return;
+        e.preventDefault();
+        e.stopPropagation();
+        dragging = true;
+        startY = e.clientY;
+        lastY = e.clientY;
+        startScroll = scroller ? scroller.scrollTop : 0;
+        startIdx = parseInt(li.dataset.idx, 10);
+        if (isNaN(startIdx)) startIdx = idx;
+        try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+        li.classList.add('dragging');
+        li.style.zIndex = '10';
+        if (ul._virt) ul._virt.dragIdx = startIdx;
+        if (navigator.vibrate) navigator.vibrate(15);
       });
+      handle.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        e.preventDefault();
+        lastY = e.clientY;
+        paintDrag();
+        autoScroll(e.clientY);
+        markTarget(e.clientY);
+      });
+      const finish = (e, commit) => {
+        if (!dragging) return;
+        dragging = false;
+        stopAutoScroll();
+        const to = commit ? markTarget(e.clientY) : startIdx;
+        clearMarks();
+        li.classList.remove('dragging');
+        li.style.transform = '';
+        li.style.zIndex = '';
+        if (ul._virt && ul._virt.dragIdx === startIdx) ul._virt.dragIdx = null;
+        if (!commit || to === startIdx) return;
+        if (opts && typeof opts.onReorder === 'function') {
+          opts.onReorder(startIdx, to);
+          return;
+        }
+        const moved = this.queue.splice(startIdx, 1)[0];
+        this.queue.splice(to, 0, moved);
+        if (this.queueIdx === startIdx) this.queueIdx = to;
+        else if (startIdx < this.queueIdx && to >= this.queueIdx) this.queueIdx--;
+        else if (startIdx > this.queueIdx && to <= this.queueIdx) this.queueIdx++;
+        // Con aleatorio activo la cola visible es una permutación:
+        // la misma mudanza se refleja en la original por id (si un id
+        // estuviera repetido se mueve la primera aparición; la cola
+        // no suele tener duplicados).
+        if (this.shuffle && Array.isArray(this._originalQueue) && this._originalQueue.length) {
+          const fromOrig = this._originalQueue.indexOf(moved);
+          if (fromOrig >= 0) {
+            this._originalQueue.splice(fromOrig, 1);
+            this._originalQueue.splice(Math.min(to, this._originalQueue.length), 0, moved);
+          }
+        }
+        if (typeof this.saveSession === 'function') this.saveSession();
+        this.renderQueue();
+      };
+      handle.addEventListener('pointerup', (e) => finish(e, true));
+      handle.addEventListener('pointercancel', (e) => finish(e, false));
     },
 
     clearUpcomingQueue() {

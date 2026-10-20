@@ -542,3 +542,20 @@ Las capturas del usuario eran de un paquete anterior (de ahí el eco de Favorito
 - El texto de ayuda en Ajustes (8 idiomas) ahora dice la verdad: «Listas, favoritos, ajustes y dónde ibas escuchando. No incluye los archivos de audio.» El flujo entre dispositivos es manual: exportar → enviar el `.json` por el propio chat → importar. Sin servidores, sin realtime, sin gasto continuo de datos.
 
 **Comprobación** (arnés jsdom externo): regresión específica 26/26 —exportación con todos los campos, importación en un «dispositivo B» con otros id y *otros tamaños* (0 pistas fantasma, lista y favoritos reenlazados a los id locales, tema/acento/volumen/crossfade/EQ aplicados, sesión traducida conservando los 42 s), compatibilidad v1 y backup manipulado rechazado por las listas blancas— con 0 errores; auditoría funcional general 26/26 e i18n 393×8 sin huecos. Repetido sobre el `.xdc` extraído: 26/26, `--check` OK.
+
+---
+
+## 28. Reordenar la cola arrastrando (rehacer bien lo que ya había)
+
+**Petición:** reordenar la cola arrastrando. Al revisar, ya existía un asa de arrastre en la cola y en el editor de listas, pero con carencias: el asa medía 20 px de ancho (difícil de agarrar con el dedo), el arrastre no se reflejaba en la cola original con el aleatorio activo (al desactivarlo se perdía el orden nuevo), no guardaba la sesión al soltar, en listas virtualizadas (>80) no había forma de llevar una pista lejos (sin autoscroll, y el repintado podía eliminar la fila a mitad de gesto), y convivía con un «modo reordenar» por pulsación larga que no habilitaba nada (solo pintaba la fila y mostraba un toast).
+
+**Implementado** (reescritura de `wireDragHandle` en `js/playlist-ui.js`, compartido por la cola y el editor de listas):
+
+- **Pointer Events** con captura del puntero: un solo camino para dedo y ratón, sin los listeners duplicados de ratón en ventana del código anterior. `touch-action: none` en el asa para que el navegador no robe el gesto como scroll.
+- **Asa de 34×40 px** (objetivo táctil real), icono tenue como hasta ahora.
+- **Destino calculado por hueco de inserción** y marcado con una sola línea de acento; la fila sigue al dedo con compensación del autoscroll para no despegarse cuando la lista se desplaza bajo ella.
+- **Autoscroll** cerca de los bordes (56 px): se puede cruzar una cola larga entera. En listas virtualizadas la fila arrastrada se marca (`dragIdx`) para que `_paintVirtual` no la elimine del DOM al repintar.
+- **Al soltar**: se ajusta `queueIdx` para que la pista que suena nunca se pierda, la misma mudanza se refleja en `_originalQueue` si el aleatorio está activo, y se guarda la sesión al momento. En el editor, el mismo gesto reordena la lista y la persiste (con su límite `maxIndex` propio).
+- **Retirado** el modo por pulsación larga y su clave `toast_reorder_mode` (8 idiomas): el arrastre funciona directamente, sin modos.
+
+**Comprobación** (arnés jsdom externo): 11/11 en cola y editor (orden resultante, `queueIdx` siguiendo a la que suena al mover otra y al moverla a ella, cancelación sin efecto, espejo en `_originalQueue`, sesión guardada) y 7/7 con cola virtualizada de 100 pistas (ventana pintada, la fila arrastrada sobrevive al repintado, `dragIdx` limpio al soltar). Auditoría general 26/26, backup 26/26, i18n 392×8. Repetido sobre el `.xdc` extraído: 11/11 y 7/7, `--check` OK.

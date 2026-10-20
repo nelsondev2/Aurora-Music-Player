@@ -167,6 +167,7 @@ Object.assign(App, {
         });
         if (typeof this.wireDragHandle === 'function') {
           this.wireDragHandle(li, i, ul, '.track-row', {
+            maxIndex: pl.trackIds.length - 1,
             onReorder: (from, to) => this.reorderPlaylistTracks(pl.id, from, to)
           });
         }

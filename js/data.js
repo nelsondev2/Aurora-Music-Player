@@ -1256,16 +1256,6 @@ const I18N = {
     it: 'Radio basata su:',
     ru: 'Радио на основе:'
   },
-  toast_reorder_mode: {
-    es: 'Modo reordenar: arrastra el icono',
-    en: 'Reorder mode: drag the icon',
-    pt: 'Modo reordenar: arraste o ícone',
-    zh: '重新排序模式：拖动图标',
-    ja: '並べ替えモード：アイコンをドラッグ',
-    fr: 'Mode réorganiser : glisser l\'icône',
-    it: 'Modalità riordino: trascina l\'icona',
-    ru: 'Режим перестановки: перетащите значок'
-  },
   toast_playlist_empty: {
     es: 'Lista vacía',
     en: 'Empty playlist',
