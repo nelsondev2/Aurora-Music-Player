@@ -82,7 +82,7 @@ Object.assign(App, {
         this.shuffle = !!session.shuffle;
         this.repeat = session.repeat || 'off';
         if (this.shuffle && Array.isArray(session.originalQueue) && session.originalQueue.length) {
-          this._originalQueue = session.originalQueue.filter(id => this.tracks.some(t => t.id === id));
+          this._originalQueue = session.originalQueue.filter(id => this.trackMap().has(id));
         } else {
           this._originalQueue = null;
         }

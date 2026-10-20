@@ -355,7 +355,7 @@ Object.assign(App, {
         id,
         name: cleanName || this.t('create_playlist_title'),
         description: cleanDesc,
-        trackIds: Array.isArray(trackIds) ? trackIds.filter(x => this.tracks.some(t => t.id === x)) : [],
+        trackIds: Array.isArray(trackIds) ? trackIds.filter(x => this.trackMap().has(x)) : [],
         cover: { from, to, angle: 135 }
       };
       this.playlists.push(pl);

@@ -590,3 +590,27 @@ Las capturas del usuario eran de un paquete anterior (de ahí el eco de Favorito
 - **Avisos**: el toast de la importación añade «· X letra(s) enlazada(s)»; soltando solo letras sin coincidencia se avisa con honestidad («Ninguna letra coincidió con tus canciones»). 2 claves nuevas × 8 idiomas.
 
 **Comprobación** (arnés jsdom externo; el importador de audio se simula y `Blob.text()` de jsdom se sustituye por FileReader, como en un navegador real): 15/15 —audio+letra en la misma importación, letra que `parseLrc` lee con tiempos, persistencia en IndexedDB, letra previa que no se pisa, solo-.lrc sobre la biblioteca, sin coincidencia, .lrc vacío inofensivo, mayúsculas en nombre y extensión, y reimportación sin duplicados ni pérdida de la letra— con 0 errores. Sin regresiones: auditoría 26/26, backup 26/26, portada 21/21, cola 11/11, i18n 399×8. Repetido sobre el `.xdc` extraído: 15/15, `--check` OK.
+
+---
+
+## 31. Estrés con 5.000 canciones y persistencia reforzada
+
+**Petición:** el bloque de «dispositivo real»: preparar la app para bibliotecas grandes y dejar lista la confirmación final en el móvil.
+
+**Medición antes de tocar nada** (arnés jsdom con 5.000 pistas, 20 listas de 250 y cola completa; jsdom es más lento que un WebView real, valen las comparaciones relativas):
+
+| Superficie | Antes | Después | Causa |
+|---|---|---|---|
+| Favoritos (500) | ~320 ms, 500 filas DOM | **~7 ms, 9 filas** | Era la única lista larga sin virtualizar; ahora usa `fillVirtualList` como la cola |
+| Cola (5.000) | ~104 ms | **~7 ms** | La limpieza de ids usaba `tracks.some()` por id (cuadrático): ahora el índice `trackMap()` |
+| Listas (20×250) | ~212 ms | **~47 ms** | `getPlaylistCover` resolvía cada id con `find()`: ahora `getTrackById` |
+| Importar backup (5.000) | ~110 ms | **~25 ms** | Listas/favoritos/historial filtran contra un `Set` de ids construido una vez |
+| Buscar | ~58 ms | ~48 ms | Caché de textos normalizados por pista (`_searchClean`, WeakMap): ya no se normalizan 5.000 títulos por tecla; se recalcula sola si se editan las etiquetas |
+
+Sin cambios de comportamiento: mismos resultados y mismos contextos de reproducción (favoritos sigue reproduciendo la lista entera al pulsar una pista).
+
+**Persistencia**: ya se pedía almacenamiento persistente al arrancar y Ajustes muestra uso/cuota con 🔒 si está concedido. Refuerzo: tras cada importación de música se vuelve a pedir, porque algunos navegadores solo lo conceden tras interacción real con la app.
+
+**Comprobación**: estrés repetido sobre el repo y el `.xdc` extraído (0 errores); regresión de búsqueda 5/5 (tokens cruzados título+artista, filtros, invalidación de la caché al editar); batería completa sin regresiones (auditoría 26/26, backup 26/26, portada 21/21, letras 15/15, cola 11/11, cierres 15/15, i18n 399×8).
+
+**Pendiente (solo puede hacerlo el usuario, en su dispositivo)**: instalar este `.xdc` en Delta Chat, importar una carpeta grande y comprobar que la biblioteca se desplaza sin tirones, que al reabrir la app todo sigue ahí (sesión y biblioteca), y que en Ajustes → Almacenamiento aparece el uso con el 🔒 si el sistema concedió la persistencia. Si algo va lento ahí, la superficie concreta ya tiene su medición de referencia en esta sección.

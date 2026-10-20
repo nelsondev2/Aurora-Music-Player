@@ -267,8 +267,10 @@ Object.assign(App, {
     getPlaylistCover(pl) {
       const fallback = this._playlistCoverFallback(pl);
       this._hydratePlaylistCover(pl);
+      // Con el índice id->pista: buscar cada id con find() sobre miles
+      // de pistas hacía renderPlaylists cuadrático (medido en el estrés).
       const tracks = (pl.trackIds || [])
-        .map(id => this.tracks.find(t => t.id === id))
+        .map(id => this.getTrackById(id))
         .filter(Boolean);
       const withImage = tracks.filter(t => this._playlistTrackArtSrc(t));
 
@@ -550,7 +552,7 @@ Object.assign(App, {
           ctxLabel.style.display = 'none';
         }
       }
-      const cleaned = this.queue.filter(id => this.tracks.some(t => t.id === id));
+      const cleaned = this.queue.filter(id => this.trackMap().has(id));
       if (cleaned.length !== this.queue.length) {
         const curId = this.currentTrack && this.currentTrack.id;
         this.queue = cleaned;
@@ -1127,7 +1129,7 @@ Object.assign(App, {
     playPlaylist(playlistId) {
       const pl = this.playlists.find(p => p.id === playlistId);
       if (!pl) return;
-      const ids = pl.trackIds.map(id => id).filter(id => this.tracks.some(t => t.id === id));
+      const ids = pl.trackIds.map(id => id).filter(id => this.trackMap().has(id));
       if (ids.length === 0) { this.toast(this.t('toast_playlist_empty')); return; }
       this.queue = ids;
       this.queueIdx = 0;

@@ -119,6 +119,24 @@ Object.assign(App, {
         .trim();
     },
 
+    /* Textos de búsqueda ya normalizados por pista, cacheados en un
+     * WeakMap (no se persisten ni ensucian el objeto pista). La clave
+     * guarda el texto origen: si el usuario edita las etiquetas, la
+     * siguiente búsqueda detecta el cambio y recalcula sola. */
+    _searchClean(t) {
+      if (!this._srchCache) this._srchCache = new WeakMap();
+      const src = (t.title || '') + '\u0000' + (t.artist || '') + '\u0000' + (t.album || '');
+      let c = this._srchCache.get(t);
+      if (!c || c.src !== src) {
+        const title = this.cleanSearchStr(t.title);
+        const artist = this.cleanSearchStr(t.artist);
+        const album = this.cleanSearchStr(t.album);
+        c = { src, title, artist, album, all: (title + ' ' + artist + ' ' + album).trim() };
+        this._srchCache.set(t, c);
+      }
+      return c;
+    },
+
     runSearch(q, filter) {
       const ul = document.getElementById('searchResults');
       if (!ul) return;
@@ -140,13 +158,19 @@ Object.assign(App, {
       };
 
       const matchTrack = (t) => {
-        if (f === 'title') return matchText(t.title);
-        if (f === 'artist') return matchText(t.artist);
-        if (f === 'album') return matchText(t.album);
-        return matchText(t.title) ||
-               matchText(t.artist) ||
-               matchText(t.album) ||
-               matchText(`${t.title || ''} ${t.artist || ''} ${t.album || ''}`);
+        // Sin tokens (consulta de solo símbolos) se conserva el
+        // comportamiento histórico sobre el texto crudo.
+        if (!qTokens.length) {
+          return matchText(t.title) || matchText(t.artist) || matchText(t.album);
+        }
+        // Con tokens se busca sobre los textos ya normalizados y
+        // cacheados por pista: normalizar 5.000 títulos por tecla
+        // disparaba el coste de cada pulsación (ver prueba de estrés).
+        const c = this._searchClean(t);
+        if (f === 'title') return qTokens.every(tok => c.title.includes(tok));
+        if (f === 'artist') return qTokens.every(tok => c.artist.includes(tok));
+        if (f === 'album') return qTokens.every(tok => c.album.includes(tok));
+        return qTokens.every(tok => c.all.includes(tok));
       };
 
       if (f === 'all') {
@@ -302,11 +326,13 @@ Object.assign(App, {
       }
       // Para que pulsar una pista desde favoritos reproduzca TODA la lista
       // de favoritos (no solo la pista aislada), construimos el contexto.
-      favTracks.forEach((t) => {
-        if (typeof this.makeTrackRow === 'function') {
-          ul.appendChild(this.makeTrackRow(t, { playContext: { type: 'favorites' } }));
-        }
-      });
+      // Virtualizada como la cola y la biblioteca: con cientos de
+      // favoritos, crear todas las filas de golpe congelaba la hoja.
+      if (typeof this.fillVirtualList === 'function' && typeof this.makeTrackRow === 'function') {
+        this.fillVirtualList(ul, favTracks,
+          (t) => this.makeTrackRow(t, { playContext: { type: 'favorites' } }),
+          { scroller: ul.closest('.sheet-body'), rowHeight: 64 });
+      }
     },
 
     /* Compartir resumen de estadísticas de reproducción en Delta Chat */

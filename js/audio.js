@@ -191,7 +191,7 @@ Object.assign(App, {
         // Cola = pistas de esa playlist (en orden), filtrando las que existen
         const pl = this.playlists.find(p => p.id === context.id);
         if (pl) {
-          this.queue = pl.trackIds.filter(id => this.tracks.some(t => t.id === id));
+          this.queue = pl.trackIds.filter(id => this.trackMap().has(id));
           const qIdx = this.queue.indexOf(trackId);
           // La pista puede no pertenecer ya a la lista (se quitó mientras
           // sonaba otra): insertarla para que next/prev sigan teniendo
@@ -571,7 +571,7 @@ Object.assign(App, {
       if (!this.shuffle && this.playContext && this.playContext.type === 'playlist' && this.playContext.id) {
         const pl = this.playlists.find(p => p.id === this.playContext.id);
         if (pl && pl.trackIds.length) {
-          const ids = pl.trackIds.filter(id => this.tracks.some(t => t.id === id));
+          const ids = pl.trackIds.filter(id => this.trackMap().has(id));
           if (ids.length && (this.queue.length !== ids.length || ids.some((id, i) => this.queue[i] !== id))) {
             const cur = this.currentTrack && this.currentTrack.id;
             this.queue = ids;
@@ -668,7 +668,7 @@ Object.assign(App, {
         return;
       }
       const cur = this.currentTrack && this.currentTrack.id;
-      const restored = this._originalQueue.filter(id => this.tracks.some(t => t.id === id));
+      const restored = this._originalQueue.filter(id => this.trackMap().has(id));
       this._originalQueue = null;
       if (!restored.length) return;
       this.queue = restored;

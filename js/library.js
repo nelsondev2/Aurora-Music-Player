@@ -268,6 +268,14 @@ Object.assign(App, {
             : this.t('toast_added_to_library');
           this.toast(tracksToAdd.length + ' ' + destMsg + folderSuffix + relinkSuffix + lrcSuffix);
         }
+        // Con música ya dentro, se vuelve a pedir almacenamiento
+        // persistente: algunos navegadores solo lo conceden tras
+        // interacción real con la app, no en el primer arranque.
+        try {
+          if (navigator.storage && typeof navigator.storage.persist === 'function') {
+            navigator.storage.persist().then((g) => { this._storagePersisted = !!g; }).catch(() => {});
+          }
+        } catch (e) {}
         // También al importar parcialmente (cancelado): el marcador debe
         // reflejar lo que realmente quedó guardado.
         this.syncLibCountMarker();
@@ -1129,6 +1137,10 @@ Object.assign(App, {
       }
       if (restoredTracks > 0) this.invalidateTrackIndex();
 
+      // Existencia por Set: con miles de pistas, filtrar cada id con
+      // tracks.some() volvía la importación del backup cuadrática.
+      const trackIdSet = new Set(this.tracks.map(t => t.id));
+
       // --- Listas: fusión por id ---
       // Los backups antiguos pueden traer la lista predefinida «Mi Música»;
       // se ignora (sus pistas ya vienen en data.tracks y siguen en la
@@ -1143,7 +1155,7 @@ Object.assign(App, {
         if (!pid) pid = 'pl-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
         const tids = (Array.isArray(rp.trackIds) ? rp.trackIds : [])
           .map(tid => idMap.get(safeId(tid)) || safeId(tid))
-          .filter(tid => tid && this.tracks.some(t => t.id === tid));
+          .filter(tid => tid && trackIdSet.has(tid));
         const uniqueTids = [...new Set(tids)];
         const existing = byId.get(pid);
         if (existing) {
@@ -1180,7 +1192,7 @@ Object.assign(App, {
         const favs = data.favorites
           .slice(0, MAX_TRACKS * 2)
           .map(fid => idMap.get(safeId(fid)) || safeId(fid))
-          .filter(fid => fid && this.tracks.some(t => t.id === fid));
+          .filter(fid => fid && trackIdSet.has(fid));
         this.favorites = new Set([...this.favorites, ...favs]);
         this.saveFavorites();
       }
@@ -1209,7 +1221,7 @@ Object.assign(App, {
         const incoming = data.history
           .slice(0, 500)
           .map(hid => idMap.get(safeId(hid)) || safeId(hid))
-          .filter(hid => hid && this.tracks.some(t => t.id === hid));
+          .filter(hid => hid && trackIdSet.has(hid));
         this._playHistory = [...new Set([...incoming, ...this._playHistory])].slice(-100);
         try { window.AuroraStorage.setSetting('history', this._playHistory); } catch (e) {}
       }
