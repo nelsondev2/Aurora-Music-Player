@@ -526,3 +526,19 @@ Las capturas del usuario eran de un paquete anterior (de ahí el eco de Favorito
 - **Mini-player sobre las filas**: las hojas-pestaña terminan en `--chrome-offset`, calculado con `--mini-h: 56px`, pero el mini ocupa 56 px de alto + 6 px de margen inferior: el borde de la hoja quedaba 6 px por debajo del borde superior del mini y este tapaba esa franja de la lista. `--mini-h` pasa a 62 px con `has-mini` y la hoja termina justo sobre el mini.
 
 **Comprobación** (arnés jsdom externo): regresión específica 15/15 (ninguna cabecera con botón de texto de cierre, 22 cabeceras con exactamente una ×, acciones conservadas, la × cierra Favoritos y Ajustes, placeholder completo aplicado en ES/EN, diccionario sin `done_btn`) y auditoría funcional general 26/26 sin regresiones; i18n 393 claves × 8 idiomas sin huecos. Repetido sobre el `.xdc` extraído: 15/15, `build-xdc.py --check` OK.
+
+---
+
+## 27. Copia de seguridad completa (v2): ajustes y sesión portables
+
+**Petición:** qué faltaría para el 10 sin realtime → se empieza por la copia de seguridad. Al revisar, ya existía una copia de metadatos (listas, favoritos, estadísticas, historial, con fusión aditiva y reenlace de audio); lo que la hacía «incompleta» era que no guardaba ajustes ni dónde ibas, y que el reenlace entre dispositivos exigía nombre **y tamaño** idénticos.
+
+**Implementado** (en `js/library.js`, junto al exportador/importador existentes):
+
+- **Formato v2** (`version: 2`, con `appVersion` y `exportedAt`; nombre de archivo con fecha `aurora-backup-AAAA-MM-DD.json`). Los backups v1 siguen importando.
+- **Ajustes** (`_backupSettings`/`_applyBackupSettings`): tema, acento, idioma, volumen, gapless/normalizar/crossfade/marqueo/vinilo, preservar tono, velocidad, tamaño de letra, modo de visualizador, EQ (ganancias personalizadas o preset) y orden de la biblioteca. Al importar se aplica **en silencio** (sin toasts de los setters) y todo pasa por listas blancas: tema/idioma/modo inventados se rechazan, volumen y ganancias ±12 dB se limitan, crossfade solo acepta 0/3/6/12.
+- **Sesión portable** (`_backupSession`): pista actual y cola identificadas por nombre+tamaño de archivo y la posición en segundos. Al importar se traduce a los id locales, se guarda como sesión a restaurar y, si no está sonando nada, se aplica al momento con el propio `restoreSession()`: mismo tema, misma cola, mismo segundo, en el otro dispositivo.
+- **Reenlace por nombre**: si el tamaño difiere (otro ripeo de la misma canción) y el nombre de archivo es único en la biblioteca, la pista se reenlaza igual en vez de crear una fantasma sin audio. Aplica a listas, favoritos, estadísticas, historial y sesión.
+- El texto de ayuda en Ajustes (8 idiomas) ahora dice la verdad: «Listas, favoritos, ajustes y dónde ibas escuchando. No incluye los archivos de audio.» El flujo entre dispositivos es manual: exportar → enviar el `.json` por el propio chat → importar. Sin servidores, sin realtime, sin gasto continuo de datos.
+
+**Comprobación** (arnés jsdom externo): regresión específica 26/26 —exportación con todos los campos, importación en un «dispositivo B» con otros id y *otros tamaños* (0 pistas fantasma, lista y favoritos reenlazados a los id locales, tema/acento/volumen/crossfade/EQ aplicados, sesión traducida conservando los 42 s), compatibilidad v1 y backup manipulado rechazado por las listas blancas— con 0 errores; auditoría funcional general 26/26 e i18n 393×8 sin huecos. Repetido sobre el `.xdc` extraído: 26/26, `--check` OK.

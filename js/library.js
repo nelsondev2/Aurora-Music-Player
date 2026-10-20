@@ -696,12 +696,167 @@ Object.assign(App, {
       }
     },
 
-    /* #17 Exportar biblioteca a JSON (sin blobs) */
+    /* Foto de los ajustes del usuario para la copia de seguridad.
+     * Solo valores planos y validables: al importar se pasa todo por
+     * listas blancas (ver _applyBackupSettings), así un backup
+     * manipulado no puede colar temas, idiomas o modos inexistentes. */
+    _backupSettings() {
+      let eqGains = null;
+      let eqPreset = null;
+      try {
+        const raw = localStorage.getItem('aurora_eq');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) eqGains = parsed.map(v => Number(v));
+        }
+        eqPreset = localStorage.getItem('aurora_eq_preset') || null;
+      } catch (e) {}
+      return {
+        theme: this.theme,
+        accent: this.accent,
+        lang: this.lang,
+        volume: this.volume,
+        gapless: !!this._gaplessEnabled,
+        normalize: !!this._normalizeVolume,
+        crossfade: this.crossfadeDuration || 0,
+        marquee: this._marqueeEnabled !== false,
+        vinyl: !!this._vinylEnabled,
+        preservesPitch: this.preservesPitch !== false,
+        playbackRate: this.playbackRate || 1,
+        lrcFontSize: this.lrcFontSize || 19,
+        visualizerMode: this.visualizerMode || 'bars',
+        eq: { preset: eqPreset, gains: eqGains },
+        librarySort: this._librarySort || 'title'
+      };
+    },
+
+    /* Foto portable de la sesión: la pista actual y la cola se
+     * identifican por nombre+tamaño de archivo (los id internos no
+     * significan nada en otro dispositivo) y al importar se traducen
+     * a los id locales. La posición viaja en segundos. */
+    _backupSession() {
+      const t = this.currentTrack;
+      if (!t || !t.fileName) return null;
+      const ident = (track) => track && track.fileName
+        ? { f: String(track.fileName), s: Number(track.fileSize) || 0 }
+        : null;
+      const byId = this.trackMap();
+      const queue = (Array.isArray(this.queue) ? this.queue : [])
+        .slice(0, 1000)
+        .map(id => ident(byId.get(id)))
+        .filter(Boolean);
+      return {
+        track: ident(t),
+        queue,
+        currentTime: Math.max(0, Math.floor((this.audio && this.audio.currentTime) || 0)),
+        shuffle: !!this.shuffle,
+        repeat: this.repeat || 'off'
+      };
+    },
+
+    /* Aplica los ajustes de un backup SIN toasts (los setters con
+     * aviso, como setVisualizerMode o setLang, llenarían la pantalla
+     * de mensajes): se asigna el estado, se persiste con las mismas
+     * claves que usa la app y se repinta lo imprescindible. Todo valor
+     * pasa por su lista blanca; lo desconocido se ignora. */
+    _applyBackupSettings(s) {
+      if (!s || typeof s !== 'object' || Array.isArray(s)) return;
+      try {
+        if (typeof s.theme === 'string' && this.THEMES && this.THEMES[s.theme]) {
+          this.theme = s.theme;
+          try { localStorage.setItem('aurora_theme', this.theme); } catch (e) {}
+        }
+        if (typeof s.accent === 'string' && this.ACCENTS) {
+          const acc = this._migrateAccent(s.accent);
+          if (this.ACCENTS[acc]) {
+            this.accent = acc;
+            try { localStorage.setItem('aurora_accent', acc); } catch (e) {}
+          }
+        }
+        if (typeof this.applyTheme === 'function') this.applyTheme();
+
+        if (typeof s.lang === 'string' && typeof this._isValidLang === 'function' && this._isValidLang(s.lang)) {
+          this.lang = s.lang;
+          try { localStorage.setItem('aurora_lang', s.lang); } catch (e) {}
+          this.applyLang();
+          if (typeof this.buildLangList === 'function') this.buildLangList();
+        }
+
+        if (isFinite(Number(s.volume))) this.setVolume(Number(s.volume));
+
+        let playbackTouched = false;
+        if (typeof s.gapless === 'boolean') { this._gaplessEnabled = s.gapless; playbackTouched = true; }
+        if (typeof s.normalize === 'boolean') { this._normalizeVolume = s.normalize; playbackTouched = true; }
+        if (typeof s.marquee === 'boolean') { this._marqueeEnabled = s.marquee; playbackTouched = true; }
+        if (typeof s.vinyl === 'boolean') { this._vinylEnabled = s.vinyl; playbackTouched = true; }
+        if ([0, 3, 6, 12].includes(Number(s.crossfade))) {
+          this.crossfadeDuration = Number(s.crossfade);
+          this.crossfadeEnabled = this.crossfadeDuration > 0;
+          playbackTouched = true;
+        }
+        if (playbackTouched) {
+          this.savePlaybackSettings();
+          if (typeof this.syncPlaybackSettingsUI === 'function') this.syncPlaybackSettingsUI();
+        }
+
+        if (typeof s.preservesPitch === 'boolean') this.setPreservesPitch(s.preservesPitch);
+        if (isFinite(Number(s.playbackRate))) this.setPlaybackRate(Number(s.playbackRate));
+        if (isFinite(Number(s.lrcFontSize))) this.setLrcFontSize(Number(s.lrcFontSize));
+
+        if (['bars', 'wave', 'off'].includes(s.visualizerMode)) {
+          this.visualizerMode = s.visualizerMode;
+          try { localStorage.setItem('aurora_visualizer_mode', s.visualizerMode); } catch (e) {}
+          if (typeof this.updateVisualizerUI === 'function') this.updateVisualizerUI();
+        }
+
+        if (s.eq && typeof s.eq === 'object') {
+          const gains = Array.isArray(s.eq.gains) ? s.eq.gains.map(v => Number(v)) : null;
+          const gainsOk = gains && gains.length === 5 && gains.every(v => isFinite(v));
+          if (gainsOk) {
+            const clamped = gains.map(v => Math.max(-12, Math.min(12, v)));
+            const inputs = document.querySelectorAll('#eqBands input[type="range"]');
+            inputs.forEach((inp, i) => {
+              inp.value = clamped[i];
+              if (this.eqFilters[i]) this.eqFilters[i].gain.value = clamped[i];
+              const val = inp.parentElement && inp.parentElement.querySelector('.eq-band-val');
+              if (val) val.textContent = (clamped[i] > 0 ? '+' : '') + clamped[i] + ' dB';
+            });
+            try {
+              localStorage.setItem('aurora_eq', JSON.stringify(clamped));
+              localStorage.setItem('aurora_eq_preset', 'custom');
+            } catch (e) {}
+            document.querySelectorAll('.eq-preset').forEach(b => b.classList.remove('active'));
+          } else if (typeof s.eq.preset === 'string' &&
+            ['normal', 'bass', 'vocal', 'treble', 'live'].includes(s.eq.preset)) {
+            this.applyEqPreset(s.eq.preset);
+          }
+        }
+
+        if (['title', 'artist', 'recent', 'duration'].includes(s.librarySort)) {
+          this._librarySort = s.librarySort;
+        }
+      } catch (e) {
+        console.warn('[Aurora] Ajustes del backup no aplicables:', e && e.message);
+      }
+    },
+
+    /* #17 Exportar biblioteca a JSON (sin blobs).
+     * v2: además de metadatos, listas, favoritos, estadísticas e
+     * historial, incluye los AJUSTES (tema, idioma, reproducción,
+     * ecualizador…) y la SESIÓN (qué sonaba, la cola y en qué segundo
+     * iba), para poder pasar de un dispositivo a otro con un solo
+     * archivo enviado por el propio chat, sin sincronización alguna.
+     * El audio nunca viaja: en el destino las pistas se reenlazan por
+     * nombre de archivo (ver _importLibraryData). */
     async exportLibrary() {
       try {
         const data = {
-          version: 1,
+          version: 2,
           kind: 'aurora-metadata',
+          appVersion: this.VERSION,
+          exportedAt: new Date().toISOString(),
+          settings: this._backupSettings(),
+          session: this._backupSession(),
           tracks: this.tracks.map(t => ({
             id: t.id, title: t.title, artist: t.artist, album: t.album,
             duration: t.duration, fileSize: t.fileSize, fileName: t.fileName,
@@ -717,8 +872,9 @@ Object.assign(App, {
           history: this._playHistory
         };
         const json = JSON.stringify(data, null, 2);
+        const stamp = new Date().toISOString().slice(0, 10);
         await this.exportFile({
-          name: 'aurora-backup.json',
+          name: `aurora-backup-${stamp}.json`,
           content: json,
           mimeType: 'application/json',
           caption: 'Copia de seguridad de Aurora Music Player'
@@ -767,6 +923,19 @@ Object.assign(App, {
           if (typeof this.renderHome === 'function') this.renderHome();
           if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
           if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
+          // Sesión de otro dispositivo: queda guardada como la sesión a
+          // restaurar en el próximo arranque; si ahora no suena nada,
+          // se aplica al momento (misma pista, misma cola, mismo segundo).
+          if (result.session) {
+            try { await window.AuroraStorage.setSetting('session', result.session); } catch (e) {}
+            if (!this.isPlaying && typeof this.restoreSession === 'function') {
+              await this.restoreSession();
+              if (typeof this.updatePlayUI === 'function') this.updatePlayUI();
+              if (typeof this.updateChrome === 'function') this.updateChrome();
+              if (this.currentTrack) this.renderCurrentTrack();
+              if (typeof this.renderHome === 'function') this.renderHome();
+            }
+          }
           const pending = this.pendingRelinkCount();
           if (result.restoredTracks > 0 && pending > 0) {
             this.toast(this.t('relink_pending').replace('X', String(pending)));
@@ -815,6 +984,23 @@ Object.assign(App, {
       const idMap = new Map(); // Map, no objeto: un id "__proto__" no contamina
       const knownKeys = new Map();
       for (const ex of this.tracks) knownKeys.set(this._dupKey(ex.fileName, ex.fileSize), ex);
+      /* Respaldo por nombre de archivo: en otro dispositivo la misma
+       * canción puede pesar distinto (otro ripeo) y el par nombre+tamaño
+       * no coincidiría; si el nombre es único en la biblioteca, basta
+       * para reenlazarla en vez de crear una pista fantasma sin audio. */
+      const normName = (v) => String(v == null ? '' : v).trim().toLowerCase();
+      const nameCounts = new Map();
+      const nameMap = new Map();
+      for (const ex of this.tracks) {
+        const n = normName(ex.fileName);
+        if (!n) continue;
+        nameCounts.set(n, (nameCounts.get(n) || 0) + 1);
+        if (!nameMap.has(n)) nameMap.set(n, ex);
+      }
+      const byNameUnique = (fileName) => {
+        const n = normName(fileName);
+        return n && nameCounts.get(n) === 1 ? nameMap.get(n) : null;
+      };
       const knownIds = new Set(this.tracks.map(t => t.id));
       let restoredTracks = 0;
 
@@ -823,7 +1009,7 @@ Object.assign(App, {
         if (!mt || typeof mt !== 'object') continue;
         const fileName = safeText(mt.fileName, 255);
         const fileSize = safeNum(mt.fileSize, 1e12);
-        const dup = knownKeys.get(this._dupKey(fileName, fileSize));
+        const dup = knownKeys.get(this._dupKey(fileName, fileSize)) || byNameUnique(fileName);
         if (dup) {
           const oldId = safeId(mt.id);
           if (oldId) idMap.set(oldId, dup.id);
@@ -853,6 +1039,11 @@ Object.assign(App, {
         };
         this.tracks.push(t);
         knownKeys.set(this._dupKey(fileName, fileSize), t);
+        const nn = normName(fileName);
+        if (nn) {
+          nameCounts.set(nn, (nameCounts.get(nn) || 0) + 1);
+          if (!nameMap.has(nn)) nameMap.set(nn, t);
+        }
         this.persistTrack(t);
         restoredTracks++;
       }
@@ -943,13 +1134,47 @@ Object.assign(App, {
         try { window.AuroraStorage.setSetting('history', this._playHistory); } catch (e) {}
       }
 
+      // --- Ajustes (v2): se aplican con listas blancas, sin toasts ---
+      if (data.settings) this._applyBackupSettings(data.settings);
+
+      // --- Sesión (v2): traducir identidades de archivo a id locales ---
+      // Se devuelve aparte porque guardarla en IndexedDB y restaurarla
+      // es asíncrono y eso lo hace importLibrary().
+      let restoredSession = null;
+      if (data.session && typeof data.session === 'object' && data.session.track) {
+        const findByIdent = (ident) => {
+          if (!ident || typeof ident !== 'object') return null;
+          const f = safeText(ident.f, 255);
+          const snum = safeNum(ident.s, 1e12);
+          if (!f) return null;
+          return knownKeys.get(this._dupKey(f, snum)) || byNameUnique(f);
+        };
+        const cur = findByIdent(data.session.track);
+        if (cur) {
+          const q = (Array.isArray(data.session.queue) ? data.session.queue.slice(0, 1000) : [])
+            .map(findByIdent)
+            .filter(Boolean)
+            .map(t => t.id);
+          restoredSession = {
+            currentTrackId: cur.id,
+            queue: q.length ? [...new Set(q)] : this.tracks.map(t => t.id),
+            queueIdx: 0,
+            currentTime: safeNum(data.session.currentTime, 86400),
+            shuffle: !!data.session.shuffle,
+            repeat: ['off', 'all', 'one'].includes(data.session.repeat) ? data.session.repeat : 'off',
+            playContext: null,
+            ts: Date.now()
+          };
+        }
+      }
+
       if (!this.currentTrack && this.tracks.length) {
         this.currentTrack = this.tracks[0];
         this.currentTrackIdx = 0;
         this.queue = this.tracks.map(t => t.id);
         this.queueIdx = 0;
       }
-      return { restoredTracks };
+      return { restoredTracks, session: restoredSession };
     },
 
     /* Solo acepta data:image raster en base64; bloquea svg (puede ejecutar

@@ -2241,14 +2241,14 @@ const I18N = {
     it: 'Cancella cronologia', ru: 'Очистить историю'
   },
   settings_export_hint: {
-    es: 'Solo metadatos (listas, favoritos, etiquetas). No incluye los archivos de audio.',
-    en: 'Metadata only (playlists, likes, tags). Audio files are not included.',
-    pt: 'Só metadados (listas, favoritos, etiquetas). Sem ficheiros de áudio.',
-    zh: '仅元数据（播放列表、收藏、标签）。不含音频文件。',
-    ja: 'メタデータのみ（リスト・お気に入り・タグ）。音声ファイルは含まれません。',
-    fr: 'Métadonnées seulement (listes, favoris, tags). Pas de fichiers audio.',
-    it: 'Solo metadati (playlist, preferiti, tag). Nessun file audio.',
-    ru: 'Только метаданные (плейлисты, избранное, теги). Без аудиофайлов.'
+    es: 'Listas, favoritos, ajustes y dónde ibas escuchando. No incluye los archivos de audio.',
+    en: 'Playlists, favorites, settings and where you left off. Audio files are not included.',
+    pt: 'Listas, favoritos, definições e onde ias a ouvir. Sem ficheiros de áudio.',
+    zh: '播放列表、收藏、设置和收听位置。不包含音频文件。',
+    ja: 'リスト・お気に入り・設定・再生位置。音声ファイルは含まれません。',
+    fr: 'Listes, favoris, réglages et position d’écoute. Sans fichiers audio.',
+    it: 'Playlist, preferiti, impostazioni e posizione di ascolto. Nessun file audio.',
+    ru: 'Плейлисты, избранное, настройки и позиция прослушивания. Без аудиофайлов.'
   },
   relink_pending: {
     es: 'X pistas sin audio — toca para vincular',
