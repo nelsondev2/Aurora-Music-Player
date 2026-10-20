@@ -585,6 +585,9 @@ Object.assign(App, {
         if (use) use.setAttribute('href', isFav ? '#i-heart-solid' : '#i-heart');
       }
       if (favLabel) favLabel.textContent = this.t('favorite');
+      // «Restablecer portada» solo tiene sentido si hay una personalizada.
+      const rmCover = document.getElementById('ctxRemoveCover');
+      if (rmCover) rmCover.hidden = !t.customCover;
       this.openSheet('sheetTrackMenu');
     },
 

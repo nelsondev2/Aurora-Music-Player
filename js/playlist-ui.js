@@ -15,6 +15,12 @@ Object.assign(App, {
      * ============================================================ */
     coverSrcForRow(track, size) {
       if (!track) return null;
+      // La portada personalizada manda sobre la de los metadatos.
+      if (track.customCover) {
+        return size >= 160
+          ? (track.customCover.lg || track.customCover.thumb)
+          : (track.customCover.thumb || track.customCover.lg);
+      }
       if (size >= 160 && track.coverThumbLg) return track.coverThumbLg;
       if (track.coverThumb) return track.coverThumb;
       if (size >= 160 && track.coverThumb) return track.coverThumb;
@@ -25,7 +31,7 @@ Object.assign(App, {
       if (!canvas || !track) return;
       const ctx = canvas.getContext('2d');
       const W = canvas.width, H = canvas.height;
-      const isImage = track.coverIsImage || (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:')));
+      const isImage = !!track.customCover || track.coverIsImage || (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:')));
       const thumb = this.coverSrcForRow(track, Math.max(W, H));
 
       const paintImg = (src) => {
@@ -108,8 +114,105 @@ Object.assign(App, {
       }
     },
 
+    /* ============================================================
+     *  Portada personalizada por pista
+     *  La imagen que elige el usuario pasa a ser LA portada de la
+     *  pista en todas partes (filas, reproductor, mosaicos de listas,
+     *  sesión). Se guarda en track.customCover como dos miniaturas
+     *  JPEG (96 y 256 px, recorte cuadrado centrado con el mismo
+     *  resizeDataUrl del importador) y tiene prioridad sobre la
+     *  portada de los metadatos en todos los resolvedores: ni un
+     *  re-etiquetado puede pisarla, y quitarla devuelve la original,
+     *  que nunca se modifica.
+     * ============================================================ */
+    pickCustomCover(trackId) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.style.display = 'none';
+      document.body.appendChild(input);
+      const cleanup = () => { try { input.remove(); } catch (e) {} };
+      let settled = false;
+      input.addEventListener('change', async (e) => {
+        settled = true;
+        const file = e.target.files && e.target.files[0];
+        cleanup();
+        if (file) await this.setCustomCover(trackId, file);
+      });
+      // Si el usuario cancela, algunos navegadores no disparan change:
+      // al recuperar el foco se retira el input (sin nodos huérfanos).
+      window.addEventListener('focus', () => {
+        setTimeout(() => { if (!settled) cleanup(); }, 300);
+      }, { once: true });
+      input.click();
+    },
+
+    async setCustomCover(trackId, file) {
+      const t = this.tracks.find(x => x.id === trackId);
+      if (!t || !file) return false;
+      const looksImage = (file.type && file.type.indexOf('image/') === 0) ||
+        /\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(file.name || '');
+      if (!looksImage) { this.toast(this.t('toast_cover_error')); return false; }
+      if (file.size > 15 * 1024 * 1024) { this.toast(this.t('toast_file_too_large')); return false; }
+      try {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = () => reject(r.error || new Error('lectura'));
+          r.readAsDataURL(file);
+        });
+        const U = window.AuroraUploader;
+        if (!U || typeof U.resizeDataUrl !== 'function') throw new Error('sin resizeDataUrl');
+        const lg = await U.resizeDataUrl(dataUrl, 256);
+        const thumb = await U.resizeDataUrl(dataUrl, 96);
+        if (!lg && !thumb) throw new Error('imagen ilegible');
+        t.customCover = { thumb: thumb || lg, lg: lg || thumb };
+        await this.persistTrack(t);
+        this._refreshCoverSurfaces(t);
+        this.toast(this.t('toast_cover_updated'));
+        return true;
+      } catch (e) {
+        this.toast(this.t('toast_cover_error'));
+        return false;
+      }
+    },
+
+    async removeCustomCover(trackId) {
+      const t = this.tracks.find(x => x.id === trackId);
+      if (!t || !t.customCover) return;
+      delete t.customCover;
+      await this.persistTrack(t);
+      this._refreshCoverSurfaces(t);
+      this.toast(this.t('toast_cover_removed'));
+    },
+
+    /* Tras cambiar/quitar la portada: la caché de artwork del
+     * reproductor (Media Session incluida) y los mosaicos de las
+     * listas que contienen la pista quedan obsoletos; se invalidan y
+     * se repintan las superficies visibles. */
+    _refreshCoverSurfaces(t) {
+      if (!t) return;
+      if (typeof this._invalidateArtwork === 'function') this._invalidateArtwork(t.id);
+      this.playlists.forEach(pl => {
+        if ((pl.trackIds || []).includes(t.id)) this._invalidatePlaylistCover(pl);
+      });
+      this.renderLibrary();
+      this.renderPlaylists();
+      this.renderQueue();
+      this.renderFavorites();
+      if (typeof this.renderHome === 'function') this.renderHome();
+      if (this.currentTrack && this.currentTrack.id === t.id) {
+        this.renderCurrentTrack();
+        if (typeof this.updateMiniPlayer === 'function') this.updateMiniPlayer();
+      }
+      // La cabecera del menú de pista también pinta la portada.
+      const menuCv = document.getElementById('trackMenuCover');
+      if (menuCv && this._menuTrackId === t.id) this.drawRowCover(menuCv, t);
+    },
+
     _playlistTrackArtSrc(t) {
       if (!t) return null;
+      if (t.customCover) return t.customCover.lg || t.customCover.thumb;
       if (t.coverThumbLg) return t.coverThumbLg;
       if (t.coverThumb) return t.coverThumb;
       if (typeof t.cover === 'string' && (t.cover.startsWith('data:') || t.cover.startsWith('blob:'))) return t.cover;

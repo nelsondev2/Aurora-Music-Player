@@ -50,7 +50,9 @@ Object.assign(App, {
     /* La sesión se guarda cada 5 s: nunca persistir la portada original
      * (puede ser un dataURL de MBs). Solo degradado o miniatura. */
     _coverForSession(t) {
-      if (!t || !t.cover) return null;
+      if (!t) return null;
+      if (t.customCover) return t.customCover.lg || t.customCover.thumb || null;
+      if (!t.cover) return null;
       if (typeof t.cover === 'object') return t.cover;
       return t.coverThumbLg || t.coverThumb || null;
     },

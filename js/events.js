@@ -624,6 +624,18 @@ Object.assign(App, {
         const t = this.menuTrack();
         if (t) this.shareTrack(t.id);
       });
+      const ctxCover = document.getElementById('ctxChangeCover');
+      if (ctxCover) ctxCover.addEventListener('click', () => {
+        const t = this.menuTrack();
+        this.closeSheet('sheetTrackMenu');
+        if (t) this.pickCustomCover(t.id);
+      });
+      const ctxRmCover = document.getElementById('ctxRemoveCover');
+      if (ctxRmCover) ctxRmCover.addEventListener('click', () => {
+        const t = this.menuTrack();
+        this.closeSheet('sheetTrackMenu');
+        if (t) this.removeCustomCover(t.id);
+      });
       const ctxDelete = document.getElementById('ctxDelete');
       if (ctxDelete) ctxDelete.addEventListener('click', async () => {
         const t = this.menuTrack();

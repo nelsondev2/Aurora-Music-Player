@@ -2086,6 +2086,31 @@ const I18N = {
     zh: '编辑标签', ja: 'タグを編集', fr: 'Modifier les tags',
     it: 'Modifica tag', ru: 'Править теги'
   },
+  ctx_change_cover: {
+    es: 'Cambiar portada', en: 'Change cover art', pt: 'Mudar capa',
+    zh: '更换封面', ja: 'ジャケットを変更', fr: 'Changer la pochette',
+    it: 'Cambia copertina', ru: 'Сменить обложку'
+  },
+  ctx_remove_cover: {
+    es: 'Restablecer portada', en: 'Restore original cover', pt: 'Repor capa original',
+    zh: '恢复原始封面', ja: '元のジャケットに戻す', fr: 'Rétablir la pochette',
+    it: 'Ripristina copertina', ru: 'Вернуть исходную обложку'
+  },
+  toast_cover_updated: {
+    es: 'Portada actualizada', en: 'Cover updated', pt: 'Capa atualizada',
+    zh: '封面已更新', ja: 'ジャケットを更新しました', fr: 'Pochette mise à jour',
+    it: 'Copertina aggiornata', ru: 'Обложка обновлена'
+  },
+  toast_cover_removed: {
+    es: 'Portada restablecida', en: 'Original cover restored', pt: 'Capa original reposta',
+    zh: '已恢复原始封面', ja: '元のジャケットに戻しました', fr: 'Pochette d’origine rétablie',
+    it: 'Copertina originale ripristinata', ru: 'Исходная обложка возвращена'
+  },
+  toast_cover_error: {
+    es: 'No se pudo usar esa imagen', en: 'That image could not be used', pt: 'Não foi possível usar essa imagem',
+    zh: '无法使用该图片', ja: 'その画像は使えませんでした', fr: 'Impossible d’utiliser cette image',
+    it: 'Impossibile usare quell’immagine', ru: 'Не удалось использовать изображение'
+  },
   edit_track_title: {
     es: 'Editar pista', en: 'Edit track', pt: 'Editar faixa',
     zh: '编辑音轨', ja: 'トラックを編集', fr: 'Modifier la piste',

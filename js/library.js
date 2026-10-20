@@ -861,6 +861,7 @@ Object.assign(App, {
             id: t.id, title: t.title, artist: t.artist, album: t.album,
             duration: t.duration, fileSize: t.fileSize, fileName: t.fileName,
             coverThumb: t.coverThumb || null,
+            customCover: t.customCover || null,
             coverIsImage: !!t.coverIsImage, lrc: t.lrc, addedAt: t.addedAt || 0
           })),
           playlists: this.playlists.map(p => ({
@@ -1013,6 +1014,18 @@ Object.assign(App, {
         if (dup) {
           const oldId = safeId(mt.id);
           if (oldId) idMap.set(oldId, dup.id);
+          // La pista ya existe aquí: si el backup trae una portada
+          // personalizada y aquí no hay ninguna, se adopta (no pisa
+          // una personalizada local, que podría ser más reciente).
+          if (!dup.customCover && mt.customCover && typeof mt.customCover === 'object') {
+            const lgOk = this._safeImageDataUrl(mt.customCover.lg) ? mt.customCover.lg : null;
+            const thOk = this._safeImageDataUrl(mt.customCover.thumb) ? mt.customCover.thumb : null;
+            if (lgOk || thOk) {
+              dup.customCover = { thumb: thOk || lgOk, lg: lgOk || thOk };
+              this.persistTrack(dup);
+              if (typeof this._invalidateArtwork === 'function') this._invalidateArtwork(dup.id);
+            }
+          }
           continue;
         }
         const oldId = safeId(mt.id);
@@ -1021,6 +1034,14 @@ Object.assign(App, {
         if (oldId) idMap.set(oldId, id);
         knownIds.add(id);
         const coverThumb = this._safeImageDataUrl(mt.coverThumb) ? mt.coverThumb : null;
+        // Portada personalizada del backup: se validan ambas miniaturas
+        // como cualquier imagen externa (data:image raster acotada).
+        let customCover = null;
+        if (mt.customCover && typeof mt.customCover === 'object') {
+          const lgOk = this._safeImageDataUrl(mt.customCover.lg) ? mt.customCover.lg : null;
+          const thOk = this._safeImageDataUrl(mt.customCover.thumb) ? mt.customCover.thumb : null;
+          if (lgOk || thOk) customCover = { thumb: thOk || lgOk, lg: lgOk || thOk };
+        }
         const t = {
           id,
           title: safeText(mt.title, MAX_TEXT) || fileName || '—',
@@ -1030,6 +1051,7 @@ Object.assign(App, {
           fileSize,
           fileName,
           coverThumb,
+          customCover,
           coverIsImage: !!coverThumb,
           lrc: Array.isArray(mt.lrc)
             ? mt.lrc.slice(0, 5000).map(l => safeText(l, 2000))

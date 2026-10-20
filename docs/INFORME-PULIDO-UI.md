@@ -559,3 +559,19 @@ Las capturas del usuario eran de un paquete anterior (de ahí el eco de Favorito
 - **Retirado** el modo por pulsación larga y su clave `toast_reorder_mode` (8 idiomas): el arrastre funciona directamente, sin modos.
 
 **Comprobación** (arnés jsdom externo): 11/11 en cola y editor (orden resultante, `queueIdx` siguiendo a la que suena al mover otra y al moverla a ella, cancelación sin efecto, espejo en `_originalQueue`, sesión guardada) y 7/7 con cola virtualizada de 100 pistas (ventana pintada, la fila arrastrada sobrevive al repintado, `dragIdx` limpio al soltar). Auditoría general 26/26, backup 26/26, i18n 392×8. Repetido sobre el `.xdc` extraído: 11/11 y 7/7, `--check` OK.
+
+---
+
+## 29. Portada personalizada por canción
+
+**Petición:** poder poner una imagen propia a una canción (cuando la de los metadatos falta o está mal).
+
+**Implementado:**
+
+- **Entrada**: menú de pista (⋯ o pulsación larga) → «Cambiar portada»; si la pista ya tiene una personalizada aparece además «Restablecer portada». Icono `i-image` nuevo en el sprite.
+- **Procesado** (`setCustomCover`, en `js/playlist-ui.js`): se valida que sea imagen (tipo MIME o extensión) y ≤ 15 MB; se generan dos miniaturas JPEG de 96 y 256 px con recorte cuadrado centrado reutilizando `resizeDataUrl` del importador, y se guardan en `track.customCover` (persisten con la pista en IndexedDB). La portada original nunca se toca: quitar la personalizada la devuelve tal cual.
+- **Prioridad en todos los resolvedores**: `coverSrcForRow` (filas), `_renderArtwork` (reproductor y Media Session), `_playlistTrackArtSrc` (mosaicos de listas) y `_coverForSession` consultan primero `customCover`, así ni un re-etiquetado posterior puede pisarla. Al cambiarla se invalida la caché de artwork y los mosaicos de las listas que contienen la pista, y se repintan biblioteca, listas, cola, favoritos, inicio, mini-player y reproductor si es la que suena.
+- **Viaja en la copia de seguridad**: el backup la incluye por pista; al importar, una pista restaurada nace con ella y una pista ya existente la adopta solo si no tiene ya una personalizada local. Las miniaturas se validan como cualquier imagen externa (`_safeImageDataUrl`: SVG rechazado).
+- 5 claves nuevas × 8 idiomas (`ctx_change_cover`, `ctx_remove_cover`, `toast_cover_updated/removed/error`).
+
+**Comprobación** (arnés jsdom externo, con el redimensionado sustituido por uno determinista): 21/21 —puesta y quitada de portada, prioridad en los cuatro resolvedores, persistencia en IndexedDB, original intacta debajo, menú que muestra/oculta «Restablecer» según el caso, rechazo de un archivo de audio como imagen, y el viaje completo en el backup (adopción sin pisar la local, pista nueva con portada, SVG rechazado)— con 0 errores. Sin regresiones: auditoría 26/26, backup 26/26, cola 11/11, cierres 15/15, i18n 397×8. Repetido sobre el `.xdc` extraído: 21/21, `--check` OK.

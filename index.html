@@ -80,6 +80,7 @@
     <symbol id="i-chevron-down" viewBox="0 0 24 24"><path fill="currentColor" d="m12 15.4 7-7-1.4-1.4L12 12.6 6.4 7 5 8.4z"/></symbol>
     <symbol id="i-chevron-right" viewBox="0 0 24 24"><path fill="currentColor" d="m15.4 12-7 7-1.4-1.4L12.6 12 7 6.4 8.4 5z"/></symbol>
     <symbol id="i-expand" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></symbol>
     <symbol id="i-font" viewBox="0 0 24 24"><path fill="currentColor" d="m6 19 6-14 6 14h-2.3l-1.2-3H9.5L8.3 19H6zm4.3-5h3.4L12 8.7 10.3 14z"/></symbol>
     <symbol id="i-grip" viewBox="0 0 24 24"><path fill="currentColor" d="M8 7.5A1.5 1.5 0 1 1 8 4.5 1.5 1.5 0 0 1 8 7.5zm8 0A1.5 1.5 0 1 1 16 4.5 1.5 1.5 0 0 1 16 7.5zM8 13.5A1.5 1.5 0 1 1 8 10.5 1.5 1.5 0 0 1 8 13.5zm8 0A1.5 1.5 0 1 1 16 10.5 1.5 1.5 0 0 1 16 13.5zM8 19.5A1.5 1.5 0 1 1 8 16.5 1.5 1.5 0 0 1 8 19.5zm8 0A1.5 1.5 0 1 1 16 16.5 1.5 1.5 0 0 1 16 19.5z"/></symbol>
     <!-- Icono propio de Biblioteca: tres libros en un estante. Antes la
@@ -1123,6 +1124,14 @@
             <button class="menu-row" id="ctxEditTags">
               <svg class="ico" aria-hidden="true"><use href="#i-pen"></use></svg>
               <span data-i18n="ctx_edit_tags">Editar etiquetas</span>
+            </button>
+            <button class="menu-row" id="ctxChangeCover">
+              <svg class="ico" aria-hidden="true"><use href="#i-image"></use></svg>
+              <span data-i18n="ctx_change_cover">Cambiar portada</span>
+            </button>
+            <button class="menu-row" id="ctxRemoveCover" hidden>
+              <svg class="ico" aria-hidden="true"><use href="#i-rotate-left"></use></svg>
+              <span data-i18n="ctx_remove_cover">Restablecer portada</span>
             </button>
             <button class="menu-row" id="ctxShareTrack">
               <svg class="ico" aria-hidden="true"><use href="#i-paper-plane"></use></svg>

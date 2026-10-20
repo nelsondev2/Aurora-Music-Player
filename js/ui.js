@@ -321,6 +321,12 @@ Object.assign(App, {
     },
 
     _renderArtwork(track, size) {
+      // La portada personalizada manda también en el artwork grande.
+      if (track.customCover) {
+        return size <= 96
+          ? (track.customCover.thumb || track.customCover.lg || '')
+          : (track.customCover.lg || track.customCover.thumb || '');
+      }
       // Si la portada ya es una imagen (dataURL), usarla directamente
       const isImage = track.coverIsImage || (typeof track.cover === 'string' && track.cover.startsWith('data:'));
       if (size <= 96 && track.coverThumb) return track.coverThumb;
