@@ -402,16 +402,8 @@ const I18N = {
     it: 'Chiudi',
     ru: 'Закрыть'
   },
-  done_btn: {
-    es: 'Listo',
-    en: 'Done',
-    pt: 'Concluído',
-    zh: '完成',
-    ja: '完了',
-    fr: 'Terminé',
-    it: 'Fatto',
-    ru: 'Готово'
-  },
+  /* done_btn («Listo») se eliminó: cada hoja tiene ya su × de cierre y
+   * el botón de texto solo lo duplicaba (ver cabeceras en index.html). */
   clear_btn: {
     es: 'Vaciar',
     en: 'Clear',
@@ -899,15 +891,17 @@ const I18N = {
     it: 'Tutte le tracce',
     ru: 'Все треки'
   },
+  /* Placeholder completo: antes venía truncado con «…» en el propio
+   * diccionario («Canción, artista o ál…») y se cortaba en pantalla. */
   search_placeholder: {
-    es: 'Canción, artista o ál…',
-    en: 'Song, artist or al…',
-    pt: 'Música, artista ou al…',
-    zh: '歌曲、艺术家或专辑…',
-    ja: '曲、アーティスト、アルバム…',
-    fr: 'Chanson, artiste ou al…',
-    it: 'Brano, artista o al…',
-    ru: 'Песня, исполнитель или ал…'
+    es: 'Canción, artista o álbum',
+    en: 'Song, artist or album',
+    pt: 'Música, artista ou álbum',
+    zh: '歌曲、艺术家或专辑',
+    ja: '曲、アーティスト、アルバム',
+    fr: 'Chanson, artiste ou album',
+    it: 'Brano, artista o album',
+    ru: 'Песня, исполнитель или альбом'
   },
   no_playlists_yet: {
     es: 'Sin listas todavía',

@@ -514,3 +514,15 @@ Auditoría completa sobre `5c1cb60` (con el arnés jsdom externo, fuera del repo
 | Accesibilidad | **Hallazgo corregido aquí**: 5 botones de la toolbar de Letras solo tenían icono (4 con `title`, 1 sin nada). Todos con `aria-label` traducible (`data-i18n-aria`), incluido «Quitar loop». Botones sin nombre accesible: 179 → **0 sin nombre** |
 
 **Observaciones que quedan como están (decisión, no fallo):** no hay suite de pruebas dentro del repo (se retiró a petición del usuario; la verificación es externa por fase); la sincronización entre dispositivos está aparcada a petición del usuario; `js/data.js` y `css/styles.css` son grandes pero estables. La verificación visual en dispositivo real sigue siendo la del usuario mediante capturas.
+
+---
+
+## 26. Correcciones tras las capturas (cierre único, placeholder, mini-player)
+
+Las capturas del usuario eran de un paquete anterior (de ahí el eco de Favoritos y el «Select» cortado, ya corregidos en la §23). Los detalles vigentes que se corrigieron:
+
+- **Placeholder de Buscar cortado**: el texto venía truncado en el propio diccionario («Canción, artista o ál…» en los 8 idiomas). Ahora completo: «Canción, artista o álbum» y equivalentes, sin puntos suspensivos.
+- **Doble cierre en las cabeceras**: casi todas las hojas tenían a la vez una «×» a la izquierda y un botón de texto «Cerrar»/«Listo» a la derecha que hacían lo mismo; Biblioteca solo tenía la ×. Se eliminan los 16 botones de texto duplicados y se sustituyen por el espaciador de centrado, dejando la × como cierre único (con `aria-label` traducido). Se conservan las acciones reales de la derecha («Nueva» en Listas, «Guardar» en editores, «Reproducir Todo» en Explorar). La clave `done_btn` queda retirada del diccionario al quedarse sin uso.
+- **Mini-player sobre las filas**: las hojas-pestaña terminan en `--chrome-offset`, calculado con `--mini-h: 56px`, pero el mini ocupa 56 px de alto + 6 px de margen inferior: el borde de la hoja quedaba 6 px por debajo del borde superior del mini y este tapaba esa franja de la lista. `--mini-h` pasa a 62 px con `has-mini` y la hoja termina justo sobre el mini.
+
+**Comprobación** (arnés jsdom externo): regresión específica 15/15 (ninguna cabecera con botón de texto de cierre, 22 cabeceras con exactamente una ×, acciones conservadas, la × cierra Favoritos y Ajustes, placeholder completo aplicado en ES/EN, diccionario sin `done_btn`) y auditoría funcional general 26/26 sin regresiones; i18n 393 claves × 8 idiomas sin huecos. Repetido sobre el `.xdc` extraído: 15/15, `build-xdc.py --check` OK.

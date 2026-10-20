@@ -2781,7 +2781,11 @@ button,
   --mini-h: 0px;
   --chrome-offset: calc(var(--bottom-nav-h) + var(--safe-bottom) + var(--mini-h));
 }
-.device-screen.has-mini { --mini-h: 56px; }
+/* 56 px de alto + 6 px de margen inferior del mini-player: si solo se
+ * cuentan los 56, el borde inferior de las hojas-pestaña queda 6 px por
+ * debajo del borde superior del mini y este llega a tapar ese franja
+ * de la lista (se veía en las capturas al pasar filas junto al mini). */
+.device-screen.has-mini { --mini-h: 62px; }
 .device-screen.chrome-hidden { --mini-h: 0px; --chrome-offset: 0px; }
 
 .view {
