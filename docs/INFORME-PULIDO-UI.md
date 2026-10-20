@@ -575,3 +575,18 @@ Las capturas del usuario eran de un paquete anterior (de ahí el eco de Favorito
 - 5 claves nuevas × 8 idiomas (`ctx_change_cover`, `ctx_remove_cover`, `toast_cover_updated/removed/error`).
 
 **Comprobación** (arnés jsdom externo, con el redimensionado sustituido por uno determinista): 21/21 —puesta y quitada de portada, prioridad en los cuatro resolvedores, persistencia en IndexedDB, original intacta debajo, menú que muestra/oculta «Restablecer» según el caso, rechazo de un archivo de audio como imagen, y el viaje completo en el backup (adopción sin pisar la local, pista nueva con portada, SVG rechazado)— con 0 errores. Sin regresiones: auditoría 26/26, backup 26/26, cola 11/11, cierres 15/15, i18n 397×8. Repetido sobre el `.xdc` extraído: 21/21, `--check` OK.
+
+---
+
+## 30. Letras .lrc automáticas al importar
+
+**Petición:** que al cargar música, un `.lrc` con el mismo nombre que una canción se le asocie solo, sin abrir la vista de Letras pista a pista.
+
+**Implementado** (en `js/library.js`, dentro de `handleFileInput`, que ya aceptaba `.lrc` en el selector pero los mandaba al importador de audio, donde se perdían):
+
+- Los `.lrc` se separan al inicio, como ya pasaba con los `.m3u`: nunca llegan al importador de pistas.
+- **`_attachLrcFiles`**: empareja por nombre base sin extensión ni mayúsculas («Tema.lrc» ↔ «Tema.mp3», también «TEMA.LRC» ↔ «tema.mp3»). Busca primero entre lo recién importado (incluidas las pistas reenlazadas de un backup) y después en toda la biblioteca, así que también funciona soltar **solo los .lrc** de una carpeta ya importada, o reimportar la música acompañada de sus letras.
+- **Política**: nunca pisa una letra que la pista ya tenga (la de los metadatos o una cargada/editada a mano manda; para sustituirla está el botón de la vista de Letras). Archivos vacíos o ilegibles se saltan sin romper la importación. La letra se guarda en `track.lrc` (mismo formato de líneas que usa el botón manual), se invalida su caché y se persiste.
+- **Avisos**: el toast de la importación añade «· X letra(s) enlazada(s)»; soltando solo letras sin coincidencia se avisa con honestidad («Ninguna letra coincidió con tus canciones»). 2 claves nuevas × 8 idiomas.
+
+**Comprobación** (arnés jsdom externo; el importador de audio se simula y `Blob.text()` de jsdom se sustituye por FileReader, como en un navegador real): 15/15 —audio+letra en la misma importación, letra que `parseLrc` lee con tiempos, persistencia en IndexedDB, letra previa que no se pisa, solo-.lrc sobre la biblioteca, sin coincidencia, .lrc vacío inofensivo, mayúsculas en nombre y extensión, y reimportación sin duplicados ni pérdida de la letra— con 0 errores. Sin regresiones: auditoría 26/26, backup 26/26, portada 21/21, cola 11/11, i18n 399×8. Repetido sobre el `.xdc` extraído: 15/15, `--check` OK.

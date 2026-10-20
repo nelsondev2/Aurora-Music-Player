@@ -2275,6 +2275,26 @@ const I18N = {
     it: 'X brani senza audio — tocca per collegare',
     ru: 'X треков без аудио — нажмите, чтобы привязать'
   },
+  toast_lrc_attached: {
+    es: 'X letra(s) enlazada(s)',
+    en: 'X lyric file(s) linked',
+    pt: 'X letra(s) associada(s)',
+    zh: '已关联 X 个歌词文件',
+    ja: '歌詞ファイル X 件を関連付けました',
+    fr: 'X fichier(s) de paroles associé(s)',
+    it: 'X file di testi collegati',
+    ru: 'Связано текстов: X'
+  },
+  toast_lrc_none: {
+    es: 'Ninguna letra coincidió con tus canciones',
+    en: 'No lyrics matched your songs',
+    pt: 'Nenhuma letra coincidiu com as tuas músicas',
+    zh: '没有歌词与你的歌曲匹配',
+    ja: '一致する歌詞はありませんでした',
+    fr: 'Aucune parole n’a correspondu à vos titres',
+    it: 'Nessun testo corrisponde ai tuoi brani',
+    ru: 'Ни один текст не подошёл к вашим песням'
+  },
   relink_done: {
     es: 'X pistas vinculadas',
     en: 'X tracks linked',

@@ -20,6 +20,43 @@ Object.assign(App, {
      *                     Si es null, las pistas van SOLO a la biblioteca
      *                     (ya no existe ninguna lista predefinida).
      */
+    /* Enlaza archivos .lrc con su canción por nombre base
+     * («Tema.lrc» ↔ «Tema.mp3», sin distinguir mayúsculas). Primero
+     * busca entre las pistas recién importadas y luego en toda la
+     * biblioteca, así también sirve soltar solo los .lrc de una
+     * carpeta ya importada. Política: nunca pisa una letra que la
+     * pista ya tenga (la de los metadatos o una cargada a mano manda);
+     * para sustituirla está el botón de cargar letra de la vista de
+     * Letras. Devuelve cuántas se enlazaron. */
+    async _attachLrcFiles(lrcFiles, preferredTracks) {
+      const baseOf = (name) => String(name || '').replace(/\.[^.]+$/, '').trim().toLowerCase();
+      const byBase = new Map();
+      const addToMap = (t) => {
+        const b = baseOf(t && t.fileName);
+        if (b && !byBase.has(b)) byBase.set(b, t);
+      };
+      (preferredTracks || []).forEach(addToMap);
+      this.tracks.forEach(addToMap);
+      let attached = 0;
+      for (const f of lrcFiles) {
+        const t = byBase.get(baseOf(f.name));
+        if (!t) continue;
+        if (Array.isArray(t.lrc) && t.lrc.length) continue;
+        try {
+          const text = await f.text();
+          const clean = String(text || '').replace(/^﻿/, '');
+          if (!clean.trim()) continue;
+          const lines = clean.split(/\r?\n/).slice(0, 5000);
+          if (!lines.some(l => l.trim())) continue;
+          t.lrc = lines;
+          t._lrcCache = null;
+          this.persistTrack(t);
+          attached++;
+        } catch (e) { /* archivo ilegible: se salta sin romper la importación */ }
+      }
+      return attached;
+    },
+
     async handleFileInput(fileList, fromDirectory, targetPlaylistId) {
       if (!fileList || !fileList.length) return;
       if (!window.AuroraUploader || typeof window.AuroraUploader.processFiles !== 'function') {
@@ -37,14 +74,25 @@ Object.assign(App, {
       // Los .m3u/.m3u8 no son audio: se convierten en listas (contra las
       // pistas ya presentes) y no pasan por el importador de pistas. Así,
       // «Cargar música» también sirve para traer listas de fuera.
+      // Los .lrc tampoco son audio: se enlazan con la canción del mismo
+      // nombre (ver _attachLrcFiles) en vez de ir al importador.
       const allFiles = Array.from(fileList);
       const m3uFiles = allFiles.filter(f => /\.m3u8?$/i.test(f.name || ''));
-      const mediaFiles = allFiles.filter(f => !/\.m3u8?$/i.test(f.name || ''));
+      const lrcFiles = allFiles.filter(f => /\.lrc$/i.test(f.name || ''));
+      const mediaFiles = allFiles.filter(f => !/\.m3u8?$/i.test(f.name || '') && !/\.lrc$/i.test(f.name || ''));
       for (const m3uFile of m3uFiles) {
         await this.importM3UFile(m3uFile);
       }
       if (!mediaFiles.length) {
         this._importing = false;
+        // Solo letras: se enlazan con canciones que ya estén en la
+        // biblioteca (soltar los .lrc de una carpeta ya importada).
+        if (lrcFiles.length) {
+          const n = await this._attachLrcFiles(lrcFiles, []);
+          this.toast(n > 0
+            ? this.t('toast_lrc_attached').replace('X', String(n))
+            : this.t('toast_lrc_none'));
+        }
         return;
       }
       const count = mediaFiles.length;
@@ -106,6 +154,15 @@ Object.assign(App, {
             byKey.set(this._dupKey(t.fileName, t.fileSize), t);
           }
         }
+        // Letras .lrc traídas junto al audio: se enlazan por nombre
+        // antes de componer los avisos para contarlas en el mismo toast.
+        let lrcAttached = 0;
+        if (lrcFiles.length) {
+          lrcAttached = await this._attachLrcFiles(lrcFiles, [...uniqueTracks, ...existingForPlaylist]);
+        }
+        const lrcSuffix = lrcAttached > 0
+          ? ' · ' + this.t('toast_lrc_attached').replace('X', String(lrcAttached))
+          : '';
         // Solo se añaden a una lista cuando la importación se lanza desde la
         // pantalla de esa lista. Las subidas normales (+ / Ajustes / menú)
         // van únicamente a la biblioteca: «Mi Música» desapareció.
@@ -127,9 +184,9 @@ Object.assign(App, {
           }
         }
         if (relinked > 0 && readded === 0 && uniqueTracks.length === 0) {
-          this.toast(this.t('relink_done').replace('X', String(relinked)));
+          this.toast(this.t('relink_done').replace('X', String(relinked)) + lrcSuffix);
         } else if (dupCount > 0 && readded === 0 && uniqueTracks.length === 0) {
-          this.toast(dupCount + ' ' + this.t('toast_duplicate_found'));
+          this.toast(dupCount + ' ' + this.t('toast_duplicate_found') + lrcSuffix);
         }
         if (uniqueTracks.length === 0) {
           if (readded > 0) {
@@ -137,6 +194,7 @@ Object.assign(App, {
             if (this._editingPlaylistId === destIdEarly) this.renderEditPlaylist();
             let msg = readded + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destPlEarly.name;
             if (relinked > 0) msg += ' · ' + this.t('relink_done').replace('X', String(relinked));
+            msg += lrcSuffix;
             this.toast(msg);
           }
           if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
@@ -203,12 +261,12 @@ Object.assign(App, {
         const relinkSuffix = relinked > 0 ? ' · ' + this.t('relink_done').replace('X', String(relinked)) : '';
         const folderSuffix = fromDirectory ? ' ' + this.t('folder_tag') : '';
         if (this._importCancelled) {
-          this.toast(this.t('toast_import_cancelled').replace('X', String(tracksToAdd.length)) + relinkSuffix);
+          this.toast(this.t('toast_import_cancelled').replace('X', String(tracksToAdd.length)) + relinkSuffix + lrcSuffix);
         } else {
           const destMsg = destPl
             ? this.t('toast_added_to_playlist_plural') + ' ' + destPl.name
             : this.t('toast_added_to_library');
-          this.toast(tracksToAdd.length + ' ' + destMsg + folderSuffix + relinkSuffix);
+          this.toast(tracksToAdd.length + ' ' + destMsg + folderSuffix + relinkSuffix + lrcSuffix);
         }
         // También al importar parcialmente (cancelado): el marcador debe
         // reflejar lo que realmente quedó guardado.
