@@ -18,10 +18,10 @@
 | Contraste de acentos (peor extremo del degradado) | **1.64:1** | **4.75:1** |
 | Objetivo táctil mínimo en controles citados | 28 px | **40 px** (fab 36 px) |
 | `font-size` en px | 22 declaraciones + tokens | **0** |
-| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 325.4 KB** |
+| Paquete `.xdc` | 28 archivos · 302.1 KB | **28 archivos · 325.5 KB** |
 
 **Paquete final:** `aurora-music-player.xdc`
-**SHA-256:** `64f2a6480d19c01fa7a3d99c414c5082463fbe5c8ccb1516175d7619fee0ef05`
+**SHA-256:** `1607f88fe7b42871f94a6caba7c6c63491e1de1a376203891e3ceff1c156eba0`
 **Validación:** `python3 build-xdc.py --check` → «OK el .xdc es válido para Delta Chat / webxdc».
 
 ---
@@ -163,12 +163,12 @@ python3 build-xdc.py --check
 Salida final:
 
 ```
-OK  aurora-music-player.xdc · 28 archivos · 325.4 KB
-    sha256: 64f2a6480d19c01fa7a3d99c414c5082463fbe5c8ccb1516175d7619fee0ef05
+OK  aurora-music-player.xdc · 28 archivos · 325.5 KB
+    sha256: 1607f88fe7b42871f94a6caba7c6c63491e1de1a376203891e3ceff1c156eba0
     nombre: Aurora Music Player
     código: https://github.com/nelsondev2/Aurora-Music-Player
     icono: icon.png (90.5 KB)
-    archivos: 28 · comprimido: 325.4 KB · sin comprimir: 941.6 KB
+    archivos: 28 · comprimido: 325.5 KB · sin comprimir: 941.7 KB
 OK  el .xdc es válido para Delta Chat / webxdc
 ```
 
@@ -412,7 +412,7 @@ Referencias actualizadas: `index.html` (`css/styles.css`, `js/webxdc.js`, `js/da
 | «Visualizad…» | La `.sec-label` forzaba mayúsculas: «VISUALIZADOR» en caja alta no cabe en su columna (≈61 px a 360 px). Sin `text-transform` y con `letter-spacing: 0` la palabra en caja mixta ocupa ~20 % menos y entra entera; el resto de etiquetas no se resiente. |
 | Cabecera redundante | Fuera la línea «REPRODUCIENDO AHORA» del reproductor (la de Letras, «LETRA SINCRONIZADA», queda). El contexto pasa a una sola frase: `playing_from` + nombre, con la traducción española ajustada a «Reproduciendo de» — «Reproduciendo de Música», «de Favoritos»… La misma frase se usa en el subtítulo de la Cola. Sin contexto sigue «Tu biblioteca». |
 
-**Comprobación** (arnés jsdom externo, fuera del repo): cabecera con lista/álbum → «Reproduciendo de Música», con Favoritos → «Reproduciendo de Favoritos», sin contexto → «Tu biblioteca», en inglés → «Playing from Música»; A-B recorre `A-B → A→ → A⇄B → A-B` con sus clases y su etiqueta pasa a «Loop»/«ループ» al cambiar de idioma; 0 errores de arranque en el repo y en el `.xdc` extraído. Paquete: 28 archivos · 325.4 KB · sha256 `64f2a6480d19c01fa7a3d99c414c5082463fbe5c8ccb1516175d7619fee0ef05`.
+**Comprobación** (arnés jsdom externo, fuera del repo): cabecera con lista/álbum → «Reproduciendo de Música», con Favoritos → «Reproduciendo de Favoritos», sin contexto → «Tu biblioteca», en inglés → «Playing from Música»; A-B recorre `A-B → A→ → A⇄B → A-B` con sus clases y su etiqueta pasa a «Loop»/«ループ» al cambiar de idioma; 0 errores de arranque en el repo y en el `.xdc` extraído. Paquete: 28 archivos · 325.5 KB · sha256 `1607f88fe7b42871f94a6caba7c6c63491e1de1a376203891e3ceff1c156eba0`.
 
 ---
 
@@ -425,7 +425,7 @@ Referencias actualizadas: `index.html` (`css/styles.css`, `js/webxdc.js`, `js/da
 2. `wireEvents()` y `wireGestures()` salen si ya están cableados (`_wired.events` / `_wired.gestures`).
 3. `bootAurora()` en `main.js` se protege con `window.__auroraBooted` ante una re-evaluación del script.
 
-**Comprobación** (arnés jsdom externo): con doble arranque simulado, 1 clic = 1 llamada; pausar deja `isPlaying:false` y reanudar lo restablece; pantalla completa entra con un clic (`lyrics-fullscreen`) y sale con el botón ×; arranque normal sin cambios; 0 errores en repo y `.xdc` extraído. Paquete: 28 archivos · 325.4 KB · sha256 `64f2a6480d19c01fa7a3d99c414c5082463fbe5c8ccb1516175d7619fee0ef05`.
+**Comprobación** (arnés jsdom externo): con doble arranque simulado, 1 clic = 1 llamada; pausar deja `isPlaying:false` y reanudar lo restablece; pantalla completa entra con un clic (`lyrics-fullscreen`) y sale con el botón ×; arranque normal sin cambios; 0 errores en repo y `.xdc` extraído. Paquete: 28 archivos · 325.5 KB · sha256 `1607f88fe7b42871f94a6caba7c6c63491e1de1a376203891e3ceff1c156eba0`.
 
 ---
 
@@ -441,7 +441,7 @@ Referencias actualizadas: `index.html` (`css/styles.css`, `js/webxdc.js`, `js/da
 | Chips incompletos | Se añade **OPUS**: MP3 · FLAC · M4A · WAV · OGG · OPUS, lo que la app reproduce de verdad. |
 | Triple marca | Fuera el wordmark «AURORA» bajo el icono (y su CSS, incluida la regla de tema claro): icono + titular, con más aire sobre el `h2`. |
 
-**Comprobación** (arnés jsdom externo): bienvenida sin wordmark, 6 chips, tres perks con título+descripción, el engranaje abre `sheetSettings`, traducción EN aplicada («With your .lrc files, line by line»), 0 errores en repo y en el `.xdc` extraído. Paquete: 28 archivos · 325.4 KB · sha256 `64f2a6480d19c01fa7a3d99c414c5082463fbe5c8ccb1516175d7619fee0ef05`.
+**Comprobación** (arnés jsdom externo): bienvenida sin wordmark, 6 chips, tres perks con título+descripción, el engranaje abre `sheetSettings`, traducción EN aplicada («With your .lrc files, line by line»), 0 errores en repo y en el `.xdc` extraído. Paquete: 28 archivos · 325.5 KB · sha256 `1607f88fe7b42871f94a6caba7c6c63491e1de1a376203891e3ceff1c156eba0`.
 
 ---
 
@@ -457,7 +457,7 @@ Referencias actualizadas: `index.html` (`css/styles.css`, `js/webxdc.js`, `js/da
 | Sin salida a la lista completa | Cada sección lleva «Ver todo» (`see_all`, 8 idiomas) que abre la Biblioteca, cableado en `_bindHomeRails` vía `data-see-all`. |
 
 **Comprobación** (arnés jsdom externo): kicker «Aurora»; hero con posición «Retomar en 1:24» y sin posición sin inventar la línea; solo la tarjeta actual lleva `.eq-badge.playing`; «Ver todo» abre la hoja Biblioteca; 0 errores en repo y en el `.xdc` extraído.
-Paquete: 28 archivos · 325.4 KB.
+Paquete: 28 archivos · 325.5 KB.
 
 ## 21. «Reproduciendo desde», no «de»
 
@@ -478,7 +478,7 @@ Ajuste de redacción pedido por el usuario: la frase de contexto vuelve a ser «
 | Acciones que se pierden al bajar | Cabecera de «Todas las canciones» + acciones + ordenación en `.lib-songs-sticky` (`position: sticky`, fondo del panel): reproducir todo y reordenar siempre a mano. |
 | Última fila bajo el mini | `#sheetLibrary .sheet-body` gana `padding-bottom: 104px`: el final de la lista siempre queda por encima del mini-reproductor. |
 
-**Comprobación** (arnés jsdom externo): cinco filas de prueba — eco eliminado (álbum=título y álbum=artista ocultos, álbum distinto visible), duraciones `3:10/—/—/2:49/1:40`, fila actual con `.eq-badge.playing` y las demás sin marca, «Seleccionar» fuera del scroll y dentro de `.lib-sort-wrap`, bloque sticky presente con la lista fuera de él; 0 errores en repo y en el `.xdc` extraído. Paquete: 28 archivos · 325.4 KB · sha256 `64f2a6480d19c01fa7a3d99c414c5082463fbe5c8ccb1516175d7619fee0ef05`.
+**Comprobación** (arnés jsdom externo): cinco filas de prueba — eco eliminado (álbum=título y álbum=artista ocultos, álbum distinto visible), duraciones `3:10/—/—/2:49/1:40`, fila actual con `.eq-badge.playing` y las demás sin marca, «Seleccionar» fuera del scroll y dentro de `.lib-sort-wrap`, bloque sticky presente con la lista fuera de él; 0 errores en repo y en el `.xdc` extraído. Paquete: 28 archivos · 325.5 KB · sha256 `1607f88fe7b42871f94a6caba7c6c63491e1de1a376203891e3ceff1c156eba0`.
 
 ## 23. Textos neutros de plataforma
 
@@ -496,3 +496,21 @@ Ajuste de redacción pedido por el usuario: la frase de contexto vuelve a ser «
 - 5 claves nuevas en 8 idiomas (`m3u_import_btn`, `imported_playlist_name`, `toast_m3u_imported/none/empty`).
 
 **Comprobación** (arnés jsdom externo): formato Aurora (ruta Windows `C:\…` y URI con `%20`) importa 2/3; M3U simple con rutas relativas y duplicadas importa 2; rescate por título funciona; sin coincidencias no crea lista; nombre repetido → «(2)»; e ida y vuelta real exportar→importar conservando nombre y orden. 0 errores en repo y `.xdc` extraído.
+
+---
+
+## 25. Auditoría general final
+
+Auditoría completa sobre `5c1cb60` (con el arnés jsdom externo, fuera del repo):
+
+| Bloque | Resultado |
+|---|---|
+| Sintaxis | 19/19 JS con `node --check`; `build-xdc.py` compila |
+| Estructura | Sin IDs duplicados (318), sin JS propio fuera de `js/`, sin CSS fuera de `css/`, referencias locales todas presentes |
+| i18n | 394 claves × 8 idiomas, ninguna incompleta; ninguna clave usada sin definir |
+| Offline/seguridad | Ninguna carga remota en el código de la app; sin `eval`/`document.write`/`onclick` inline; 0 TODO/FIXME propios |
+| Funcional | **26/26**: arranque único y doble (regresión de botones), play/pausa, pantalla completa de Letras, cabecera «Reproduciendo desde», ciclo A-B, Biblioteca (eco/duración/marca/sticky), M3U ida y vuelta, Bienvenida (chips/Ajustes/dispositivo), Inicio (Retomar/marca/Ver todo) e i18n EN |
+| Paquete | 28 archivos, sin rastros de pruebas, sha256 reproducible y `--check` OK |
+| Accesibilidad | **Hallazgo corregido aquí**: 5 botones de la toolbar de Letras solo tenían icono (4 con `title`, 1 sin nada). Todos con `aria-label` traducible (`data-i18n-aria`), incluido «Quitar loop». Botones sin nombre accesible: 179 → **0 sin nombre** |
+
+**Observaciones que quedan como están (decisión, no fallo):** no hay suite de pruebas dentro del repo (se retiró a petición del usuario; la verificación es externa por fase); la sincronización entre dispositivos está aparcada a petición del usuario; `js/data.js` y `css/styles.css` son grandes pero estables. La verificación visual en dispositivo real sigue siendo la del usuario mediante capturas.
