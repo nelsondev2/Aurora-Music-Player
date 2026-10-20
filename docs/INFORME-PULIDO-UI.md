@@ -168,7 +168,7 @@ OK  aurora-music-player.xdc · 28 archivos · 325.5 KB
     nombre: Aurora Music Player
     código: https://github.com/nelsondev2/Aurora-Music-Player
     icono: icon.png (90.5 KB)
-    archivos: 28 · comprimido: 325.5 KB · sin comprimir: 941.7 KB
+    archivos: 28 · comprimido: 325.5 KB · sin comprimir: 942.0 KB
 OK  el .xdc es válido para Delta Chat / webxdc
 ```
 
