@@ -1934,3 +1934,34 @@ con confianza», y las capturas de esta pasada alimentan el README.
 
 - Sin cambios de código de la app: `python3 build-xdc.py` → **.xdc
   válido, 27 archivos, 335,6 KB** (mismos bytes de app que §60).
+
+## 62. Pruebas en dispositivo real: 1.2.0 publicable con confianza
+
+El mantenedor ejecutó en su Delta Chat la lista de 13 pruebas del
+§61 (arranque desde «Mensajes guardados», importación mixta con
+duraciones reales, reimportación sin duplicar, reproducción y mini,
+aleatorio/repetir y saltos, letras abiertas solo con su botón,
+listas y su `.m3u8` compartido, favoritos y «Más valoradas» en
+orden, ajustes e idioma, cierre y reapertura con la sesión intacta,
+`sendToChat` real de una canción, control negativo de la segunda
+copia, y biblioteca grande con desplazamiento fluido) y confirma
+que **todo funciona**.
+
+Consecuencias:
+
+- Se cumple el criterio fijado en §61: la etiqueta **`v1.2.0` pasa
+  de «publicada» a «publicable con confianza»**. El veredicto de la
+  sesión anterior («beta sí, 1.0 todavía no») queda superado por la
+  única evidencia que aquí no se podía fabricar: el cliente real.
+- El CHANGELOG deja de decir «aún sin prueba en dispositivos»: la
+  nota pasa a reflejar esta pasada en verde.
+- No se ha tocado código de la app: el paquete es byte a byte el de
+  §60/§61 (27 archivos, 335,6 KB; se reconstruye para confirmar).
+
+Pendiente, sin cambios respecto a §61:
+
+- Capturas de pantalla para el README (salen del dispositivo del
+  mantenedor cuando quiera adjuntarlas).
+- Decisión aplazada: si las regresiones automáticas entran en el
+  repo (p. ej. `tools/`, fuera del `.xdc`) ahora que el proyecto se
+  enseña en público.

@@ -31,6 +31,7 @@ verificado función a función:
   integrada. Usa siempre la misma copia.
 - La reproducción se detiene al cerrar la app (límite de la
   plataforma WebXDC, sin segundo plano tras cerrar la ventana).
-- Aún sin prueba exhaustiva en dispositivos reales: se publica como
-  versión funcional completa que busca probadores; los fallos se
-  recogen en los *issues* de GitHub.
+- Verificada en un Delta Chat real por el mantenedor (lista de
+  pruebas del INFORME §61, puntos 1–13, todos en verde; §62): se
+  publica como versión funcional completa; los fallos se recogen en
+  los *issues* de GitHub.
