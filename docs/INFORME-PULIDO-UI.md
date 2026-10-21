@@ -967,3 +967,36 @@ renombrar, regla CSS del bucle, 0 errores) y la batería completa en
 verde (Mi Música 15/15, Favoritos 9/9, Letras 9/9, navegación 9/9,
 AAA 12/12, i18n 403×8), repetida la específica sobre el `.xdc`
 extraído (343,1 KB, sha256 `7dcccd72…`).
+
+## 40. El fondo difuminado vive solo en la zona superior (petición y consulta del usuario)
+
+El usuario pidió que el fondo difuminado del reproductor ocupara
+«desde la parte superior hasta antes de la barra de progreso», y
+pidió opinión sobre si era buena idea o era mejor no hacer nada.
+
+**Opinión dada**: buena idea con dos condiciones — que el límite sea
+una disolución y no una pared (la barra de progreso no cae al mismo
+píxel en todas las pantallas, porque la sección de la portada
+flexiona con el alto) y que título/artista queden sobre la parte ya
+disuelta para no perder legibilidad. El ambiente actual cubría la
+vista entera y se disolvía al 95 %, ensuciando de color la zona de
+controles sin aportar nada allí.
+
+**Hecho** (solo CSS, acotado a `#viewPlayer`; Letras conserva el
+suyo): el contenedor `.bg-blur` pasa de ocupar toda la vista al
+60 % superior, y su velo disuelve a `--bg-0` al 97 %, de modo que el
+ambiente muere justo al llegar a la barra de progreso y la zona de
+controles queda sobre el fondo limpio de siempre. Sin JS, sin DOM y
+sin tocar el rendimiento (el mismo blur de antes, en menos área).
+
+Se descartó por ahora la variante «portada real difuminada como
+imagen de fondo»: es el siguiente escalón visual posible, pero mete
+imagen tras el título (legibilidad) y coste de repintado; la rampa
+de colores de la portada ya da el mismo ambiente sin esos riesgos.
+Si el usuario la quiere, se hace como opción aparte.
+
+Verificación: como es solo CSS, la batería funcional es la red de
+regresiones habitual (detalles 6/6, Mi Música 15/15, navegación 9/9,
+AAA 12/12, i18n 403×8) en repo y detalles 6/6 sobre el `.xdc`
+extraído (343,5 KB, sha256 `f439cbd9…`). El juicio visual final es
+del usuario en su dispositivo.

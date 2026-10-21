@@ -5157,3 +5157,25 @@ html.aurora-wide .toast {
   .lyrics-toolbar .lt-group .lt-btn,
   .lyrics-toolbar .lyrics-speed .lt-btn { height: 34px; }
 }
+
+/* =====================================================================
+ * Fondo difuminado del reproductor: solo la zona superior.
+ * El ambiente de la portada ocupaba la vista entera y se disolvía al
+ * 95 %, dejando la zona de progreso y controles «sucia» de color.
+ * Ahora vive desde arriba hasta justo antes de la barra de progreso:
+ * el contenedor llega al 60 % y su velo disuelve a --bg-0 al final,
+ * así el corte es una disolución y no una pared (la barra no cae al
+ * mismo píxel en todas las pantallas: la portada flexiona con el
+ * alto). Título y artista caen sobre la parte ya disuelta, con lo
+ * que no pierden legibilidad, y tocar play no mueve ni un píxel del
+ * resto de la pantalla. Acotado a #viewPlayer: Letras conserva el suyo.
+ * ===================================================================== */
+#viewPlayer .bg-blur {
+  inset: 0 0 auto 0;
+  height: 60%;
+}
+#viewPlayer .bg-blur::after {
+  background:
+    radial-gradient(ellipse at 50% 0%, transparent 0%, transparent 55%),
+    linear-gradient(180deg, transparent 52%, var(--bg-0) 97%);
+}
