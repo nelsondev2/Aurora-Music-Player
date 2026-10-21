@@ -45,9 +45,9 @@ Object.assign(App, {
       // Restaurar sesión (cola, pista actual, posición, shuffle, repeat)
       const restored = await this.restoreSession();
 
-      // La lista predefinida «Mi Música» ya no existe. Si la sesión guardada
-      // apuntaba a una lista que ya no está (o a la eliminada), volver a la
-      // biblioteca para no mostrar un contexto fantasma en la barra.
+      // Si la sesión guardada apuntaba a una lista que ya no está,
+      // volver a la biblioteca para no mostrar un contexto fantasma
+      // en la barra («Reproduciendo desde…»).
       this.sanitizePlayContext();
 
       if (!restored) {
@@ -258,38 +258,72 @@ Object.assign(App, {
         this.playlists = [];
       }
 
-      // Migración: borrar la antigua lista predefinida «Mi Música» y
-      // limpiar isDefault (ninguna lista es especial ya).
-      this.migrateRemoveDefaultPlaylist();
+      // «Mi Música»: la lista automática donde viven las canciones
+      // agregadas fuera de cualquier lista (ver migrateMiMusica).
+      this.migrateMiMusica();
     },
 
-    /* Migración (una vez por arranque, idempotente) del modelo antiguo:
-     *   - elimina de memoria y de IndexedDB la lista «Mi Música»
-     *     (id legacy 'mi-musica');
-     *   - quita isDefault de cualquier lista antigua para que todas se
-     *     puedan borrar;
-     *   - si el contexto de reproducción apuntaba a esa lista, lo pasa a
-     *     «biblioteca».
-     * Las pistas que estuvieran dentro siguen en la biblioteca: la lista
-     * solo agrupaba, nunca era dueña del audio. */
-    migrateRemoveDefaultPlaylist() {
-      const LEGACY_ID = 'mi-musica';
-      const removed = this.playlists.filter(p => p && p.id === LEGACY_ID);
-      if (removed.length) {
-        this.playlists = this.playlists.filter(p => p && p.id !== LEGACY_ID);
-        this.deletePlaylistFromStorage(LEGACY_ID);
-      }
+    /* «Mi Música» (id fijo 'mi-musica') es la lista automática de la
+     * casa: recoge las canciones que se agregan fuera de cualquier
+     * lista concreta. Modelo (decisión del usuario, que revierte la
+     * retirada anterior de esta lista):
+     *   - Al arrancar, si hay biblioteca y la lista no existe, se crea
+     *     con todas las pistas (las importaciones sueltas históricas
+     *     viven ahí; no guardamos la procedencia de cada pista).
+     *   - Al importar sin lista destino, _ensureMiMusica() la crea si
+     *     falta y le suma las canciones nuevas.
+     *   - Si el usuario la borra a propósito, NO se resucita al
+     *     arrancar: queda la marca 'aurora_mimusica_removed' y solo
+     *     vuelve cuando agregue otra canción fuera de una lista.
+     * La lista solo agrupa: quitar una canción de ella no la borra de
+     * la biblioteca, como en cualquier otra lista. */
+    migrateMiMusica() {
+      const ID = 'mi-musica';
       this.playlists.forEach(p => {
         if (p && p.isDefault) {
           p.isDefault = false;
           this.persistPlaylist(p);
         }
       });
-      if (this.playContext && this.playContext.type === 'playlist' &&
-          (!this.playContext.id || this.playContext.id === LEGACY_ID)) {
-        this.playContext = { type: 'all' };
+      const exists = this.playlists.some(p => p && p.id === ID);
+      if (!exists && this.tracks.length) {
+        let removed = false;
+        try { removed = localStorage.getItem('aurora_mimusica_removed') === '1'; } catch (e) {}
+        if (!removed) this._createMiMusica(this.tracks.map(t => t.id));
       }
-      return removed.length;
+    },
+
+    _createMiMusica(trackIds) {
+      const pl = {
+        id: 'mi-musica',
+        name: 'Mi Música',
+        description: '',
+        trackIds: [...new Set((trackIds || []).filter(Boolean))]
+      };
+      this.playlists.unshift(pl);
+      this.persistPlaylist(pl);
+      try { localStorage.removeItem('aurora_mimusica_removed'); } catch (e) {}
+      return pl;
+    },
+
+    /* Garantiza que «Mi Música» existe y contiene los ids dados. Al
+     * crearla se siembra con toda la biblioteca actual (en el momento
+     * de importar, las nuevas ya están dentro de this.tracks). */
+    _ensureMiMusica(extraIds) {
+      const pl = this.playlists.find(p => p && p.id === 'mi-musica');
+      if (!pl) return this._createMiMusica(this.tracks.map(t => t.id));
+      let changed = false;
+      for (const id of extraIds || []) {
+        if (id && !pl.trackIds.includes(id)) {
+          pl.trackIds.push(id);
+          changed = true;
+        }
+      }
+      if (changed) {
+        if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
+        this.persistPlaylist(pl);
+      }
+      return pl;
     },
 
     /* Si el contexto guardado apunta a una lista que no existe, se
@@ -364,7 +398,7 @@ Object.assign(App, {
             pl._coverCacheHash = pl.coverArtHash || null;
           }
         });
-        this.migrateRemoveDefaultPlaylist();
+        this.migrateMiMusica();
       } catch (e) {
         this.playlists = [];
       }

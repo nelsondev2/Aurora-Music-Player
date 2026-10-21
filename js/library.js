@@ -163,9 +163,10 @@ Object.assign(App, {
         const lrcSuffix = lrcAttached > 0
           ? ' · ' + this.t('toast_lrc_attached').replace('X', String(lrcAttached))
           : '';
-        // Solo se añaden a una lista cuando la importación se lanza desde la
-        // pantalla de esa lista. Las subidas normales (+ / Ajustes / menú)
-        // van únicamente a la biblioteca: «Mi Música» desapareció.
+        // Solo se añaden a una lista concreta cuando la importación se
+        // lanza desde la pantalla de esa lista. Las subidas normales
+        // (+ / Ajustes / menú) caen en «Mi Música», la lista automática
+        // (ver la llamada a _ensureMiMusica más abajo).
         const destPlEarly = targetPlaylistId
           ? this.playlists.find(p => p.id === targetPlaylistId)
           : null;
@@ -202,6 +203,13 @@ Object.assign(App, {
             this.renderLibrary();
             if (typeof this.renderHome === 'function') this.renderHome();
           }
+          // Sin lista destino y sin pistas nuevas (duplicadas o
+          // re-enlazadas): también son «de fuera» y entran en Mi Música.
+          if (!targetPlaylistId && existingForPlaylist.length &&
+              typeof this._ensureMiMusica === 'function') {
+            this._ensureMiMusica(existingForPlaylist.map(t => t.id));
+            this.renderPlaylists();
+          }
           return;
         }
         const tracksToAdd = uniqueTracks;
@@ -218,6 +226,14 @@ Object.assign(App, {
         this.persistTracksBatch(tracksToAdd).catch((e) => {
           console.warn('[Aurora] persistencia en segundo plano:', e);
         });
+
+        /* Sin lista destino, las canciones «de fuera» entran en
+         * «Mi Música» (se crea sola si es la primera vez), además de
+         * vivir en Todas las canciones como siempre. Con lista destino
+         * solo van a esa lista. */
+        if (!targetPlaylistId && typeof this._ensureMiMusica === 'function') {
+          this._ensureMiMusica([...tracksToAdd, ...existingForPlaylist].map(t => t.id));
+        }
 
         // Lista destino opcional (solo si se importa desde una lista).
         const destPl = targetPlaylistId
@@ -1142,9 +1158,10 @@ Object.assign(App, {
       const trackIdSet = new Set(this.tracks.map(t => t.id));
 
       // --- Listas: fusión por id ---
-      // Los backups antiguos pueden traer la lista predefinida «Mi Música»;
-      // se ignora (sus pistas ya vienen en data.tracks y siguen en la
-      // biblioteca). Tampoco se marca ninguna lista como isDefault.
+      // Si la copia trae «Mi Música», se ignora como lista: es la
+      // automática y el arranque la reconstruye con toda la biblioteca
+      // restaurada (sus pistas ya vienen en data.tracks). Tampoco se
+      // marca ninguna lista como isDefault.
       const LEGACY_DEFAULT_ID = 'mi-musica';
       const rawPls = Array.isArray(data.playlists) ? data.playlists.slice(0, MAX_PLAYLISTS) : [];
       const byId = new Map(this.playlists.map(p => [p.id, p]));

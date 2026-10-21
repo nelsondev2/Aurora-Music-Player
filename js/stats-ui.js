@@ -137,6 +137,24 @@ Object.assign(App, {
       return c;
     },
 
+    /* Contexto de reproducción para una canción elegida en Buscar.
+     * Antes todo salía como «Todas las canciones» aunque la canción
+     * viviera en una lista, y la cola que se creaba era la biblioteca
+     * entera. Ahora manda la lista de la canción: primero las listas
+     * del usuario y, si solo está en la automática, «Mi Música»; la
+     * cola pasa a ser esa lista, así que siguiente/anterior y el
+     * «Reproduciendo desde…» cuentan lo mismo. */
+    searchPlayContextFor(t) {
+      let miMusica = null;
+      for (const pl of this.playlists || []) {
+        if (!pl || !Array.isArray(pl.trackIds) || !t || !pl.trackIds.includes(t.id)) continue;
+        if (pl.id === 'mi-musica') { miMusica = pl; continue; }
+        return { type: 'playlist', id: pl.id, name: pl.name };
+      }
+      if (miMusica) return { type: 'playlist', id: miMusica.id, name: miMusica.name };
+      return { type: 'all' };
+    },
+
     runSearch(q, filter) {
       const ul = document.getElementById('searchResults');
       if (!ul) return;
@@ -219,12 +237,12 @@ Object.assign(App, {
             wrap.style.listStyle = 'none';
             wrap.appendChild(rest);
             ul.appendChild(wrap);
-            this.fillVirtualList(rest, songs, (tr) => this.makeTrackRow(tr, { playContext: { type: 'all' } }), {
+            this.fillVirtualList(rest, songs, (tr) => this.makeTrackRow(tr, { playContext: this.searchPlayContextFor(tr) }), {
               scroller: ul.closest('.sheet-body'),
               rowHeight: 64
             });
           } else {
-            songs.forEach(tr => ul.appendChild(this.makeTrackRow(tr, { playContext: { type: 'all' } })));
+            songs.forEach(tr => ul.appendChild(this.makeTrackRow(tr, { playContext: this.searchPlayContextFor(tr) })));
           }
         }
         return;
@@ -235,12 +253,12 @@ Object.assign(App, {
         return;
       }
       if (typeof this.fillVirtualList === 'function') {
-        this.fillVirtualList(ul, res, (tr) => this.makeTrackRow(tr, { playContext: { type: 'all' } }), {
+        this.fillVirtualList(ul, res, (tr) => this.makeTrackRow(tr, { playContext: this.searchPlayContextFor(tr) }), {
           scroller: ul.closest('.sheet-body'),
           rowHeight: 64
         });
       } else {
-        res.forEach(tr => ul.appendChild(this.makeTrackRow(tr, { playContext: { type: 'all' } })));
+        res.forEach(tr => ul.appendChild(this.makeTrackRow(tr, { playContext: this.searchPlayContextFor(tr) })));
       }
     },
 

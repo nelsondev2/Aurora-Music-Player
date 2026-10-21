@@ -892,3 +892,43 @@ oculto sin favoritos, visible con ellos, anillo al sonar y no en
 pausa, clic que reproduce con 0 errores), Letras 9/9, navegación 9/9,
 AAA 12/12 e i18n 403×8, repetido sobre el `.xdc` extraído (341,0 KB,
 sha256 `d52996b5…`).
+
+## 38. Vuelve «Mi Música» automática + contexto real desde Buscar (petición del usuario)
+
+Dos peticiones del usuario en un mismo mensaje:
+
+**1. «Mi Música» como lista automática.** Las canciones que se
+agregan sin haber creado una lista iban solo a Todas las canciones.
+El usuario revierte expresamente la retirada anterior de esta lista:
+ahora existe de nuevo como lista automática de la casa (id fijo
+`mi-musica`, primera entre las listas):
+
+- Al arrancar, si hay biblioteca y no existe, se crea con todas las
+  pistas (no se guarda la procedencia histórica de cada una).
+- Al importar sin lista destino, las canciones nuevas (y las
+  duplicadas/re-enlazadas en esa misma importación) entran en ella.
+  Importar desde la pantalla de una lista solo alimenta esa lista.
+- Como cualquier lista, solo agrupa: quitar una canción de «Mi
+  Música» no la borra de la biblioteca, y la lista se puede borrar;
+  al hacerlo queda la marca `aurora_mimusica_removed` para que el
+  arranque no la resucite — solo vuelve cuando se agregue otra
+  canción fuera de una lista. Deshacer el borrado retira la marca.
+- La copia de seguridad la sigue ignorando como lista: el arranque
+  la reconstruye con la biblioteca restaurada.
+
+**2. «Reproduciendo desde…» mentía desde Buscar.** Todas las
+canciones elegidas en Buscar salían con contexto «Todas las
+canciones» aunque vivieran en una lista (y la cola era la biblioteca
+entera). Nuevo `searchPlayContextFor()`: manda la lista de la
+canción — primero las listas del usuario, después «Mi Música» y
+solo si no está en ninguna, Todas las canciones —. No es cosmético:
+la cola pasa a ser esa lista, así que siguiente/anterior y la
+etiqueta cuentan lo mismo.
+
+Verificación: regresión específica **15/15** (creación al arrancar
+y primera posición, importación suelta dentro, importación a lista
+fuera, borrado respetado y reconstrucción, las tres prioridades de
+contexto y el extremo a extremo buscar→reproducir con cola y
+etiqueta «desde Rock», 0 errores), Favoritos 9/9, Letras 9/9,
+navegación 9/9, AAA 12/12 e i18n 403×8, repetido sobre el `.xdc`
+extraído (342,3 KB, sha256 `b721dd93…`).

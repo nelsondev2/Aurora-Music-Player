@@ -1045,8 +1045,9 @@ Object.assign(App, {
       });
     },
 
-    /* Elimina una playlist. Todas se pueden borrar: ya no existe la lista
-     * predefinida «Mi Música» (se migra fuera al arrancar). */
+    /* Elimina una playlist. Todas se pueden borrar, también «Mi
+     * Música»: borrarla deja una marca para que no resucite sola al
+     * arrancar (solo vuelve al agregar canciones fuera de una lista). */
     async deletePlaylist(playlistId) {
       const pl = this.playlists.find(p => p.id === playlistId);
       if (!pl) return;
@@ -1085,6 +1086,12 @@ Object.assign(App, {
       clearTimeout(p.timer);
       if (this._pendingPlaylistDelete === p) this._pendingPlaylistDelete = null;
       this.deletePlaylistFromStorage(p.playlist.id);
+      // Borrar «Mi Música» es una decisión, no un accidente: se anota
+      // para que el arranque no la resucite (migrateMiMusica). Volverá
+      // sola cuando se agregue otra canción fuera de una lista.
+      if (p.playlist.id === 'mi-musica') {
+        try { localStorage.setItem('aurora_mimusica_removed', '1'); } catch (e) {}
+      }
     },
 
     _undoDeletePlaylist(pending) {
@@ -1097,6 +1104,10 @@ Object.assign(App, {
         const at = Math.max(0, Math.min(p.idx, this.playlists.length));
         this.playlists.splice(at, 0, p.playlist);
         this.persistPlaylist(p.playlist);
+        // Deshacer el borrado de «Mi Música» retira la marca anti-resurrección.
+        if (p.playlist.id === 'mi-musica') {
+          try { localStorage.removeItem('aurora_mimusica_removed'); } catch (e) {}
+        }
       }
       this.renderPlaylists();
       if (typeof this.renderHome === 'function') this.renderHome();
