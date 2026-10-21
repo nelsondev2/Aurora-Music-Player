@@ -28,13 +28,15 @@ Object.assign(App, {
           currentTrackCoverIsImage: t?.coverIsImage || false,
           currentTrackDuration: t?.duration || 0,
           currentTrackLrc: t?.lrc || null,
-          queue: this.queue,
+          // Copias, no referencias: la sesión debe ser una foto del
+          // instante, no un alias que siga mutando con la cola viva.
+          queue: Array.isArray(this.queue) ? this.queue.slice() : [],
           queueIdx: this.queueIdx,
           currentTime: this.audio?.currentTime || 0,
           shuffle: this.shuffle,
           repeat: this.repeat,
           playContext: this.playContext,
-          originalQueue: this._originalQueue,
+          originalQueue: Array.isArray(this._originalQueue) ? this._originalQueue.slice() : null,
           ts: Date.now()
         };
         const fingerprint = JSON.stringify(Object.assign({}, session, {
@@ -43,6 +45,11 @@ Object.assign(App, {
         }));
         if (fingerprint === this._lastSessionFingerprint && !this.isPlaying) return;
         this._lastSessionFingerprint = fingerprint;
+        /* Espejo síncrono de emergencia: al cerrar la WebView, la escritura
+         * asíncrona en IndexedDB puede no completarse. localStorage guarda
+         * la misma foto al instante y restoreSession() elige la más nueva.
+         * Si la cuota no lo admite, IndexedDB sigue siendo la vía principal. */
+        try { localStorage.setItem('aurora_session_v1', JSON.stringify(session)); } catch (e) {}
         await window.AuroraStorage.setSetting('session', session);
       } catch (e) {}
     },
@@ -60,7 +67,17 @@ Object.assign(App, {
     async restoreSession() {
       try {
         if (!window.AuroraStorage) return false;
-        const session = await window.AuroraStorage.getSetting('session');
+        let session = await window.AuroraStorage.getSetting('session');
+        /* El espejo síncrono puede ser más reciente que IndexedDB si la
+         * app se cerró a mitad de una escritura asíncrona. Gana el mayor ts. */
+        try {
+          const rawMirror = localStorage.getItem('aurora_session_v1');
+          const mirror = rawMirror ? JSON.parse(rawMirror) : null;
+          if (mirror && typeof mirror === 'object' &&
+              Number(mirror.ts || 0) > Number((session && session.ts) || 0)) {
+            session = mirror;
+          }
+        } catch (e) {}
         if (!session || typeof session !== 'object' || !session.currentTrackId) return false;
         // Verificar que la pista todavía existe
         const trackIdx = this.tracks.findIndex(t => t.id === session.currentTrackId);
@@ -68,17 +85,25 @@ Object.assign(App, {
         // Restaurar estado
         this.currentTrackIdx = trackIdx;
         this.currentTrack = this.tracks[trackIdx];
-        // Filtrar cola para que solo contenga pistas existentes y no haya
-        // duplicados (una sesión corrupta podría repetir ids).
+        // Filtrar solo ids inexistentes. Los duplicados se conservan:
+        // una cola puede contener legítimamente la misma canción dos
+        // veces, y deduplicarla al reabrir cambiaba lo que iba a sonar.
         const known = new Set(this.tracks.map(t => t.id));
         const restoredQueue = Array.isArray(session.queue) ? session.queue : [];
-        this.queue = [...new Set(restoredQueue.filter(id => known.has(id)))];
+        this.queue = restoredQueue.filter(id => known.has(id));
         if (this.queue.length === 0) {
           this.queue = this.tracks.map(t => t.id);
         }
-        // Restaurar queueIdx al índice de la pista actual
-        const qIdx = this.queue.indexOf(session.currentTrackId);
-        this.queueIdx = qIdx >= 0 ? qIdx : 0;
+        // Con duplicados, indexOf() acertaría la primera copia aunque la
+        // sesión se guardara en la segunda: se respeta queueIdx si apunta
+        // a la pista actual, y solo entonces se busca la primera copia.
+        const savedIdx = Number(session.queueIdx);
+        if (Number.isInteger(savedIdx) && this.queue[savedIdx] === session.currentTrackId) {
+          this.queueIdx = savedIdx;
+        } else {
+          const qIdx = this.queue.indexOf(session.currentTrackId);
+          this.queueIdx = qIdx >= 0 ? qIdx : 0;
+        }
         this.shuffle = !!session.shuffle;
         this.repeat = session.repeat || 'off';
         if (this.shuffle && Array.isArray(session.originalQueue) && session.originalQueue.length) {
@@ -98,21 +123,35 @@ Object.assign(App, {
           };
         }
 
-        // Cargar la pista en el audio SIN reproducir (el usuario debe tocar play)
-        this.audio.src = this.currentTrack.src;
-        this.audio.load();
-        // Restaurar posición cuando los metadatos carguen
-        const restoreTime = Number(session.currentTime) || 0;
-        const onMeta = () => {
-          try {
-            if (restoreTime > 0 && restoreTime < (this.audio.duration || 0)) {
-              this.audio.currentTime = restoreTime;
-            }
-          } catch (e) {}
-          this.updateProgress();
-          this.audio.removeEventListener('loadedmetadata', onMeta);
-        };
-        this.audio.addEventListener('loadedmetadata', onMeta);
+        // Cargar la pista en el audio SIN reproducir (el usuario debe tocar
+        // play). Se resuelve la URL con getTrackUrl(): asignar
+        // currentTrack.src a ciegas convertía las pistas restauradas de
+        // una copia (sin blob todavía) en la URL literal «undefined».
+        const restoreUrl = typeof this.getTrackUrl === 'function'
+          ? this.getTrackUrl(this.currentTrack)
+          : (this.currentTrack && this.currentTrack.src) || null;
+        if (this.audio) {
+          if (restoreUrl) {
+            this.audio.src = restoreUrl;
+            this.audio.load();
+            // Restaurar posición cuando los metadatos carguen
+            const restoreTime = Number(session.currentTime) || 0;
+            const onMeta = () => {
+              try {
+                if (restoreTime > 0 && restoreTime < (this.audio.duration || 0)) {
+                  this.audio.currentTime = restoreTime;
+                }
+              } catch (e) {}
+              this.updateProgress();
+              this.audio.removeEventListener('loadedmetadata', onMeta);
+            };
+            this.audio.addEventListener('loadedmetadata', onMeta);
+          } else {
+            // Sin audio enlazado: el elemento queda limpio y en pausa;
+            // loadAndPlay() avisará y saltará al reproducir.
+            try { this.audio.removeAttribute('src'); this.audio.load(); } catch (e) {}
+          }
+        }
 
         return true;
       } catch (e) {

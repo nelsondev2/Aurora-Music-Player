@@ -343,6 +343,31 @@ Object.assign(App, {
       this.updatePlayUI();
     },
 
+    /* Política única ante un archivo que no se puede decodificar.
+     * Antes se abandonaba tras 3 fallos seguidos, aunque la cuarta
+     * canción de la cola fuera válida. Ahora se recorre la cola una
+     * vez (tantos intentos como posiciones tenga) y solo se rinde al
+     * agotarla; el contador se reinicia en cuanto algo suena. Solo se
+     * avisa en el primer fallo y al rendirse: nada de un toast por
+     * cada archivo roto. Devuelve true si ya actuó. */
+    _handleDecodeFailure() {
+      if (typeof this.setBuffering === 'function') this.setBuffering(false);
+      this.isPlaying = false;
+      if (typeof this.updatePlayUI === 'function') this.updatePlayUI();
+      this._decodeSkipCount = (this._decodeSkipCount || 0) + 1;
+      const limit = Math.max(1, Array.isArray(this.queue) && this.queue.length ? this.queue.length : 1);
+      if (this._decodeSkipCount >= limit) {
+        const skipped = this._decodeSkipCount;
+        this._decodeSkipCount = 0;
+        this.toast(this.t('toast_skipped_give_up').replace('X', String(skipped)));
+        try { if (this.audio) this.audio.pause(); } catch (e) {}
+        return true;
+      }
+      if (this._decodeSkipCount === 1) this.toast(this.t('toast_audio_error'));
+      setTimeout(() => this.next(true), 0);
+      return true;
+    },
+
     setBuffering(on) {
       const el = document.getElementById('coverBuffering');
       const cover = document.getElementById('coverArt');
@@ -453,16 +478,11 @@ Object.assign(App, {
               this.toast(this.t('toast_play_blocked'));
               return;
             }
-            // NotSupportedError u otros: el archivo no se puede reproducir → saltar
-            // a la siguiente (misma política que el manejador de 'error' de audio).
-            this.toast(this.t('toast_audio_error'));
-            this._decodeSkipCount = (this._decodeSkipCount || 0) + 1;
-            if (this._decodeSkipCount >= 3) {
-              this._decodeSkipCount = 0;
-              this.togglePlay(false);
-            } else {
-              setTimeout(() => this.next(true), 0);
-            }
+            // NotSupportedError u otros: el archivo no se puede reproducir.
+            // Misma política que el evento 'error': recorrer la cola una
+            // vez antes de rendirse (ver _handleDecodeFailure).
+            if (typeof this._handleDecodeFailure === 'function') this._handleDecodeFailure();
+            else setTimeout(() => this.next(true), 0);
           });
         }
       } else {

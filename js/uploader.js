@@ -105,10 +105,32 @@
       };
 
       const lrcFile = this.findMatchingLrc(file.name, lrcsMap);
-      const [tags, lrcText] = await Promise.all([
+      /* La duración también es un metadato básico: sin sondearla, la
+       * biblioteca mostraba 0:00 hasta reproducir cada canción. Se pide
+       * en paralelo con las etiquetas; probeDuration() tiene timeout y
+       * ante un archivo corrupto devuelve 0 sin bloquear la importación. */
+      let [tags, lrcText, duration] = await Promise.all([
         this.readTags(file).catch(() => null),
-        lrcFile ? this.readTextFile(lrcFile).catch(() => null) : Promise.resolve(null)
+        lrcFile ? this.readTextFile(lrcFile).catch(() => null) : Promise.resolve(null),
+        this.probeDuration(file).catch(() => 0)
       ]);
+
+      /* FLAC/OGG/Opus guardan sus metadatos como Vorbis Comment, no
+       * como ID3: jsmediatags puede devolver null y la canción quedaba
+       * con el nombre del archivo. El lector propio rellena lo que falte
+       * sin pisar nunca un dato ID3/MP4 válido. */
+      if (/\.(flac|ogg|opus)$/i.test(file.name || '') || /audio\/(?:flac|ogg|x-flac)/i.test(file.type || '')) {
+        const vorbis = await this.readVorbisTags(file).catch(() => null);
+        if (vorbis) {
+          if (!tags) tags = vorbis;
+          else {
+            for (const k of ['title', 'artist', 'album', 'albumartist', 'lyrics']) {
+              if (!this.tagText(tags[k]) && vorbis[k]) tags[k] = vorbis[k];
+            }
+            if (!tags.picture && vorbis.picture) tags.picture = vorbis.picture;
+          }
+        }
+      }
 
       if (tags) {
         const title = this.tagText(tags.title);
@@ -156,7 +178,7 @@
         title: meta.title,
         artist: meta.artist,
         album: meta.album,
-        duration: 0,
+        duration: duration || 0,
         src: URL.createObjectURL(file),
         cover: meta.cover,
         coverIsImage,
@@ -230,6 +252,175 @@
       });
     },
 
+    /* ---------- Metadatos Vorbis Comment (FLAC / OGG / Opus) ----------
+     * Formato: longitud LE + texto UTF-8 «CLAVE=valor». En FLAC los
+     * bloques van tras la firma «fLaC» (tipo 4 = comentario, tipo 6 =
+     * portada); en Ogg los paquetes se reconstruyen uniendo segmentos
+     * de página (un segmento de 255 bytes continúa en el siguiente).
+     * Solo se lee el primer MB: los comentarios viven al principio;
+     * una portada mayor simplemente no se extrae y se usa el degradado. */
+    /* Lee un Blob como ArrayBuffer vía FileReader: Blob.arrayBuffer()
+     * no existe en WebViews antiguos y en algunos entornos devuelve un
+     * buffer vacío; FileReader es el camino compatible de siempre. */
+    _blobArrayBuffer(blob) {
+      return new Promise((resolve, reject) => {
+        try {
+          if (typeof FileReader !== 'undefined') {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result);
+            r.onerror = () => reject(r.error);
+            r.readAsArrayBuffer(blob);
+          } else if (blob && typeof blob.arrayBuffer === 'function') {
+            blob.arrayBuffer().then(resolve, reject);
+          } else reject(new Error('sin lector binario'));
+        } catch (e) { reject(e); }
+      });
+    },
+
+    async readVorbisTags(file) {
+      try {
+        if (!file || typeof file.slice !== 'function' || !file.size) return null;
+        const bytes = new Uint8Array(await this._blobArrayBuffer(file.slice(0, Math.min(file.size, 1024 * 1024))));
+        if (this._ascii(bytes, 0, 4) === 'fLaC') return this._parseFlacTags(bytes);
+        if (this._ascii(bytes, 0, 4) === 'OggS') return this._parseOggTags(bytes);
+        return null;
+      } catch (e) { return null; }
+    },
+
+    _ascii(bytes, offset, len) {
+      let out = '';
+      for (let i = 0; i < len && offset + i < bytes.length; i++) out += String.fromCharCode(bytes[offset + i]);
+      return out;
+    },
+
+    _bytesToBase64(bytes) {
+      let binary = '';
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+      }
+      return btoa(binary);
+    },
+
+    _parseVorbisComment(bytes, offset) {
+      try {
+        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+        const decoder = typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8') : null;
+        const text = (a, b) => {
+          const slice = bytes.subarray(a, b);
+          return decoder ? decoder.decode(slice) : String.fromCharCode.apply(null, slice);
+        };
+        let pos = offset || 0;
+        const readU32 = () => {
+          if (pos + 4 > bytes.length) throw new Error('vorbis truncado');
+          const n = view.getUint32(pos, true); pos += 4; return n;
+        };
+        const vendorLen = readU32(); pos += vendorLen;
+        const count = readU32();
+        if (count > 512) return null; // comentario absurdo: no es válido
+        const fields = {};
+        for (let i = 0; i < count; i++) {
+          const len = readU32();
+          if (len > bytes.length - pos) break;
+          const entry = text(pos, pos + len); pos += len;
+          const eq = entry.indexOf('=');
+          if (eq <= 0) continue;
+          const key = entry.slice(0, eq).trim().toLowerCase();
+          if (!(key in fields)) fields[key] = entry.slice(eq + 1).trim();
+        }
+        const out = {};
+        for (const k of ['title', 'artist', 'album', 'albumartist', 'lyrics', 'unsyncedlyrics']) {
+          if (fields[k]) out[k === 'unsyncedlyrics' ? 'lyrics' : k] = fields[k];
+        }
+        if (fields.metadata_block_picture) {
+          try {
+            const raw = atob(fields.metadata_block_picture.replace(/\s+/g, ''));
+            const picBytes = new Uint8Array(raw.length);
+            for (let i = 0; i < raw.length; i++) picBytes[i] = raw.charCodeAt(i);
+            const pic = this._parseFlacPicture(picBytes, 0, picBytes.length);
+            if (pic) out.picture = pic;
+          } catch (e) {}
+        }
+        return Object.keys(out).length ? out : null;
+      } catch (e) { return null; }
+    },
+
+    /* Bloque de imagen FLAC (también viaja en Vorbis, en base64). */
+    _parseFlacPicture(bytes, offset, length) {
+      try {
+        const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+        const end = Math.min(bytes.length, (offset || 0) + (length || 0));
+        let pos = offset || 0;
+        const readU32 = () => {
+          if (pos + 4 > end) throw new Error('imagen truncada');
+          const n = view.getUint32(pos, false); pos += 4; return n;
+        };
+        readU32(); // tipo de imagen (frontal, trasera…)
+        const mimeLen = readU32();
+        const mime = this._ascii(bytes, pos, mimeLen) || 'image/jpeg'; pos += mimeLen;
+        const descLen = readU32(); pos += descLen;
+        pos += 16; // ancho, alto, profundidad y colores
+        const dataLen = readU32();
+        if (!dataLen || pos + dataLen > end) return null;
+        return 'data:' + mime + ';base64,' + this._bytesToBase64(bytes.subarray(pos, pos + dataLen));
+      } catch (e) { return null; }
+    },
+
+    _parseFlacTags(bytes) {
+      let offset = 4; // tras «fLaC»
+      let tags = null;
+      let picture = null;
+      while (offset + 4 <= bytes.length) {
+        const header = bytes[offset];
+        const isLast = !!(header & 0x80);
+        const type = header & 0x7f;
+        const len = (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3];
+        const start = offset + 4;
+        if (start + len > bytes.length) break; // portada fuera del MB leído
+        if (type === 4) tags = this._parseVorbisComment(bytes, start);
+        else if (type === 6) picture = this._parseFlacPicture(bytes, start, len);
+        offset = start + len;
+        if (isLast) break;
+      }
+      if (tags && picture && !tags.picture) tags.picture = picture;
+      if (!tags && picture) return { picture };
+      return tags;
+    },
+
+    _parseOggTags(bytes) {
+      let offset = 0;
+      let chunks = [];
+      let total = 0;
+      while (offset + 27 <= bytes.length && this._ascii(bytes, offset, 4) === 'OggS') {
+        const segCount = bytes[offset + 26];
+        let pos = offset + 27 + segCount;
+        if (pos > bytes.length) break;
+        for (let i = 0; i < segCount; i++) {
+          const segLen = bytes[offset + 27 + i];
+          if (pos + segLen > bytes.length) return null;
+          chunks.push(bytes.subarray(pos, pos + segLen));
+          total += segLen;
+          pos += segLen;
+          if (total > 2 * 1024 * 1024) return null; // sin cabeceras en 2 MB: rendirse
+          if (segLen < 255) {
+            // Paquete completo: ¿es el comentario Vorbis u OpusTags?
+            const packet = new Uint8Array(total);
+            let p = 0;
+            for (const c of chunks) { packet.set(c, p); p += c.length; }
+            chunks = []; total = 0;
+            if (packet.length >= 7 && packet[0] === 3 && this._ascii(packet, 1, 6) === 'vorbis') {
+              return this._parseVorbisComment(packet, 7);
+            }
+            if (packet.length >= 8 && this._ascii(packet, 0, 8) === 'OpusTags') {
+              return this._parseVorbisComment(packet, 8);
+            }
+          }
+        }
+        offset = pos;
+      }
+      return null;
+    },
+
     /* ---------- Limita la portada ID3 a 600 px (JPEG) ----------
      * Los canvas de la app son de 600/512 px como máximo: más resolución
      * solo hincha IndexedDB y acerca la cuota en bibliotecas grandes. */
@@ -259,6 +450,8 @@
     /* ---------- Convierte la imagen ID3 (APIC) a dataURL ---------- */
     pictureToDataURL(picture) {
       try {
+        // El lector Vorbis ya entrega la portada como dataURL.
+        if (typeof picture === 'string') return picture.startsWith('data:') ? picture : null;
         const { data, format } = picture;
         const u8 = data instanceof Uint8Array ? data : new Uint8Array(data);
         let binary = '';
@@ -332,16 +525,20 @@
           a.preload = 'metadata';
           const url = URL.createObjectURL(file);
           let settled = false;
+          let timer = null;
           const finish = (sec) => {
             if (settled) return;
             settled = true;
+            if (timer) clearTimeout(timer);
             try { URL.revokeObjectURL(url); } catch (e) {}
             try { a.removeAttribute('src'); a.load(); } catch (e) {}
             resolve(sec > 0 && isFinite(sec) ? Math.round(sec) : 0);
           };
           a.addEventListener('loadedmetadata', () => finish(a.duration));
           a.addEventListener('error', () => finish(0));
-          setTimeout(() => finish(0), 8000);
+          /* Cuatro segundos bastan para metadatos locales; un archivo
+           * corrupto o un WebView lento no debe retener la importación. */
+          timer = setTimeout(() => finish(0), 4000);
           a.src = url;
         } catch (e) {
           resolve(0);

@@ -690,3 +690,90 @@ Todo repetido sobre el `.xdc` extraído: idéntico resultado.
 **Pendiente del usuario**: probar en su dispositivo (Delta Android/Desktop/iOS):
 velocidad desde Ajustes sin abrir Letras, slider sin doble salto, tema claro en
 la bienvenida, arrastrar la cola y el 🔒 de persistencia en sesiones largas.
+
+## 33. Loop AAA por dimensiones (alcance: personal y local)
+
+Decisión de producto que gobierna esta evaluación: Aurora es un reproductor
+**personal y local** dentro del chat — biblioteca desde el dispositivo, sin
+sincronización en tiempo real ni cola compartida (descartada expresamente por
+consumo de datos). La dimensión 5 de la rúbrica queda por tanto como **N/A
+justificado**: no hay updates que enviar, con lo que el riesgo de spam al chat
+es cero por construcción; `sendToChat` solo actúa cuando el usuario comparte
+algo a mano.
+
+### Iteración 1 — metadatos, sesión y corruptos
+
+Evaluación inicial severa (auditoría de código): UX 8 · Audio 8 · Archivos 7 ·
+Cola local 8 · Sync N/A · Persistencia 7 · Rendimiento/tamaño 8 · Robustez 7 ·
+Integración 8 · Originalidad 9.
+
+Top 3 gaps y correcciones:
+
+1. **La duración real nunca se pedía.** `probeDuration()` existía sin un solo
+   llamador: toda canción importada nacía con `duration: 0` y la biblioteca
+   mostraba 0:00 hasta reproducirla. Ahora se sondea en paralelo con las
+   etiquetas (timeout de 4 s, un archivo corrupto devuelve 0 y no retiene la
+   importación).
+2. **La restauración de sesión era frágil en tres puntos.** (a) Deduplicaba
+   la cola, aunque una cola puede contener la misma canción dos veces de
+   forma legítima: al reabrir cambiaba lo que iba a sonar; ahora solo se
+   filtran ids inexistentes. (b) Con duplicados, `queueIdx` se recalculaba a
+   la primera copia; ahora se respeta el índice guardado si apunta a la pista
+   actual. (c) Asignaba `currentTrack.src` a ciegas: una pista restaurada de
+   una copia (sin blob) convertía el `<audio>` a la URL literal «undefined»;
+   ahora la URL se resuelve con `getTrackUrl()` y, si no hay audio enlazado,
+   el elemento queda limpio. Además, `saveSession()` escribe un **espejo
+   síncrono en localStorage**: al cerrar la WebView, la escritura asíncrona
+   en IndexedDB puede no completarse, y al restaurar gana la foto con mayor
+   `ts`. Las colas se guardan como copia, no como referencia viva.
+3. **Tres archivos corruptos seguidos paraban la música** aunque la cuarta
+   canción fuera válida, con un toast por archivo. Nueva política única
+   (`_handleDecodeFailure()`, compartida por el evento `error` y por el
+   rechazo de `play()`): se recorre la cola una vez antes de rendirse, se
+   avisa solo al primer fallo y al abandonar, y el contador se reinicia en
+   cuanto algo suena. El evento `error` sin fuente (vaciar el elemento al
+   borrar la pista actual) ya no cuenta como corrupción ni salta canciones.
+
+Tras la iteración: Audio 9 · Cola local 9 · Persistencia 9 · Robustez 9.
+
+### Iteración 2 — Vorbis Comment (FLAC/OGG/Opus)
+
+El único gap que quedaba por debajo de 9 era Archivos (7): jsmediatags cubre
+ID3/MP4, pero FLAC, OGG y Opus guardan sus metadatos como **Vorbis Comment**
+y esas canciones quedaban con el nombre del archivo por título.
+
+Se añadió un lector propio sin dependencias (`readVorbisTags`): bloques de
+metadatos FLAC (tipo 4 = comentario, tipo 6 = portada) y reconstrucción de
+paquetes Ogg uniendo segmentos de página (cabeceras `\x03vorbis` y
+`OpusTags`), con lectura limitada al primer MB y lectura binaria vía
+FileReader (compatible con WebViews sin `Blob.arrayBuffer()`). Rellena
+título, artista, álbum y portada solo donde falten, sin pisar un ID3 válido.
+
+Tras la iteración: Archivos 9.
+
+### Evaluación final del loop (auditoría de código)
+
+| Dimensión | Nota | Nota |
+|---|---|---|
+| 1 UX/UI en sandbox móvil | 9 | Áreas seguras, 100dvh, objetivos ≥44 px, listas virtualizadas |
+| 2 Motor de audio web | 9 | Buffering Visible, gapless/crossfade, política de corruptos de una pasada |
+| 3 Gestión de archivos | 9 | ID3/MP4 + Vorbis, duración sondeada, duplicados O(1), .lrc y M3U |
+| 4 Cola/playlists (local) | 9 | Duplicados legítimos preservados también tras reabrir |
+| 5 Sincronización de playback | N/A | Fuera de alcance por decisión expresa; cero updates |
+| 6 Persistencia local | 9 | IndexedDB + espejo síncrono, restauración sin URLs inválidas |
+| 7 Rendimiento y tamaño | 9 | 339 KB el .xdc; estrés con 5.000 pistas ya optimizado |
+| 8 Robustez | 9 | Corruptos, sin-fuente, cierre inesperado, cuota y reenlace |
+| 9 Integración con el chat | 9 | Sin spam posible; compartir solo a petición del usuario |
+| 10 Originalidad | 9 | Letras sincronizadas, EQ, copia portable, portadas, stats |
+
+Verificación: regresión nueva **12/12** (FLAC y OGG sintéticos con metadatos
+Vorbis y duración, sesión con duplicados y posición exacta, pista sin audio
+sin «undefined», tres corruptos seguidos llegando a la canción válida, un
+solo aviso, error sin fuente inocuo, 0 errores), diccionario **403×8** y todo
+repetido sobre el `.xdc` extraído (339,2 KB, sha256 `1668fc92…`).
+
+**Límite honesto**: las notas son de auditoría de código y banco jsdom. La
+prueba en el dispositivo real del usuario (Delta Android/Desktop/iOS:
+importar FLAC/OGG reales, cerrar la app a mitad de canción y reabrir,
+encadenar archivos corruptos) sigue pendiente y es la única vía de subir a
+10; ningún 10 se declara sin ella.

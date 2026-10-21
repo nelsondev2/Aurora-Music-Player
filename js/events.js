@@ -918,18 +918,18 @@ Object.assign(App, {
         };
         this._onAudioError = (e) => {
           if (this._xfadeStarted || this._xfadeTimer) this._cancelCrossfade();
-          const msg = (e && e.message) || (this.audio && this.audio.error && this.audio.error.message) || 'unknown';
-          this._lastError = { msg: 'audio error: ' + msg, ts: Date.now() };
-          this._decodeSkipCount = (this._decodeSkipCount || 0) + 1;
-          if (typeof this.setBuffering === 'function') this.setBuffering(false);
-          this.toast(this.t('toast_audio_error'));
-          if (this._decodeSkipCount >= 3) {
-            this.toast(this.t('toast_skipped_give_up').replace('X', String(this._decodeSkipCount)));
-            this._decodeSkipCount = 0;
-            this.togglePlay(false);
+          /* Sin fuente no hay archivo corrupto: es el ruido de vaciar
+           * el elemento (borrar la pista actual, limpiar al cerrar).
+           * Contarlo saltaba canciones que nadie había pedido saltar. */
+          if (!this.currentTrack || !this.audio || !this.audio.getAttribute('src')) {
+            if (typeof this.setBuffering === 'function') this.setBuffering(false);
             return;
           }
-          this.next(true);
+          const msg = (e && e.message) || (this.audio.error && this.audio.error.message) || 'unknown';
+          this._lastError = { msg: 'audio error: ' + msg, ts: Date.now() };
+          // Política compartida con play(): recorrer la cola una vez.
+          if (typeof this._handleDecodeFailure === 'function') this._handleDecodeFailure();
+          else this.next(true);
         };
         this._onAudioPlaying = () => {
           this._decodeSkipCount = 0;
