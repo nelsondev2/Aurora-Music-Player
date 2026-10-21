@@ -1485,3 +1485,64 @@ repetida sobre el `.xdc` extraído.
 | «Seguir escuchando» oculto mientras suena y de vuelta al pausar | ✅ |
 | Regresión hero 8/8 + batería completa | ✅ |
 | `.xdc` válido (342,8 KB, sha256 `533982a9…`) + regresiones sobre extraído | ✅ |
+
+## 50. Importar mucho, rápido: una decodificación por portada
+
+Petición del usuario: optimizar la carga de un volumen grande de
+canciones. Medido el pipeline (`processFiles` → `processOne` →
+persistencia), los dos costes grandes por canción no eran la red
+ni IndexedDB (una sola transacción por lote ya existía), sino el
+trabajo repetido con las portadas:
+
+1. **Tres decodificaciones por canción con portada**: la imagen
+   incrustada se decodificaba entera para la copia de 600 px, OTRA
+   vez para la de 256 y OTRA para la de 96 (`limitArtwork` +
+   `resizeDataUrl` ×2, cada uno con su `Image` y su JPEG).
+2. **Y por cada canción del álbum, lo mismo**: un disco de 12 temas
+   trae la misma portada incrustada 12 veces → 36 decodificaciones
+   de la misma imagen.
+3. **Pool fijo de 3 trabajadores** aunque el hardware dé más.
+
+**Optimizaciones** (`js/uploader.js`, sin cambiar formatos ni
+calidades de salida):
+
+- `_produceArtwork()`: de UNA decodificación (`_loadImage`, con
+  tiempo límite de 8 s para que un WebView colgado no retenga la
+  importación) salen las tres copias con los tamaños y calidades
+  de siempre (600 JPEG 0.85, 256/96 cuadradas JPEG 0.72) y los
+  mismos respaldos ante error.
+- **Caché de portadas por lote** (`_artworkForPicture` +
+  `_artworkKey`, huella = longitud + muestra de 512 bytes): la
+  portada repetida se produce una sola vez por importación, y los
+  trabajadores comparten hasta la promesa en curso (nada de
+  decodificar lo mismo en paralelo). `limitArtwork`/`resizeDataUrl`
+  se quedan para sus otros llamantes (portada personalizada).
+- **Pool de 3–6 trabajadores** según `navigator.hardwareConcurrency`.
+- **FLAC sin sondeo**: el bloque STREAMINFO ya trae frecuencia y
+  nº de muestras; el lector Vorbis propio ahora devuelve también
+  la duración exacta y `processOne` la usa sin crear el `<audio>`
+  de sondeo (que sigue para MP3/M4A/OGG, con su timeout de 4 s:
+  la duración al importar es una función querida, §33, y no se
+  sacrifica por velocidad).
+
+**Verificación**: regresión específica 14/14 (huella estable y
+discriminante; las tres copias de una decodificación y sus
+respaldos; álbum simulado: 2 canciones = 1 producción; processOne
+completo; STREAMINFO sintético = 185 s exactos sin tocar el
+sondeo; pool con concurrencia real ≥3, resultados en orden y
+9×15 ms simulados muy por debajo del tiempo en serie; 0 errores).
+Batería completa en verde (sololistas 15/15, hero 8/8, confirm
+10/10, mimusica 21/21, visualizador 19/19, importFiles 16/16, lupa
+10/10, detalles 6/6, fav/letras/nav 9/9, AAA 12/12, i18n 384×8) y
+regresión repetida sobre el `.xdc` extraído. La ganancia percibida
+depende del dispositivo y del tamaño de las portadas; la
+estructural es la descrita (de ~3N decodificaciones a N, y a 1
+por álbum en la práctica).
+
+## Cierre de la sesión §50
+
+| Check | Resultado |
+|---|---|
+| 1 decodificación por portada distinta + pool 3–6 + FLAC sin sondeo | ✅ |
+| Regresión importperf 14/14 + batería completa | ✅ |
+| `.xdc` válido (344,5 KB, sha256 `303c7477…`) + regresiones sobre extraído | ✅ |
