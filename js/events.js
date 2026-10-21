@@ -144,6 +144,13 @@ Object.assign(App, {
       // de letras; ambos abren el mismo sheet.
       $('btnMore').addEventListener('click', () => this.openSheet('sheetMore'));
       $('btnLyricsMore').addEventListener('click', () => this.openSheet('sheetMore'));
+      // Aviso «sin audio» del Reproductor (§55): tocarlo vincula la pista.
+      const npPendingBtn = document.getElementById('npPendingBadge');
+      if (npPendingBtn) npPendingBtn.addEventListener('click', () => {
+        if (this.currentTrack && typeof this.promptRelinkTrack === 'function') {
+          this.promptRelinkTrack(this.currentTrack, () => this.loadAndPlay());
+        }
+      });
       this._wired.play = true;
 
       // Prev / next

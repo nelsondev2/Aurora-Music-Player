@@ -1660,3 +1660,30 @@ Aurora hacía exactamente lo contrario desde la reorganización del repositorio 
 - Nuevo `check-restaurar.js`: **9/9** — biblioteca vacía al arrancar; la bienvenida ofrece importar copia (y conserva «Cargar música» y Ajustes); la copia se importa desde la bienvenida sin tocar el Reproductor (la lista queda aplicada); el ⋮ de Inicio abre «Opciones» con exportar/importar dentro. Cero errores.
 - Sin regresiones: `check-chat.js` 14/14, `check-minipausa.js` 13/13.
 - `.xdc` reconstruido y válido para Delta Chat.
+
+---
+
+## 55. Tras importar un backup: «Pista sin audio» era un callejón sin salida
+
+**Reporte (con captura):** tras importar una copia, la canción aparece en el Reproductor como una más —portada, duración— y solo al pulsar ▶ salta «Pista sin audio: vuelve a importarla para escucharla».
+
+### Diagnóstico
+
+Tres capas del mismo problema:
+
+1. **La cura era demasiado estricta.** Al reimportar el audio, una pista restaurada solo se enlazaba si el archivo casaba por **nombre + tamaño exactos**. La misma canción con otro tamaño (otro ripeo, descargada de nuevo, otro origen) no casaba nunca: entraba como pista nueva y la restaurada quedaba fantasma «sin audio» para siempre, dentro de las listas de la copia — que es justo lo que se tocaba.
+2. **El aviso no ofrecía salida.** El toast decía qué hacer («vuelve a importarla») pero no dejaba hacerlo desde ahí: había que adivinar que el camino era «+» genérico o la fila de Ajustes.
+3. **Sin señal previa.** La fila de la lista abierta no marcaba la pista (las demás filas sí, vía `makeTrackRow`) y Now Playing la presentaba como normal hasta pulsar play.
+
+### Arreglo
+
+- **Curación tolerante** (`handleFileInput`): si la clave nombre+tamaño no casa, se busca una pista pendiente que case por **nombre de archivo** —o por **título+artista** si el archivo fue renombrado—, siempre de forma **única** entre las pendientes; si hay dos candidatas, no se adivina. La cura se extrajo a `_cureRelinkedTrack()` y actualiza el tamaño guardado al del archivo real para que las claves futuras cuadren.
+- **Tocar una pendiente la vincula** (`promptRelinkTrack`, interceptado en `playTrack` — la restauración de sesión no pasa por ahí): diálogo ««X» todavía no tiene audio en este dispositivo… Elige su archivo» → selector de un solo audio (el integrado de Delta o `<input>`) → el archivo elegido cura esa pista sin exigir coincidencias de nombre → se reproduce con el contexto original. Cancelar no toca nada. El avance automático de la cola conserva el comportamiento anterior (aviso y salto, sin diálogos en cadena).
+- **Señal antes de pulsar play**: la fila de la lista abierta lleva ya la clase `is-pending` y la insignia «Sin audio» como el resto de filas, y el Reproductor muestra bajo el álbum una píldora accionable «Sin audio — toca para vincular el archivo» (visible solo si la pista actual está pendiente) que lanza el mismo flujo de vinculación.
+- I18n: nuevas `relink_prompt`, `relink_choose_file`, `relink_cta` → **382 claves × 8 idiomas, sin huecos**.
+
+### Verificación
+
+- Nuevo `check-vincular.js`: **16/16** — cura por nombre con otro tamaño y por título+artista con nombre cambiado; ambigüedad no adivina; la cura deja URL y tamaño real; tocar una pendiente con «cancelar» no procesa nada y con «aceptar» vincula el archivo elegido (aunque su nombre no coincida) y lo reproduce; el aviso de Now Playing aparece solo en pendientes y se apaga al curar; la fila de la lista lleva la insignia; y de punta a punta: reimportar el audio con otro tamaño cura la pista del backup sin crear duplicado y la lista sigue apuntando a ella. Cero errores.
+- `check-chat.js` (§53, recreado tras perderse `/tmp`) en verde: 12/12.
+- `.xdc` reconstruido y válido para Delta Chat: 27 archivos, 345,0 KB.

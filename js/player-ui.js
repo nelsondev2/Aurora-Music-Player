@@ -48,6 +48,10 @@ Object.assign(App, {
         albumEl.textContent = hasAlbum ? t.album : '';
         albumEl.style.display = hasAlbum ? '' : 'none';
       }
+      // Aviso «sin audio» de Now Playing (§55): visible solo si la
+      // pista actual vino de una copia y aún no tiene archivo.
+      const npPending = document.getElementById('npPendingBadge');
+      if (npPending) npPending.hidden = !t._needsRelink;
       document.getElementById('timeTotal').textContent = this.fmtTime(t.duration);
       document.getElementById('miniTitle').textContent = t.title;
       document.getElementById('miniArtist').textContent = t.artist;

@@ -152,6 +152,12 @@
             <h1 class="track-title" id="trackTitle"><span class="marquee-inner">—</span></h1>
             <p class="track-artist" id="trackArtist"><span class="marquee-inner">—</span></p>
             <p class="track-album" id="trackAlbum"></p>
+            <!-- Pista restaurada de una copia, aún sin audio (§55): aviso
+                 visible ANTES de pulsar play, y accionable (vincula). -->
+            <button class="np-pending" id="npPendingBadge" type="button" hidden>
+              <svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg>
+              <span data-i18n="relink_cta">Sin audio — toca para vincular el archivo</span>
+            </button>
           </div>
           <button class="icon-btn like-btn" id="btnLike" data-i18n-aria="favorite" aria-label="Favorito" aria-pressed="false">
             <svg class="ico" aria-hidden="true"><use href="#i-heart"></use></svg>

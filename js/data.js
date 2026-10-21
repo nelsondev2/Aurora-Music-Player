@@ -2258,6 +2258,26 @@ const I18N = {
     it: 'Nessun testo corrisponde ai tuoi brani',
     ru: 'Ни один текст не подошёл к вашим песням'
   },
+  relink_prompt: {
+    es: '«X» todavía no tiene audio en este dispositivo: vino de la copia de seguridad. Elige su archivo para vincularlo y poder escucharla.',
+    en: "\u201CX\u201D has no audio on this device yet: it came from the backup. Choose its file to link it and play it.",
+    pt: '«X» ainda não tem áudio neste dispositivo: veio da cópia de segurança. Escolhe o ficheiro para o vincular e poderes ouvi-la.',
+    zh: '“X”在这台设备上还没有音频：它来自备份。选择它的文件进行关联即可播放。',
+    ja: '「X」にはこの端末にまだ音声がありません（バックアップから復元）。ファイルを選ぶとリンクして再生できます。',
+    fr: '« X » n’a pas encore d’audio sur cet appareil : elle vient de la sauvegarde. Choisissez son fichier pour la relier et l’écouter.',
+    it: '«X» non ha ancora audio su questo dispositivo: arriva dal backup. Scegli il suo file per collegarlo e ascoltarla.',
+    ru: '«X» пока без аудио на этом устройстве: она из резервной копии. Выберите её файл, чтобы привязать и слушать.'
+  },
+  relink_choose_file: {
+    es: 'Elegir archivo', en: 'Choose file', pt: 'Escolher ficheiro',
+    zh: '选择文件', ja: 'ファイルを選ぶ', fr: 'Choisir le fichier',
+    it: 'Scegli file', ru: 'Выбрать файл'
+  },
+  relink_cta: {
+    es: 'Sin audio — toca para vincular el archivo', en: 'No audio yet — tap to link the file', pt: 'Sem áudio — toca para vincular o ficheiro',
+    zh: '暂无音频 — 点击关联文件', ja: '音声未リンク — タップしてファイルを選ぶ', fr: 'Pas encore d’audio — touchez pour relier le fichier',
+    it: 'Audio mancante — tocca per collegare il file', ru: 'Аудио ещё нет — нажмите, чтобы привязать файл'
+  },
   relink_done: {
     es: 'X pistas vinculadas',
     en: 'X tracks linked',

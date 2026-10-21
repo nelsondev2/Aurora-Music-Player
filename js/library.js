@@ -117,25 +117,7 @@ Object.assign(App, {
           if (existing) {
             dupCount++;
             if (existing._needsRelink && (t._file || t.src)) {
-              // Curar pista restaurada de un backup: el backup aportó los
-              // metadatos (quizá editados) y el archivo aporta el audio.
-              if (t._file) existing._file = t._file;
-              if (t.src) {
-                if (existing.src && existing.src.startsWith('blob:') && existing.src !== t.src) {
-                  try { URL.revokeObjectURL(existing.src); } catch (e) {}
-                }
-                existing.src = t.src;
-                t.src = null; // reutilizada: no revocar abajo
-              }
-              if (!existing.duration && t.duration) existing.duration = t.duration;
-              if (!existing.coverThumb && t.coverThumb) {
-                existing.coverThumb = t.coverThumb;
-                existing.coverIsImage = t.coverIsImage;
-              }
-              delete existing._needsRelink;
-              this._urlCache.delete(existing.id);
-              if (existing.src) this._urlCache.set(existing.id, existing.src);
-              this.persistTrack(existing);
+              this._cureRelinkedTrack(existing, t);
               relinked++;
             } else if (t.src && t.src.startsWith('blob:')) {
               URL.revokeObjectURL(t.src);
@@ -144,8 +126,21 @@ Object.assign(App, {
             // (p. ej. se quitó de la lista y se vuelve a añadir el mismo archivo).
             existingForPlaylist.push(existing);
           } else {
-            uniqueTracks.push(t);
-            byKey.set(this._dupKey(t.fileName, t.fileSize), t);
+            /* La misma canción con otro tamaño (otro ripeo, descargada
+             * de nuevo…) nunca casaba por nombre+tamaño y quedaba un
+             * fantasma «sin audio» junto a la copia buena (§55): si una
+             * pista pendiente casa por nombre de archivo —o por
+             * título+artista— de forma única, el archivo la cura. */
+            const candidate = this._findRelinkCandidate(t);
+            if (candidate) {
+              this._cureRelinkedTrack(candidate, t);
+              relinked++;
+              existingForPlaylist.push(candidate);
+              byKey.set(this._dupKey(candidate.fileName, candidate.fileSize), candidate);
+            } else {
+              uniqueTracks.push(t);
+              byKey.set(this._dupKey(t.fileName, t.fileSize), t);
+            }
           }
         }
         // Letras .lrc traídas junto al audio: se enlazan por nombre
@@ -1321,6 +1316,107 @@ Object.assign(App, {
       const label = document.getElementById('relinkAudioLabel');
       if (btn) btn.hidden = n === 0;
       if (label) label.textContent = this.t('relink_pending').replace('X', String(n));
+    },
+
+    /* Cura una pista pendiente de re-vincular con el audio recién
+     * procesado: el backup aportó los metadatos (quizá editados) y el
+     * archivo aporta el audio. El tamaño se actualiza al del archivo
+     * real para que las futuras claves de duplicado cuadren. */
+    _cureRelinkedTrack(existing, t) {
+      if (t._file) existing._file = t._file;
+      if (t.src) {
+        if (existing.src && existing.src.startsWith('blob:') && existing.src !== t.src) {
+          try { URL.revokeObjectURL(existing.src); } catch (e) {}
+        }
+        existing.src = t.src;
+        t.src = null; // reutilizada: no revocarla como duplicada
+      }
+      if (t.fileSize) existing.fileSize = t.fileSize;
+      if (!existing.duration && t.duration) existing.duration = t.duration;
+      if (!existing.coverThumb && t.coverThumb) {
+        existing.coverThumb = t.coverThumb;
+        existing.coverIsImage = t.coverIsImage;
+      }
+      delete existing._needsRelink;
+      this._urlCache.delete(existing.id);
+      if (existing.src) this._urlCache.set(existing.id, existing.src);
+      this.persistTrack(existing);
+    },
+
+    /* Busca una pista pendiente que un archivo importado pueda curar
+     * aunque su tamaño no coincida: mismo nombre de archivo, o mismo
+     * título+artista, siempre de forma ÚNICA entre las pendientes
+     * (si hay dos candidatas, no se adivina). */
+    _findRelinkCandidate(t) {
+      const pend = (this.tracks || []).filter(ex => ex && ex._needsRelink);
+      if (!pend.length || !t) return null;
+      const norm = (v) => String(v == null ? '' : v).trim().toLowerCase();
+      if (norm(t.fileName)) {
+        const byName = pend.filter(ex => norm(ex.fileName) === norm(t.fileName));
+        if (byName.length === 1) return byName[0];
+      }
+      const title = norm(t.title);
+      if (title) {
+        const byMeta = pend.filter(ex => norm(ex.title) === title && norm(ex.artist) === norm(t.artist));
+        if (byMeta.length === 1) return byMeta[0];
+      }
+      return null;
+    },
+
+    /* Al tocar una pista pendiente (§55): en vez del aviso seco «sin
+     * audio», ofrecer vincular su archivo aquí y ahora. Si el usuario
+     * elige un archivo, ESE archivo cura ESTA pista (su elección manda,
+     * no hace falta que los nombres coincidan) y a continuación
+     * `after` suele reproducirla. */
+    async promptRelinkTrack(track, after) {
+      if (!track || !track._needsRelink) { if (after) after(); return; }
+      let ok = false;
+      try {
+        ok = await this.showConfirm({
+          message: this.t('relink_prompt').replace('X', track.title || track.fileName || ''),
+          okLabel: this.t('relink_choose_file'),
+          cancelLabel: this.t('cancel'),
+          danger: false
+        });
+      } catch (e) { ok = false; }
+      if (!ok) return;
+      const file = await this._pickRelinkFile();
+      if (!file) return;
+      let made = [];
+      try { made = await window.AuroraUploader.processFiles([file], {}); } catch (e) { made = []; }
+      const t = made && made[0];
+      if (!t || !(t._file || t.src)) { this.toast(this.t('toast_load_failed')); return; }
+      this._cureRelinkedTrack(track, t);
+      this.updateRelinkUI();
+      if (typeof this.renderHome === 'function') this.renderHome();
+      if (typeof this.renderLibrarySections === 'function') this.renderLibrarySections();
+      if (this._editingPlaylistId && typeof this.renderEditPlaylist === 'function') this.renderEditPlaylist();
+      this.toast(this.t('relink_done').replace('X', '1'));
+      if (after) after();
+    },
+
+    /* Selector de UN archivo de audio para vincular: el integrado de
+     * Delta si lo hay; si no, un <input> efímero (mismo patrón que
+     * importLibrary). Devuelve File o null si se cancela. */
+    async _pickRelinkFile() {
+      const U0 = window.AuroraUploader;
+      const exts = ((U0 && typeof U0.ACCEPTED === 'string')
+        ? U0.ACCEPTED : '.mp3,.m4a,.flac,.wav,.ogg,.webm,.opus')
+        .split(',').map(x => x.trim()).filter(x => x.charAt(0) === '.');
+      const nativeFiles = await this.pickFilesWebxdc({ extensions: exts, multiple: false });
+      if (nativeFiles) return nativeFiles[0] || null;
+      return new Promise((resolve) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = exts.join(',');
+        input.style.display = 'none';
+        document.body.appendChild(input);
+        let settled = false;
+        const done = (v) => { if (!settled) { settled = true; try { input.remove(); } catch (e) {} resolve(v); } };
+        input.addEventListener('change', () => done((input.files && input.files[0]) || null));
+        window.addEventListener('focus', () => setTimeout(() => done(null), 400), { once: true });
+        input.click();
+      });
     },
 
     /* Persiste múltiples pistas en una sola transacción de IndexedDB.

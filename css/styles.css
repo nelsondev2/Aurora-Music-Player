@@ -567,6 +567,24 @@ svg { display: block; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Aviso «sin audio» de Now Playing (§55): píldora accionable que
+ * ofrece vincular el archivo de la pista restaurada. */
+.np-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  min-height: 36px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.np-pending[hidden] { display: none; }
 .like-btn {
   background: var(--surface);
   width: 44px;
