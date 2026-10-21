@@ -1067,7 +1067,9 @@ svg { display: block; }
   box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.4);
 }
 .lyrics-loop-indicator .ico { width: 12px; height: 12px; }
-.lyrics-loop-indicator .lt-btn { color: #fff; min-width: 24px; height: 24px; }
+/* Quitar el bucle también es un botón: 32 px táctiles como mínimo,
+ * no los 24 que lo dejaban por debajo del resto de la barra. */
+.lyrics-loop-indicator .lt-btn { color: #fff; min-width: 32px; height: 32px; }
 
 .lyrics-controls {
   position: absolute;

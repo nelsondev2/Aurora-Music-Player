@@ -932,3 +932,38 @@ contexto y el extremo a extremo buscar→reproducir con cola y
 etiqueta «desde Rock», 0 errores), Favoritos 9/9, Letras 9/9,
 navegación 9/9, AAA 12/12 e i18n 403×8, repetido sobre el `.xdc`
 extraído (342,3 KB, sha256 `b721dd93…`).
+
+## 39. Barrida de pequeños detalles (petición del usuario)
+
+El usuario pidió buscar «otros pequeños detalles como los arreglados
+hasta ahora». Barrida por ejes (contextos que mienten, pintura fuera
+de familia, textos sin traducir, contadores, objetivos táctiles) con
+estos hallazgos reales — todo lo demás salió limpio: 78 aria-labels
+con su clave i18n (salvo el nombre de la app), ningún literal en
+español fuera del diccionario, ningún plural sin singular y la
+duración desconocida ya pintaba «—», no «0:00»:
+
+1. **El «Todas las canciones» forzado tenía tres focos más** tras el
+   de Buscar (§38): «Reproducir ahora» y «Reproducir a continuación»
+   del menú de pista, las tarjetas de canción de Inicio y las filas
+   del Historial. El resolvedor se generaliza a
+   `trackPlayContextFor()` (queda alias del nombre viejo) y los tres
+   focos lo usan: manda la lista de la canción en cualquier puerta.
+2. **Anillos «está sonando» desactualizados**: el hero de la lista
+   abierta y el «Reproducir Todo» de Favoritos se pintan al
+   renderizar; pausar desde el mini-reproductor con la hoja abierta
+   los dejaba encendidos. `updatePlayUI()` los re-sincroniza en cada
+   play/pausa.
+3. **Etiqueta con el nombre del día del play**: «Reproduciendo
+   desde…» usaba el nombre guardado en el contexto; renombrar la
+   lista que suena no se reflejaba. Ahora se resuelve por id al
+   pintar.
+4. **Botón de quitar el bucle de Letras a 24×24 px**, por debajo de
+   todo lo demás: sube a 32×32.
+
+Verificación: regresión específica **6/6** (menú de pista hacia su
+lista, anillo que se enciende y se apaga sin re-render, etiqueta tras
+renombrar, regla CSS del bucle, 0 errores) y la batería completa en
+verde (Mi Música 15/15, Favoritos 9/9, Letras 9/9, navegación 9/9,
+AAA 12/12, i18n 403×8), repetida la específica sobre el `.xdc`
+extraído (343,1 KB, sha256 `7dcccd72…`).

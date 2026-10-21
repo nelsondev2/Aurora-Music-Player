@@ -589,7 +589,11 @@ Object.assign(App, {
       cont.querySelectorAll('.track-row[data-track]').forEach(row => {
         row.addEventListener('click', (e) => {
           if (e.target.closest('.track-menu-btn')) return;
-          this.playTrack(row.dataset.track, { type: 'all' });
+          // Desde el Historial también manda la lista de la canción
+          // (mismo criterio que Buscar e Inicio, §38/§39).
+          const trk = this.tracks.find(x => x.id === row.dataset.track);
+          this.playTrack(row.dataset.track,
+            (trk && typeof this.trackPlayContextFor === 'function') ? this.trackPlayContextFor(trk) : { type: 'all' });
         });
         if (typeof this.wireTrackLongPress === 'function') this.wireTrackLongPress(row, row.dataset.track);
         const cv = row.querySelector('canvas');

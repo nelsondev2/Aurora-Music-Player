@@ -281,7 +281,9 @@ Object.assign(App, {
           const cv = card.querySelector('canvas');
           if (cv && t) this.drawRowCover(cv, t);
           card.addEventListener('click', () => {
-            this.playTrack(id, { type: 'all' });
+            // Tarjeta suelta de Inicio: la lista de la canción manda
+            // (mismo criterio que Buscar, §38), no «Todas» a secas.
+            this.playTrack(id, typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(t) : { type: 'all' });
             this.updateChrome();
             if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
           });

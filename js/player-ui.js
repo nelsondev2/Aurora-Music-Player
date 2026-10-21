@@ -218,6 +218,27 @@ Object.assign(App, {
       this.updateCoverA11y();
       if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
 
+      /* Los anillos de «esta lista está sonando» (hero de la lista
+       * abierta y «Reproducir Todo» de Favoritos) se pintan al
+       * renderizar, pero pausar desde el mini-reproductor con la hoja
+       * abierta no re-renderiza: quedaban encendidos en pausa. Aquí
+       * se re-sincronizan con cada cambio de play/pausa. */
+      const favBtn = document.getElementById('btnPlayFavoritesNow');
+      if (favBtn) {
+        favBtn.classList.toggle('is-playing',
+          this.isPlaying && !!this.playContext && this.playContext.type === 'favorites');
+      }
+      if (this._editingPlaylistId && typeof this.isPlaylistPlaying === 'function') {
+        const pl = (this.playlists || []).find(p => p && p.id === this._editingPlaylistId);
+        if (pl) {
+          const on = this.isPlaylistPlaying(pl);
+          const hero = document.getElementById('btnPlayPlaylistNow');
+          if (hero) hero.classList.toggle('is-playing', on);
+          const cover = document.getElementById('editPlaylistCover');
+          if (cover) cover.classList.toggle('is-playing', on);
+        }
+      }
+
       // Visualizador en tiempo real
       if (this.isPlaying) {
         if (typeof this.startVisualizer === 'function') this.startVisualizer();

@@ -572,7 +572,10 @@ Object.assign(App, {
         const t = this.menuTrack();
         this.closeSheet('sheetTrackMenu');
         if (t) {
-          this.playTrack(t.id, { type: 'all' });
+          // «Reproducir ahora» desde el menú de una lista no debe
+          // saltar a «Todas las canciones»: manda la lista de la
+          // canción, como en Buscar (§38).
+          this.playTrack(t.id, typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(t) : { type: 'all' });
           if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
         }
       });
@@ -581,7 +584,7 @@ Object.assign(App, {
         const t = this.menuTrack();
         this.closeSheet('sheetTrackMenu');
         if (!t) return;
-        if (!this.currentTrack) this.playTrack(t.id, { type: 'all' });
+        if (!this.currentTrack) this.playTrack(t.id, typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(t) : { type: 'all' });
         else this.playNext(t.id);
       });
       const ctxAddQueue = document.getElementById('ctxAddQueue');

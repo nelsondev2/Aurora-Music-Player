@@ -137,14 +137,15 @@ Object.assign(App, {
       return c;
     },
 
-    /* Contexto de reproducción para una canción elegida en Buscar.
+    /* Contexto de reproducción para una canción suelta elegida
+     * fuera de su lista (Buscar, Inicio, Historial, menú de pista).
      * Antes todo salía como «Todas las canciones» aunque la canción
      * viviera en una lista, y la cola que se creaba era la biblioteca
      * entera. Ahora manda la lista de la canción: primero las listas
      * del usuario y, si solo está en la automática, «Mi Música»; la
      * cola pasa a ser esa lista, así que siguiente/anterior y el
      * «Reproduciendo desde…» cuentan lo mismo. */
-    searchPlayContextFor(t) {
+    trackPlayContextFor(t) {
       let miMusica = null;
       for (const pl of this.playlists || []) {
         if (!pl || !Array.isArray(pl.trackIds) || !t || !pl.trackIds.includes(t.id)) continue;
@@ -154,6 +155,9 @@ Object.assign(App, {
       if (miMusica) return { type: 'playlist', id: miMusica.id, name: miMusica.name };
       return { type: 'all' };
     },
+
+    /* Nombre histórico del resolvedor de contexto. */
+    searchPlayContextFor(t) { return this.trackPlayContextFor(t); },
 
     runSearch(q, filter) {
       const ul = document.getElementById('searchResults');
@@ -237,12 +241,12 @@ Object.assign(App, {
             wrap.style.listStyle = 'none';
             wrap.appendChild(rest);
             ul.appendChild(wrap);
-            this.fillVirtualList(rest, songs, (tr) => this.makeTrackRow(tr, { playContext: this.searchPlayContextFor(tr) }), {
+            this.fillVirtualList(rest, songs, (tr) => this.makeTrackRow(tr, { playContext: this.trackPlayContextFor(tr) }), {
               scroller: ul.closest('.sheet-body'),
               rowHeight: 64
             });
           } else {
-            songs.forEach(tr => ul.appendChild(this.makeTrackRow(tr, { playContext: this.searchPlayContextFor(tr) })));
+            songs.forEach(tr => ul.appendChild(this.makeTrackRow(tr, { playContext: this.trackPlayContextFor(tr) })));
           }
         }
         return;
@@ -253,12 +257,12 @@ Object.assign(App, {
         return;
       }
       if (typeof this.fillVirtualList === 'function') {
-        this.fillVirtualList(ul, res, (tr) => this.makeTrackRow(tr, { playContext: this.searchPlayContextFor(tr) }), {
+        this.fillVirtualList(ul, res, (tr) => this.makeTrackRow(tr, { playContext: this.trackPlayContextFor(tr) }), {
           scroller: ul.closest('.sheet-body'),
           rowHeight: 64
         });
       } else {
-        res.forEach(tr => ul.appendChild(this.makeTrackRow(tr, { playContext: this.searchPlayContextFor(tr) })));
+        res.forEach(tr => ul.appendChild(this.makeTrackRow(tr, { playContext: this.trackPlayContextFor(tr) })));
       }
     },
 

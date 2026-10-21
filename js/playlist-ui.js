@@ -1190,7 +1190,13 @@ Object.assign(App, {
         return this.t('favorites_playlist_name');
       }
       if (this.playContext.type === 'playlist') {
-        return this.playContext.name || this.t('your_playlists');
+        // El nombre se resuelve por id en el momento de pintar: si la
+        // lista se renombra mientras suena, la etiqueta «Reproduciendo
+        // desde…» no debe quedarse con el nombre del día del play.
+        const pl = this.playContext.id
+          ? (this.playlists || []).find(p => p && p.id === this.playContext.id)
+          : null;
+        return (pl && pl.name) || this.playContext.name || this.t('your_playlists');
       }
       if (this.playContext.type === 'all') {
         return this.t('all_tracks_section');
