@@ -31,7 +31,7 @@ El resultado es un ZIP con compresión Deflate, **28 archivos y ~297 KB**, repro
 3. Tócalo para abrirlo: la app arranca dentro del chat.
 4. Pulsa **+** y elige tus archivos de audio. Los datos quedan en esa instancia del `.xdc`.
 
-> **Cada copia del `.xdc` guarda su propia biblioteca.** Si reenvías el archivo se crea una instancia nueva y vacía. Usa siempre la misma copia y exporta una copia de seguridad (Ajustes → Exportar) antes de cambiar de chat o de versión.
+> **Cada copia del `.xdc` guarda su propia biblioteca.** Si reenvías el archivo se crea una instancia nueva y vacía: usa siempre la misma copia, porque tu música, tus listas y tus ajustes viven dentro de esa instancia.
 
 ### Qué cambia dentro de Delta Chat
 

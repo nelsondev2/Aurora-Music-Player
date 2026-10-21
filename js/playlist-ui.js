@@ -893,7 +893,7 @@ Object.assign(App, {
           li.className = (target === grid ? 'pl-card' : 'pl-row') + (playing ? ' is-playing' : '');
           const cover = this.getPlaylistCover(pl);
           // Nunca interpolar una portada sin validar dentro de style="":
-          // una comilla o un `)` permitiría inyectar CSS/HTML desde un backup.
+          // una comilla o un `)` permitiría inyectar CSS/HTML desde datos no fiables.
           const hasArt = typeof cover === 'string' && this._safeImageDataUrl(cover);
           const coverBg = hasArt
             ? `background-image:url('${cover}');background-size:cover;background-position:center;`

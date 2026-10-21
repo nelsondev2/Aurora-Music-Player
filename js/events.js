@@ -144,13 +144,6 @@ Object.assign(App, {
       // de letras; ambos abren el mismo sheet.
       $('btnMore').addEventListener('click', () => this.openSheet('sheetMore'));
       $('btnLyricsMore').addEventListener('click', () => this.openSheet('sheetMore'));
-      // Aviso «sin audio» del Reproductor (§55): tocarlo vincula la pista.
-      const npPendingBtn = document.getElementById('npPendingBadge');
-      if (npPendingBtn) npPendingBtn.addEventListener('click', () => {
-        if (this.currentTrack && typeof this.promptRelinkTrack === 'function') {
-          this.promptRelinkTrack(this.currentTrack, () => this.loadAndPlay());
-        }
-      });
       this._wired.play = true;
 
       // Prev / next
@@ -233,7 +226,6 @@ Object.assign(App, {
       if (btnSettings) btnSettings.addEventListener('click', () => {
         this.closeSheet('sheetMore');
         if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
-        if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
         this.openSheet('sheetSettings');
       });
       // Temas desde Ajustes
@@ -254,18 +246,6 @@ Object.assign(App, {
         this.closeSheet('sheetSettings');
         this.toast(this.t('toast_retag_start'));
         this.retagExistingTracks().catch(() => {});
-      });
-      // Sistema de copia de seguridad §51: vive en Opciones (sheetMore),
-      // ya no es una fila suelta dentro de Ajustes.
-      const btnBackupExport = document.getElementById('menuBackupExport');
-      if (btnBackupExport) btnBackupExport.addEventListener('click', () => {
-        this.closeSheet('sheetMore');
-        this.exportLibrary();
-      });
-      const btnBackupImport = document.getElementById('menuBackupImport');
-      if (btnBackupImport) btnBackupImport.addEventListener('click', () => {
-        this.closeSheet('sheetMore');
-        this.importLibrary();
       });
       const btnRelink = document.getElementById('menuRelinkAudio');
       if (btnRelink) btnRelink.addEventListener('click', () => {

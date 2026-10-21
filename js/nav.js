@@ -169,10 +169,6 @@ Object.assign(App, {
               <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
               <span>${this.esc(this.t('load_music'))}</span>
             </button>
-            <button class="text-btn home-welcome-restore" id="btnHomeRestoreBackup" type="button">
-              <svg class="ico" aria-hidden="true"><use href="#i-file-import"></use></svg>
-              <span>${this.esc(this.t('backup_import'))}</span>
-            </button>
             <ul class="home-welcome-formats" aria-label="${this.esc(this.t('empty_format_hint'))}">
               <li>MP3</li><li>FLAC</li><li>M4A</li><li>WAV</li><li>OGG</li><li>OPUS</li>
             </ul>
@@ -184,11 +180,6 @@ Object.assign(App, {
           </div>`;
         const btn = document.getElementById('btnHomeLoad');
         if (btn) btn.addEventListener('click', () => this.openFilePicker());
-        // Restaurar tras instalar una versión nueva (§54): la copia se
-        // importa ANTES de cargar la música; las canciones quedan
-        // pendientes y se enlazan al importarlas (menuRelinkAudio).
-        const btnRestore = document.getElementById('btnHomeRestoreBackup');
-        if (btnRestore) btnRestore.addEventListener('click', () => this.importLibrary());
         const btnSettings = document.getElementById('btnHomeWelcomeSettings');
         if (btnSettings) btnSettings.addEventListener('click', () => this.openSheet('sheetSettings'));
         return;
@@ -476,8 +467,7 @@ Object.assign(App, {
       opts = opts || {};
       const li = document.createElement('li');
       const isCurrent = this.currentTrack && this.currentTrack.id === t.id;
-      const isPending = !!(t && t._needsRelink);
-      li.className = 'track-row' + (isCurrent ? ' current' : '') + (isPending ? ' is-pending' : '');
+      li.className = 'track-row' + (isCurrent ? ' current' : '');
       li.dataset.track = t.id;
       // Subtítulo sin eco: el álbum se oculta cuando coincide con el
       // título o con el artista (sencillos: «BALALAIKA» y debajo
@@ -496,7 +486,7 @@ Object.assign(App, {
         <div class="row-cover"><canvas width="44" height="44"></canvas>${nowBadge}</div>
         <div class="row-text">
           <div class="row-title">${this.esc(t.title)}</div>
-          <div class="row-sub">${this.esc(t.artist)}${showAlbum ? ' · ' + this.esc(t.album) : ''}${isPending ? ' <span class="row-pending-badge">' + this.esc(this.t('relink_badge')) + '</span>' : ''}</div>
+          <div class="row-sub">${this.esc(t.artist)}${showAlbum ? ' · ' + this.esc(t.album) : ''}</div>
         </div>
         <div class="row-duration">${this.fmtRowDuration(t)}</div>
         <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>`;

@@ -112,7 +112,7 @@ Object.assign(App, {
           this._originalQueue = null;
         }
         // playContext se usa para decidir la cola y se pinta en la barra:
-        // aceptar solo formas conocidas evita objetos arbitrarios de un backup.
+        // aceptar solo formas conocidas evita objetos arbitrarios de datos guardados.
         const allowedCtx = ['all', 'queue', 'playlist', 'favorites', 'album', 'artist', 'radio'];
         if (session.playContext && typeof session.playContext === 'object' && allowedCtx.includes(session.playContext.type)) {
           this.playContext = {
@@ -625,7 +625,6 @@ Object.assign(App, {
       this.applyLang();
       this.buildLangList();
       // Refrescar etiquetas dinámicas (no data-i18n) en el nuevo idioma
-      if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
       if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
       this.toast(this.t('toast_lang_applied'));
     },

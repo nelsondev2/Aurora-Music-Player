@@ -132,9 +132,8 @@ Object.assign(App, {
         const t = this.tracks.find(x => x.id === id);
         if (!t) return;
         const isCurrent = this.currentTrack && this.currentTrack.id === id;
-        const isPending = !!(t && t._needsRelink);
         const li = document.createElement('li');
-        li.className = 'track-row' + (isCurrent ? ' current' : '') + (isPending ? ' is-pending' : '');
+        li.className = 'track-row' + (isCurrent ? ' current' : '');
         li.dataset.trackId = id;
         li.dataset.idx = String(i);
         li.innerHTML = `
@@ -142,7 +141,7 @@ Object.assign(App, {
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
-            <div class="row-sub">${this.esc(t.artist)}${isPending ? ' <span class="row-pending-badge">' + this.esc(this.t('relink_badge')) + '</span>' : ''}</div>
+            <div class="row-sub">${this.esc(t.artist)}</div>
           </div>
           <div class="row-duration">${isCurrent ? '<svg class="ico now-eq" aria-hidden="true"><use href="#i-volume-high"></use></svg> ' : ''}${this.fmtRowDuration(t)}</div>
           <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>

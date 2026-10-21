@@ -48,10 +48,6 @@ Object.assign(App, {
         albumEl.textContent = hasAlbum ? t.album : '';
         albumEl.style.display = hasAlbum ? '' : 'none';
       }
-      // Aviso «sin audio» de Now Playing (§55): visible solo si la
-      // pista actual vino de una copia y aún no tiene archivo.
-      const npPending = document.getElementById('npPendingBadge');
-      if (npPending) npPending.hidden = !t._needsRelink;
       document.getElementById('timeTotal').textContent = this.fmtTime(t.duration);
       document.getElementById('miniTitle').textContent = t.title;
       document.getElementById('miniArtist').textContent = t.artist;
@@ -108,8 +104,8 @@ Object.assign(App, {
       // Si la portada es una imagen (dataURL), dibujarla
       const isImage = track.coverIsImage || (typeof track.cover === 'string' && track.cover.startsWith('data:'));
       if (isImage) {
-        /* Las pistas restauradas de una copia pueden traer `coverIsImage`
-         * sin el campo `cover` (el backup no lo exporta); antes se leía
+        /* Hay pistas que pueden traer `coverIsImage` sin el campo
+         * `cover`; antes se leía
          * `track.cover.dataURL` sin proteger y la vista del reproductor
          * reventaba. Se usa la miniatura disponible y, si no hay nada
          * dibujable, se cae al gradiente como en las filas. */

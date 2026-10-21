@@ -187,16 +187,6 @@ Object.assign(App, {
     playTrack(trackId, context) {
       const idx = this.tracks.findIndex(t => t.id === trackId);
       if (idx < 0) return;
-      /* Pista restaurada de una copia y aún sin audio (§55): el intento
-       * directo solo podía acabar en el aviso «sin audio» y un salto.
-       * Se ofrece vincular su archivo y, si se vincula, se reproduce
-       * con el mismo contexto que la trajo aquí. La restauración de
-       * sesión no pasa por playTrack: esto es solo gesto del usuario. */
-      const tapped = this.tracks[idx];
-      if (tapped && tapped._needsRelink && typeof this.promptRelinkTrack === 'function') {
-        this.promptRelinkTrack(tapped, () => this.playTrack(trackId, context));
-        return;
-      }
       this.currentTrackIdx = idx;
       this.currentTrack = this.tracks[idx];
 
@@ -288,7 +278,7 @@ Object.assign(App, {
       const url = this.getTrackUrl(t);
       if (!url) {
         console.warn('[Aurora] Sin URL de audio para', t.id);
-        // Pista pendiente de re-vincular (restaurada de un backup): avisar
+        // Pista sin fuente de audio utilizable (blob perdido): avisar
         // y saltar a la siguiente sin bloquear la reproducción.
         this.toast(this.t('toast_track_no_audio'));
         this._noAudioSkips = (this._noAudioSkips || 0) + 1;

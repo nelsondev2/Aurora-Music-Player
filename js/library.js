@@ -107,7 +107,6 @@ Object.assign(App, {
         // #10 Detección de duplicados: comparar por fileName + fileSize.
         // Índice O(1) por clave para que importar 500 archivos no sea O(n²).
         let dupCount = 0;
-        let relinked = 0;
         const uniqueTracks = [];
         const existingForPlaylist = [];
         const byKey = new Map();
@@ -116,31 +115,15 @@ Object.assign(App, {
           const existing = byKey.get(this._dupKey(t.fileName, t.fileSize)) || null;
           if (existing) {
             dupCount++;
-            if (existing._needsRelink && (t._file || t.src)) {
-              this._cureRelinkedTrack(existing, t);
-              relinked++;
-            } else if (t.src && t.src.startsWith('blob:')) {
+            if (t.src && t.src.startsWith('blob:')) {
               URL.revokeObjectURL(t.src);
             }
             // Si se sube a una lista, reutilizar la pista de la biblioteca
             // (p. ej. se quitó de la lista y se vuelve a añadir el mismo archivo).
             existingForPlaylist.push(existing);
           } else {
-            /* La misma canción con otro tamaño (otro ripeo, descargada
-             * de nuevo…) nunca casaba por nombre+tamaño y quedaba un
-             * fantasma «sin audio» junto a la copia buena (§55): si una
-             * pista pendiente casa por nombre de archivo —o por
-             * título+artista— de forma única, el archivo la cura. */
-            const candidate = this._findRelinkCandidate(t);
-            if (candidate) {
-              this._cureRelinkedTrack(candidate, t);
-              relinked++;
-              existingForPlaylist.push(candidate);
-              byKey.set(this._dupKey(candidate.fileName, candidate.fileSize), candidate);
-            } else {
-              uniqueTracks.push(t);
-              byKey.set(this._dupKey(t.fileName, t.fileSize), t);
-            }
+            uniqueTracks.push(t);
+            byKey.set(this._dupKey(t.fileName, t.fileSize), t);
           }
         }
         // Letras .lrc traídas junto al audio: se enlazan por nombre
@@ -173,9 +156,7 @@ Object.assign(App, {
             this.persistPlaylist(destPlEarly);
           }
         }
-        if (relinked > 0 && readded === 0 && uniqueTracks.length === 0) {
-          this.toast(this.t('relink_done').replace('X', String(relinked)) + lrcSuffix);
-        } else if (dupCount > 0 && readded === 0 && uniqueTracks.length === 0) {
+        if (dupCount > 0 && readded === 0 && uniqueTracks.length === 0) {
           this.toast(dupCount + ' ' + this.t('toast_duplicate_found') + lrcSuffix);
         }
         if (uniqueTracks.length === 0) {
@@ -183,16 +164,11 @@ Object.assign(App, {
             this.renderPlaylists();
             if (this._editingPlaylistId === destIdEarly) this.renderEditPlaylist();
             let msg = readded + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destPlEarly.name;
-            if (relinked > 0) msg += ' · ' + this.t('relink_done').replace('X', String(relinked));
             msg += lrcSuffix;
             this.toast(msg);
           }
-          if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
-          if (relinked > 0) {
-            if (typeof this.renderHome === 'function') this.renderHome();
-          }
-          // Sin lista destino y sin pistas nuevas (duplicadas o
-          // re-enlazadas): también son «de fuera» y entran en Mi Música.
+          // Sin lista destino y sin pistas nuevas (duplicadas):
+          // también son «de fuera» y entran en Mi Música.
           if (!targetPlaylistId && existingForPlaylist.length &&
               typeof this._ensureMiMusica === 'function') {
             this._ensureMiMusica(existingForPlaylist.map(t => t.id));
@@ -260,16 +236,14 @@ Object.assign(App, {
         // Si estábamos editando la playlist destino, refrescar la vista
         if (this._editingPlaylistId === destId) this.renderEditPlaylist();
         this.hideEmptyState();
-        if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
-        const relinkSuffix = relinked > 0 ? ' · ' + this.t('relink_done').replace('X', String(relinked)) : '';
         const folderSuffix = fromDirectory ? ' ' + this.t('folder_tag') : '';
         if (this._importCancelled) {
-          this.toast(this.t('toast_import_cancelled').replace('X', String(tracksToAdd.length)) + relinkSuffix + lrcSuffix);
+          this.toast(this.t('toast_import_cancelled').replace('X', String(tracksToAdd.length)) + lrcSuffix);
         } else {
           const destMsg = destPl
             ? this.t('toast_added_to_playlist_plural') + ' ' + destPl.name
             : this.t('toast_added_to_library');
-          this.toast(tracksToAdd.length + ' ' + destMsg + folderSuffix + relinkSuffix + lrcSuffix);
+          this.toast(tracksToAdd.length + ' ' + destMsg + folderSuffix + lrcSuffix);
         }
         // Con música ya dentro, se vuelve a pedir almacenamiento
         // persistente: algunos navegadores solo lo conceden tras
@@ -777,664 +751,11 @@ Object.assign(App, {
       }
     },
 
-    /* Foto de los ajustes del usuario para la copia de seguridad.
-     * Solo valores planos y validables: al importar se pasa todo por
-     * listas blancas (ver _applyBackupSettings), así un backup
-     * manipulado no puede colar temas, idiomas o modos inexistentes. */
-    _backupSettings() {
-      let eqGains = null;
-      let eqPreset = null;
-      try {
-        const raw = localStorage.getItem('aurora_eq');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) eqGains = parsed.map(v => Number(v));
-        }
-        eqPreset = localStorage.getItem('aurora_eq_preset') || null;
-      } catch (e) {}
-      return {
-        theme: this.theme,
-        accent: this.accent,
-        lang: this.lang,
-        volume: this.volume,
-        gapless: !!this._gaplessEnabled,
-        normalize: !!this._normalizeVolume,
-        crossfade: this.crossfadeDuration || 0,
-        marquee: this._marqueeEnabled !== false,
-        vinyl: !!this._vinylEnabled,
-        preservesPitch: this.preservesPitch !== false,
-        playbackRate: this.playbackRate || 1,
-        lrcFontSize: this.lrcFontSize || 19,
-        visualizerMode: this.visualizerMode || 'bars',
-        eq: { preset: eqPreset, gains: eqGains },
-      };
-    },
-
-    /* Foto portable de la sesión: la pista actual y la cola se
-     * identifican por nombre+tamaño de archivo (los id internos no
-     * significan nada en otro dispositivo) y al importar se traducen
-     * a los id locales. La posición viaja en segundos. */
-    _backupSession() {
-      const t = this.currentTrack;
-      if (!t || !t.fileName) return null;
-      const ident = (track) => track && track.fileName
-        ? { f: String(track.fileName), s: Number(track.fileSize) || 0 }
-        : null;
-      const byId = this.trackMap();
-      const queue = (Array.isArray(this.queue) ? this.queue : [])
-        .slice(0, 1000)
-        .map(id => ident(byId.get(id)))
-        .filter(Boolean);
-      return {
-        track: ident(t),
-        queue,
-        currentTime: Math.max(0, Math.floor((this.audio && this.audio.currentTime) || 0)),
-        shuffle: !!this.shuffle,
-        repeat: this.repeat || 'off'
-      };
-    },
-
-    /* Aplica los ajustes de un backup SIN toasts (los setters con
-     * aviso, como setVisualizerMode o setLang, llenarían la pantalla
-     * de mensajes): se asigna el estado, se persiste con las mismas
-     * claves que usa la app y se repinta lo imprescindible. Todo valor
-     * pasa por su lista blanca; lo desconocido se ignora. */
-    _applyBackupSettings(s) {
-      if (!s || typeof s !== 'object' || Array.isArray(s)) return;
-      try {
-        if (typeof s.theme === 'string' && this.THEMES && this.THEMES[s.theme]) {
-          this.theme = s.theme;
-          try { localStorage.setItem('aurora_theme', this.theme); } catch (e) {}
-        }
-        if (typeof s.accent === 'string' && this.ACCENTS) {
-          const acc = this._migrateAccent(s.accent);
-          if (this.ACCENTS[acc]) {
-            this.accent = acc;
-            try { localStorage.setItem('aurora_accent', acc); } catch (e) {}
-          }
-        }
-        if (typeof this.applyTheme === 'function') this.applyTheme();
-
-        if (typeof s.lang === 'string' && typeof this._isValidLang === 'function' && this._isValidLang(s.lang)) {
-          this.lang = s.lang;
-          try { localStorage.setItem('aurora_lang', s.lang); } catch (e) {}
-          this.applyLang();
-          if (typeof this.buildLangList === 'function') this.buildLangList();
-        }
-
-        if (isFinite(Number(s.volume))) this.setVolume(Number(s.volume));
-
-        let playbackTouched = false;
-        if (typeof s.gapless === 'boolean') { this._gaplessEnabled = s.gapless; playbackTouched = true; }
-        if (typeof s.normalize === 'boolean') { this._normalizeVolume = s.normalize; playbackTouched = true; }
-        if (typeof s.marquee === 'boolean') { this._marqueeEnabled = s.marquee; playbackTouched = true; }
-        if (typeof s.vinyl === 'boolean') { this._vinylEnabled = s.vinyl; playbackTouched = true; }
-        if ([0, 3, 6, 12].includes(Number(s.crossfade))) {
-          this.crossfadeDuration = Number(s.crossfade);
-          this.crossfadeEnabled = this.crossfadeDuration > 0;
-          playbackTouched = true;
-        }
-        if (playbackTouched) {
-          this.savePlaybackSettings();
-          if (typeof this.syncPlaybackSettingsUI === 'function') this.syncPlaybackSettingsUI();
-        }
-
-        if (typeof s.preservesPitch === 'boolean') this.setPreservesPitch(s.preservesPitch);
-        if (isFinite(Number(s.playbackRate))) this.setPlaybackRate(Number(s.playbackRate));
-        if (isFinite(Number(s.lrcFontSize))) this.setLrcFontSize(Number(s.lrcFontSize));
-
-        if (['bars', 'wave', 'off'].includes(s.visualizerMode)) {
-          this.visualizerMode = s.visualizerMode;
-          try { localStorage.setItem('aurora_visualizer_mode', s.visualizerMode); } catch (e) {}
-          if (typeof this.updateVisualizerUI === 'function') this.updateVisualizerUI();
-        }
-
-        if (s.eq && typeof s.eq === 'object') {
-          const gains = Array.isArray(s.eq.gains) ? s.eq.gains.map(v => Number(v)) : null;
-          const gainsOk = gains && gains.length === 5 && gains.every(v => isFinite(v));
-          if (gainsOk) {
-            const clamped = gains.map(v => Math.max(-12, Math.min(12, v)));
-            const inputs = document.querySelectorAll('#eqBands input[type="range"]');
-            inputs.forEach((inp, i) => {
-              inp.value = clamped[i];
-              if (this.eqFilters[i]) this.eqFilters[i].gain.value = clamped[i];
-              const val = inp.parentElement && inp.parentElement.querySelector('.eq-band-val');
-              if (val) val.textContent = (clamped[i] > 0 ? '+' : '') + clamped[i] + ' dB';
-            });
-            try {
-              localStorage.setItem('aurora_eq', JSON.stringify(clamped));
-              localStorage.setItem('aurora_eq_preset', 'custom');
-            } catch (e) {}
-            document.querySelectorAll('.eq-preset').forEach(b => b.classList.remove('active'));
-          } else if (typeof s.eq.preset === 'string' &&
-            ['normal', 'bass', 'vocal', 'treble', 'live'].includes(s.eq.preset)) {
-            this.applyEqPreset(s.eq.preset);
-          }
-        }
-
-      } catch (e) {
-        console.warn('[Aurora] Ajustes del backup no aplicables:', e && e.message);
-      }
-    },
-
-    /* #17 Exportar biblioteca a JSON (sin blobs).
-     * v2: además de metadatos, listas, favoritos, estadísticas e
-     * historial, incluye los AJUSTES (tema, idioma, reproducción,
-     * ecualizador…) y la SESIÓN (qué sonaba, la cola y en qué segundo
-     * iba), para poder pasar de un dispositivo a otro con un solo
-     * archivo enviado por el propio chat, sin sincronización alguna.
-     * El audio nunca viaja: en el destino las pistas se reenlazan por
-     * nombre de archivo (ver _importLibraryData). */
-    async exportLibrary() {
-      try {
-        const data = {
-          version: 2,
-          kind: 'aurora-metadata',
-          appVersion: this.VERSION,
-          exportedAt: new Date().toISOString(),
-          settings: this._backupSettings(),
-          session: this._backupSession(),
-          tracks: this.tracks.map(t => ({
-            id: t.id, title: t.title, artist: t.artist, album: t.album,
-            duration: t.duration, fileSize: t.fileSize, fileName: t.fileName,
-            coverThumb: t.coverThumb || null,
-            customCover: t.customCover || null,
-            coverIsImage: !!t.coverIsImage, lrc: t.lrc, addedAt: t.addedAt || 0
-          })),
-          playlists: this.playlists.map(p => ({
-            id: p.id, name: p.name, description: p.description,
-            trackIds: p.trackIds
-          })),
-          favorites: [...this.favorites],
-          stats: this.stats,
-          history: this._playHistory
-        };
-        const json = JSON.stringify(data, null, 2);
-        const stamp = new Date().toISOString().slice(0, 10);
-        const ok = await this.exportFile({
-          name: `aurora-backup-${stamp}.json`,
-          content: json,
-          mimeType: 'application/json',
-          caption: 'Copia de seguridad de Aurora Music Player'
-        });
-        this.toast(ok ? this.t('toast_exported') : this.t('toast_load_error'), ok ? undefined : 'danger');
-      } catch (e) {
-        this.toast(this.t('toast_load_error'));
-      }
-    },
-
-    /* #17 Importar biblioteca desde JSON.
-     * Restaura listas, favoritos, stats, historial y los metadatos de las
-     * pistas. Como el JSON no incluye audio, las pistas restauradas quedan
-     * marcadas con _needsRelink y se curan al reimportar los mismos
-     * archivos (ver handleFileInput) o desde Ajustes → Vincular audio. */
-    async importLibrary() {
-      // Delta Chat nativo: su selector integrado (webxdc.importFiles,
-      // §42) evita salir al explorador del sistema; si allí se cancela,
-      // no se abre el <input> detrás.
-      const nativeFiles = await this.pickFilesWebxdc({ extensions: ['.json'], multiple: false });
-      if (nativeFiles) {
-        if (nativeFiles.length > 0) await this._importLibraryFromFile(nativeFiles[0]);
-        return;
-      }
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json,application/json';
-      input.style.display = 'none';
-      document.body.appendChild(input);
-      const cleanup = () => { try { input.remove(); } catch (e) {} };
-      let settled = false;
-      input.addEventListener('change', async (e) => {
-        settled = true;
-        const file = e.target.files && e.target.files[0];
-        cleanup();
-        if (file) await this._importLibraryFromFile(file);
-      });
-      // Si el usuario cancela, algunos navegadores no disparan `change`:
-      // al recuperar el foco se retira el input (evita nodos huérfanos).
-      window.addEventListener('focus', () => {
-        setTimeout(() => { if (!settled) cleanup(); }, 300);
-      }, { once: true });
-      input.click();
-    },
-
-    /* Aplica la copia elegida (del <input> o de webxdc.importFiles):
-     * límite de tamaño, parseo, fusión aditiva y sesión portable.
-     * La política de fusión vive en _importLibraryData. */
-    async _importLibraryFromFile(file) {
-      if (!file) return;
-      // La copia es un JSON pequeño (sin audio), pero un archivo
-      // manipulado podría tener millones de entradas: se limita el
-      // tamaño y se valida cada campo antes de tocar el estado.
-      if (file.size > 25 * 1024 * 1024) {
-        this.toast(this.t('toast_file_too_large'));
-        return;
-      }
-      try {
-        const text = await file.text();
-        const data = JSON.parse(text);
-        if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('formato');
-        if (data.kind && data.kind !== 'aurora-metadata') throw new Error('kind');
-        const result = this._importLibraryData(data);
-        this.renderPlaylists();
-        this.renderQueue();
-        this.renderFavorites();
-        if (typeof this.renderHome === 'function') this.renderHome();
-        if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
-        if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
-        // Sesión de otro dispositivo: queda guardada como la sesión a
-        // restaurar en el próximo arranque; si ahora no suena nada,
-        // se aplica al momento (misma pista, misma cola, mismo segundo).
-        if (result.session) {
-          try { await window.AuroraStorage.setSetting('session', result.session); } catch (e) {}
-          if (!this.isPlaying && typeof this.restoreSession === 'function') {
-            await this.restoreSession();
-            if (typeof this.updatePlayUI === 'function') this.updatePlayUI();
-            if (typeof this.updateChrome === 'function') this.updateChrome();
-            if (this.currentTrack) this.renderCurrentTrack();
-            if (typeof this.renderHome === 'function') this.renderHome();
-          }
-        }
-        const pending = this.pendingRelinkCount();
-        if (result.restoredTracks > 0 && pending > 0) {
-          this.toast(this.t('relink_pending').replace('X', String(pending)));
-        } else {
-          this.toast(this.t('toast_imported_meta'));
-        }
-        /* Enlace (casi) automático tras restaurar (§56): la copia no
-         * trae el audio y la app no puede buscar archivos por el
-         * dispositivo (el sandbox webxdc solo ve lo que el usuario
-         * entrega en un selector). Lo que sí puede: encadenar ese
-         * selector aquí mismo. El usuario elige su música una vez y
-         * la importación normal cura cada pista que case por nombre o
-         * por título+artista; el resto queda marcado «Sin audio». */
-        if (pending > 0 && typeof this.showConfirm === 'function') {
-          try {
-            const go = await this.showConfirm({
-              message: this.t('relink_after_import_prompt').replace('X', String(pending)),
-              okLabel: this.t('load_music'),
-              cancelLabel: this.t('not_now'),
-              danger: false
-            });
-            if (go) this.openFilePicker(false);
-          } catch (e) { /* sin diálogo: quedan las insignias y el aviso (§55) */ }
-        }
-        this.syncLibCountMarker();
-      } catch (err) {
-        console.warn('[Aurora] Importación inválida:', err && err.message);
-        this.toast(this.t('toast_load_error'));
-      }
-    },
-
-    /* Valida y aplica una copia de seguridad ya parseada.
-     * Política de fusión (documentada): la importación es ADITIVA.
-     * - Pistas: se añaden las que no existan (por id o por nombre+tamaño).
-     * - Listas: se actualizan las del mismo id y se añaden las nuevas; las
-     *   listas actuales que no vienen en el backup NO se borran.
-     * - Favoritos: unión. Estadísticas: máximo por pista (evita duplicar
-     *   reproducciones al reimportar el mismo backup). Historial: unión.
-     * Así una copia antigua nunca destruye datos más recientes. */
-    _importLibraryData(data) {
-      const MAX_TRACKS = 5000;
-      const MAX_PLAYLISTS = 500;
-      const MAX_TEXT = 500;
-      const safeText = (v, max) => {
-        if (v == null) return '';
-        return String(v).replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, max || MAX_TEXT);
-      };
-      const safeNum = (v, max) => {
-        const n = Number(v);
-        return isFinite(n) && n >= 0 ? Math.min(n, max) : 0;
-      };
-      const safeId = (v) => {
-        const id = safeText(v, 64);
-        return /^[A-Za-z0-9._-]{1,64}$/.test(id) ? id : null;
-      };
-      const newId = () => 't-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
-      const idMap = new Map(); // Map, no objeto: un id "__proto__" no contamina
-      const knownKeys = new Map();
-      for (const ex of this.tracks) knownKeys.set(this._dupKey(ex.fileName, ex.fileSize), ex);
-      /* Respaldo por nombre de archivo: en otro dispositivo la misma
-       * canción puede pesar distinto (otro ripeo) y el par nombre+tamaño
-       * no coincidiría; si el nombre es único en la biblioteca, basta
-       * para reenlazarla en vez de crear una pista fantasma sin audio. */
-      const normName = (v) => String(v == null ? '' : v).trim().toLowerCase();
-      const nameCounts = new Map();
-      const nameMap = new Map();
-      for (const ex of this.tracks) {
-        const n = normName(ex.fileName);
-        if (!n) continue;
-        nameCounts.set(n, (nameCounts.get(n) || 0) + 1);
-        if (!nameMap.has(n)) nameMap.set(n, ex);
-      }
-      const byNameUnique = (fileName) => {
-        const n = normName(fileName);
-        return n && nameCounts.get(n) === 1 ? nameMap.get(n) : null;
-      };
-      const knownIds = new Set(this.tracks.map(t => t.id));
-      let restoredTracks = 0;
-
-      const rawTracks = Array.isArray(data.tracks) ? data.tracks.slice(0, MAX_TRACKS) : [];
-      for (const mt of rawTracks) {
-        if (!mt || typeof mt !== 'object') continue;
-        const fileName = safeText(mt.fileName, 255);
-        const fileSize = safeNum(mt.fileSize, 1e12);
-        const dup = knownKeys.get(this._dupKey(fileName, fileSize)) || byNameUnique(fileName);
-        if (dup) {
-          const oldId = safeId(mt.id);
-          if (oldId) idMap.set(oldId, dup.id);
-          // La pista ya existe aquí: si el backup trae una portada
-          // personalizada y aquí no hay ninguna, se adopta (no pisa
-          // una personalizada local, que podría ser más reciente).
-          if (!dup.customCover && mt.customCover && typeof mt.customCover === 'object') {
-            const lgOk = this._safeImageDataUrl(mt.customCover.lg) ? mt.customCover.lg : null;
-            const thOk = this._safeImageDataUrl(mt.customCover.thumb) ? mt.customCover.thumb : null;
-            if (lgOk || thOk) {
-              dup.customCover = { thumb: thOk || lgOk, lg: lgOk || thOk };
-              this.persistTrack(dup);
-              if (typeof this._invalidateArtwork === 'function') this._invalidateArtwork(dup.id);
-            }
-          }
-          continue;
-        }
-        const oldId = safeId(mt.id);
-        let id = oldId && !knownIds.has(oldId) ? oldId : newId();
-        while (knownIds.has(id)) id = newId();
-        if (oldId) idMap.set(oldId, id);
-        knownIds.add(id);
-        const coverThumb = this._safeImageDataUrl(mt.coverThumb) ? mt.coverThumb : null;
-        // Portada personalizada del backup: se validan ambas miniaturas
-        // como cualquier imagen externa (data:image raster acotada).
-        let customCover = null;
-        if (mt.customCover && typeof mt.customCover === 'object') {
-          const lgOk = this._safeImageDataUrl(mt.customCover.lg) ? mt.customCover.lg : null;
-          const thOk = this._safeImageDataUrl(mt.customCover.thumb) ? mt.customCover.thumb : null;
-          if (lgOk || thOk) customCover = { thumb: thOk || lgOk, lg: lgOk || thOk };
-        }
-        const t = {
-          id,
-          title: safeText(mt.title, MAX_TEXT) || fileName || '—',
-          artist: safeText(mt.artist, MAX_TEXT),
-          album: safeText(mt.album, MAX_TEXT),
-          duration: safeNum(mt.duration, 86400),
-          fileSize,
-          fileName,
-          coverThumb,
-          customCover,
-          coverIsImage: !!coverThumb,
-          lrc: Array.isArray(mt.lrc)
-            ? mt.lrc.slice(0, 5000).map(l => safeText(l, 2000))
-            : null,
-          addedAt: safeNum(mt.addedAt, 1e15) || Date.now(),
-          _needsRelink: true
-        };
-        this.tracks.push(t);
-        knownKeys.set(this._dupKey(fileName, fileSize), t);
-        const nn = normName(fileName);
-        if (nn) {
-          nameCounts.set(nn, (nameCounts.get(nn) || 0) + 1);
-          if (!nameMap.has(nn)) nameMap.set(nn, t);
-        }
-        this.persistTrack(t);
-        restoredTracks++;
-      }
-      if (restoredTracks > 0) this.invalidateTrackIndex();
-
-      // Existencia por Set: con miles de pistas, filtrar cada id con
-      // tracks.some() volvía la importación del backup cuadrática.
-      const trackIdSet = new Set(this.tracks.map(t => t.id));
-
-      // --- Listas: fusión por id ---
-      // Si la copia trae «Mi Música», se ignora como lista: es la
-      // automática y el arranque la reconstruye con las canciones
-      // restauradas que no quedaron en ninguna lista (§46; sus
-      // pistas ya vienen en data.tracks). Tampoco se marca ninguna
-      // lista como isDefault.
-      const LEGACY_DEFAULT_ID = 'mi-musica';
-      const rawPls = Array.isArray(data.playlists) ? data.playlists.slice(0, MAX_PLAYLISTS) : [];
-      const byId = new Map(this.playlists.map(p => [p.id, p]));
-      for (const rp of rawPls) {
-        if (!rp || typeof rp !== 'object') continue;
-        let pid = safeId(rp.id);
-        if (pid === LEGACY_DEFAULT_ID) continue;
-        if (!pid) pid = 'pl-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
-        const tids = (Array.isArray(rp.trackIds) ? rp.trackIds : [])
-          .map(tid => idMap.get(safeId(tid)) || safeId(tid))
-          .filter(tid => tid && trackIdSet.has(tid));
-        const uniqueTids = [...new Set(tids)];
-        const existing = byId.get(pid);
-        if (existing) {
-          existing.name = safeText(rp.name, 200) || existing.name;
-          existing.description = safeText(rp.description, 500) || existing.description || '';
-          if (uniqueTids.length || (Array.isArray(rp.trackIds) && rp.trackIds.length === 0)) {
-            existing.trackIds = uniqueTids;
-          } else {
-            existing.trackIds = [...new Set([...(existing.trackIds || []), ...uniqueTids])];
-          }
-          if (this._safeImageDataUrl(rp.coverArt)) {
-            existing._coverCache = rp.coverArt;
-            existing._coverCacheHash = null;
-          }
-        } else {
-          const pl = {
-            id: pid,
-            name: safeText(rp.name, 200) || this.t('playlist_title'),
-            description: safeText(rp.description, 500),
-            trackIds: uniqueTids,
-            _coverCache: this._safeImageDataUrl(rp.coverArt) ? rp.coverArt : null
-          };
-          this.playlists.push(pl);
-          byId.set(pid, pl);
-        }
-        if (typeof this._invalidatePlaylistCover === 'function') {
-          this._invalidatePlaylistCover(byId.get(pid));
-        }
-      }
-      this.playlists.forEach(pl => this.persistPlaylist(pl));
-
-      // --- Favoritos: unión ---
-      if (Array.isArray(data.favorites)) {
-        const favs = data.favorites
-          .slice(0, MAX_TRACKS * 2)
-          .map(fid => idMap.get(safeId(fid)) || safeId(fid))
-          .filter(fid => fid && trackIdSet.has(fid));
-        this.favorites = new Set([...this.favorites, ...favs]);
-        this.saveFavorites();
-      }
-
-      // --- Estadísticas: máximo por pista ---
-      if (data.stats && typeof data.stats === 'object' && !Array.isArray(data.stats)) {
-        const incomingPlays = (data.stats.plays && typeof data.stats.plays === 'object') ? data.stats.plays : {};
-        const plays = Object.assign({}, this.stats.plays);
-        for (const [rawId, count] of Object.entries(incomingPlays)) {
-          const id = idMap.get(safeId(rawId)) || safeId(rawId);
-          if (!id) continue;
-          const n = safeNum(count, 1e9);
-          plays[id] = Math.max(Number(plays[id]) || 0, n);
-        }
-        this.stats = {
-          plays,
-          totalSeconds: Math.max(Number(this.stats.totalSeconds) || 0, safeNum(data.stats.totalSeconds, 1e12)),
-          lastPlayed: this.stats.lastPlayed || null,
-          sessionStart: this.stats.sessionStart || Date.now()
-        };
-        this.saveStats();
-      }
-
-      // --- Historial: unión sin duplicados, conservando el más reciente ---
-      if (Array.isArray(data.history)) {
-        const incoming = data.history
-          .slice(0, 500)
-          .map(hid => idMap.get(safeId(hid)) || safeId(hid))
-          .filter(hid => hid && trackIdSet.has(hid));
-        this._playHistory = [...new Set([...incoming, ...this._playHistory])].slice(-100);
-        try { window.AuroraStorage.setSetting('history', this._playHistory); } catch (e) {}
-      }
-
-      // --- Ajustes (v2): se aplican con listas blancas, sin toasts ---
-      if (data.settings) this._applyBackupSettings(data.settings);
-
-      // --- Sesión (v2): traducir identidades de archivo a id locales ---
-      // Se devuelve aparte porque guardarla en IndexedDB y restaurarla
-      // es asíncrono y eso lo hace importLibrary().
-      let restoredSession = null;
-      if (data.session && typeof data.session === 'object' && data.session.track) {
-        const findByIdent = (ident) => {
-          if (!ident || typeof ident !== 'object') return null;
-          const f = safeText(ident.f, 255);
-          const snum = safeNum(ident.s, 1e12);
-          if (!f) return null;
-          return knownKeys.get(this._dupKey(f, snum)) || byNameUnique(f);
-        };
-        const cur = findByIdent(data.session.track);
-        if (cur) {
-          const q = (Array.isArray(data.session.queue) ? data.session.queue.slice(0, 1000) : [])
-            .map(findByIdent)
-            .filter(Boolean)
-            .map(t => t.id);
-          restoredSession = {
-            currentTrackId: cur.id,
-            queue: q.length ? [...new Set(q)] : this.tracks.map(t => t.id),
-            queueIdx: 0,
-            currentTime: safeNum(data.session.currentTime, 86400),
-            shuffle: !!data.session.shuffle,
-            repeat: ['off', 'all', 'one'].includes(data.session.repeat) ? data.session.repeat : 'off',
-            playContext: null,
-            ts: Date.now()
-          };
-        }
-      }
-
-      if (!this.currentTrack && this.tracks.length) {
-        this.currentTrack = this.tracks[0];
-        this.currentTrackIdx = 0;
-        this.queue = this.tracks.map(t => t.id);
-        this.queueIdx = 0;
-      }
-      return { restoredTracks, session: restoredSession };
-    },
-
     /* Solo acepta data:image raster en base64; bloquea svg (puede ejecutar
      * scripts si se usa como CSS), comillas y tamaños absurdos. */
     _safeImageDataUrl(v) {
       if (typeof v !== 'string' || v.length > 2 * 1024 * 1024) return false;
       return /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v);
-    },
-
-    /* Nº de pistas restauradas de un backup que aún no tienen audio. */
-    pendingRelinkCount() {
-      return this.tracks.filter(t => t && t._needsRelink).length;
-    },
-
-    /* Muestra/oculta la fila «Vincular audio» de Ajustes según haya
-     * pistas pendientes de re-vincular. */
-    updateRelinkUI() {
-      const n = this.pendingRelinkCount();
-      const btn = document.getElementById('menuRelinkAudio');
-      const label = document.getElementById('relinkAudioLabel');
-      if (btn) btn.hidden = n === 0;
-      if (label) label.textContent = this.t('relink_pending').replace('X', String(n));
-    },
-
-    /* Cura una pista pendiente de re-vincular con el audio recién
-     * procesado: el backup aportó los metadatos (quizá editados) y el
-     * archivo aporta el audio. El tamaño se actualiza al del archivo
-     * real para que las futuras claves de duplicado cuadren. */
-    _cureRelinkedTrack(existing, t) {
-      if (t._file) existing._file = t._file;
-      if (t.src) {
-        if (existing.src && existing.src.startsWith('blob:') && existing.src !== t.src) {
-          try { URL.revokeObjectURL(existing.src); } catch (e) {}
-        }
-        existing.src = t.src;
-        t.src = null; // reutilizada: no revocarla como duplicada
-      }
-      if (t.fileSize) existing.fileSize = t.fileSize;
-      if (!existing.duration && t.duration) existing.duration = t.duration;
-      if (!existing.coverThumb && t.coverThumb) {
-        existing.coverThumb = t.coverThumb;
-        existing.coverIsImage = t.coverIsImage;
-      }
-      delete existing._needsRelink;
-      this._urlCache.delete(existing.id);
-      if (existing.src) this._urlCache.set(existing.id, existing.src);
-      this.persistTrack(existing);
-    },
-
-    /* Busca una pista pendiente que un archivo importado pueda curar
-     * aunque su tamaño no coincida: mismo nombre de archivo, o mismo
-     * título+artista, siempre de forma ÚNICA entre las pendientes
-     * (si hay dos candidatas, no se adivina). */
-    _findRelinkCandidate(t) {
-      const pend = (this.tracks || []).filter(ex => ex && ex._needsRelink);
-      if (!pend.length || !t) return null;
-      const norm = (v) => String(v == null ? '' : v).trim().toLowerCase();
-      if (norm(t.fileName)) {
-        const byName = pend.filter(ex => norm(ex.fileName) === norm(t.fileName));
-        if (byName.length === 1) return byName[0];
-      }
-      const title = norm(t.title);
-      if (title) {
-        const byMeta = pend.filter(ex => norm(ex.title) === title && norm(ex.artist) === norm(t.artist));
-        if (byMeta.length === 1) return byMeta[0];
-      }
-      return null;
-    },
-
-    /* Al tocar una pista pendiente (§55): en vez del aviso seco «sin
-     * audio», ofrecer vincular su archivo aquí y ahora. Si el usuario
-     * elige un archivo, ESE archivo cura ESTA pista (su elección manda,
-     * no hace falta que los nombres coincidan) y a continuación
-     * `after` suele reproducirla. */
-    async promptRelinkTrack(track, after) {
-      if (!track || !track._needsRelink) { if (after) after(); return; }
-      let ok = false;
-      try {
-        ok = await this.showConfirm({
-          message: this.t('relink_prompt').replace('X', track.title || track.fileName || ''),
-          okLabel: this.t('relink_choose_file'),
-          cancelLabel: this.t('cancel'),
-          danger: false
-        });
-      } catch (e) { ok = false; }
-      if (!ok) return;
-      const file = await this._pickRelinkFile();
-      if (!file) return;
-      let made = [];
-      try { made = await window.AuroraUploader.processFiles([file], {}); } catch (e) { made = []; }
-      const t = made && made[0];
-      if (!t || !(t._file || t.src)) { this.toast(this.t('toast_load_failed')); return; }
-      this._cureRelinkedTrack(track, t);
-      this.updateRelinkUI();
-      if (typeof this.renderHome === 'function') this.renderHome();
-      if (typeof this.renderLibrarySections === 'function') this.renderLibrarySections();
-      if (this._editingPlaylistId && typeof this.renderEditPlaylist === 'function') this.renderEditPlaylist();
-      this.toast(this.t('relink_done').replace('X', '1'));
-      if (after) after();
-    },
-
-    /* Selector de UN archivo de audio para vincular: el integrado de
-     * Delta si lo hay; si no, un <input> efímero (mismo patrón que
-     * importLibrary). Devuelve File o null si se cancela. */
-    async _pickRelinkFile() {
-      const U0 = window.AuroraUploader;
-      const exts = ((U0 && typeof U0.ACCEPTED === 'string')
-        ? U0.ACCEPTED : '.mp3,.m4a,.flac,.wav,.ogg,.webm,.opus')
-        .split(',').map(x => x.trim()).filter(x => x.charAt(0) === '.');
-      const nativeFiles = await this.pickFilesWebxdc({ extensions: exts, multiple: false });
-      if (nativeFiles) return nativeFiles[0] || null;
-      return new Promise((resolve) => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = exts.join(',');
-        input.style.display = 'none';
-        document.body.appendChild(input);
-        let settled = false;
-        const done = (v) => { if (!settled) { settled = true; try { input.remove(); } catch (e) {} resolve(v); } };
-        input.addEventListener('change', () => done((input.files && input.files[0]) || null));
-        window.addEventListener('focus', () => setTimeout(() => done(null), 400), { once: true });
-        input.click();
-      });
     },
 
     /* Persiste múltiples pistas en una sola transacción de IndexedDB.
@@ -1557,7 +878,6 @@ Object.assign(App, {
       // Quitar de favoritos
       this.favorites.delete(trackId);
       this.saveFavorites();
-      if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
 
       if (wasCurrent) {
         // Detener la reproducción de la pista eliminada

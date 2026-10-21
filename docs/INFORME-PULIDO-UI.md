@@ -1713,3 +1713,28 @@ I18n: nuevas `relink_after_import_prompt` y `not_now` → **384 claves × 8 idio
 - Nuevo `check-autolink.js`: **10/10** — de punta a punta con la API del mensajero simulada: importar copia (2 canciones con tamaños «de otro ripeo») → se ofrece cargar la música indicando el número → al aceptar se abre el selector y **las dos quedan enlazadas solas**, sin duplicados fantasma y con la lista restaurada apuntando a pistas con audio; con «Ahora no» no se abre ningún selector y las canciones quedan pendientes y marcadas. Cero errores. (Dos asertos se afinaron al depurar: el conteo de diálogos filtra por el botón «Cargar música» para no contar el consejo de navegación de la app, y el segundo escenario parte de memoria limpia porque la IndexedDB falsa es singleton del proceso de test.)
 - Sin regresiones: `check-vincular.js` (§55) 16/16, `check-chat.js` (§53) 12/12.
 - `.xdc` reconstruido y válido para Delta Chat.
+
+---
+
+## 57. Eliminado por completo el sistema de copia de seguridad (importar/exportar backup)
+
+**Orden del usuario:** «No me convence lo de importar y exportar backup así que eliminalo completo».
+
+### Alcance de la retirada
+
+Se elimina el sistema entero (§27, §51, §54, §56) y también su descendencia, que sin copias ya no puede ocurrir nunca (las pistas «sin audio» solo nacían de una restauración):
+
+- **Copia**: filas «Exportar/Importar copia de seguridad» y su pista en Opciones; botón «Importar copia de seguridad» de la bienvenida; `exportLibrary`, `importLibrary`, `_importLibraryFromFile`, `_importLibraryData` y los ayudantes `_backupSettings`, `_backupSession`, `_applyBackupSettings`; el diálogo de «carga tu música y se enlaza» tras restaurar; el aviso de «biblioteca desaparecida» de `init.js`, cuya única acción era importar una copia.
+- **Vinculación (§55)**: `promptRelinkTrack`, `_findRelinkCandidate`, `_cureRelinkedTrack`, `_pickRelinkFile`, `pendingRelinkCount`, `updateRelinkUI` y todas sus llamadas; la curación tolerante de `handleFileInput` vuelve a la deduplicación simple por nombre+tamaño; fuera la fila «N pistas sin audio» de Ajustes, las insignias «Sin audio» en las filas y la píldora de Now Playing (HTML, CSS y bindings incluidos).
+- **I18n**: podadas `backup_export`, `backup_import`, `backup_hint`, `relink_badge`, `relink_done`, `relink_pending`, `relink_prompt`, `relink_choose_file`, `relink_cta`, `relink_after_import_prompt`, `not_now`, `toast_exported`, `toast_imported_meta` y `library_missing_text` → **370 claves × 8 idiomas, sin huecos**. Sin menciones a «backup» en código ni en el README (su consejo pasa a ser el real: cada copia del `.xdc` guarda su propia biblioteca; hay que usar siempre la misma).
+
+### Lo que NO se toca (no era la copia)
+
+- **Compartir** lista (`.m3u8`), canción y letra por el chat (`exportFile`/`sendToChat`, §53): es otra función y sigue intacta.
+- **Importar música** y su deduplicación; «Mi Música», listas, favoritos, Ajustes, la puerta ⋮ a Opciones desde Inicio y la defensa genérica de reproducción: si una pista no tuviera fuente utilizable, se avisa y se salta a la siguiente.
+
+### Verificación
+
+- Nuevo `check-nobackup.js`: **17/17** — ausencia total en el DOM y en la API (`exportLibrary`, `importLibrary`, `_importLibraryData`, `promptRelinkTrack` ya no existen; sin filas de copia ni de vinculación; bienvenida sin restaurar), Opciones se abre desde Inicio con Historial y Ajustes, compartir lista y canción llegan a `sendToChat`, e importar música añade y no duplica al reimportar. Cero errores.
+- `check-chat.js` (§53) actualizado a la nueva realidad: 10/10. Retirados los checks que probaban la copia (`check-vincular`, `check-autolink`, `check-restaurar`).
+- `.xdc` reconstruido y válido: 27 archivos, **331,7 KB** (14 KB menos de maquinaria retirada), sintaxis global verificada archivo a archivo.

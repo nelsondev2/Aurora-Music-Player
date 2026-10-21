@@ -1782,30 +1782,6 @@ const I18N = {
     zh: '首重复音轨已跳过', ja: '重複トラックをスキップしました', fr: 'piste(s) en double ignorée(s)',
     it: 'traccia(e) duplicata/e saltata/e', ru: 'дубликат(ов) пропущено'
   },
-  backup_export: {
-    es: 'Exportar copia de seguridad', en: 'Export backup', pt: 'Exportar cópia de segurança',
-    zh: '导出备份', ja: 'バックアップを書き出す', fr: 'Exporter la sauvegarde',
-    it: 'Esporta backup', ru: 'Экспортировать резервную копию'
-  },
-  backup_import: {
-    es: 'Importar copia de seguridad', en: 'Import backup', pt: 'Importar cópia de segurança',
-    zh: '导入备份', ja: 'バックアップを読み込む', fr: 'Importer la sauvegarde',
-    it: 'Importa backup', ru: 'Импортировать резервную копию'
-  },
-  backup_hint: {
-    es: 'Envía la copia a un chat y guárdala: en otro dispositivo (u otra versión de Aurora) podrás importarla ahí. Viajan listas, favoritos, ajustes y tu punto de escucha; el audio no: importa también las canciones y se enlazan solas.',
-    en: "Send the backup to a chat and keep it: on another device (or another Aurora version) you can import it there. Playlists, favorites, settings and your listening point travel with it; the audio doesn't: import the songs too and they link up automatically.",
-    pt: 'Envie a cópia para um chat e guarde-a: noutro dispositivo (ou noutra versão do Aurora) poderá importá-la lá. Vão listas, favoritos, definições e o seu ponto de escuta; o áudio não: importe também as músicas e elas ligam-se sozinhas.',
-    zh: '把备份发送到一个聊天并保存好：在另一台设备（或另一个 Aurora 版本）上可以导入。歌单、收藏、设置和收听进度会一起转移；音频不会：再把歌曲也导入，它们会自动关联。',
-    ja: 'バックアップをチャットに送って保存しておくと、別の端末（または別の Aurora バージョン）で読み込めます。プレイリスト、お気に入り、設定、再生位置が移ります。音声は含まれないので、曲も一緒に読み込むと自動で結び付きます。',
-    fr: 'Envoyez la sauvegarde dans un chat et gardez-la : sur un autre appareil (ou une autre version d’Aurora), vous pourrez l’y importer. Listes, favoris, réglages et point d’écoute voyagent ; l’audio non : importez aussi les chansons, elles se rattachent toutes seules.',
-    it: 'Invia il backup in una chat e conservalo: su un altro dispositivo (o un’altra versione di Aurora) potrai importarlo lì. Viaggiano liste, preferiti, impostazioni e punto di ascolto; l’audio no: importa anche i brani e si collegano da soli.',
-    ru: 'Отправьте копию в чат и сохраните её: на другом устройстве (или в другой версии Aurora) её можно будет импортировать. Переносятся плейлисты, избранное, настройки и точка прослушивания; аудио — нет: импортируйте также песни, и они свяжутся сами.'
-  },
-  toast_exported: {
-    es: 'Metadatos exportados (sin audio)', en: 'Metadata exported (no audio)', pt: 'Metadados exportados (sem áudio)', zh: '已导出元数据（不含音频）', ja: 'メタデータを書き出しました（音声なし）',
-    fr: 'Métadonnées exportées (sans audio)', it: 'Metadati esportati (senza audio)', ru: 'Метаданные экспортированы (без аудио)'
-  },
   toast_imported: {
     es: 'Biblioteca importada', en: 'Library imported', pt: 'Biblioteca importada', zh: '媒体库已导入', ja: 'ライブラリをインポートしました',
     fr: 'Bibliothèque importée', it: 'Libreria importata', ru: 'Библиотека импортирована'
@@ -1981,16 +1957,6 @@ const I18N = {
     fr: 'Le navigateur a bloqué la lecture. Touchez ▶ pour commencer.',
     it: 'Il browser ha bloccato la riproduzione. Tocca ▶ per iniziare.',
     ru: 'Браузер заблокировал воспроизведение. Нажмите ▶, чтобы начать.'
-  },
-  library_missing_text: {
-    es: 'Esta copia tenía música guardada y ahora está vacía: el sistema pudo borrar el almacenamiento, o estás abriendo otra copia de Aurora (cada copia tiene su propia biblioteca). ¿Importar una copia de seguridad?',
-    en: 'This copy had saved music and is now empty: the system may have cleared storage, or you opened a different Aurora copy (each copy keeps its own library). Import a backup?',
-    pt: 'Esta cópia tinha música guardada e agora está vazia: o sistema pode ter limpado o armazenamento, ou abriste outra cópia do Aurora (cada cópia tem a sua biblioteca). Importar uma cópia de segurança?',
-    zh: '此副本曾保存过音乐，现在却为空：系统可能已清除存储，或你打开了另一个 Aurora 副本（每个副本都有自己的曲库）。要导入备份吗？',
-    ja: 'このコピーには音楽が保存されていたはずですが空です。システムがストレージを消去したか、別の Aurora コピーを開いています（コピーごとにライブラリは別）。バックアップを読み込みますか？',
-    fr: 'Cette copie contenait de la musique et elle est vide : le système a peut-être effacé le stockage, ou vous avez ouvert une autre copie d’Aurora (chaque copie a sa bibliothèque). Importer une sauvegarde ?',
-    it: 'Questa copia aveva musica salvata ed è vuota: il sistema potrebbe aver cancellato lo spazio, oppure hai aperto un’altra copia di Aurora (ogni copia ha la sua libreria). Importare un backup?',
-    ru: 'В этой копии была сохранённая музыка, а теперь пусто: система могла очистить хранилище, либо вы открыли другую копию Aurora (у каждой копии своя библиотека). Импортировать резервную копию?'
   },
   confirm_ok: {
     es: 'Aceptar',
@@ -2228,16 +2194,6 @@ const I18N = {
     zh: '清除记录', ja: '履歴を消去', fr: 'Effacer l\'historique',
     it: 'Cancella cronologia', ru: 'Очистить историю'
   },
-  relink_pending: {
-    es: 'X pistas sin audio — toca para vincular',
-    en: 'X tracks without audio — tap to link',
-    pt: 'X faixas sem áudio — toca para vincular',
-    zh: 'X 首歌曲缺失音频 — 点击重新关联',
-    ja: '音声のない曲がX件 — タップして関連付け',
-    fr: 'X morceaux sans audio — touchez pour associer',
-    it: 'X brani senza audio — tocca per collegare',
-    ru: 'X треков без аудио — нажмите, чтобы привязать'
-  },
   toast_lrc_attached: {
     es: 'X letra(s) enlazada(s)',
     en: 'X lyric file(s) linked',
@@ -2258,51 +2214,6 @@ const I18N = {
     it: 'Nessun testo corrisponde ai tuoi brani',
     ru: 'Ни один текст не подошёл к вашим песням'
   },
-  relink_after_import_prompt: {
-    es: 'La copia trae X canciones que todavía no tienen audio en este dispositivo. Elige ahora tus archivos de música y se enlazarán automáticamente con tus listas y favoritos; lo que no se encuentre quedará marcado como «Sin audio».',
-    en: 'The backup brings X songs that have no audio on this device yet. Choose your music files now and they will link automatically to your playlists and favorites; anything not found stays marked as “No audio”.',
-    pt: 'A cópia traz X músicas que ainda não têm áudio neste dispositivo. Escolhe agora os teus ficheiros de música e eles ligam-se automaticamente às tuas listas e favoritos; o que não for encontrado fica marcado como «Sem áudio».',
-    zh: '备份中有 X 首歌曲在这台设备上还没有音频。现在选择你的音乐文件，它们会自动关联到歌单和收藏；找不到的会标记为“暂无音频”。',
-    ja: 'バックアップには、この端末にまだ音声のない曲が X 曲あります。今音楽ファイルを選ぶと、プレイリストやお気に入りに自動でリンクします。見つからないものは「未リンク」のままになります。',
-    fr: 'La sauvegarde contient X chansons sans audio sur cet appareil. Choisissez maintenant vos fichiers musicaux : ils se relieront automatiquement à vos listes et favoris ; le reste restera marqué « Pas d’audio ».',
-    it: 'Il backup contiene X brani senza audio su questo dispositivo. Scegli ora i tuoi file musicali e si collegheranno automaticamente a liste e preferiti; ciò che non si trova resterà «Audio mancante».',
-    ru: 'В копии есть X песен, у которых на этом устройстве пока нет аудио. Выберите сейчас свои музыкальные файлы — они автоматически привяжутся к плейлистам и избранному; ненайденное останется помечено «Аудио ещё нет».'
-  },
-  not_now: {
-    es: 'Ahora no', en: 'Not now', pt: 'Agora não',
-    zh: '暂不', ja: '後で', fr: 'Plus tard',
-    it: 'Non ora', ru: 'Не сейчас'
-  },
-  relink_prompt: {
-    es: '«X» todavía no tiene audio en este dispositivo: vino de la copia de seguridad. Elige su archivo para vincularlo y poder escucharla.',
-    en: "\u201CX\u201D has no audio on this device yet: it came from the backup. Choose its file to link it and play it.",
-    pt: '«X» ainda não tem áudio neste dispositivo: veio da cópia de segurança. Escolhe o ficheiro para o vincular e poderes ouvi-la.',
-    zh: '“X”在这台设备上还没有音频：它来自备份。选择它的文件进行关联即可播放。',
-    ja: '「X」にはこの端末にまだ音声がありません（バックアップから復元）。ファイルを選ぶとリンクして再生できます。',
-    fr: '« X » n’a pas encore d’audio sur cet appareil : elle vient de la sauvegarde. Choisissez son fichier pour la relier et l’écouter.',
-    it: '«X» non ha ancora audio su questo dispositivo: arriva dal backup. Scegli il suo file per collegarlo e ascoltarla.',
-    ru: '«X» пока без аудио на этом устройстве: она из резервной копии. Выберите её файл, чтобы привязать и слушать.'
-  },
-  relink_choose_file: {
-    es: 'Elegir archivo', en: 'Choose file', pt: 'Escolher ficheiro',
-    zh: '选择文件', ja: 'ファイルを選ぶ', fr: 'Choisir le fichier',
-    it: 'Scegli file', ru: 'Выбрать файл'
-  },
-  relink_cta: {
-    es: 'Sin audio — toca para vincular el archivo', en: 'No audio yet — tap to link the file', pt: 'Sem áudio — toca para vincular o ficheiro',
-    zh: '暂无音频 — 点击关联文件', ja: '音声未リンク — タップしてファイルを選ぶ', fr: 'Pas encore d’audio — touchez pour relier le fichier',
-    it: 'Audio mancante — tocca per collegare il file', ru: 'Аудио ещё нет — нажмите, чтобы привязать файл'
-  },
-  relink_done: {
-    es: 'X pistas vinculadas',
-    en: 'X tracks linked',
-    pt: 'X faixas vinculadas',
-    zh: '已关联 X 首',
-    ja: 'X件を関連付けました',
-    fr: 'X morceaux associés',
-    it: 'X brani collegati',
-    ru: 'Привязано треков: X'
-  },
   toast_track_no_audio: {
     es: 'Pista sin audio: vuelve a importarla para escucharla',
     en: 'Track has no audio: import it again to play it',
@@ -2312,16 +2223,6 @@ const I18N = {
     fr: 'Morceau sans audio : réimportez-le pour l\'écouter',
     it: 'Brano senza audio: importalo di nuovo per ascoltarlo',
     ru: 'Нет аудио: импортируйте трек заново'
-  },
-  relink_badge: {
-    es: 'Sin audio',
-    en: 'No audio',
-    pt: 'Sem áudio',
-    zh: '无音频',
-    ja: '音声なし',
-    fr: 'Sans audio',
-    it: 'Senza audio',
-    ru: 'Без аудио'
   },
   bg_notice_text: {
     es: 'Consejo: usa el botón inicio para salir sin detener la música. El botón atrás cierra Aurora y detiene la reproducción.',
@@ -2382,16 +2283,6 @@ const I18N = {
     es: 'X pistas · Y', en: 'X tracks · Y', pt: 'X faixas · Y',
     zh: 'X 首 · Y', ja: 'X 曲 · Y', fr: 'X pistes · Y',
     it: 'X brani · Y', ru: 'X треков · Y'
-  },
-  toast_imported_meta: {
-    es: 'Metadatos importados. Vuelve a cargar el audio desde el dispositivo.',
-    en: 'Metadata imported. Load the audio files from your device again.',
-    pt: 'Metadados importados. Carregue de novo os ficheiros de áudio.',
-    zh: '已导入元数据。请重新从设备加载音频。',
-    ja: 'メタデータを読み込みました。音声ファイルを再度追加してください。',
-    fr: 'Métadonnées importées. Rechargez les fichiers audio depuis l\'appareil.',
-    it: 'Metadati importati. Ricarica i file audio dal dispositivo.',
-    ru: 'Метаданные импортированы. Снова загрузите аудио с устройства.'
   },
 
   /* ---------- Fase 4: Now Playing y letras ---------- */

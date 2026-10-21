@@ -567,24 +567,6 @@ svg { display: block; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Aviso «sin audio» de Now Playing (§55): píldora accionable que
- * ofrece vincular el archivo de la pista restaurada. */
-.np-pending {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 10px;
-  min-height: 36px;
-  padding: 7px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--accent);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  cursor: pointer;
-}
-.np-pending[hidden] { display: none; }
 .like-btn {
   background: var(--surface);
   width: 44px;
@@ -1393,20 +1375,6 @@ svg { display: block; }
 .track-row.current .row-title { color: var(--text-1); }
 
 /* Pistas restauradas de un backup que aún no tienen audio vinculado */
-.track-row.is-pending { opacity: .72; }
-.row-pending-badge {
-  display: inline-block;
-  font-size: var(--fs-2xs);
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  color: var(--danger);
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  padding: 1px 7px;
-  margin-left: 6px;
-  vertical-align: 1px;
-}
 
 .row-cover {
   width: 48px;
@@ -3806,14 +3774,6 @@ button,
   align-items: center;
   justify-content: center;
   gap: 8px;
-}
-/* Restaurar copia en la bienvenida (§54): acción secundaria discreta
- * bajo el CTA principal; hereda la piel de .text-btn. */
-.home-welcome-restore {
-  position: relative;
-  z-index: 1;
-  margin-top: 6px;
-  gap: 7px;
 }
 .home-welcome-formats {
   position: relative;

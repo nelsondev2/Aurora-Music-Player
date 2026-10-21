@@ -152,12 +152,6 @@
             <h1 class="track-title" id="trackTitle"><span class="marquee-inner">—</span></h1>
             <p class="track-artist" id="trackArtist"><span class="marquee-inner">—</span></p>
             <p class="track-album" id="trackAlbum"></p>
-            <!-- Pista restaurada de una copia, aún sin audio (§55): aviso
-                 visible ANTES de pulsar play, y accionable (vincula). -->
-            <button class="np-pending" id="npPendingBadge" type="button" hidden>
-              <svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg>
-              <span data-i18n="relink_cta">Sin audio — toca para vincular el archivo</span>
-            </button>
           </div>
           <button class="icon-btn like-btn" id="btnLike" data-i18n-aria="favorite" aria-label="Favorito" aria-pressed="false">
             <svg class="ico" aria-hidden="true"><use href="#i-heart"></use></svg>
@@ -706,15 +700,6 @@
               <svg class="ico" aria-hidden="true"><use href="#i-clock-rotate-left"></use></svg>
               <span data-i18n="settings_history">Historial</span>
             </button>
-            <button class="menu-row" id="menuBackupExport" type="button">
-              <svg class="ico" aria-hidden="true"><use href="#i-file-export"></use></svg>
-              <span data-i18n="backup_export">Exportar copia de seguridad</span>
-            </button>
-            <button class="menu-row" id="menuBackupImport" type="button">
-              <svg class="ico" aria-hidden="true"><use href="#i-file-import"></use></svg>
-              <span data-i18n="backup_import">Importar copia de seguridad</span>
-            </button>
-            <p class="settings-hint" data-i18n="backup_hint">Envía la copia a un chat y guárdala: en otro dispositivo (u otra versión de Aurora) podrás importarla ahí. Viajan listas, favoritos, ajustes y tu punto de escucha; el audio no: importa también las canciones y se enlazan solas.</p>
             <button class="menu-row" id="menuSettings">
               <svg class="ico" aria-hidden="true"><use href="#i-gear"></use></svg>
               <span data-i18n="settings_title">Ajustes</span>
@@ -907,10 +892,6 @@
             <button class="menu-row" id="menuFreeStorage">
               <svg class="ico" aria-hidden="true"><use href="#i-clear-list"></use></svg>
               <span data-i18n="settings_free_storage">Liberar espacio</span>
-            </button>
-            <button class="menu-row" id="menuRelinkAudio" hidden>
-              <svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg>
-              <span id="relinkAudioLabel">0 pistas sin audio</span>
             </button>
             <button class="menu-row danger" id="menuDeleteLibrary" type="button">
               <svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>

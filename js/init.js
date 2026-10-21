@@ -60,7 +60,6 @@ Object.assign(App, {
       this.wireEvents();
       this.wireGestures();
       this.renderPlaylists();
-      if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
       if (typeof this.renderHome === 'function') this.renderHome();
       this.showView('home');
       this.setNavActive('home');
@@ -140,7 +139,6 @@ Object.assign(App, {
       }
 
       if (typeof this.maybeShowBackgroundNotice === 'function') this.maybeShowBackgroundNotice();
-      if (typeof this.maybeShowLibraryMissingNotice === 'function') this.maybeShowLibraryMissingNotice();
 
       this._initialized = true;
       document.dispatchEvent(new CustomEvent('aurora:ready', { detail: { tracks: this.tracks.length } }));
@@ -170,34 +168,6 @@ Object.assign(App, {
           }).catch(() => {});
         };
         setTimeout(() => attempt(8), 700);
-      } catch (e) {}
-    },
-
-    /* Si la biblioteca está vacía pero el marcador dice que había música,
-     * el almacenamiento se perdió fuera de la app (limpieza del sistema,
-     * cuota, u otra copia del .xdc): avisar y ofrecer importar un backup
-     * en vez de mostrar un estado vacío silencioso. */
-    maybeShowLibraryMissingNotice() {
-      try {
-        if (this.tracks.length > 0) return;
-        let expected = 0;
-        try { expected = parseInt(localStorage.getItem('aurora_lib_count') || '0', 10) || 0; } catch (e) {}
-        if (expected <= 0) return;
-        const attempt = (left) => {
-          if (document.querySelector('.sheet.open')) {
-            if (left > 0) setTimeout(() => attempt(left - 1), 1000);
-            return;
-          }
-          this.showConfirm({
-            message: this.t('library_missing_text'),
-            okLabel: this.t('backup_import'),
-            cancelLabel: this.t('cancel'),
-            danger: false
-          }).then((ok) => {
-            if (ok && typeof this.importLibrary === 'function') this.importLibrary();
-          }).catch(() => {});
-        };
-        setTimeout(() => attempt(8), 1400);
       } catch (e) {}
     },
 
