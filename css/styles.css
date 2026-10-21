@@ -5181,3 +5181,80 @@ html.aurora-wide .toast {
     radial-gradient(ellipse at 50% 0%, transparent 0%, transparent 55%),
     linear-gradient(180deg, transparent 52%, var(--bg-0) 97%);
 }
+
+/* ============================================================
+ * Botones de «Todas las canciones»: la fórmula serena (§44)
+ * ------------------------------------------------------------
+ * En la captura del usuario la cabecera mezclaba cuatro cajas
+ * distintas: píldora de acento enorme, píldora con borde, chips
+ * de 36 px y un «Seleccionar» con borde discontinuo y «Borrar
+ * todo» en rojo permanente. Se unifica como en la barra de
+ * Letras (§36) y el bloque de lista (§35): UNA caja de 40 px
+ * para todo el grupo, un solo protagonista plano
+ * (--accent-fill: «Reproducir Todo» y el chip activo), el resto
+ * discreto (superficie + borde sólido + texto) y ningún color
+ * permanente de peligro. Acotado al bloque fijo de la
+ * biblioteca: las clases base (.text-btn, .lib-sort…) no se
+ * tocan porque se usan en más sitios.
+ * ============================================================ */
+#sheetLibrary .lib-songs-sticky .lib-song-actions .text-btn,
+#sheetLibrary .lib-songs-sticky .lib-sort,
+#sheetLibrary .lib-songs-sticky .lib-batch-btn {
+  height: 40px;
+  min-height: 40px;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1;
+}
+#sheetLibrary .lib-songs-sticky .lib-song-actions .text-btn {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+#sheetLibrary .lib-songs-sticky .lib-sort,
+#sheetLibrary .lib-songs-sticky .lib-batch-btn {
+  padding-left: 14px;
+  padding-right: 14px;
+}
+/* El secundario y el de selección comparten la misma discreción */
+#sheetLibrary .lib-songs-sticky .lib-song-actions .text-btn:last-child,
+#sheetLibrary .lib-songs-sticky .lib-batch-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-1);
+}
+#sheetLibrary .lib-songs-sticky .lib-batch-btn {
+  /* Adiós al borde discontinuo: no es familia de nada más */
+  border-style: solid;
+}
+#sheetLibrary .lib-songs-sticky .lib-song-actions .text-btn .ico,
+#sheetLibrary .lib-songs-sticky .lib-batch-btn .ico {
+  width: 16px;
+  height: 16px;
+}
+/* «Borrar todo» deja el rojo permanente: queda como utilidad
+ * discreta en la cabecera (el rojo vive en la confirmación). */
+#sheetLibrary .lib-songs-sticky .lib-section-head .text-btn.danger {
+  height: 40px;
+  min-height: 40px;
+  padding-top: 0;
+  padding-bottom: 0;
+  color: var(--text-2);
+}
+#sheetLibrary .lib-songs-sticky .lib-section-head .text-btn.danger .ico {
+  width: 16px;
+  height: 16px;
+}
+#sheetLibrary .lib-songs-sticky .lib-section-head .text-btn.danger:active {
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.12);
+}
+/* El activo de «Seleccionar» recupera el acento dentro del ámbito
+ * (la regla genérica de arriba ganaría por especificidad al ID). */
+#sheetLibrary .lib-songs-sticky .lib-batch-btn.active {
+  background: var(--accent-fill);
+  border-color: transparent;
+  color: var(--accent-on-fill);
+}

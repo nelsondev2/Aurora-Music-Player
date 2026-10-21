@@ -1182,3 +1182,49 @@ usuario en su dispositivo.
 | FFT 2048 + bandas log + ataque/caída + picos + onda fluida + paleta de portada | ✅ |
 | Regresión visualizador 19/19 + batería completa | ✅ |
 | `.xdc` válido (347,5 KB, sha256 `84ff7774…`) + regresiones sobre extraído | ✅ |
+
+## 44. Botones de «Todas las canciones»: la fórmula serena
+
+Captura del usuario: la cabecera de la sección mezclaba cuatro
+cajas distintas — «Reproducir Todo» como píldora de acento
+desproporcionada, «Aleatorio» con borde, chips de orden a 36 px y
+«Seleccionar» con borde discontinuo, más «Borrar todo» en rojo
+permanente. Se les aplica la misma fórmula de la barra de Letras
+(§36), el «Reproducir Todo» de Favoritos (§37) y los botones de
+lista (§35), con un solo bloque CSS acotado a
+`#sheetLibrary .lib-songs-sticky` (las clases base `.text-btn`,
+`.lib-sort` y `.lib-batch-btn` se usan en más sitios y no se tocan):
+
+- **Una caja de 40 px para todo el grupo** (Reproducir Todo,
+  Aleatorio, chips de orden y Seleccionar): misma altura, mismo
+  radio de píldora, misma fuente y peso; iconos a 16 px.
+- **Un solo protagonista plano** en `--accent-fill`: «Reproducir
+  Todo» y el chip de orden activo (y «Seleccionar» en su activo,
+  con regla propia dentro del ámbito para que la genérica no lo
+  tape por especificidad).
+- **El resto, discreto**: superficie + borde sólido + texto, como
+  el «Aleatorio» que ya estaba bien encaminado.
+- **Adiós al borde discontinuo** de «Seleccionar» (no era familia
+  de ningún otro control) y **«Borrar todo» pierde el rojo
+  permanente**: queda como utilidad discreta; el rojo aparece al
+  pulsar y en la confirmación, que ya existía.
+
+Solo presentación: ningún handler, clase funcional ni texto
+cambia (la regresión de abajo pulsa los cinco botones reales).
+
+**Verificación**: regresión específica 10/10 (las cinco reglas CSS
+de la fórmula + Reproducir Todo/Aleatorio/Borrar todo vivos, chip
+de orden que mueve el activo, «Seleccionar» que entra y sale del
+modo con `aria-pressed`, 0 errores). Batería completa en verde
+(visualizador 19/19, importFiles 16/16, lupa 10/10, detalles 6/6,
+mimusica 15/15, fav/letras/nav 9/9, AAA 12/12, i18n 404×8) y
+regresión repetida sobre el `.xdc` extraído. El juicio visual
+final es del usuario en su dispositivo.
+
+## Cierre de la sesión §44
+
+| Check | Resultado |
+|---|---|
+| Cabecera de «Todas las canciones» con la fórmula serena (caja única 40 px, un acento, sin discontinuos ni rojo permanente) | ✅ |
+| Regresión cabecera 10/10 + batería completa | ✅ |
+| `.xdc` válido (348,2 KB, sha256 `9cc4a4ec…`) + regresiones sobre extraído | ✅ |
