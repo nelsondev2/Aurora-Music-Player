@@ -1408,3 +1408,38 @@ paquete adelgaza ~6 KB: 342,2 KB).
 | Biblioteca solo con listas; pulsación larga = menú de la canción | ✅ |
 | Regresión sololistas 15/15 + batería completa | ✅ |
 | `.xdc` válido (342,2 KB, sha256 `9a5ffe62…`) + regresiones sobre extraído | ✅ |
+
+## 48. Botones del diálogo de confirmación: la misma caja serena
+
+Captura del usuario (borrar «Mi Música»): «Cancelar» y «Delete»
+como dos losas de media pantalla. Causa: ambos heredan el
+`.primary-btn` global — ~52 px de alto, degradado y resplandor de
+30 px pensado para botones de formulario — y el destructivo suma
+una sombra roja de neón.
+
+**Corrección** (solo CSS, en las reglas ya acotadas del propio
+diálogo `.confirm-actions`; el botón primario de formularios, los
+«Guardar» de las hojas, no se toca): la caja serena de siempre —
+**44 px, forma de píldora, plana, sin sombras**, peso 600. Cancelar
+queda en superficie con borde; confirmar en `--accent-fill`; y el
+destructivo en rojo pelado `var(--danger)` sin resplandor (el
+`:active` oscuro se conserva). Como la caja quedó plana, el
+diálogo entero (icono, mensaje, acciones) recupera proporción.
+
+**Verificación**: regresión específica 10/10 (las tres reglas CSS
+de la caja + comportamiento real del diálogo: destructivo con
+icono y clase `danger`, cancelar resuelve `false`, no destructivo
+sin icono, aceptar resuelve `true`, aviso de un solo botón con
+`hideCancel` que oculta y luego restaura el cancelar, 0 errores).
+Batería completa en verde (sololistas 15/15, mimusica 21/21,
+visualizador 19/19, importFiles 16/16, lupa 10/10, detalles 6/6,
+fav/letras/nav 9/9, AAA 12/12, i18n 384×8) y regresión repetida
+sobre el `.xdc` extraído.
+
+## Cierre de la sesión §48
+
+| Check | Resultado |
+|---|---|
+| Diálogo de confirmación con caja serena de 44 px (sin losas ni resplandor) | ✅ |
+| Regresión confirm 10/10 + batería completa | ✅ |
+| `.xdc` válido (342,5 KB, sha256 `65177baa…`) + regresiones sobre extraído | ✅ |

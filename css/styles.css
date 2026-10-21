@@ -2725,14 +2725,33 @@ svg { display: block; }
   gap: 10px;
 }
 
+/* Botones del diálogo con la caja serena del resto de la app (§48):
+ * el .primary-btn global es una losa de ~52 px con degradado y
+ * resplandor (pensada para formularios), y aquí dentro hacía que
+ * «Cancelar» y «Eliminar» ocuparan media pantalla. Una caja de
+ * 44 px en píldora, plana, un solo color por botón: cancelar es
+ * superficie y confirmar es el acento — o el rojo PELADO cuando es
+ * destructivo, sin sombra de neón. */
 .confirm-actions .primary-btn {
   flex: 1;
-  margin-top: 0;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-fill);
+  box-shadow: none;
+  font-size: var(--fs-ui);
+  font-weight: 600;
+}
+
+.confirm-actions .primary-btn.ghost {
+  background: var(--surface);
 }
 
 .confirm-actions .primary-btn.confirm-ok.danger {
   background: var(--danger);
-  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.30);
+  box-shadow: none;
 }
 
 .confirm-actions .primary-btn.confirm-ok.danger:active {
