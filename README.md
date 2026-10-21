@@ -20,7 +20,7 @@ El script comprueba antes de comprimir:
 - `icon.png` cuadrado de 128–512 px
 - todas las rutas relativas y presentes en el paquete
 - ninguna carga remota (un `.xdc` no tiene red)
-- que `webxdc.js` no pise la API del cliente
+- que ningún `webxdc.js` viaje en el paquete (lo inyecta el cliente)
 
 El resultado es un ZIP con compresión Deflate, **28 archivos y ~297 KB**, reproducible (mismo contenido → mismo SHA-256).
 
@@ -38,7 +38,7 @@ El resultado es un ZIP con compresión Deflate, **28 archivos y ~297 KB**, repro
 - Los enlaces externos están bloqueados por el cliente: en «Acerca de» el enlace al código fuente se sustituye por la URL en texto.
 - El selector de carpetas se desactiva (se eligen archivos, no carpetas).
 - «Compartir» usa `sendToChat` para enviar audio, letras o listas al chat.
-- La API `window.webxdc` la inyecta el cliente; el `webxdc.js` del paquete es solo un stub para abrir la app en un navegador y nunca sobrescribe la API nativa.
+- La API `window.webxdc` la inyecta el cliente: `index.html` referencia `webxdc.js` (ruta exacta) y ningún `webxdc.js` viaja en el `.xdc`, como manda la spec webxdc. Si el paquete llevara uno propio (p. ej. en `js/`), el cliente no lo reemplazaría y los envíos al chat se perderían en silencio.
 
 ## Ejecutar en un navegador
 
@@ -49,7 +49,7 @@ python3 -m http.server 8000
 # http://localhost:8000
 ```
 
-En navegador se usa el stub de `webxdc.js`: las exportaciones se descargan como archivos.
+En navegador no hay API webxdc (la referencia a `webxdc.js` no resuelve): las exportaciones se descargan como archivos y la selección de archivos usa el selector del navegador. Para simular Delta Chat, el simulador oficial `webxdc-dev` o el `webxdc.js` de Hello funcionan sin tocar el paquete.
 
 ## Contenido
 
@@ -60,7 +60,6 @@ En navegador se usa el stub de `webxdc.js`: las exportaciones se descargan como 
 | `js/data.js` | Traducciones (8 idiomas) y utilidades de datos |
 | `js/storage.js` | Persistencia en IndexedDB |
 | `js/uploader.js` | Lectura de archivos, ID3 y LRC |
-| `js/webxdc.js` | Stub de compatibilidad WebXDC (navegador) |
 | `js/` | Todo el JavaScript propio: módulos de la app (audio, UI, listas, letras, ajustes…) |
 | `assets/` | Fuente Outfit, iconos y jsmediatags (`assets/js/`) |
 | `build-xdc.py` | Empaquetado y validación del `.xdc` |

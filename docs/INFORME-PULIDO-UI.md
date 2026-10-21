@@ -1610,3 +1610,32 @@ En Inicio, en pausa, el mini reproductor duplicaba al hero «Retomar en…» (§
 - Nuevo `check-minipausa.js`: **13/13** — Inicio en pausa sin mini; Inicio sonando con mini; pausar/reanudar sin navegar oculta/devuelve el mini al momento; Biblioteca en pausa conserva el mini (§52 es solo Inicio); volver a Inicio en pausa lo oculta; sin pista nunca hay mini; Now Playing sigue sin mini; el hero §49 y el mini se relevan (pausa: hero visible y mini oculto; sonando: al revés); con un modal abierto no hay mini y al cerrarlo vuelve. Cero errores de consola.
 - Nota de infraestructura: `/tmp` se había perdido entre sesiones; el arnés (jsdom + fake-indexeddb) se reconstruyó con stubs de canvas/viewport de teléfono. La batería histórica completa quedó verde en §51 sobre este mismo HEAD base.
 - `.xdc` reconstruido y válido para Delta Chat.
+
+---
+
+## 53. Nada de lo que envía al chat funcionaba: el `webxdc.js` propio tapaba la API de Delta
+
+**Reporte:** ningún envío al chat funciona — compartir lista, compartir canción, exportar la copia de seguridad, exportar letra… todos «hacen algo» (incluso enseñaban el toast de éxito) pero al chat no llega nada.
+
+### Causa raíz (confirmada contra la especificación oficial)
+
+La spec webxdc (`webxdc/webxdc_docs`, `src/spec/README.md`) dice dos cosas:
+
+1. «Para activar la API webxdc hay que referenciar `webxdc.js`»: `<script src="webxdc.js"></script>` — la sirve el mensajero para esa ruta exacta.
+2. «**`webxdc.js` must not be added to your `.xdc` file as they are provided by the messenger.**»
+
+Aurora hacía exactamente lo contrario desde la reorganización del repositorio (commit `6546dac`, «JS en `js/`»): `index.html` cargaba `js/webxdc.js`, un stub propio pensado para navegador. Delta **no reemplaza** ese archivo (solo sirve el suyo para la ruta `webxdc.js`), así que dentro de Delta se ejecutaba el stub: su `sendToChat` «envía» descargando con un `<a download>`, que en el WebView de Delta no hace nada; la promesa se resuelve y la app creía haber compartido. Por eso el §51 (payload Blob + toasts honestos) no podía arreglarlo: el problema no era el formato del mensaje, era que **el mensajero nunca llegaba a verlo**. La misma causa dejaba `importFiles` sin API nativa (caía siempre al respaldo `<input>`).
+
+### Arreglo (según la spec)
+
+- `index.html`: la referencia pasa a la ruta exacta `<script src="webxdc.js"></script>`, como primer script. Delta inyecta ahí su API real (`sendToChat`, `importFiles`, `sendUpdate`…).
+- Eliminado `js/webxdc.js` del repo: ningún `webxdc.js` viaja ya en el paquete. En navegador la referencia simplemente no resuelve y los respaldos toman el relevo: `exportFile` descarga el archivo (su propio fallback), `pickFilesWebxdc` devuelve `null` → selector `<input>`. Todas las comprobaciones `window.webxdc` de la app ya toleraban su ausencia.
+- `exportFile()`: simplificado el manejo de errores — sin stub propio, un rechazo de `sendToChat` es «no enviado» y se avisa, como dicta la spec («In case of errors… the promise will be rejected»).
+- `build-xdc.py` hace cumplir la regla para siempre: la referencia `webxdc.js` queda exenta del control de «referenciado pero no está en el paquete» (la sirve el mensajero) y **el build falla si cualquier archivo llamado `webxdc.js` intenta viajar en el .xdc**. README actualizado en la misma dirección.
+
+### Verificación
+
+- Nuevo `check-chat.js`: **14/14** — forma del paquete (referencia exacta y primer script; sin `webxdc.js` en raíz ni en `js/`); simulando al mensajero (API nativa inyectada antes de cargar la app): la app no la sobrescribe, compartir lista / copia de seguridad / canción llegan a `sendToChat` con su Blob, e importar la copia usa `importFiles` nativo y la aplica; en modo navegador, sin API, descargan los respaldos y `pickFilesWebxdc` devuelve `null`. Cero errores en ambos modos.
+- §52 sigue en verde (13/13) con el arnés ya sin stub, y el empaquetador demuestra el guardián: con un `js/webxdc.js` infiltrado el build falla con el motivo; sin él, OK.
+- `.xdc` reconstruido: **27 archivos, 342,0 KB**, sin ningún `webxdc.js`; sha256 `cbf966d34a39092869173164d46a2c9b2c43f521d55e3fbb14128e155e00722c`.
+- Lo que no puede probarse aquí: el diálogo real de Delta al enviar (depende del mensajero en el dispositivo). Al probarlo: compartir una lista debe abrir el selector de chat de Delta y dejar el `.m3u8` como borrador/mensaje en el chat elegido.

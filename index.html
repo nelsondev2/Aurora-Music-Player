@@ -17,7 +17,12 @@
   <link rel="icon" type="image/png" href="icon.png" />
   <link rel="apple-touch-icon" href="icon.png" />
   <link rel="stylesheet" href="css/styles.css" />
-  <script src="js/webxdc.js"></script>
+  <!-- La API webxdc la PROPORCIONA el mensajero (Delta Chat) para la
+       ruta exacta «webxdc.js»: no debe incluirse ningún webxdc.js en el
+       .xdc (spec webxdc). Antes se referenciaba js/webxdc.js, un stub
+       propio que Delta nunca reemplaza: sus envíos «descargaban» en un
+       WebView que lo ignora y nada llegaba jamás a ningún chat (§53). -->
+  <script src="webxdc.js"></script>
 </head>
 <body>
   <svg xmlns="http://www.w3.org/2000/svg" class="icon-sprite" aria-hidden="true" focusable="false">

@@ -694,11 +694,10 @@ Object.assign(App, {
           return true;
         } catch (err) {
           console.warn('[WebXDC] sendToChat no completado:', err);
-          if (!window.webxdc._isStub) {
-            // En Delta nativo devolvemos false y el llamante avisa de
-            // verdad (antes enseñaba el toast de éxito igualmente).
-            return false;
-          }
+          // La spec: ante un error, la promesa se rechaza. Devolvemos
+          // false y el llamante avisa de verdad (antes el fallo se
+          // tragaba y se enseñaba el toast de éxito igualmente, §51).
+          return false;
         }
       }
       // Fallback para navegador web estándar
