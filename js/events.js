@@ -56,6 +56,10 @@ Object.assign(App, {
       // Ajustes desde Inicio: no depende de tener una pista cargada.
       const btnHomeSettings = document.getElementById('btnHomeSettings');
       if (btnHomeSettings) btnHomeSettings.addEventListener('click', () => this.openSheet('sheetSettings'));
+      // Opciones desde Inicio (§54): mismo motivo —la copia de
+      // seguridad se importa también en una instalación vacía—.
+      const btnHomeMore = document.getElementById('btnHomeMore');
+      if (btnHomeMore) btnHomeMore.addEventListener('click', () => this.openSheet('sheetMore'));
       const coverArt = document.getElementById('coverArt');
       if (coverArt) {
         let cvX = 0, cvY = 0, cvVol = 1, mode = null, lpTimer = null, pid = null;

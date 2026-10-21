@@ -169,6 +169,10 @@ Object.assign(App, {
               <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
               <span>${this.esc(this.t('load_music'))}</span>
             </button>
+            <button class="text-btn home-welcome-restore" id="btnHomeRestoreBackup" type="button">
+              <svg class="ico" aria-hidden="true"><use href="#i-file-import"></use></svg>
+              <span>${this.esc(this.t('backup_import'))}</span>
+            </button>
             <ul class="home-welcome-formats" aria-label="${this.esc(this.t('empty_format_hint'))}">
               <li>MP3</li><li>FLAC</li><li>M4A</li><li>WAV</li><li>OGG</li><li>OPUS</li>
             </ul>
@@ -180,6 +184,11 @@ Object.assign(App, {
           </div>`;
         const btn = document.getElementById('btnHomeLoad');
         if (btn) btn.addEventListener('click', () => this.openFilePicker());
+        // Restaurar tras instalar una versión nueva (§54): la copia se
+        // importa ANTES de cargar la música; las canciones quedan
+        // pendientes y se enlazan al importarlas (menuRelinkAudio).
+        const btnRestore = document.getElementById('btnHomeRestoreBackup');
+        if (btnRestore) btnRestore.addEventListener('click', () => this.importLibrary());
         const btnSettings = document.getElementById('btnHomeWelcomeSettings');
         if (btnSettings) btnSettings.addEventListener('click', () => this.openSheet('sheetSettings'));
         return;

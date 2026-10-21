@@ -3789,6 +3789,14 @@ button,
   justify-content: center;
   gap: 8px;
 }
+/* Restaurar copia en la bienvenida (§54): acción secundaria discreta
+ * bajo el CTA principal; hereda la piel de .text-btn. */
+.home-welcome-restore {
+  position: relative;
+  z-index: 1;
+  margin-top: 6px;
+  gap: 7px;
+}
 .home-welcome-formats {
   position: relative;
   z-index: 1;

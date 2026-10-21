@@ -1639,3 +1639,24 @@ Aurora hacía exactamente lo contrario desde la reorganización del repositorio 
 - §52 sigue en verde (13/13) con el arnés ya sin stub, y el empaquetador demuestra el guardián: con un `js/webxdc.js` infiltrado el build falla con el motivo; sin él, OK.
 - `.xdc` reconstruido: **27 archivos, 342,0 KB**, sin ningún `webxdc.js`; sha256 `cbf966d34a39092869173164d46a2c9b2c43f521d55e3fbb14128e155e00722c`.
 - Lo que no puede probarse aquí: el diálogo real de Delta al enviar (depende del mensajero en el dispositivo). Al probarlo: compartir una lista debe abrir el selector de chat de Delta y dejar el `.m3u8` como borrador/mensaje en el chat elegido.
+
+---
+
+## 54. Importar la copia en una versión nueva: la restauración sale del callejón del Reproductor
+
+**Pregunta del usuario:** «¿Cómo importar un backup en una versión nueva si la opción está solo en el menú opciones del reproductor?».
+
+### El problema (tenía razón)
+
+«Opciones» (`sheetMore`) solo se abría desde el ⋮ del Reproductor y desde Letras — ambos exigen una canción abierta. En una versión recién instalada (biblioteca vacía, sin pista) ese camino no existe: para restaurar la copia que trae tus listas había que cargar música primero. Era el mismo callejón que ya se corrigió una vez para Ajustes (de ahí el engranaje en la cabecera de Inicio), reabierto para la copia al moverla a Opciones en §51. La copia sigue viviendo en Opciones; lo que cambia es que ahora se llega a ella siempre.
+
+### Arreglo
+
+- **Restauración en la bienvenida**: la pantalla de instalación nueva (biblioteca vacía) gana, bajo el botón «Cargar música», la acción secundaria «Importar copia de seguridad» (`backup_import`, icono `i-file-import`, piel discreta `.text-btn`). Abre el selector del mensajero y aplica la copia al momento. El orden natural queda: instalar la versión nueva → importar la copia → cargar la música (las canciones quedan pendientes y se enlazan solas; el aviso «N pistas sin audio» de Ajustes guía ese segundo paso).
+- **Puerta permanente a Opciones desde Inicio**: nuevo botón ⋮ (`#btnHomeMore`) en la cabecera de Inicio, junto al engranaje de Ajustes, que abre `sheetMore` sin depender de que haya una pista cargada. (En la bienvenida la propia cabecera se oculta, por eso hacían falta las dos piezas.)
+
+### Verificación
+
+- Nuevo `check-restaurar.js`: **9/9** — biblioteca vacía al arrancar; la bienvenida ofrece importar copia (y conserva «Cargar música» y Ajustes); la copia se importa desde la bienvenida sin tocar el Reproductor (la lista queda aplicada); el ⋮ de Inicio abre «Opciones» con exportar/importar dentro. Cero errores.
+- Sin regresiones: `check-chat.js` 14/14, `check-minipausa.js` 13/13.
+- `.xdc` reconstruido y válido para Delta Chat.
