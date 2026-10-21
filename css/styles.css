@@ -5078,3 +5078,46 @@ html.aurora-wide .toast {
     background: var(--surface);
   }
 }
+
+/* =====================================================================
+ * Barra de Letras uniforme (petición del usuario).
+ * Los cinco grupos de la barra medían cada uno a su manera: botones
+ * de 36 px en tamaño/bucle/acciones, de 30 px en desfase y velocidad,
+ * el −/+ del desfase era texto y el de velocidad icono, y los valores
+ * («0.0s», «1.0×») usaban dos tipografías. Ahora todo comparte caja:
+ * misma altura de botón, mismo relleno de pastilla, mismo icono de
+ * 15 px y valores con la misma fuente y ancho. También hereda el tono
+ * discreto de las listas: la pastilla manda, el botón respira dentro.
+ * ===================================================================== */
+.lyrics-toolbar .lt-group {
+  gap: 2px;
+  padding: 3px;
+}
+.lyrics-toolbar .lt-group-label { margin-left: 7px; }
+.lyrics-toolbar .lt-btn,
+.lyrics-toolbar .lt-group .lt-btn,
+.lyrics-toolbar .lyrics-speed .lt-btn {
+  height: 36px;
+  border-radius: 999px;
+}
+.lyrics-toolbar .lt-group .lt-btn,
+.lyrics-toolbar .lyrics-speed .lt-btn {
+  min-width: 32px;
+  padding: 0 4px;
+}
+/* Valores entre − y +: una sola voz (0.0s y 1.0× se leen igual). */
+.lyrics-toolbar .lt-offset-value,
+.lyrics-toolbar #lrcSpeedLabel {
+  min-width: 40px;
+  text-align: center;
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-1);
+}
+.lyrics-toolbar .lt-offset-value.is-zero { color: var(--text-3); }
+@media (max-width: 360px) {
+  .lyrics-toolbar .lt-btn,
+  .lyrics-toolbar .lt-group .lt-btn,
+  .lyrics-toolbar .lyrics-speed .lt-btn { height: 34px; }
+}

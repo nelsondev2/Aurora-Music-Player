@@ -833,3 +833,35 @@ anteriores, incluidos los `:hover` genéricos que teñían de rojo) y que
 nada funcional se rompió: navegación 9/9, AAA 12/12 e i18n 403×8 en
 repo y en el `.xdc` extraído (340,1 KB, sha256 `baad97f5…`). El juicio
 visual final es del usuario en su dispositivo.
+
+## 36. Barra de Letras uniforme (petición del usuario)
+
+El usuario pidió para los botones de Letras el mismo tratamiento que
+convenció en las listas: el problema aquí no era el peso sino la
+**uniformidad**. Medido en el CSS, dentro de una sola barra convivían
+botones de 36 px (tamaño de letra, bucle, acciones), de 30 px (desfase
+y velocidad), el −/+ del desfase dibujado como texto y el de velocidad
+como icono SVG, y los valores «0.0s» y «1.0×» con dos tipografías y
+anchos distintos.
+
+Corrección (CSS al final de `styles.css`, acotado a `.lyrics-toolbar`,
+más un cambio de HTML):
+
+- Una sola caja: todos los botones de la barra miden 36 px de alto
+  (34 px en pantallas de ≤360 px), con el mismo radio de pastilla.
+- El grupo de desfase adopta el mismo relleno (3 px) y separación que
+  los demás grupos; su etiqueta conserva aire a la izquierda.
+- El −/+ del desfase pasa de carácter de texto a icono SVG
+  (`#i-minus`/`#i-plus`), idéntico al de velocidad.
+- Los valores entre − y + (`0.0s`, `1.0×`) comparten fuente, peso,
+  ancho mínimo de 40 px y números tabulares: ninguno «salta» al
+  cambiar.
+- Sin cambios de comportamiento: A−/A+ siguen siendo texto a dos
+  tamaños (es su significado), el bucle activo sigue en acento y los
+  botones deshabilitados en los extremos de velocidad, igual.
+
+Verificación: regresión específica **9/9** (iconos presentes, regla
+de altura única, velocidad/desfase/A+ funcionales, 0 errores),
+navegación 9/9, AAA 12/12 e i18n 403×8, todo repetido sobre el
+`.xdc` extraído (340,5 KB, sha256 `9a465075…`). El juicio visual,
+como en la §35, es del usuario en su dispositivo.
