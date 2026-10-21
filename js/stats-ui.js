@@ -301,6 +301,16 @@ Object.assign(App, {
       const countEl = document.getElementById('favoritesCount');
       ul.innerHTML = '';
       const favTracks = this.tracks.filter(t => this.favorites.has(t.id));
+      // «Reproducir Todo» sin favoritos no pinta nada: se oculta (el
+      // estado vacío ya lo explica). Y si Favoritos es la lista que
+      // suena, el botón lo dice con el mismo anillo que el hero.
+      const playBtn = document.getElementById('btnPlayFavoritesNow');
+      if (playBtn) {
+        playBtn.style.display = favTracks.length ? '' : 'none';
+        playBtn.classList.toggle('is-playing',
+          favTracks.length > 0 && this.isPlaying &&
+          !!this.playContext && this.playContext.type === 'favorites');
+      }
       if (countEl) {
         const n = favTracks.length;
         countEl.textContent = n === 0

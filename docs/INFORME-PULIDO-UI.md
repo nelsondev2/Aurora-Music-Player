@@ -865,3 +865,30 @@ de altura única, velocidad/desfase/A+ funcionales, 0 errores),
 navegación 9/9, AAA 12/12 e i18n 403×8, todo repetido sobre el
 `.xdc` extraído (340,5 KB, sha256 `9a465075…`). El juicio visual,
 como en la §35, es del usuario en su dispositivo.
+
+## 37. «Reproducir Todo» de Favoritos, en la misma familia (petición del usuario)
+
+El botón de Favoritos era el último rincón con la pintura antigua:
+una banda a todo ancho con el degradado y el resplandor del
+`.primary-btn` genérico (0 10px 30px al 35 %), mientras el resto de
+la app ya iba plano y sereno (hero de listas, pastillas discretas,
+barra de Letras uniforme).
+
+Pasada, en la misma línea de las §35–36:
+
+- Clase propia `.fav-play-all`: relleno **plano** `--accent-fill` (sin
+  degradado), sombra suave (0 6px 16px al 22 %, como el hero),
+  radio de pastilla, 48 px de alto táctil. Sigue siendo claramente LA
+  acción principal de la pestaña, pero ya no grita más que la música.
+- **Se oculta cuando no hay favoritos**: antes quedaba sobre el
+  estado vacío invitando a reproducir una lista inexistente.
+- **Anillo `is-playing`** cuando Favoritos es la lista que suena, el
+  mismo lenguaje que el botón hero de las listas.
+- El `.primary-btn` con degradado no desaparece: queda para altas y
+  diálogos de confirmación, donde ese peso sí ayuda.
+
+Verificación: regresión específica **9/9** (clase y pintura plana,
+oculto sin favoritos, visible con ellos, anillo al sonar y no en
+pausa, clic que reproduce con 0 errores), Letras 9/9, navegación 9/9,
+AAA 12/12 e i18n 403×8, repetido sobre el `.xdc` extraído (341,0 KB,
+sha256 `d52996b5…`).

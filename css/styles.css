@@ -2560,6 +2560,40 @@ svg { display: block; }
   }
 }
 
+/* «Reproducir Todo» de Favoritos: es la acción principal de su
+ * pestaña y conserva el acento, pero en la versión serena del resto
+ * de la app — relleno plano en vez de degradado, sombra suave como la
+ * del botón hero de las listas y radio de pastilla. El genérico
+ * .primary-btn (degradado + resplandor) queda para altas y diálogos. */
+.fav-play-all {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-fill);
+  color: var(--accent-on-fill);
+  font-size: var(--fs-ui);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.22);
+  transition: transform .15s, box-shadow .2s, background .2s;
+}
+.fav-play-all .ico { width: 16px; height: 16px; }
+.fav-play-all:active { transform: scale(0.98); }
+/* Favoritos es lo que suena: anillo fino, como el hero de las listas. */
+.fav-play-all.is-playing {
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.20),
+              0 6px 16px rgba(var(--accent-rgb), 0.22);
+}
+@media (hover: hover) and (pointer: fine) {
+  .fav-play-all:hover { filter: brightness(1.05); }
+}
+
 /* Variantes compactas usadas en otros sitios */
 .primary-btn.compact {
   padding: 8px 14px;

@@ -863,9 +863,10 @@
             <span class="sheet-header-spacer" aria-hidden="true"></span>
           </header>
           <div class="sheet-body">
-            <div class="edit-pl-actions" style="grid-template-columns:1fr;margin-bottom:14px">
-              <button class="primary-btn compact" id="btnPlayFavoritesNow"><svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg> <span data-i18n="play_all_btn">Reproducir Todo</span></button>
-            </div>
+            <!-- Acción principal de la pestaña: banda plana y serena,
+                 sin el degradado con resplandor del .primary-btn
+                 genérico. Se oculta cuando no hay favoritos. -->
+            <button class="fav-play-all" id="btnPlayFavoritesNow" type="button"><svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg> <span data-i18n="play_all_btn">Reproducir Todo</span></button>
             <p class="sheet-subtitle" id="favoritesCount"></p>
             <ul class="track-list" id="favoritesList"></ul>
           </div>
