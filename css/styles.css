@@ -3687,8 +3687,10 @@ button,
 }
 
 .lt-btn.emphasis {
-  color: #fff;
-  background: var(--accent);
+  /* Par de relleno seguro (blanco ≥ 4.5:1 garantizado): el --accent
+   * a secas con blanco se quedaba en ~3.9:1. */
+  color: var(--accent-on-fill);
+  background: var(--accent-fill);
 }
 
 .lrc-word {

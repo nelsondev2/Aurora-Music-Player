@@ -2221,6 +2221,11 @@ const I18N = {
     zh: '开始电台', ja: 'ラジオを開始', fr: 'Lancer la radio',
     it: 'Avvia radio', ru: 'Запустить радио'
   },
+  radio_label: {
+    es: 'Radio', en: 'Radio', pt: 'Rádio',
+    zh: '电台', ja: 'ラジオ', fr: 'Radio',
+    it: 'Radio', ru: 'Радио'
+  },
   rename_playlist_btn: {
     es: 'Renombrar', en: 'Rename', pt: 'Mudar nome',
     zh: '重命名', ja: '名前を変更', fr: 'Renommer',

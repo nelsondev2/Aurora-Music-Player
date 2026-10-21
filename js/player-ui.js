@@ -317,9 +317,15 @@ Object.assign(App, {
     fmtTime(s) {
       if (!s || isNaN(s)) return '0:00';
       s = Math.floor(s);
-      const m = Math.floor(s / 60);
       const r = s % 60;
-      return m + ':' + (r < 10 ? '0' : '') + r;
+      const pad = (n) => (n < 10 ? '0' : '') + n;
+      // A partir de una hora, «90:00» engaña: formato h:mm:ss.
+      if (s >= 3600) {
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        return h + ':' + pad(m) + ':' + pad(r);
+      }
+      return Math.floor(s / 60) + ':' + pad(r);
     },
 
     setMarqueeText(el, text) {

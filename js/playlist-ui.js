@@ -1208,7 +1208,9 @@ Object.assign(App, {
         return this.playContext.name || null;
       }
       if (this.playContext.type === 'radio') {
-        return this.t('ctx_start_radio');
+        // Sustantivo, no el verbo del menú: «Reproduciendo desde Radio»,
+        // no «…desde Iniciar radio».
+        return this.t('radio_label');
       }
       return null;
     },

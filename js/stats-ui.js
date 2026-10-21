@@ -100,7 +100,10 @@ Object.assign(App, {
           if (cv) this.drawRowCover(cv, track);
         }
         row.addEventListener('click', () => {
-          if (tid) this.playTrack(tid);
+          // Sin contexto, playTrack dejaba el anterior con la cola de
+          // toda la biblioteca: etiqueta y cola divorciadas. Manda la
+          // lista de la canción, como en Buscar (§38/§39).
+          if (tid && track) this.playTrack(tid, typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(track) : undefined);
         });
       });
     },
