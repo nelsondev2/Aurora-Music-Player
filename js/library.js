@@ -1196,9 +1196,10 @@ Object.assign(App, {
 
       // --- Listas: fusión por id ---
       // Si la copia trae «Mi Música», se ignora como lista: es la
-      // automática y el arranque la reconstruye con toda la biblioteca
-      // restaurada (sus pistas ya vienen en data.tracks). Tampoco se
-      // marca ninguna lista como isDefault.
+      // automática y el arranque la reconstruye con las canciones
+      // restauradas que no quedaron en ninguna lista (§46; sus
+      // pistas ya vienen en data.tracks). Tampoco se marca ninguna
+      // lista como isDefault.
       const LEGACY_DEFAULT_ID = 'mi-musica';
       const rawPls = Array.isArray(data.playlists) ? data.playlists.slice(0, MAX_PLAYLISTS) : [];
       const byId = new Map(this.playlists.map(p => [p.id, p]));

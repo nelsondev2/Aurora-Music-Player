@@ -267,11 +267,15 @@ Object.assign(App, {
      * casa: recoge las canciones que se agregan fuera de cualquier
      * lista concreta. Modelo (decisión del usuario, que revierte la
      * retirada anterior de esta lista):
-     *   - Al arrancar, si hay biblioteca y la lista no existe, se crea
-     *     con todas las pistas (las importaciones sueltas históricas
-     *     viven ahí; no guardamos la procedencia de cada pista).
-     *   - Al importar sin lista destino, _ensureMiMusica() la crea si
-     *     falta y le suma las canciones nuevas.
+     *   - Al importar sin lista destino, las canciones entran en
+     *     ella; si no existe, se crea SOLO con las de esa importación
+     *     (antes se sembraba con toda la biblioteca y se colaban las
+     *     canciones de las demás listas: fallo reportado, §46).
+     *   - Al arrancar se reconstruye solo si falta, y se siembra con
+     *     las canciones que no viven en ninguna otra lista — es lo
+     *     que «agregadas fuera de una lista» puede saberse sin
+     *     guardar la procedencia de cada pista. Si no hay ninguna,
+     *     no nace vacía: aparecerá con la primera importación suelta.
      *   - Si el usuario la borra a propósito, NO se resucita al
      *     arrancar: queda la marca 'aurora_mimusica_removed' y solo
      *     vuelve cuando agregue otra canción fuera de una lista.
@@ -286,11 +290,20 @@ Object.assign(App, {
         }
       });
       const exists = this.playlists.some(p => p && p.id === ID);
-      if (!exists && this.tracks.length) {
-        let removed = false;
-        try { removed = localStorage.getItem('aurora_mimusica_removed') === '1'; } catch (e) {}
-        if (!removed) this._createMiMusica(this.tracks.map(t => t.id));
-      }
+      if (exists || !this.tracks.length) return;
+      let removed = false;
+      try { removed = localStorage.getItem('aurora_mimusica_removed') === '1'; } catch (e) {}
+      if (removed) return;
+      // Canciones «sueltas»: en la biblioteca pero en ninguna lista
+      // del usuario. Las de otras listas NO entran (§46).
+      const enListas = new Set();
+      this.playlists.forEach(p => {
+        if (p && p.id !== ID && Array.isArray(p.trackIds)) {
+          p.trackIds.forEach(id => enListas.add(id));
+        }
+      });
+      const sueltas = this.tracks.map(t => t.id).filter(id => !enListas.has(id));
+      if (sueltas.length) this._createMiMusica(sueltas);
     },
 
     _createMiMusica(trackIds) {
@@ -306,12 +319,17 @@ Object.assign(App, {
       return pl;
     },
 
-    /* Garantiza que «Mi Música» existe y contiene los ids dados. Al
-     * crearla se siembra con toda la biblioteca actual (en el momento
-     * de importar, las nuevas ya están dentro de this.tracks). */
+    /* Garantiza que «Mi Música» existe y contiene los ids dados.
+     * Al crearla entran SOLO esos ids (los de la importación que la
+     * provoca): sembrarla con toda la biblioteca colaba las
+     * canciones de las demás listas (§46). Y sin ids no se
+     * materializa una lista vacía por una importación fallida. */
     _ensureMiMusica(extraIds) {
       const pl = this.playlists.find(p => p && p.id === 'mi-musica');
-      if (!pl) return this._createMiMusica(this.tracks.map(t => t.id));
+      if (!pl) {
+        const seed = [...new Set((extraIds || []).filter(Boolean))];
+        return seed.length ? this._createMiMusica(seed) : null;
+      }
       let changed = false;
       for (const id of extraIds || []) {
         if (id && !pl.trackIds.includes(id)) {

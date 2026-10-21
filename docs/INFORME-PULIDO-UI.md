@@ -1282,3 +1282,61 @@ detalles 6/6, mimusica 15/15, fav/letras/nav 9/9, AAA 12/12, i18n
 | «Cancelar selección» ya no cierra la biblioteca | ✅ |
 | Regresión sinselect 18/18 + batería completa | ✅ |
 | `.xdc` válido (347,9 KB, sha256 `098ebeed…`) + regresiones sobre extraído | ✅ |
+
+## 46. «Mi Música» ya no se siembra con las canciones de otras listas
+
+**Fallo reportado por el usuario**: al agregar una canción fuera de
+una lista, si «Mi Música» no existía, nacía con **todas las
+canciones de las demás listas** en lugar de solo con la agregada.
+Causa exacta: `_ensureMiMusica()` recibía los ids de la
+importación (`extraIds`) pero, en la rama de creación, los ignoraba
+y sembraba con `this.tracks.map(t => t.id)` — en ese momento las
+nuevas ya están en la biblioteca, así que entraba todo (§38).
+
+**Corrección** (`js/init.js`):
+
+1. **Crear desde una importación** (`_ensureMiMusica`): la lista
+   nace SOLO con los ids de esa importación (deduplicados). Sin
+   ids — importación sin frutos — no se materializa una lista
+   vacía: devuelve `null`.
+2. **Siembra al arrancar** (`migrateMiMusica`): el espejo del mismo
+   error. Sin procedencia histórica guardada, «agregada fuera de
+   una lista» solo puede reconstruirse como «canción que no vive
+   en ninguna otra lista»: la siembra pasa a ser las canciones
+   sueltas de la biblioteca, excluidas las que ya están en alguna
+   lista del usuario. Si no hay sueltas, no nace vacía en el
+   arranque; aparecerá con la primera importación suelta.
+   Decisión documentada en el comentario del modelo: una canción
+   que entró suelta y luego se organizó en una lista no puede
+   distinguirse sin guardar procedencia; la regla observable es
+   «en ninguna lista ⇒ suelta».
+3. El comentario de la restauración de copia (`js/library.js`)
+   quedó alineado («se reconstruye con las canciones restauradas
+   que no quedaron en ninguna lista»).
+
+**Lo que no se toca**: una «Mi Música» ya existente con la siembra
+antigua no se poda automáticamente — podarla expulsaría también
+canciones que entraron sueltas de verdad y después se organizaron
+en una lista, indistinguibles sin procedencia. Quien la tenga
+llena de todo puede borrarla: a partir de ahí, la próxima
+canción suelta la recrea limpia (las demás siguen en «Todas las
+canciones»; la lista solo agrupa, no se pierde música).
+
+**Verificación**: regresión de «Mi Música» ampliada a 21/21 —
+incluye el escenario reportado tal cual (lista del usuario con
+canciones + importar fuera de lista ⇒ «Mi Música» nace con
+exactamente la nueva), siembra de arranque solo con sueltas, no
+nace vacía si todo está en listas, e importación sin frutos que
+no crea nada; los 15 asertos anteriores compatibles siguen en
+verde. Batería completa en verde (sinselect 18/18, visualizador
+19/19, importFiles 16/16, lupa 10/10, detalles 6/6, fav/letras/nav
+9/9, AAA 12/12, i18n 403×8) y regresión repetida sobre el `.xdc`
+extraído.
+
+## Cierre de la sesión §46
+
+| Check | Resultado |
+|---|---|
+| «Mi Música» nace solo con la importación que la crea; arranque solo con sueltas | ✅ |
+| Regresión mimusica 21/21 + batería completa | ✅ |
+| `.xdc` válido (348,1 KB, sha256 `46471bf2…`) + regresiones sobre extraído | ✅ |
