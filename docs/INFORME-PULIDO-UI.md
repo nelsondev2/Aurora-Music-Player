@@ -1113,3 +1113,72 @@ Android/Desktop) es del usuario en su dispositivo.
 | `pickFilesWebxdc` + 5 selectores con camino nativo y respaldo | ✅ |
 | Regresión importFiles 16/16 + batería completa | ✅ |
 | `.xdc` válido (344,8 KB, sha256 `4bce7b82…`) + regresiones sobre extraído | ✅ |
+
+## 43. Visualizador: ondas fluidas y espectro con peso
+
+El visualizador funcionaba, pero con cuatro debilidades medibles.
+Todo el trabajo está en `js/audio.js` (+8 px de alto en CSS).
+
+### Funcional
+
+1. **`fftSize` 256 → 2048** (1024 bins). La onda ya no se dibuja con
+   128 muestras en zigzag, y el espectro tiene resolución para
+   bandas de verdad. Buffer temporal propio (`_visTimeData`, fftSize
+   muestras); antes la onda reusaba el buffer de frecuencias, de la
+   mitad de largo.
+2. **Bandas logarítmicas 35 Hz–16 kHz** (`_visLogBands`, cacheadas
+   por barras/bins/sampleRate): la energía musical vive abajo y el
+   muestreo lineal anterior dejaba los graves pegados al techo y
+   los agudos muertos. Nivel por banda = máximo del rango con
+   gamma 0,78 (levanta pasajes flojos sin saturar).
+3. **Suavizado ataque/caída por tiempo real** (`_visStepBars`,
+   coeficientes desde el dt entre frames, no por frame): ataque en
+   ~42 ms, caída en ~175 ms. El parpadeo nervioso pasa a ser un
+   espectro con inercia. El bucle ahora pasa el dt al dibujante.
+4. **Marcas de pico** que aguantan y caen a 0,42/segundo, dibujadas
+   en una sola pasada con un solo `fillStyle`.
+5. **Nº de barras adaptable al ancho** (24–56 según el ancho CSS
+   del canvas): ni columnas enanas ni láminas de 1 px.
+
+### Visual
+
+6. **Onda fluida de verdad** (`_visWavePoints` + trazo nuevo): se
+   diezma el dominio temporal quedándose con la muestra de mayor
+   amplitud de cada tramo (~64–140 puntos según ancho), se suaviza
+   entre frames y se dibuja con curvas cuadráticas por puntos
+   medios, en tres capas: halo ancho al 15 %, relleno suave hasta
+   la línea central y trazo principal con extremos redondeados.
+7. **Colores de la portada que suena**: los gradientes (onda y
+   barras) nacen de `cover.from/cover.to` — la paleta dinámica que
+   `renderCurrentTrack` ya calculaba «para el fondo y
+   visualizador» sin que el visualizador la usara jamás. Sin paleta,
+   el violeta/rosa clásico de respaldo. Cache de gradientes por
+   modo + tamaño + paleta (sin recrear por frame, como antes).
+8. La sección sube de 54 a 62 px (radio 14) para que barras y
+   picos respiren; el coste lo absorbe el área flexible de la
+   portada.
+
+**Rendimiento**: se conserva todo lo que ya lo protegía (30 fps,
+pausa fuera de pantalla con IntersectionObserver + `document.hidden`,
+DPR ≤ 2, gradientes cacheados) y no se asigna memoria por frame
+salvo los arrays cacheados que se reutilizan.
+
+**Verificación**: regresión específica 19/19 — paleta y respaldo,
+`_hexA`, bandas log crecientes y en rango, gamma en graves,
+ataque ≈ mitad en 33 ms y caída más lenta, pico que aguanta y
+acaba cayendo, diezmado de onda por máxima amplitud, dibujo
+completo de ambos modos con un ctx registrador (rellenos, picos,
+≥2 trazos, curvas, caché de gradientes), fftSize y CSS en el código,
+0 errores. Batería completa en verde (importFiles 16/16, lupa
+10/10, detalles 6/6, mimusica 15/15, fav/letras/nav 9/9, AAA 12/12,
+i18n 404×8) y regresión repetida sobre el `.xdc` extraído. El
+juicio visual final (fluidez percibida en hardware real) es del
+usuario en su dispositivo.
+
+## Cierre de la sesión §43
+
+| Check | Resultado |
+|---|---|
+| FFT 2048 + bandas log + ataque/caída + picos + onda fluida + paleta de portada | ✅ |
+| Regresión visualizador 19/19 + batería completa | ✅ |
+| `.xdc` válido (347,5 KB, sha256 `84ff7774…`) + regresiones sobre extraído | ✅ |

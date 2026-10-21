@@ -757,9 +757,9 @@ svg { display: block; }
 /* ---------- Visualizador de frecuencias ---------- */
 .visualizer-section {
   flex: 0 0 auto;
-  height: 54px;
+  height: 62px;
   margin: 2px 18px 0;
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
   background: var(--surface);
   opacity: .92;
