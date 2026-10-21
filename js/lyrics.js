@@ -458,7 +458,13 @@ Object.assign(App, {
     /* ============================================================
      *  Cargar .lrc externo (#1)
      * ============================================================ */
-    loadExternalLrc() {
+    async loadExternalLrc() {
+      // Delta Chat nativo: selector integrado antes que <input> (§42)
+      const nativeFiles = await this.pickFilesWebxdc({ extensions: ['.lrc', '.txt'], multiple: false });
+      if (nativeFiles) {
+        if (nativeFiles.length > 0) await this._applyExternalLrc(nativeFiles[0]);
+        return;
+      }
       let input = document.getElementById('lrcFileInput');
       if (!input) {
         input = document.createElement('input');
@@ -469,26 +475,31 @@ Object.assign(App, {
         document.body.appendChild(input);
         input.addEventListener('change', async (e) => {
           const file = e.target.files[0];
-          if (!file) return;
-          try {
-            const text = await file.text();
-            if (this.currentTrack) {
-              const lines = text.split(/\r?\n/);
-              this.currentTrack.lrc = lines;
-              // Invalidar caché
-              this.currentTrack._lrcCache = null;
-              this.persistTrack(this.currentTrack);
-              this.renderLyrics();
-              this.toast(this.t('lrc_loaded'));
-            }
-          } catch (err) {
-            this.toast(this.t('toast_load_error'));
-          }
+          if (file) await this._applyExternalLrc(file);
           e.target.value = '';
         });
       }
       input.value = '';
       input.click();
+    },
+
+    /* Aplica el .lrc elegido (del <input> o de webxdc.importFiles). */
+    async _applyExternalLrc(file) {
+      if (!file) return;
+      try {
+        const text = await file.text();
+        if (this.currentTrack) {
+          const lines = text.split(/\r?\n/);
+          this.currentTrack.lrc = lines;
+          // Invalidar caché
+          this.currentTrack._lrcCache = null;
+          this.persistTrack(this.currentTrack);
+          this.renderLyrics();
+          this.toast(this.t('lrc_loaded'));
+        }
+      } catch (err) {
+        this.toast(this.t('toast_load_error'));
+      }
     },
 
     /* ============================================================

@@ -1056,3 +1056,60 @@ sobre la copia extraída.
 | Etiqueta «Reproduciendo desde Radio» + fmtTime h:mm:ss + estadísticas con contexto + contraste emphasis + sprite sin muertos | ✅ |
 | Batería completa (mimusica 15/15, AAA 12/12, nav 9/9, letras 9/9, fav 9/9, detalles 6/6, i18n 404×8) | ✅ |
 | `.xdc` válido (343,8 KB, sha256 `a6ca85fe…`) + regresiones sobre extraído | ✅ |
+
+## 42. Selector de archivos integrado de Delta Chat (`webxdc.importFiles`)
+
+La única funcionalidad webxdc desaprovechada que encaja con el
+criterio vigente (sin red, gasto cero): en Delta Chat nativo, escoger
+archivos con el selector del propio Delta en vez de salir al
+explorador del sistema.
+
+**Diseño** — un ayudante central, `pickFilesWebxdc(filter)` en
+`js/library.js`, con contrato estricto:
+
+- Devuelve un **array** (aunque vacío): el selector nativo se usó.
+  Vacío = el usuario canceló, y **no** se abre el `<input>` detrás
+  (sería lanzarle un segundo selector tras cancelar).
+- Devuelve **null**: la API no existe (navegador, stub, Delta antiguo
+  sin `importFiles`) o lanzó un error → el llamador sigue con su
+  `<input type="file">` de siempre, intacto.
+
+**Conectado en los cinco selectores de la app**:
+
+| Selector | Filtro nativo |
+|---|---|
+| Música (`openFilePicker`, sin modo carpeta) | extensiones de audio + `.lrc/.txt/.m3u/.m3u8`, múltiple |
+| Importar lista (botón M3U) | `.m3u/.m3u8`, único |
+| Copia de seguridad (`importLibrary`) | `.json`, único |
+| Letra externa (`loadExternalLrc`) | `.lrc/.txt`, único |
+| Portada personalizada (`pickCustomCover`) | imágenes, único |
+
+El modo carpeta sigue con su `<input webkitdirectory>` (importFiles
+no tiene equivalente; en Delta nativo ese modo ya se degradaba a
+multiselección de archivos, que ahora pasa por el selector
+integrado). Dos cuerpos de procesado que vivían dentro de handlers
+de `change` se extrajeron sin cambiar su lógica para compartirlos
+entre ambos caminos: `_importLibraryFromFile()` y
+`_applyExternalLrc()`.
+
+**Sin cambios** en el stub de navegador (`js/webxdc.js`): allí
+`_isStub` hace que `pickFilesWebxdc` devuelva null y todo sigue como
+antes. Sin tocar red ni datos: cero megas, como se decidió.
+
+**Verificación**: regresión específica 16/16 (contrato del ayudante:
+stub→null, nativo→archivos+filtro, error→null, cancelación→[];
+importación de música de principio a fin sin crear `<input>`;
+cancelación sin efectos; copia, letra, portada y botón M3U por el
+camino nativo; respaldo creando el `<input>`; 0 errores). Batería
+completa en verde (lupa 10/10, detalles 6/6, mimusica 15/15,
+fav/letras/nav 9/9, AAA 12/12, i18n 404×8) y regresión repetida sobre
+el `.xdc` extraído. El juicio final del selector real (Delta
+Android/Desktop) es del usuario en su dispositivo.
+
+## Cierre de la sesión §42
+
+| Check | Resultado |
+|---|---|
+| `pickFilesWebxdc` + 5 selectores con camino nativo y respaldo | ✅ |
+| Regresión importFiles 16/16 + batería completa | ✅ |
+| `.xdc` válido (344,8 KB, sha256 `4bce7b82…`) + regresiones sobre extraído | ✅ |

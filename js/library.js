@@ -675,6 +675,24 @@ Object.assign(App, {
       return updated;
     },
 
+    /* Selector de archivos integrado de Delta Chat (webxdc.importFiles).
+     * En Delta Chat nativo abre el selector del propio Delta, sin salir
+     * al explorador del sistema. Contrato:
+     *  - Array (aunque sea vacío): el selector nativo se usó; vacío =
+     *    el usuario canceló y NO debe abrirse el <input> detrás.
+     *  - null: la API no existe (navegador, stub o Delta antiguo) o
+     *    falló; el llamador sigue con su <input type="file"> de siempre. */
+    async pickFilesWebxdc(filter) {
+      try {
+        if (!window.webxdc || window.webxdc._isStub) return null;
+        if (typeof window.webxdc.importFiles !== 'function') return null;
+        const picked = await window.webxdc.importFiles(filter);
+        return Array.from(picked || []);
+      } catch (e) {
+        return null;
+      }
+    },
+
     /* Utilidad para exportar archivos: usa webxdc.sendToChat en Delta Chat o descarga directa en navegador */
     async exportFile({ name, content, mimeType = 'application/json', caption = '' }) {
       if (window.webxdc && typeof window.webxdc.sendToChat === 'function') {
@@ -978,9 +996,14 @@ Object.assign(App, {
      * marcadas con _needsRelink y se curan al reimportar los mismos
      * archivos (ver handleFileInput) o desde Ajustes → Vincular audio. */
     async importLibrary() {
-      // La copia de seguridad es un JSON pequeño (sin audio), pero un archivo
-      // manipulado podría tener millones de entradas: se limita el tamaño y
-      // se valida cada campo antes de tocar el estado.
+      // Delta Chat nativo: su selector integrado (webxdc.importFiles,
+      // §42) evita salir al explorador del sistema; si allí se cancela,
+      // no se abre el <input> detrás.
+      const nativeFiles = await this.pickFilesWebxdc({ extensions: ['.json'], multiple: false });
+      if (nativeFiles) {
+        if (nativeFiles.length > 0) await this._importLibraryFromFile(nativeFiles[0]);
+        return;
+      }
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = '.json,application/json';
@@ -992,48 +1015,7 @@ Object.assign(App, {
         settled = true;
         const file = e.target.files && e.target.files[0];
         cleanup();
-        if (!file) return;
-        if (file.size > 25 * 1024 * 1024) {
-          this.toast(this.t('toast_file_too_large'));
-          return;
-        }
-        try {
-          const text = await file.text();
-          const data = JSON.parse(text);
-          if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('formato');
-          if (data.kind && data.kind !== 'aurora-metadata') throw new Error('kind');
-          const result = this._importLibraryData(data);
-          this.renderLibrary();
-          this.renderPlaylists();
-          this.renderQueue();
-          this.renderFavorites();
-          if (typeof this.renderHome === 'function') this.renderHome();
-          if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
-          if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
-          // Sesión de otro dispositivo: queda guardada como la sesión a
-          // restaurar en el próximo arranque; si ahora no suena nada,
-          // se aplica al momento (misma pista, misma cola, mismo segundo).
-          if (result.session) {
-            try { await window.AuroraStorage.setSetting('session', result.session); } catch (e) {}
-            if (!this.isPlaying && typeof this.restoreSession === 'function') {
-              await this.restoreSession();
-              if (typeof this.updatePlayUI === 'function') this.updatePlayUI();
-              if (typeof this.updateChrome === 'function') this.updateChrome();
-              if (this.currentTrack) this.renderCurrentTrack();
-              if (typeof this.renderHome === 'function') this.renderHome();
-            }
-          }
-          const pending = this.pendingRelinkCount();
-          if (result.restoredTracks > 0 && pending > 0) {
-            this.toast(this.t('relink_pending').replace('X', String(pending)));
-          } else {
-            this.toast(this.t('toast_imported_meta'));
-          }
-          this.syncLibCountMarker();
-        } catch (err) {
-          console.warn('[Aurora] Importación inválida:', err && err.message);
-          this.toast(this.t('toast_load_error'));
-        }
+        if (file) await this._importLibraryFromFile(file);
       });
       // Si el usuario cancela, algunos navegadores no disparan `change`:
       // al recuperar el foco se retira el input (evita nodos huérfanos).
@@ -1041,6 +1023,57 @@ Object.assign(App, {
         setTimeout(() => { if (!settled) cleanup(); }, 300);
       }, { once: true });
       input.click();
+    },
+
+    /* Aplica la copia elegida (del <input> o de webxdc.importFiles):
+     * límite de tamaño, parseo, fusión aditiva y sesión portable.
+     * La política de fusión vive en _importLibraryData. */
+    async _importLibraryFromFile(file) {
+      if (!file) return;
+      // La copia es un JSON pequeño (sin audio), pero un archivo
+      // manipulado podría tener millones de entradas: se limita el
+      // tamaño y se valida cada campo antes de tocar el estado.
+      if (file.size > 25 * 1024 * 1024) {
+        this.toast(this.t('toast_file_too_large'));
+        return;
+      }
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('formato');
+        if (data.kind && data.kind !== 'aurora-metadata') throw new Error('kind');
+        const result = this._importLibraryData(data);
+        this.renderLibrary();
+        this.renderPlaylists();
+        this.renderQueue();
+        this.renderFavorites();
+        if (typeof this.renderHome === 'function') this.renderHome();
+        if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
+        if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
+        // Sesión de otro dispositivo: queda guardada como la sesión a
+        // restaurar en el próximo arranque; si ahora no suena nada,
+        // se aplica al momento (misma pista, misma cola, mismo segundo).
+        if (result.session) {
+          try { await window.AuroraStorage.setSetting('session', result.session); } catch (e) {}
+          if (!this.isPlaying && typeof this.restoreSession === 'function') {
+            await this.restoreSession();
+            if (typeof this.updatePlayUI === 'function') this.updatePlayUI();
+            if (typeof this.updateChrome === 'function') this.updateChrome();
+            if (this.currentTrack) this.renderCurrentTrack();
+            if (typeof this.renderHome === 'function') this.renderHome();
+          }
+        }
+        const pending = this.pendingRelinkCount();
+        if (result.restoredTracks > 0 && pending > 0) {
+          this.toast(this.t('relink_pending').replace('X', String(pending)));
+        } else {
+          this.toast(this.t('toast_imported_meta'));
+        }
+        this.syncLibCountMarker();
+      } catch (err) {
+        console.warn('[Aurora] Importación inválida:', err && err.message);
+        this.toast(this.t('toast_load_error'));
+      }
     },
 
     /* Valida y aplica una copia de seguridad ya parseada.

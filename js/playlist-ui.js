@@ -125,7 +125,13 @@ Object.assign(App, {
      *  re-etiquetado puede pisarla, y quitarla devuelve la original,
      *  que nunca se modifica.
      * ============================================================ */
-    pickCustomCover(trackId) {
+    async pickCustomCover(trackId) {
+      // Delta Chat nativo: selector integrado antes que <input> (§42)
+      const nativeFiles = await this.pickFilesWebxdc({ extensions: ['.jpg', '.jpeg', '.png', '.webp', '.gif'], multiple: false });
+      if (nativeFiles) {
+        if (nativeFiles.length > 0) await this.setCustomCover(trackId, nativeFiles[0]);
+        return;
+      }
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
