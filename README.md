@@ -4,6 +4,30 @@ Reproductor de música **offline-first** pensado para **WebXDC**: se comparte co
 
 **Versión:** 1.2.0 · licencia MIT
 
+## Qué hace
+
+- **Tu música, sin nube**: importa MP3, M4A, FLAC, WAV, OGG y Opus
+  desde el dispositivo, con metadatos, portadas y duración real. Todo
+  queda guardado localmente en la instancia del chat; sin red, sin
+  cuenta y sin servidor.
+- **Letras sincronizadas**: archivos `.lrc` o letras incrustadas, con
+  desplazamiento automático y pantalla de letras a lo grande.
+- **Listas para todo**: crea y edita listas, marca **Favoritos**, y
+  deja que la app mantenga solas «Mi Música» (lo añadido fuera de
+  listas) y **«Más valoradas»** (tus canciones con estrellas, de mejor
+  nota a menor).
+- **Estrellas de 1 a 5** en el menú de cada canción, en el reproductor
+  y en las filas, para valorar sin salir de donde estás.
+- **Reproducción seria**: cola, aleatorio de verdad, repetir,
+  «Reproducir desde…» con su contexto, reproducción continua
+  (gapless/crossfade), ecualizador, visualizador y temporizador de
+  apagado.
+- **Estadísticas**: recientes, más reproducidas e historial.
+- **Comparte por el chat**: envía canciones, listas (`.m3u8`) y letras
+  con `sendToChat`, sin salir de Delta Chat.
+- **8 idiomas** (es, en, pt, zh, ja, fr, it, ru), temas y colores de
+  acento.
+
 ## Empaquetar como .xdc (Delta Chat)
 
 Requisito: Python 3 (solo biblioteca estándar, sin dependencias).
@@ -40,6 +64,35 @@ El resultado es un ZIP con compresión Deflate, **27 archivos y ~336 KB**, repro
 - «Compartir» usa `sendToChat` para enviar audio, letras o listas al chat.
 - La API `window.webxdc` la inyecta el cliente: `index.html` referencia `webxdc.js` (ruta exacta) y ningún `webxdc.js` viaja en el `.xdc`, como manda la spec webxdc. Si el paquete llevara uno propio (p. ej. en `js/`), el cliente no lo reemplazaría y los envíos al chat se perderían en silencio.
 
+## Limitaciones conocidas
+
+Dichas en voz alta, para que nadie se lleve una sorpresa:
+
+- **Cada copia del `.xdc` guarda su propia biblioteca** (ya avisado
+  arriba): reenviar el archivo crea una instancia nueva y vacía. No
+  hay sincronización entre copias ni entre dispositivos, y no hay
+  copia de seguridad integrada: tu biblioteca vive en los datos de
+  esa instancia dentro de la app de mensajería.
+- **La música se detiene al cerrar la app.** Las WebXDC se ejecutan
+  dentro del cliente y este no ofrece reproducción en segundo plano
+  tras cerrar la ventana; es un límite de la plataforma, no un fallo.
+- **El espacio manda el dispositivo.** La música se guarda en el
+  almacenamiento web de la instancia: bibliotecas muy grandes pueden
+  chocar con la cuota del sistema, que Aurora no controla.
+- **Sin selector de carpetas en Delta Chat** (el cliente solo deja
+  elegir archivos sueltos); en navegador sí está disponible.
+- Las traducciones las mantiene el proyecto: si tu idioma suena raro,
+  un aviso en los *issues* se agradece.
+
+## Reportar un problema
+
+En los [*issues* de GitHub](https://github.com/nelsondev2/Aurora-Music-Player/issues)
+(en español o inglés). Ayuda mucho incluir:
+
+- la versión de Aurora (Ajustes → Acerca de: **1.2.0**),
+- tu dispositivo y la versión de Delta Chat,
+- los pasos para reproducir el fallo, y qué esperabas que pasara.
+
 ## Ejecutar en un navegador
 
 No hay build ni dependencias. Abre `index.html` o sirve la carpeta:
@@ -65,6 +118,7 @@ En navegador no hay API webxdc (la referencia a `webxdc.js` no resuelve): las ex
 | `build-xdc.py` | Empaquetado y validación del `.xdc` |
 | `manifest.toml`, `icon.png` | Metadatos e icono del WebXDC |
 | `README.md`, `LICENSE` | Documentación y licencia |
+| `CHANGELOG.md` | Historial de versiones publicadas |
 | `docs/AUDITORIA.md`, `docs/INFORME-PULIDO-UI.md` | Informes de auditoría y del pulido de interfaz |
 
-El repositorio contiene únicamente la aplicación y su empaquetador: no incluye servidor Node, suite de pruebas, CI ni dependencias externas.
+El repositorio contiene únicamente la aplicación y su empaquetador: no incluye servidor Node, suite de pruebas, CI ni dependencias externas. El historial detallado de cambios y de las verificaciones de cada uno vive en `docs/INFORME-PULIDO-UI.md`; antes de empaquetar, `build-xdc.py` valida el paquete contra las reglas de Delta Chat.

@@ -1852,3 +1852,85 @@ nuevas × 8 idiomas: **373 × 8 sin huecos**).
   cola; valorar/quitar con la hoja abierta actualizándola; 0 errores.
 - `node --check` en todos los JS; **build .xdc válido**: 27 archivos,
   335,6 KB comprimidos (966,0 KB sin comprimir).
+
+## 61. Pasada de publicación: fachada ordenada y lista de pruebas en dispositivo real
+
+El mantenedor preguntó si el reproductor está listo para el público.
+Verificado el repo (rama al día, licencia MIT, manifest correcto,
+versiones coherentes 1.2.0 en README, «Acerca de» y `js/state.js`), el
+veredicto fue: **sí para beta pública, aún no para «1.0 terminado»**,
+porque lo verificado es simulación jsdom + validador del paquete, no
+un cliente Delta Chat real. Esta sección hace la parte que sí toca al
+código/documentación y deja escrita la parte que solo puede hacerse
+en un teléfono.
+
+### Pasada de publicación (hecha en esta sección)
+
+- **README** con sección «Qué hace» fiel al estado actual (importar
+  con metadatos/portadas, LRC, listas + Favoritos + «Mi Música» +
+  «Más valoradas», estrellas, cola/aleatorio/contexto, gapless y
+  crossfade, ecualizador, visualizador, temporizador, estadísticas,
+  compartir por `sendToChat`, 8 idiomas) y cifras rehechas (§60: 27
+  archivos, ~336 KB; de paso ya se había corregido en `66d64d3`).
+- **«Limitaciones conocidas»** en el README, dichas en voz alta:
+  biblioteca por instancia (sin sincronización ni copia integrada,
+  decisión §57), música detenida al cerrar la app (límite WebXDC),
+  cuota de almacenamiento del dispositivo, sin selector de carpetas
+  en Delta, traducciones del proyecto.
+- **«Reportar un problema»**: enlace a los *issues* de GitHub con qué
+  incluir (versión de «Acerca de», dispositivo y versión de Delta
+  Chat, pasos).
+- **CHANGELOG.md** nuevo: 1.2.0 como primera versión pública, con su
+  contenido y sus limitaciones sin adornos.
+- **Etiqueta `v1.2.0`** sobre esta misma entrega (git tag), para que
+  «la 1.2.0» sea un commit concreto y no una frase del README.
+
+### Pendiente deliberado (no incluido)
+
+- **Capturas de pantalla**: imposibles de fabricar aquí sin un
+  navegador real; saldrán de la pasada en dispositivo (abajo).
+- **Meter las regresiones en el repo**: decisión del mantenedor
+  aplazada; los checks siguen fuera (`/tmp`) y el paquete no los
+  contiene.
+
+### Lista de pruebas en dispositivo real (pendiente del mantenedor)
+
+En un Delta Chat de verdad, con la misma copia del `.xdc` siempre:
+
+1. Enviar el `.xdc` a «Mensajes guardados» y abrirlo: arranca sin
+   pantalla en blanco.
+2. Importar 10–20 canciones mezclando MP3/FLAC/OGG/M4A: título,
+   artista, portadas cuando existan y **duraciones reales** (nada de
+   0:00).
+3. Reimportar una canción ya presente: no se duplica.
+4. Reproducir: suenan play/pausa desde mini y reproductor; el mini se
+   comporta; bloquear el móvil y anotar qué hace la música
+   (documentar el comportamiento real del cliente).
+5. Aleatorio y repetir (todo/una): el orden cambia y los bucles
+   cierran bien; saltos con crossfade/gapless sin golpes.
+6. Letras: abrir **solo** con su botón, la sincronía avanza,
+   deslizar sobre la letra no cambia de canción y arrastrar desde su
+   barra tampoco; salir con el botón de volver.
+7. Listas: crear, añadir desde una canción, editar y compartir la
+   lista al chat: llega el `.m3u8`.
+8. Favoritos y estrellas: valorar desde menú, reproductor y filas;
+   abrir «Más valoradas» y comprobar el orden (nota → reproducciones).
+9. Ajustes: cambiar idioma y tema/acento; temporizador de apagado:
+   la música se para al cumplirse.
+10. Cerrar la app y reabrirla **desde el mismo chat**: biblioteca,
+    listas, notas y sesión (canción y «Reproduciendo desde…») siguen.
+11. Compartir una canción al chat: llega el audio (esto prueba el
+    `sendToChat` real, la causa raíz del §53).
+12. Control negativo: reenviar el `.xdc` a otro chat: instancia
+    vacía (esperado; es el aviso n.º 1 del anuncio).
+13. Estrés amable: biblioteca de 100+ canciones; desplazamiento y
+    arranque siguen fluidos.
+
+Con 1–13 en verde (o con fallos convertidos en secciones nuevas de
+este informe), la etiqueta `v1.2.0` pasa de «publicable» a «publicada
+con confianza», y las capturas de esta pasada alimentan el README.
+
+### Verificación
+
+- Sin cambios de código de la app: `python3 build-xdc.py` → **.xdc
+  válido, 27 archivos, 335,6 KB** (mismos bytes de app que §60).
