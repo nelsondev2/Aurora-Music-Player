@@ -2089,6 +2089,22 @@ svg { display: block; }
   }
 }
 
+/* En la lista abierta y en la cola el título quedaba estrangulado:
+ * una sola línea con ellipsis en la columna más estrecha de la app
+ * (asa + portada + duración + hasta dos botones). Ahí el nombre puede
+ * usar dos líneas y la fila separa menos sus piezas (§59). */
+#editPlaylistTracks .track-row,
+#queueList .queue-item { gap: 8px; }
+#editPlaylistTracks .row-title,
+#queueList .row-title {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
 .queue-item.dragging {
   opacity: 0.85;
   background: var(--surface-hi);

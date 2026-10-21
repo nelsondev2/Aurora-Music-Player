@@ -581,12 +581,13 @@ Object.assign(App, {
         const li = document.createElement('li');
         li.className = 'queue-item' + (i === this.queueIdx ? ' current' : '');
         li.dataset.idx = i;
+        li.dataset.trackId = id;
         li.innerHTML = `
           <button class="drag-handle" aria-label="${this.esc(this.t('move'))}"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
-            <div class="row-sub">${this.esc(t.artist)}</div>
+            <div class="row-sub">${this.esc(t.artist)} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>
           </div>
           <div class="row-duration">${this.fmtRowDuration(t)}</div>
           <button class="row-action queue-remove" aria-label="${this.esc(this.t('remove'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>

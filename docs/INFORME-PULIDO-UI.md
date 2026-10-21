@@ -1760,3 +1760,25 @@ Se elimina el sistema entero (§27, §51, §54, §56) y también su descendencia
 - Nuevo `check-estrellas.js`: **16/16** — modelo (sin nota por defecto, acotar a 5, quitar al repetir), persistencia real en IndexedDB (el registro guardado lleva `rating`), el menú refleja y responde (2 encendidas → tocar la 5ª pone 5), el Reproductor refleja la pista actual y valora desde ahí, la insignia de la fila nace con la nota y se actualiza/oculta sin re-renderizar, y favoritos quedan intactos. Cero errores.
 - Sin regresiones: `check-nobackup.js` (§57) 17/17, `check-chat.js` (§53) 10/10.
 - `.xdc` reconstruido y válido para Delta Chat: 27 archivos, 333,1 KB.
+
+---
+
+## 59. Estrellas también en la lista abierta y en la cola; nombres que ya no se estrangulan
+
+**Encargo:** las estrellas deben visualizarse en las listas y en las colas de reproducción, y en esas dos vistas hay que revisar por qué los nombres salen recortados.
+
+### Diagnóstico del recorte
+
+El título de fila es de una sola línea con ellipsis en toda la app, pero en estas dos vistas la columna de texto es **la más estrecha de Aurora**: en la lista abierta conviven asa de arrastre + portada (48 px) + duración + botón ⋯ + botón × —unos 262 px fijos entre márgenes, huecos y controles en una pantalla de ~390— y al nombre le quedan ~130 px (unas 15 letras). En la cola (asa + portada + duración + ×) quedan ~230 px. Por eso ahí casi todo título medio se corta con «…» mientras que en Biblioteca/Buscar (sin asa ni botón de quitar) respira mejor. (Descartado un sospechoso: los botones «invisibles» de la lista solo se ocultan con ratón — `@media (hover: hover)` — en el teléfono se ven y su ancho es legítimo.)
+
+### Arreglo
+
+- **Estrellas en ambas plantillas**: la fila de la lista abierta y la fila de la cola llevan el mismo hueco `.row-rating` que ya tenían las demás filas; la cola gana además `data-track-id` para poder sincronizarse.
+- **`_syncRatingUI` ampliado**: actualiza en sitio las insignias de las tres familias de filas (`data-track`, `data-track-id` en lista y `data-track-id` en cola) al valorar desde el menú o desde el Reproductor, sin re-renderizar.
+- **Nombres que respiran**: solo en la lista abierta y en la cola, el título pasa a **dos líneas** (`line-clamp: 2`, con su ellipsis en la segunda si aún así no cabe) y el `gap` de la fila baja de 12 a 8 px, recuperando ancho útil. El resto de filas de la app conserva su línea única.
+
+### Verificación
+
+- Nuevo `check-listas-colas.js`: **11/11** — la lista enseña las 4 estrellas de la pista valorada y oculta el hueco en la que no tiene nota; valorar enciende la fila en sitio; la cola muestra y actualiza la nota (incluido apagarla al quitarla); el CSS contiene las reglas de dos líneas y gap 8 para ambas listas; las demás filas conservan su insignia. Cero errores. (Dos asertos de CSS fallaron primero por doble escape en las regex del propio test, no de la app.)
+- Los widgets de valorar (menú y Reproductor, §58) no se han tocado.
+- `.xdc` reconstruido y válido para Delta Chat.

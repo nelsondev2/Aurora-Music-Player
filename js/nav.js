@@ -619,7 +619,12 @@ Object.assign(App, {
       };
       if (this._menuTrackId === t.id) paint('ctxRatingStars');
       if (this.currentTrack && this.currentTrack.id === t.id) paint('npRatingStars');
-      document.querySelectorAll('.track-row[data-track="' + t.id + '"] .row-rating').forEach(slot => {
+      // data-track (filas makeTrackRow), data-track-id (lista y cola)
+      document.querySelectorAll(
+        '.track-row[data-track="' + t.id + '"] .row-rating, ' +
+        '.track-row[data-track-id="' + t.id + '"] .row-rating, ' +
+        '.queue-item[data-track-id="' + t.id + '"] .row-rating'
+      ).forEach(slot => {
         slot.textContent = r ? '★'.repeat(r) : '';
         slot.hidden = !r;
       });
