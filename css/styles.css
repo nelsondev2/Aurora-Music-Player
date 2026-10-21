@@ -3290,6 +3290,52 @@ button,
   margin-bottom: 6px;
   border-bottom: 1px solid var(--border);
 }
+
+/* Valoración por estrellas (§58): fila del menú de la canción y fila
+ * compacta del Reproductor. Estrella puesta = dorada; sin poner, tenue. */
+.menu-rating {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 8px 12px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.menu-rating-label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-2);
+}
+.rating-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.rate-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--text-3);
+  opacity: .55;
+  transition: color .15s ease, opacity .15s ease, transform .1s ease;
+}
+.rate-star .ico { width: 21px; height: 21px; }
+.rate-star.on { color: #FFB84D; opacity: 1; }
+.rate-star:active { transform: scale(1.18); }
+.np-rating { margin-top: 6px; }
+.np-rating .rate-star { width: 32px; height: 32px; }
+.np-rating .rate-star .ico { width: 18px; height: 18px; }
+/* Insignia en las filas: cuántas estrellas, en dorado discreto. */
+.row-rating {
+  color: #FFB84D;
+  font-size: 10px;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
 .menu-row.danger { color: var(--danger); }
 .menu-row.danger .ico { color: var(--danger); }
 

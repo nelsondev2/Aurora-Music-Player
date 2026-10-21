@@ -526,6 +526,19 @@ Object.assign(App, {
 
       // Favorito desde el menú de pista: funciona sin abrir el reproductor
       // y para cualquier pista, no solo la que está sonando.
+      // Estrellas (§58): en el menú valoran la canción del menú; en el
+      // Reproductor, la que suena. Tocar la misma estrella quita la nota.
+      document.querySelectorAll('#ctxRatingStars .rate-star').forEach(b => {
+        b.addEventListener('click', () => {
+          const t = this.menuTrack();
+          if (t) this.setTrackRating(t.id, parseInt(b.dataset.value, 10));
+        });
+      });
+      document.querySelectorAll('#npRatingStars .rate-star').forEach(b => {
+        b.addEventListener('click', () => {
+          if (this.currentTrack) this.setTrackRating(this.currentTrack.id, parseInt(b.dataset.value, 10));
+        });
+      });
       const ctxFav = document.getElementById('ctxToggleFavorite');
       if (ctxFav) ctxFav.addEventListener('click', () => {
         const t = this.menuTrack();

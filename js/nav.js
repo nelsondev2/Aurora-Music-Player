@@ -486,7 +486,7 @@ Object.assign(App, {
         <div class="row-cover"><canvas width="44" height="44"></canvas>${nowBadge}</div>
         <div class="row-text">
           <div class="row-title">${this.esc(t.title)}</div>
-          <div class="row-sub">${this.esc(t.artist)}${showAlbum ? ' · ' + this.esc(t.album) : ''}</div>
+          <div class="row-sub">${this.esc(t.artist)}${showAlbum ? ' · ' + this.esc(t.album) : ''} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>
         </div>
         <div class="row-duration">${this.fmtRowDuration(t)}</div>
         <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>`;
@@ -574,11 +574,55 @@ Object.assign(App, {
       // «Restablecer portada» solo tiene sentido si hay una personalizada.
       const rmCover = document.getElementById('ctxRemoveCover');
       if (rmCover) rmCover.hidden = !t.customCover;
+      this._syncRatingUI(t);
       this.openSheet('sheetTrackMenu');
     },
 
     menuTrack() {
       return this.tracks.find(x => x.id === this._menuTrackId) || null;
+    },
+
+    /* ============================================================
+     *  Valoración por estrellas (§58)
+     * ============================================================
+     * track.rating guarda 1..5 (ausente/0 = sin valorar). Vive en el
+     * registro de la pista: persistTrack() lo guarda en IndexedDB
+     * sin tocar nada más. Tocar la estrella ya puesta quita la nota. */
+    _ratingOf(t) {
+      const r = t && parseInt(t.rating, 10);
+      return Number.isFinite(r) ? Math.max(0, Math.min(5, r)) : 0;
+    },
+
+    setTrackRating(trackId, value) {
+      const t = this.tracks.find(x => x.id === trackId);
+      if (!t) return;
+      const v = Math.max(1, Math.min(5, parseInt(value, 10) || 0));
+      t.rating = this._ratingOf(t) === v ? 0 : v;
+      this.persistTrack(t);
+      this._syncRatingUI(t);
+    },
+
+    /* Pinta el estado de las estrellas en los tres sitios vivos: el
+     * menú de la canción, el Reproductor y las filas ya renderizadas
+     * (sin re-renderizar listas: se toca solo la insignia de la fila). */
+    _syncRatingUI(t) {
+      if (!t) return;
+      const r = this._ratingOf(t);
+      const paint = (rootId) => {
+        const root = document.getElementById(rootId);
+        if (!root) return;
+        root.querySelectorAll('.rate-star').forEach(b => {
+          const v = parseInt(b.dataset.value, 10) || 0;
+          b.classList.toggle('on', v <= r);
+          b.setAttribute('aria-checked', v === r ? 'true' : 'false');
+        });
+      };
+      if (this._menuTrackId === t.id) paint('ctxRatingStars');
+      if (this.currentTrack && this.currentTrack.id === t.id) paint('npRatingStars');
+      document.querySelectorAll('.track-row[data-track="' + t.id + '"] .row-rating').forEach(slot => {
+        slot.textContent = r ? '★'.repeat(r) : '';
+        slot.hidden = !r;
+      });
     },
 
     /* ============================================================

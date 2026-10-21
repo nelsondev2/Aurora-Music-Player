@@ -1738,3 +1738,25 @@ Se elimina el sistema entero (§27, §51, §54, §56) y también su descendencia
 - Nuevo `check-nobackup.js`: **17/17** — ausencia total en el DOM y en la API (`exportLibrary`, `importLibrary`, `_importLibraryData`, `promptRelinkTrack` ya no existen; sin filas de copia ni de vinculación; bienvenida sin restaurar), Opciones se abre desde Inicio con Historial y Ajustes, compartir lista y canción llegan a `sendToChat`, e importar música añade y no duplica al reimportar. Cero errores.
 - `check-chat.js` (§53) actualizado a la nueva realidad: 10/10. Retirados los checks que probaban la copia (`check-vincular`, `check-autolink`, `check-restaurar`).
 - `.xdc` reconstruido y válido: 27 archivos, **331,7 KB** (14 KB menos de maquinaria retirada), sintaxis global verificada archivo a archivo.
+
+---
+
+## 58. Valoración por estrellas (y solo eso)
+
+**Elección del usuario** de la lista de funcionalidades propuestas: implementar únicamente las estrellas (ni cola arrastrable, ni listas inteligentes, ni modo coche).
+
+### Qué se ha hecho
+
+- **Modelo**: `track.rating` guarda 1..5 (ausente/0 = sin valorar). Vive en el registro de la pista, así que `persistTrack()` lo guarda en IndexedDB sin infraestructura nueva. Es independiente del favorito (corazón): una canción puede ser favorita sin nota y al revés.
+- **Dónde se valora**:
+  - En el **menú de la canción**, bajo la cabecera: fila «Valoración» con 5 estrellas (icono nuevo `i-star`, doradas al encenderse).
+  - En el **Reproductor**, bajo el álbum: la misma fila en compacto, sobre la pista que suena.
+  - **Tocar la estrella ya puesta quita la nota** (patrón habitual); los valores se acotan siempre a 0..5.
+- **Dónde se ve**: además de los dos widgets, las filas de canción muestran la insignia dorada (`★★★★`) junto al artista cuando hay nota; se actualiza en sitio al valorar, sin re-renderizar la lista.
+- I18n: nueva `rating_label` → **371 claves × 8 idiomas, sin huecos**. Los botones llevan `role="radio"` dentro de `role="radiogroup"` con `aria-checked` sincronizado.
+
+### Verificación
+
+- Nuevo `check-estrellas.js`: **16/16** — modelo (sin nota por defecto, acotar a 5, quitar al repetir), persistencia real en IndexedDB (el registro guardado lleva `rating`), el menú refleja y responde (2 encendidas → tocar la 5ª pone 5), el Reproductor refleja la pista actual y valora desde ahí, la insignia de la fila nace con la nota y se actualiza/oculta sin re-renderizar, y favoritos quedan intactos. Cero errores.
+- Sin regresiones: `check-nobackup.js` (§57) 17/17, `check-chat.js` (§53) 10/10.
+- `.xdc` reconstruido y válido para Delta Chat: 27 archivos, 333,1 KB.

@@ -39,6 +39,7 @@
          grosor sea uniforme y no dependa del stroke. -->
     <symbol id="i-heart" viewBox="0 0 24 24"><path fill="currentColor" d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36L12 8.9l.93-1.54C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/></symbol>
     <symbol id="i-heart-solid" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21s-8-4.8-10.2-9.3C.2 7.9 2.1 4.2 6.2 3.8c2.2-.2 4.1.9 5.1 2.7 1-1.8 2.9-2.9 5.1-2.7 4.1.4 6 3.9 4.4 7.9C20 16.2 12 21 12 21z"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.6l2.95 5.98 6.6.96-4.78 4.66 1.13 6.58L12 17.77l-5.9 3.1 1.13-6.57L2.45 9.54l6.6-.96z"/></symbol>
     <symbol id="i-house" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.2 3 11h2v9h6v-6h2v6h6v-9h2L12 3.2z"/></symbol>
     <symbol id="i-magnifying-glass" viewBox="0 0 24 24"><path fill="currentColor" d="M10.5 3a7.5 7.5 0 0 1 5.9 12.1l4.2 4.2-1.4 1.4-4.2-4.2A7.5 7.5 0 1 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z"/></symbol>
     <symbol id="i-ellipsis-vertical" viewBox="0 0 24 24"><path fill="currentColor" d="M12 6.5A1.75 1.75 0 1 0 12 3a1.75 1.75 0 0 0 0 3.5zm0 7.25A1.75 1.75 0 1 0 12 10.5a1.75 1.75 0 0 0 0 3.5zM13.75 19.25A1.75 1.75 0 1 1 12 17.5a1.75 1.75 0 0 1 1.75 1.75z"/></symbol>
@@ -152,6 +153,13 @@
             <h1 class="track-title" id="trackTitle"><span class="marquee-inner">—</span></h1>
             <p class="track-artist" id="trackArtist"><span class="marquee-inner">—</span></p>
             <p class="track-album" id="trackAlbum"></p>
+            <div class="rating-stars np-rating" id="npRatingStars" role="radiogroup" data-i18n-aria="rating_label" aria-label="Valoración">
+              <button class="rate-star" type="button" role="radio" aria-checked="false" data-value="1" aria-label="1 ★"><svg class="ico" aria-hidden="true"><use href="#i-star"></use></svg></button>
+              <button class="rate-star" type="button" role="radio" aria-checked="false" data-value="2" aria-label="2 ★"><svg class="ico" aria-hidden="true"><use href="#i-star"></use></svg></button>
+              <button class="rate-star" type="button" role="radio" aria-checked="false" data-value="3" aria-label="3 ★"><svg class="ico" aria-hidden="true"><use href="#i-star"></use></svg></button>
+              <button class="rate-star" type="button" role="radio" aria-checked="false" data-value="4" aria-label="4 ★"><svg class="ico" aria-hidden="true"><use href="#i-star"></use></svg></button>
+              <button class="rate-star" type="button" role="radio" aria-checked="false" data-value="5" aria-label="5 ★"><svg class="ico" aria-hidden="true"><use href="#i-star"></use></svg></button>
+            </div>
           </div>
           <button class="icon-btn like-btn" id="btnLike" data-i18n-aria="favorite" aria-label="Favorito" aria-pressed="false">
             <svg class="ico" aria-hidden="true"><use href="#i-heart"></use></svg>
@@ -1015,6 +1023,16 @@
               <div class="row-text">
                 <div class="row-title" id="trackMenuTitle">—</div>
                 <div class="row-sub" id="trackMenuSub"></div>
+              </div>
+            </div>
+            <div class="menu-rating">
+              <span class="menu-rating-label" data-i18n="rating_label">Valoración</span>
+              <div class="rating-stars" id="ctxRatingStars" role="radiogroup" data-i18n-aria="rating_label" aria-label="Valoración">
+                <button class="rate-star" type="button" role="radio" aria-checked="false" data-value="1" aria-label="1 ★"><svg class="ico" aria-hidden="true"><use href="#i-star"></use></svg></button>
+                <button class="rate-star" type="button" role="radio" aria-checked="false" data-value="2" aria-label="2 ★"><svg class="ico" aria-hidden="true"><use href="#i-star"></use></svg></button>
+                <button class="rate-star" type="button" role="radio" aria-checked="false" data-value="3" aria-label="3 ★"><svg class="ico" aria-hidden="true"><use href="#i-star"></use></svg></button>
+                <button class="rate-star" type="button" role="radio" aria-checked="false" data-value="4" aria-label="4 ★"><svg class="ico" aria-hidden="true"><use href="#i-star"></use></svg></button>
+                <button class="rate-star" type="button" role="radio" aria-checked="false" data-value="5" aria-label="5 ★"><svg class="ico" aria-hidden="true"><use href="#i-star"></use></svg></button>
               </div>
             </div>
             <button class="menu-row" id="ctxPlayNow">

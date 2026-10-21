@@ -48,6 +48,8 @@ Object.assign(App, {
         albumEl.textContent = hasAlbum ? t.album : '';
         albumEl.style.display = hasAlbum ? '' : 'none';
       }
+      // Estrellas del Reproductor (§58): reflejan la nota de la pista.
+      if (typeof this._syncRatingUI === 'function') this._syncRatingUI(t);
       document.getElementById('timeTotal').textContent = this.fmtTime(t.duration);
       document.getElementById('miniTitle').textContent = t.title;
       document.getElementById('miniArtist').textContent = t.artist;

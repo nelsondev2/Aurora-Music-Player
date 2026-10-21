@@ -105,6 +105,11 @@ const I18N = {
     it: 'Carica musica',
     ru: 'Загрузить музыку'
   },
+  rating_label: {
+    es: 'Valoración', en: 'Rating', pt: 'Classificação',
+    zh: '评分', ja: '評価', fr: 'Note',
+    it: 'Valutazione', ru: 'Оценка'
+  },
   favorite: {
     es: 'Favorito',
     en: 'Favorite',
