@@ -97,6 +97,10 @@ Object.assign(App, {
         nameEl.onclick = () => this.startRenamePlaylist();
       }
       if (metaEl) metaEl.textContent = this.playlistMetaLabel(pl);
+      // El botón «hero» de reproducir refleja si esta lista es la que
+      // suena (anillo de acento), igual que la portada.
+      const heroPlay = document.getElementById('btnPlayPlaylistNow');
+      if (heroPlay) heroPlay.classList.toggle('is-playing', this.isPlaylistPlaying(pl));
       if (coverEl) {
         const cover = this.getPlaylistCover(pl);
         coverEl.classList.toggle('is-playing', this.isPlaylistPlaying(pl));
@@ -133,13 +137,13 @@ Object.assign(App, {
         li.dataset.trackId = id;
         li.dataset.idx = String(i);
         li.innerHTML = `
-          <button class="drag-handle" type="button" aria-label="Mover"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
+          <button class="drag-handle" type="button" aria-label="${this.esc(this.t('move'))}"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
-            <div class="row-sub">${this.esc(t.artist)}</div>
+            <div class="row-sub">${this.esc(t.artist)} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>
           </div>
-          <div class="row-duration">${isCurrent ? '<svg class="ico now-eq" aria-hidden="true"><use href="#i-volume-high"></use></svg> ' : ''}${this.fmtTime(t.duration)}</div>
+          <div class="row-duration">${isCurrent ? '<svg class="ico now-eq" aria-hidden="true"><use href="#i-volume-high"></use></svg> ' : ''}${this.fmtRowDuration(t)}</div>
           <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>
           <button class="row-action remove-from-pl" aria-label="${this.esc(this.t('remove_from_playlist'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
         `;
@@ -163,6 +167,7 @@ Object.assign(App, {
         });
         if (typeof this.wireDragHandle === 'function') {
           this.wireDragHandle(li, i, ul, '.track-row', {
+            maxIndex: pl.trackIds.length - 1,
             onReorder: (from, to) => this.reorderPlaylistTracks(pl.id, from, to)
           });
         }
@@ -285,6 +290,8 @@ Object.assign(App, {
         okLabel: this.t('confirm_delete')
       });
       if (!ok) return;
+      // Guardamos el orden exacto para poder deshacer.
+      const previousIds = pl.trackIds.slice();
       pl.trackIds = [];
       this._invalidatePlaylistCover(pl);
       this.persistPlaylist(pl);
@@ -300,13 +307,35 @@ Object.assign(App, {
             setTimeout(() => item.remove(), 200);
           }, i * 20);
         });
-        // Mostrar mensaje de vacío después
+        // Mostrar estado vacío coherente después (mismo componente que
+        // Biblioteca/Favoritos, en su variante compacta).
         setTimeout(() => {
-          ul.innerHTML = '<li class="track-row" style="justify-content:center;color:var(--text-3);font-size:13px;padding:24px">' + this.t('no_tracks_in_playlist') + '</li>';
+          ul.innerHTML = '';
+          const li = document.createElement('li');
+          li.className = 'empty-state compact';
+          li.innerHTML = this.emptyStateHtml({
+            icon: 'list-ul',
+            title: this.t('no_tracks_in_playlist')
+          });
+          ul.appendChild(li);
         }, 300);
       }
       this._updatePlaylistMeta(pl);
-      this.toast(this.t('toast_playlist_cleared'));
+      this.toast(this.t('toast_playlist_cleared'), {
+        ms: 6500,
+        action: {
+          label: this.t('undo'),
+          onClick: () => {
+            pl.trackIds = previousIds.slice();
+            this._invalidatePlaylistCover(pl);
+            this.persistPlaylist(pl);
+            this.renderEditPlaylist();
+            this.renderPlaylists();
+            this._updatePlaylistMeta(pl);
+            this.toast(this.t('toast_restored'));
+          }
+        }
+      });
     },
 
     createPlaylist(name, desc, trackIds) {
@@ -326,7 +355,7 @@ Object.assign(App, {
         id,
         name: cleanName || this.t('create_playlist_title'),
         description: cleanDesc,
-        trackIds: Array.isArray(trackIds) ? trackIds.filter(x => this.tracks.some(t => t.id === x)) : [],
+        trackIds: Array.isArray(trackIds) ? trackIds.filter(x => this.trackMap().has(x)) : [],
         cover: { from, to, angle: 135 }
       };
       this.playlists.push(pl);
@@ -360,15 +389,17 @@ Object.assign(App, {
 
       const caption = `🎶 Lista: ${pl.name} (${tracks.length} canciones) · Aurora Music Player`;
       try {
-        await this.exportFile({
+        const ok = await this.exportFile({
           name: `${safeName}.m3u8`,
           content: m3u,
-          mimeType: 'application/x-mpegurl;charset=utf-8',
+          mimeType: 'application/x-mpegurl',
           caption
         });
-        this.toast(this.t('toast_playlist_shared'));
+        // Antes: toast de éxito incondicional aunque Delta no hubiera
+        // enviado nada — el «no funciona» de compartir lista (§51).
+        this.toast(ok ? this.t('toast_playlist_shared') : this.t('toast_share_error'), ok ? undefined : 'danger');
       } catch (e) {
-        this.toast(this.t('toast_share_error'));
+        this.toast(this.t('toast_share_error'), 'danger');
       }
-    },
+    }
 });

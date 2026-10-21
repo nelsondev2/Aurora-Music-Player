@@ -45,8 +45,6 @@
     abRepeat: { active: false, a: null, b: null },
 
     /* Selección múltiple / lote */
-    _batchMode: false,
-    _selectedTrackIds: new Set(),
 
     /* Letras */
     lrcLines: [], // {time, text, timed, translation?}
@@ -131,7 +129,6 @@
 
     /* Biblioteca: orden de la lista de canciones.
      * Ya no hay pestañas: la vista muestra listas + todas las canciones. */
-    _librarySort: 'title',
     _menuTrackId: null,
     _editTrackId: null,
     _browse: null,

@@ -20,6 +20,43 @@ Object.assign(App, {
      *                     Si es null, las pistas van SOLO a la biblioteca
      *                     (ya no existe ninguna lista predefinida).
      */
+    /* Enlaza archivos .lrc con su canción por nombre base
+     * («Tema.lrc» ↔ «Tema.mp3», sin distinguir mayúsculas). Primero
+     * busca entre las pistas recién importadas y luego en toda la
+     * biblioteca, así también sirve soltar solo los .lrc de una
+     * carpeta ya importada. Política: nunca pisa una letra que la
+     * pista ya tenga (la de los metadatos o una cargada a mano manda);
+     * para sustituirla está el botón de cargar letra de la vista de
+     * Letras. Devuelve cuántas se enlazaron. */
+    async _attachLrcFiles(lrcFiles, preferredTracks) {
+      const baseOf = (name) => String(name || '').replace(/\.[^.]+$/, '').trim().toLowerCase();
+      const byBase = new Map();
+      const addToMap = (t) => {
+        const b = baseOf(t && t.fileName);
+        if (b && !byBase.has(b)) byBase.set(b, t);
+      };
+      (preferredTracks || []).forEach(addToMap);
+      this.tracks.forEach(addToMap);
+      let attached = 0;
+      for (const f of lrcFiles) {
+        const t = byBase.get(baseOf(f.name));
+        if (!t) continue;
+        if (Array.isArray(t.lrc) && t.lrc.length) continue;
+        try {
+          const text = await f.text();
+          const clean = String(text || '').replace(/^﻿/, '');
+          if (!clean.trim()) continue;
+          const lines = clean.split(/\r?\n/).slice(0, 5000);
+          if (!lines.some(l => l.trim())) continue;
+          t.lrc = lines;
+          t._lrcCache = null;
+          this.persistTrack(t);
+          attached++;
+        } catch (e) { /* archivo ilegible: se salta sin romper la importación */ }
+      }
+      return attached;
+    },
+
     async handleFileInput(fileList, fromDirectory, targetPlaylistId) {
       if (!fileList || !fileList.length) return;
       if (!window.AuroraUploader || typeof window.AuroraUploader.processFiles !== 'function') {
@@ -34,11 +71,29 @@ Object.assign(App, {
         return;
       }
       this._importing = true;
-      const count = fileList.length;
+      // Los .lrc no son audio: se enlazan con la canción del mismo
+      // nombre (ver _attachLrcFiles) en vez de ir al importador. (La
+      // importación de listas .m3u se eliminó en §51.)
+      const allFiles = Array.from(fileList);
+      const lrcFiles = allFiles.filter(f => /\.lrc$/i.test(f.name || ''));
+      const mediaFiles = allFiles.filter(f => !/\.m3u8?$/i.test(f.name || '') && !/\.lrc$/i.test(f.name || ''));
+      if (!mediaFiles.length) {
+        this._importing = false;
+        // Solo letras: se enlazan con canciones que ya estén en la
+        // biblioteca (soltar los .lrc de una carpeta ya importada).
+        if (lrcFiles.length) {
+          const n = await this._attachLrcFiles(lrcFiles, []);
+          this.toast(n > 0
+            ? this.t('toast_lrc_attached').replace('X', String(n))
+            : this.t('toast_lrc_none'));
+        }
+        return;
+      }
+      const count = mediaFiles.length;
       this._importCancelled = false;
       this.showImportOverlay(0, count, '');
       try {
-        const newTracks = await window.AuroraUploader.processFiles(fileList, {
+        const newTracks = await window.AuroraUploader.processFiles(mediaFiles, {
           onProgress: (i, n, name) => this.updateImportOverlay(i, n, name),
           isCancelled: () => this._importCancelled
         });
@@ -52,7 +107,6 @@ Object.assign(App, {
         // #10 Detección de duplicados: comparar por fileName + fileSize.
         // Índice O(1) por clave para que importar 500 archivos no sea O(n²).
         let dupCount = 0;
-        let relinked = 0;
         const uniqueTracks = [];
         const existingForPlaylist = [];
         const byKey = new Map();
@@ -61,28 +115,7 @@ Object.assign(App, {
           const existing = byKey.get(this._dupKey(t.fileName, t.fileSize)) || null;
           if (existing) {
             dupCount++;
-            if (existing._needsRelink && (t._file || t.src)) {
-              // Curar pista restaurada de un backup: el backup aportó los
-              // metadatos (quizá editados) y el archivo aporta el audio.
-              if (t._file) existing._file = t._file;
-              if (t.src) {
-                if (existing.src && existing.src.startsWith('blob:') && existing.src !== t.src) {
-                  try { URL.revokeObjectURL(existing.src); } catch (e) {}
-                }
-                existing.src = t.src;
-                t.src = null; // reutilizada: no revocar abajo
-              }
-              if (!existing.duration && t.duration) existing.duration = t.duration;
-              if (!existing.coverThumb && t.coverThumb) {
-                existing.coverThumb = t.coverThumb;
-                existing.coverIsImage = t.coverIsImage;
-              }
-              delete existing._needsRelink;
-              this._urlCache.delete(existing.id);
-              if (existing.src) this._urlCache.set(existing.id, existing.src);
-              this.persistTrack(existing);
-              relinked++;
-            } else if (t.src && t.src.startsWith('blob:')) {
+            if (t.src && t.src.startsWith('blob:')) {
               URL.revokeObjectURL(t.src);
             }
             // Si se sube a una lista, reutilizar la pista de la biblioteca
@@ -93,9 +126,19 @@ Object.assign(App, {
             byKey.set(this._dupKey(t.fileName, t.fileSize), t);
           }
         }
-        // Solo se añaden a una lista cuando la importación se lanza desde la
-        // pantalla de esa lista. Las subidas normales (+ / Ajustes / menú)
-        // van únicamente a la biblioteca: «Mi Música» desapareció.
+        // Letras .lrc traídas junto al audio: se enlazan por nombre
+        // antes de componer los avisos para contarlas en el mismo toast.
+        let lrcAttached = 0;
+        if (lrcFiles.length) {
+          lrcAttached = await this._attachLrcFiles(lrcFiles, [...uniqueTracks, ...existingForPlaylist]);
+        }
+        const lrcSuffix = lrcAttached > 0
+          ? ' · ' + this.t('toast_lrc_attached').replace('X', String(lrcAttached))
+          : '';
+        // Solo se añaden a una lista concreta cuando la importación se
+        // lanza desde la pantalla de esa lista. Las subidas normales
+        // (+ / Ajustes / menú) caen en «Mi Música», la lista automática
+        // (ver la llamada a _ensureMiMusica más abajo).
         const destPlEarly = targetPlaylistId
           ? this.playlists.find(p => p.id === targetPlaylistId)
           : null;
@@ -113,23 +156,23 @@ Object.assign(App, {
             this.persistPlaylist(destPlEarly);
           }
         }
-        if (relinked > 0 && readded === 0 && uniqueTracks.length === 0) {
-          this.toast(this.t('relink_done').replace('X', String(relinked)));
-        } else if (dupCount > 0 && readded === 0 && uniqueTracks.length === 0) {
-          this.toast(dupCount + ' ' + this.t('toast_duplicate_found'));
+        if (dupCount > 0 && readded === 0 && uniqueTracks.length === 0) {
+          this.toast(dupCount + ' ' + this.t('toast_duplicate_found') + lrcSuffix);
         }
         if (uniqueTracks.length === 0) {
           if (readded > 0) {
             this.renderPlaylists();
             if (this._editingPlaylistId === destIdEarly) this.renderEditPlaylist();
             let msg = readded + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destPlEarly.name;
-            if (relinked > 0) msg += ' · ' + this.t('relink_done').replace('X', String(relinked));
+            msg += lrcSuffix;
             this.toast(msg);
           }
-          if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
-          if (relinked > 0) {
-            this.renderLibrary();
-            if (typeof this.renderHome === 'function') this.renderHome();
+          // Sin lista destino y sin pistas nuevas (duplicadas):
+          // también son «de fuera» y entran en Mi Música.
+          if (!targetPlaylistId && existingForPlaylist.length &&
+              typeof this._ensureMiMusica === 'function') {
+            this._ensureMiMusica(existingForPlaylist.map(t => t.id));
+            this.renderPlaylists();
           }
           return;
         }
@@ -147,6 +190,14 @@ Object.assign(App, {
         this.persistTracksBatch(tracksToAdd).catch((e) => {
           console.warn('[Aurora] persistencia en segundo plano:', e);
         });
+
+        /* Sin lista destino, las canciones «de fuera» entran en
+         * «Mi Música» (se crea sola si es la primera vez), además de
+         * vivir en Todas las canciones como siempre. Con lista destino
+         * solo van a esa lista. */
+        if (!targetPlaylistId && typeof this._ensureMiMusica === 'function') {
+          this._ensureMiMusica([...tracksToAdd, ...existingForPlaylist].map(t => t.id));
+        }
 
         // Lista destino opcional (solo si se importa desde una lista).
         const destPl = targetPlaylistId
@@ -177,7 +228,6 @@ Object.assign(App, {
             if (this.shuffle && this._originalQueue) this._originalQueue.push(t.id);
           });
         }
-        this.renderLibrary();
         this.renderPlaylists();
         this.renderQueue();
         this.renderFavorites();
@@ -186,17 +236,23 @@ Object.assign(App, {
         // Si estábamos editando la playlist destino, refrescar la vista
         if (this._editingPlaylistId === destId) this.renderEditPlaylist();
         this.hideEmptyState();
-        if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
-        const relinkSuffix = relinked > 0 ? ' · ' + this.t('relink_done').replace('X', String(relinked)) : '';
         const folderSuffix = fromDirectory ? ' ' + this.t('folder_tag') : '';
         if (this._importCancelled) {
-          this.toast(this.t('toast_import_cancelled').replace('X', String(tracksToAdd.length)) + relinkSuffix);
+          this.toast(this.t('toast_import_cancelled').replace('X', String(tracksToAdd.length)) + lrcSuffix);
         } else {
           const destMsg = destPl
             ? this.t('toast_added_to_playlist_plural') + ' ' + destPl.name
             : this.t('toast_added_to_library');
-          this.toast(tracksToAdd.length + ' ' + destMsg + folderSuffix + relinkSuffix);
+          this.toast(tracksToAdd.length + ' ' + destMsg + folderSuffix + lrcSuffix);
         }
+        // Con música ya dentro, se vuelve a pedir almacenamiento
+        // persistente: algunos navegadores solo lo conceden tras
+        // interacción real con la app, no en el primer arranque.
+        try {
+          if (navigator.storage && typeof navigator.storage.persist === 'function') {
+            navigator.storage.persist().then((g) => { this._storagePersisted = !!g; }).catch(() => {});
+          }
+        } catch (e) {}
         // También al importar parcialmente (cancelado): el marcador debe
         // reflejar lo que realmente quedó guardado.
         this.syncLibCountMarker();
@@ -268,11 +324,6 @@ Object.assign(App, {
     showImportSkeleton() {
       if (this.tracks.length) return;
       const html = this._skeletonRowHtml() + this._skeletonRowHtml() + this._skeletonRowHtml();
-      const ul = document.getElementById('libraryTracks');
-      if (ul) {
-        if (typeof this.unbindVirtualList === 'function') this.unbindVirtualList(ul);
-        ul.innerHTML = html;
-      }
       const home = document.getElementById('homeContent');
       const hv = document.getElementById('viewHome');
       if (home && hv && hv.classList.contains('is-empty')) {
@@ -285,10 +336,6 @@ Object.assign(App, {
       if (skelList && !this.tracks.length && typeof this.renderHome === 'function') {
         this.renderHome();
       } else if (skelList) skelList.remove();
-      if (!this.tracks.length) {
-        const ul = document.getElementById('libraryTracks');
-        if (ul && !ul.children.length && typeof this.renderLibrary === 'function') this.renderLibrary();
-      }
     },
 
     findDuplicateTrack(fileName, fileSize) {
@@ -480,7 +527,7 @@ Object.assign(App, {
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)}</div>
           </div>
-          <div class="row-duration">${this.fmtTime(t.duration)}</div>
+          <div class="row-duration">${this.fmtRowDuration(t)}</div>
           <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>
         </li>`;
       });
@@ -494,7 +541,11 @@ Object.assign(App, {
       cont.querySelectorAll('.track-row[data-track]').forEach(row => {
         row.addEventListener('click', (e) => {
           if (e.target.closest('.track-menu-btn')) return;
-          this.playTrack(row.dataset.track, { type: 'all' });
+          // Desde el Historial también manda la lista de la canción
+          // (mismo criterio que Buscar e Inicio, §38/§39).
+          const trk = this.tracks.find(x => x.id === row.dataset.track);
+          this.playTrack(row.dataset.track,
+            (trk && typeof this.trackPlayContextFor === 'function') ? this.trackPlayContextFor(trk) : { type: 'all' });
         });
         if (typeof this.wireTrackLongPress === 'function') this.wireTrackLongPress(row, row.dataset.track);
         const cv = row.querySelector('canvas');
@@ -560,7 +611,6 @@ Object.assign(App, {
         } catch (e) {}
       }
       if (updated) {
-        this.renderLibrary();
         this.renderPlaylists();
         this.renderQueue();
         this.renderFavorites();
@@ -576,29 +626,47 @@ Object.assign(App, {
       return updated;
     },
 
-    /* Utilidad para exportar archivos: usa webxdc.sendToChat en Delta Chat o descarga directa en navegador */
+    /* Selector de archivos integrado de Delta Chat (webxdc.importFiles).
+     * En Delta Chat nativo abre el selector del propio Delta, sin salir
+     * al explorador del sistema. Contrato:
+     *  - Array (aunque sea vacío): el selector nativo se usó; vacío =
+     *    el usuario canceló y NO debe abrirse el <input> detrás.
+     *  - null: la API no existe (navegador, stub o Delta antiguo) o
+     *    falló; el llamador sigue con su <input type="file"> de siempre. */
+    async pickFilesWebxdc(filter) {
+      try {
+        if (!window.webxdc || window.webxdc._isStub) return null;
+        if (typeof window.webxdc.importFiles !== 'function') return null;
+        const picked = await window.webxdc.importFiles(filter);
+        return Array.from(picked || []);
+      } catch (e) {
+        return null;
+      }
+    },
+
+    /* Utilidad para exportar archivos: usa webxdc.sendToChat en Delta
+     * Chat o descarga directa en navegador. Devuelve true solo si el
+     * archivo salió de verdad: los llamantes enseñan su toast según
+     * este resultado. */
     async exportFile({ name, content, mimeType = 'application/json', caption = '' }) {
       if (window.webxdc && typeof window.webxdc.sendToChat === 'function') {
-        // mimeType permite que el stub webxdc descargue el archivo con el
-        // tipo correcto (antes todo salía como text/plain).
-        const filePayload = { name, mimeType };
-        if (typeof content === 'string') {
-          filePayload.plainText = content;
-        } else if (content instanceof Blob) {
-          filePayload.blob = content;
-        }
+        /* La forma que Delta Chat acepta hoy es { name, blob }. El
+         * plainText histórico puede ser rechazado por clientes
+         * actuales, y el fallo se tragaba aquí dentro: «Compartir
+         * lista» enseñaba «compartida» sin enviar nada (§51). */
+        const blob = content instanceof Blob ? content : new Blob([content], { type: mimeType });
         try {
           await window.webxdc.sendToChat({
-            file: filePayload,
+            file: { name, blob },
             text: caption || name
           });
           return true;
         } catch (err) {
           console.warn('[WebXDC] sendToChat no completado:', err);
-          if (!window.webxdc._isStub) {
-            // En Delta Chat nativo, el diálogo de compartir se gestionó o canceló
-            return false;
-          }
+          // La spec: ante un error, la promesa se rechaza. Devolvemos
+          // false y el llamante avisa de verdad (antes el fallo se
+          // tragaba y se enseñaba el toast de éxito igualmente, §51).
+          return false;
         }
       }
       // Fallback para navegador web estándar
@@ -656,26 +724,26 @@ Object.assign(App, {
         const caption = `🎵 ${t.title || this.t('unknown_track')} · ${t.artist || this.t('unknown_artist')}`;
 
         if (blob) {
-          await this.exportFile({
+          const ok = await this.exportFile({
             name: fileName,
             content: blob,
             mimeType: blob.type || 'audio/mpeg',
             caption
           });
-          this.toast(this.t('toast_shared_chat'));
+          this.toast(ok ? this.t('toast_shared_chat') : this.t('toast_share_error'), ok ? undefined : 'danger');
         } else {
           // Si no hay archivo de audio accesible, enviar metadatos y letra
           const txt = `${caption}\n` +
             (t.album ? `Álbum: ${t.album}\n` : '') +
             (t.duration ? `Duración: ${this.fmtTime(t.duration)}\n` : '') +
             (t.lrc && t.lrc.length ? `\n--- Letra ---\n${t.lrc.join('\n')}` : '');
-          await this.exportFile({
+          const ok = await this.exportFile({
             name: `${safeTitle}.txt`,
             content: txt,
             mimeType: 'text/plain;charset=utf-8',
             caption
           });
-          this.toast(this.t('toast_shared_chat'));
+          this.toast(ok ? this.t('toast_shared_chat') : this.t('toast_share_error'), ok ? undefined : 'danger');
         }
       } catch (err) {
         console.error('[Aurora] error shareTrack:', err);
@@ -683,282 +751,11 @@ Object.assign(App, {
       }
     },
 
-    /* #17 Exportar biblioteca a JSON (sin blobs) */
-    async exportLibrary() {
-      try {
-        const data = {
-          version: 1,
-          kind: 'aurora-metadata',
-          tracks: this.tracks.map(t => ({
-            id: t.id, title: t.title, artist: t.artist, album: t.album,
-            duration: t.duration, fileSize: t.fileSize, fileName: t.fileName,
-            coverThumb: t.coverThumb || null,
-            coverIsImage: !!t.coverIsImage, lrc: t.lrc, addedAt: t.addedAt || 0
-          })),
-          playlists: this.playlists.map(p => ({
-            id: p.id, name: p.name, description: p.description,
-            trackIds: p.trackIds
-          })),
-          favorites: [...this.favorites],
-          stats: this.stats,
-          history: this._playHistory
-        };
-        const json = JSON.stringify(data, null, 2);
-        await this.exportFile({
-          name: 'aurora-backup.json',
-          content: json,
-          mimeType: 'application/json',
-          caption: 'Copia de seguridad de Aurora Music Player'
-        });
-        this.toast(this.t('toast_exported'));
-      } catch (e) {
-        this.toast(this.t('toast_load_error'));
-      }
-    },
-
-    /* #17 Importar biblioteca desde JSON.
-     * Restaura listas, favoritos, stats, historial y los metadatos de las
-     * pistas. Como el JSON no incluye audio, las pistas restauradas quedan
-     * marcadas con _needsRelink y se curan al reimportar los mismos
-     * archivos (ver handleFileInput) o desde Ajustes → Vincular audio. */
-    async importLibrary() {
-      // La copia de seguridad es un JSON pequeño (sin audio), pero un archivo
-      // manipulado podría tener millones de entradas: se limita el tamaño y
-      // se valida cada campo antes de tocar el estado.
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json,application/json';
-      input.style.display = 'none';
-      document.body.appendChild(input);
-      const cleanup = () => { try { input.remove(); } catch (e) {} };
-      let settled = false;
-      input.addEventListener('change', async (e) => {
-        settled = true;
-        const file = e.target.files && e.target.files[0];
-        cleanup();
-        if (!file) return;
-        if (file.size > 25 * 1024 * 1024) {
-          this.toast(this.t('toast_file_too_large'));
-          return;
-        }
-        try {
-          const text = await file.text();
-          const data = JSON.parse(text);
-          if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('formato');
-          if (data.kind && data.kind !== 'aurora-metadata') throw new Error('kind');
-          const result = this._importLibraryData(data);
-          this.renderLibrary();
-          this.renderPlaylists();
-          this.renderQueue();
-          this.renderFavorites();
-          if (typeof this.renderHome === 'function') this.renderHome();
-          if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
-          if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
-          const pending = this.pendingRelinkCount();
-          if (result.restoredTracks > 0 && pending > 0) {
-            this.toast(this.t('relink_pending').replace('X', String(pending)));
-          } else {
-            this.toast(this.t('toast_imported_meta'));
-          }
-          this.syncLibCountMarker();
-        } catch (err) {
-          console.warn('[Aurora] Importación inválida:', err && err.message);
-          this.toast(this.t('toast_load_error'));
-        }
-      });
-      // Si el usuario cancela, algunos navegadores no disparan `change`:
-      // al recuperar el foco se retira el input (evita nodos huérfanos).
-      window.addEventListener('focus', () => {
-        setTimeout(() => { if (!settled) cleanup(); }, 300);
-      }, { once: true });
-      input.click();
-    },
-
-    /* Valida y aplica una copia de seguridad ya parseada.
-     * Política de fusión (documentada): la importación es ADITIVA.
-     * - Pistas: se añaden las que no existan (por id o por nombre+tamaño).
-     * - Listas: se actualizan las del mismo id y se añaden las nuevas; las
-     *   listas actuales que no vienen en el backup NO se borran.
-     * - Favoritos: unión. Estadísticas: máximo por pista (evita duplicar
-     *   reproducciones al reimportar el mismo backup). Historial: unión.
-     * Así una copia antigua nunca destruye datos más recientes. */
-    _importLibraryData(data) {
-      const MAX_TRACKS = 5000;
-      const MAX_PLAYLISTS = 500;
-      const MAX_TEXT = 500;
-      const safeText = (v, max) => {
-        if (v == null) return '';
-        return String(v).replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, max || MAX_TEXT);
-      };
-      const safeNum = (v, max) => {
-        const n = Number(v);
-        return isFinite(n) && n >= 0 ? Math.min(n, max) : 0;
-      };
-      const safeId = (v) => {
-        const id = safeText(v, 64);
-        return /^[A-Za-z0-9._-]{1,64}$/.test(id) ? id : null;
-      };
-      const newId = () => 't-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
-      const idMap = new Map(); // Map, no objeto: un id "__proto__" no contamina
-      const knownKeys = new Map();
-      for (const ex of this.tracks) knownKeys.set(this._dupKey(ex.fileName, ex.fileSize), ex);
-      const knownIds = new Set(this.tracks.map(t => t.id));
-      let restoredTracks = 0;
-
-      const rawTracks = Array.isArray(data.tracks) ? data.tracks.slice(0, MAX_TRACKS) : [];
-      for (const mt of rawTracks) {
-        if (!mt || typeof mt !== 'object') continue;
-        const fileName = safeText(mt.fileName, 255);
-        const fileSize = safeNum(mt.fileSize, 1e12);
-        const dup = knownKeys.get(this._dupKey(fileName, fileSize));
-        if (dup) {
-          const oldId = safeId(mt.id);
-          if (oldId) idMap.set(oldId, dup.id);
-          continue;
-        }
-        const oldId = safeId(mt.id);
-        let id = oldId && !knownIds.has(oldId) ? oldId : newId();
-        while (knownIds.has(id)) id = newId();
-        if (oldId) idMap.set(oldId, id);
-        knownIds.add(id);
-        const coverThumb = this._safeImageDataUrl(mt.coverThumb) ? mt.coverThumb : null;
-        const t = {
-          id,
-          title: safeText(mt.title, MAX_TEXT) || fileName || '—',
-          artist: safeText(mt.artist, MAX_TEXT),
-          album: safeText(mt.album, MAX_TEXT),
-          duration: safeNum(mt.duration, 86400),
-          fileSize,
-          fileName,
-          coverThumb,
-          coverIsImage: !!coverThumb,
-          lrc: Array.isArray(mt.lrc)
-            ? mt.lrc.slice(0, 5000).map(l => safeText(l, 2000))
-            : null,
-          addedAt: safeNum(mt.addedAt, 1e15) || Date.now(),
-          _needsRelink: true
-        };
-        this.tracks.push(t);
-        knownKeys.set(this._dupKey(fileName, fileSize), t);
-        this.persistTrack(t);
-        restoredTracks++;
-      }
-      if (restoredTracks > 0) this.invalidateTrackIndex();
-
-      // --- Listas: fusión por id ---
-      // Los backups antiguos pueden traer la lista predefinida «Mi Música»;
-      // se ignora (sus pistas ya vienen en data.tracks y siguen en la
-      // biblioteca). Tampoco se marca ninguna lista como isDefault.
-      const LEGACY_DEFAULT_ID = 'mi-musica';
-      const rawPls = Array.isArray(data.playlists) ? data.playlists.slice(0, MAX_PLAYLISTS) : [];
-      const byId = new Map(this.playlists.map(p => [p.id, p]));
-      for (const rp of rawPls) {
-        if (!rp || typeof rp !== 'object') continue;
-        let pid = safeId(rp.id);
-        if (pid === LEGACY_DEFAULT_ID) continue;
-        if (!pid) pid = 'pl-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
-        const tids = (Array.isArray(rp.trackIds) ? rp.trackIds : [])
-          .map(tid => idMap.get(safeId(tid)) || safeId(tid))
-          .filter(tid => tid && this.tracks.some(t => t.id === tid));
-        const uniqueTids = [...new Set(tids)];
-        const existing = byId.get(pid);
-        if (existing) {
-          existing.name = safeText(rp.name, 200) || existing.name;
-          existing.description = safeText(rp.description, 500) || existing.description || '';
-          if (uniqueTids.length || (Array.isArray(rp.trackIds) && rp.trackIds.length === 0)) {
-            existing.trackIds = uniqueTids;
-          } else {
-            existing.trackIds = [...new Set([...(existing.trackIds || []), ...uniqueTids])];
-          }
-          if (this._safeImageDataUrl(rp.coverArt)) {
-            existing._coverCache = rp.coverArt;
-            existing._coverCacheHash = null;
-          }
-        } else {
-          const pl = {
-            id: pid,
-            name: safeText(rp.name, 200) || this.t('playlist_title'),
-            description: safeText(rp.description, 500),
-            trackIds: uniqueTids,
-            _coverCache: this._safeImageDataUrl(rp.coverArt) ? rp.coverArt : null
-          };
-          this.playlists.push(pl);
-          byId.set(pid, pl);
-        }
-        if (typeof this._invalidatePlaylistCover === 'function') {
-          this._invalidatePlaylistCover(byId.get(pid));
-        }
-      }
-      this.playlists.forEach(pl => this.persistPlaylist(pl));
-
-      // --- Favoritos: unión ---
-      if (Array.isArray(data.favorites)) {
-        const favs = data.favorites
-          .slice(0, MAX_TRACKS * 2)
-          .map(fid => idMap.get(safeId(fid)) || safeId(fid))
-          .filter(fid => fid && this.tracks.some(t => t.id === fid));
-        this.favorites = new Set([...this.favorites, ...favs]);
-        this.saveFavorites();
-      }
-
-      // --- Estadísticas: máximo por pista ---
-      if (data.stats && typeof data.stats === 'object' && !Array.isArray(data.stats)) {
-        const incomingPlays = (data.stats.plays && typeof data.stats.plays === 'object') ? data.stats.plays : {};
-        const plays = Object.assign({}, this.stats.plays);
-        for (const [rawId, count] of Object.entries(incomingPlays)) {
-          const id = idMap.get(safeId(rawId)) || safeId(rawId);
-          if (!id) continue;
-          const n = safeNum(count, 1e9);
-          plays[id] = Math.max(Number(plays[id]) || 0, n);
-        }
-        this.stats = {
-          plays,
-          totalSeconds: Math.max(Number(this.stats.totalSeconds) || 0, safeNum(data.stats.totalSeconds, 1e12)),
-          lastPlayed: this.stats.lastPlayed || null,
-          sessionStart: this.stats.sessionStart || Date.now()
-        };
-        this.saveStats();
-      }
-
-      // --- Historial: unión sin duplicados, conservando el más reciente ---
-      if (Array.isArray(data.history)) {
-        const incoming = data.history
-          .slice(0, 500)
-          .map(hid => idMap.get(safeId(hid)) || safeId(hid))
-          .filter(hid => hid && this.tracks.some(t => t.id === hid));
-        this._playHistory = [...new Set([...incoming, ...this._playHistory])].slice(-100);
-        try { window.AuroraStorage.setSetting('history', this._playHistory); } catch (e) {}
-      }
-
-      if (!this.currentTrack && this.tracks.length) {
-        this.currentTrack = this.tracks[0];
-        this.currentTrackIdx = 0;
-        this.queue = this.tracks.map(t => t.id);
-        this.queueIdx = 0;
-      }
-      return { restoredTracks };
-    },
-
     /* Solo acepta data:image raster en base64; bloquea svg (puede ejecutar
      * scripts si se usa como CSS), comillas y tamaños absurdos. */
     _safeImageDataUrl(v) {
       if (typeof v !== 'string' || v.length > 2 * 1024 * 1024) return false;
       return /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v);
-    },
-
-    /* Nº de pistas restauradas de un backup que aún no tienen audio. */
-    pendingRelinkCount() {
-      return this.tracks.filter(t => t && t._needsRelink).length;
-    },
-
-    /* Muestra/oculta la fila «Vincular audio» de Ajustes según haya
-     * pistas pendientes de re-vincular. */
-    updateRelinkUI() {
-      const n = this.pendingRelinkCount();
-      const btn = document.getElementById('menuRelinkAudio');
-      const label = document.getElementById('relinkAudioLabel');
-      if (btn) btn.hidden = n === 0;
-      if (label) label.textContent = this.t('relink_pending').replace('X', String(n));
     },
 
     /* Persiste múltiples pistas en una sola transacción de IndexedDB.
@@ -1024,15 +821,36 @@ Object.assign(App, {
       const idx = this.tracks.findIndex(t => t.id === trackId);
       if (idx < 0) return;
       const wasCurrent = this.currentTrack && this.currentTrack.id === trackId;
-      // Liberar objectURL (la del track y la que pueda haber en la cache #15)
       const t = this.tracks[idx];
-      const cachedUrl = this._urlCache.get(trackId);
-      if (cachedUrl) {
-        try { URL.revokeObjectURL(cachedUrl); } catch (e) {}
-        this._urlCache.delete(trackId);
-      }
-      if (t.src && t.src.startsWith('blob:') && t.src !== cachedUrl) {
-        URL.revokeObjectURL(t.src);
+      const cachedUrl = this._urlCache.get(trackId) || null;
+      // El borrado de una pista se puede deshacer durante 8 s: mientras
+      // tanto NO se revoca el objectURL ni se toca IndexedDB. Así el audio
+      // sigue disponible si el usuario pulsa «Deshacer». Al vencer el
+      // plazo (o al borrar otra pista) se confirma el borrado real.
+      const canUndo = opts.undo !== false;
+      if (canUndo) {
+        // Si había otro borrado pendiente, confirmarlo antes de abrir uno
+        // nuevo: solo se puede deshacer el último.
+        if (typeof this._commitPendingTrackDelete === 'function') this._commitPendingTrackDelete();
+        this._pendingTrackDelete = {
+          track: t,
+          idx,
+          wasCurrent,
+          cachedUrl,
+          favorite: this.favorites.has(trackId),
+          playlistIds: this.playlists.filter(pl => pl.trackIds.indexOf(trackId) >= 0).map(pl => pl.id),
+          timer: null
+        };
+      } else {
+        // Borrado definitivo (lote, «borrar todo»): liberar ya.
+        if (cachedUrl) {
+          try { URL.revokeObjectURL(cachedUrl); } catch (e) {}
+          this._urlCache.delete(trackId);
+        }
+        if (t.src && t.src.startsWith('blob:') && t.src !== cachedUrl) {
+          try { URL.revokeObjectURL(t.src); } catch (e) {}
+        }
+        this.deleteTrackFromStorage(trackId);
       }
       // Limpiar también la cache de ganancia normalizada (#6)
       this._trackGainCache.delete(trackId);
@@ -1060,9 +878,6 @@ Object.assign(App, {
       // Quitar de favoritos
       this.favorites.delete(trackId);
       this.saveFavorites();
-      // Eliminar de IndexedDB
-      await this.deleteTrackFromStorage(trackId);
-      if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
 
       if (wasCurrent) {
         // Detener la reproducción de la pista eliminada
@@ -1070,13 +885,76 @@ Object.assign(App, {
         // Saltar a siguiente/anterior en modo pausa, o quedar vacío
         this.skipToNextOrPrevPaused();
       }
-      this.renderLibrary();
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();
       if (typeof this.renderHome === 'function') this.renderHome();
       if (typeof this.updateChrome === 'function') this.updateChrome();
-      this.toast(this.t('toast_track_deleted'), 'danger');
+      if (canUndo) {
+        const pending = this._pendingTrackDelete;
+        pending.timer = setTimeout(() => this._commitPendingTrackDelete(pending), 8000);
+        this.toast(this.t('toast_track_deleted'), {
+          danger: true,
+          ms: 8000,
+          action: { label: this.t('undo'), onClick: () => this._undoDeleteTrack(pending) }
+        });
+      } else {
+        this.toast(this.t('toast_track_deleted'), 'danger');
+      }
+    },
+
+    /* Confirma (irreversible) el borrado pendiente de una pista. */
+    _commitPendingTrackDelete(pending) {
+      const p = pending || this._pendingTrackDelete;
+      if (!p || p.committed) return;
+      // Marca definitiva: si el usuario pulsa «Deshacer» después de que
+      // venza el plazo, no se resucita una pista ya borrada de IndexedDB.
+      p.committed = true;
+      clearTimeout(p.timer);
+      if (this._pendingTrackDelete === p) this._pendingTrackDelete = null;
+      try { if (p.cachedUrl) URL.revokeObjectURL(p.cachedUrl); } catch (e) {}
+      try {
+        if (p.track && p.track.src && p.track.src.startsWith('blob:') && p.track.src !== p.cachedUrl) {
+          URL.revokeObjectURL(p.track.src);
+        }
+      } catch (e) {}
+      this._urlCache.delete(p.track.id);
+      this.deleteTrackFromStorage(p.track.id);
+    },
+
+    /* Deshace el borrado: devuelve la pista a la biblioteca, a sus listas
+     * y a favoritos, en la misma posición que ocupaba. */
+    _undoDeleteTrack(pending) {
+      const p = pending || this._pendingTrackDelete;
+      if (!p || !p.track || p.committed) return;
+      // Si hay otro borrado pendiente distinto, este ya se confirmó.
+      if (this._pendingTrackDelete && this._pendingTrackDelete !== p) return;
+      clearTimeout(p.timer);
+      if (this._pendingTrackDelete === p) this._pendingTrackDelete = null;
+      const t = p.track;
+      const at = Math.max(0, Math.min(p.idx, this.tracks.length));
+      this.tracks.splice(at, 0, t);
+      this.invalidateTrackIndex();
+      this.syncLibCountMarker();
+      p.playlistIds.forEach(plId => {
+        const pl = this.playlists.find(x => x.id === plId);
+        if (pl && pl.trackIds.indexOf(t.id) < 0) {
+          pl.trackIds.push(t.id);
+          if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
+          this.persistPlaylist(pl);
+        }
+      });
+      if (p.favorite) {
+        this.favorites.add(t.id);
+        this.saveFavorites();
+      }
+      if (this.currentTrack && this.currentTrack.id === t.id) this.updateFavoriteUI();
+      this.renderPlaylists();
+      this.renderQueue();
+      this.renderFavorites();
+      if (typeof this.renderHome === 'function') this.renderHome();
+      if (typeof this.updateChrome === 'function') this.updateChrome();
+      this.toast(this.t('toast_restored'));
     },
 
     /* ============================================================
@@ -1092,6 +970,9 @@ Object.assign(App, {
         okLabel: this.t('confirm_delete')
       });
       if (!okAll) return;
+      // Un borrado individual pendiente de deshacer quedaría vivo después
+      // de vaciar la biblioteca: confirmarlo antes de borrar todo.
+      if (typeof this._commitPendingTrackDelete === 'function') this._commitPendingTrackDelete();
 
       // 1. Detener reproducción si la hay
       if (this.isPlaying) this.stopPlayback();
@@ -1154,7 +1035,6 @@ Object.assign(App, {
       // 8. Re-renderizar todo y mostrar estado vacío
       this.showEmptyState();
       this.renderCurrentTrack();
-      this.renderLibrary();
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();

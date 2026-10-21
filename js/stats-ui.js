@@ -100,7 +100,10 @@ Object.assign(App, {
           if (cv) this.drawRowCover(cv, track);
         }
         row.addEventListener('click', () => {
-          if (tid) this.playTrack(tid);
+          // Sin contexto, playTrack dejaba el anterior con la cola de
+          // toda la biblioteca: etiqueta y cola divorciadas. Manda la
+          // lista de la canción, como en Buscar (§38/§39).
+          if (tid && track) this.playTrack(tid, typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(track) : undefined);
         });
       });
     },
@@ -118,6 +121,46 @@ Object.assign(App, {
         .replace(/\s+/g, ' ')
         .trim();
     },
+
+    /* Textos de búsqueda ya normalizados por pista, cacheados en un
+     * WeakMap (no se persisten ni ensucian el objeto pista). La clave
+     * guarda el texto origen: si el usuario edita las etiquetas, la
+     * siguiente búsqueda detecta el cambio y recalcula sola. */
+    _searchClean(t) {
+      if (!this._srchCache) this._srchCache = new WeakMap();
+      const src = (t.title || '') + '\u0000' + (t.artist || '') + '\u0000' + (t.album || '');
+      let c = this._srchCache.get(t);
+      if (!c || c.src !== src) {
+        const title = this.cleanSearchStr(t.title);
+        const artist = this.cleanSearchStr(t.artist);
+        const album = this.cleanSearchStr(t.album);
+        c = { src, title, artist, album, all: (title + ' ' + artist + ' ' + album).trim() };
+        this._srchCache.set(t, c);
+      }
+      return c;
+    },
+
+    /* Contexto de reproducción para una canción suelta elegida
+     * fuera de su lista (Buscar, Inicio, Historial, menú de pista).
+     * Antes todo salía como «Todas las canciones» aunque la canción
+     * viviera en una lista, y la cola que se creaba era la biblioteca
+     * entera. Ahora manda la lista de la canción: primero las listas
+     * del usuario y, si solo está en la automática, «Mi Música»; la
+     * cola pasa a ser esa lista, así que siguiente/anterior y el
+     * «Reproduciendo desde…» cuentan lo mismo. */
+    trackPlayContextFor(t) {
+      let miMusica = null;
+      for (const pl of this.playlists || []) {
+        if (!pl || !Array.isArray(pl.trackIds) || !t || !pl.trackIds.includes(t.id)) continue;
+        if (pl.id === 'mi-musica') { miMusica = pl; continue; }
+        return { type: 'playlist', id: pl.id, name: pl.name };
+      }
+      if (miMusica) return { type: 'playlist', id: miMusica.id, name: miMusica.name };
+      return { type: 'all' };
+    },
+
+    /* Nombre histórico del resolvedor de contexto. */
+    searchPlayContextFor(t) { return this.trackPlayContextFor(t); },
 
     runSearch(q, filter) {
       const ul = document.getElementById('searchResults');
@@ -140,13 +183,19 @@ Object.assign(App, {
       };
 
       const matchTrack = (t) => {
-        if (f === 'title') return matchText(t.title);
-        if (f === 'artist') return matchText(t.artist);
-        if (f === 'album') return matchText(t.album);
-        return matchText(t.title) ||
-               matchText(t.artist) ||
-               matchText(t.album) ||
-               matchText(`${t.title || ''} ${t.artist || ''} ${t.album || ''}`);
+        // Sin tokens (consulta de solo símbolos) se conserva el
+        // comportamiento histórico sobre el texto crudo.
+        if (!qTokens.length) {
+          return matchText(t.title) || matchText(t.artist) || matchText(t.album);
+        }
+        // Con tokens se busca sobre los textos ya normalizados y
+        // cacheados por pista: normalizar 5.000 títulos por tecla
+        // disparaba el coste de cada pulsación (ver prueba de estrés).
+        const c = this._searchClean(t);
+        if (f === 'title') return qTokens.every(tok => c.title.includes(tok));
+        if (f === 'artist') return qTokens.every(tok => c.artist.includes(tok));
+        if (f === 'album') return qTokens.every(tok => c.album.includes(tok));
+        return qTokens.every(tok => c.all.includes(tok));
       };
 
       if (f === 'all') {
@@ -170,7 +219,7 @@ Object.assign(App, {
           artists.forEach(ar => {
             const li = document.createElement('li');
             li.className = 'artist-row';
-            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(ar.name)}</div><div class="row-sub">${ar.tracks.length} ${this.esc(this.t('tracks_count'))}</div></div><svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
+            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(ar.name)}</div><div class="row-sub">${this.esc(this.fmtTracksCount(ar.tracks.length))}</div></div><svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
             li.addEventListener('click', () => this.goToArtist(ar.name));
             ul.appendChild(li);
           });
@@ -180,7 +229,7 @@ Object.assign(App, {
           albums.forEach(al => {
             const li = document.createElement('li');
             li.className = 'artist-row';
-            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(al.name)}</div><div class="row-sub">${this.esc(al.artist)} · ${al.tracks.length} ${this.esc(this.t('tracks_count'))}</div></div><svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
+            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(al.name)}</div><div class="row-sub">${this.esc(al.artist)} · ${this.esc(this.fmtTracksCount(al.tracks.length))}</div></div><svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
             li.addEventListener('click', () => this.goToAlbum(al.name, al.artist));
             ul.appendChild(li);
           });
@@ -195,12 +244,12 @@ Object.assign(App, {
             wrap.style.listStyle = 'none';
             wrap.appendChild(rest);
             ul.appendChild(wrap);
-            this.fillVirtualList(rest, songs, (tr) => this.makeTrackRow(tr, { playContext: { type: 'all' } }), {
+            this.fillVirtualList(rest, songs, (tr) => this.makeTrackRow(tr, { playContext: this.trackPlayContextFor(tr) }), {
               scroller: ul.closest('.sheet-body'),
               rowHeight: 64
             });
           } else {
-            songs.forEach(tr => ul.appendChild(this.makeTrackRow(tr, { playContext: { type: 'all' } })));
+            songs.forEach(tr => ul.appendChild(this.makeTrackRow(tr, { playContext: this.trackPlayContextFor(tr) })));
           }
         }
         return;
@@ -211,19 +260,30 @@ Object.assign(App, {
         return;
       }
       if (typeof this.fillVirtualList === 'function') {
-        this.fillVirtualList(ul, res, (tr) => this.makeTrackRow(tr, { playContext: { type: 'all' } }), {
+        this.fillVirtualList(ul, res, (tr) => this.makeTrackRow(tr, { playContext: this.trackPlayContextFor(tr) }), {
           scroller: ul.closest('.sheet-body'),
           rowHeight: 64
         });
       } else {
-        res.forEach(tr => ul.appendChild(this.makeTrackRow(tr, { playContext: { type: 'all' } })));
+        res.forEach(tr => ul.appendChild(this.makeTrackRow(tr, { playContext: this.trackPlayContextFor(tr) })));
       }
     },
 
     renderSearchHistory(ul) {
       const hist = Array.isArray(this._searchHistory) ? this._searchHistory : [];
       if (!hist.length) {
-        ul.innerHTML = '<li class="track-row empty-placeholder">' + this.t('search_placeholder') + '</li>';
+        ul.innerHTML = '';
+        const li = document.createElement('li');
+        li.className = 'empty-state compact';
+        li.innerHTML = this.emptyStateHtml({
+          icon: 'clock-rotate-left',
+          // Antes se reutilizaba el placeholder del input como titular:
+          // se veía «Canción, artista o ál…» en grande, duplicado con
+          // el propio campo de búsqueda de encima.
+          title: this.t('search_empty_title'),
+          text: this.t('search_empty_hint')
+        });
+        ul.appendChild(li);
         return;
       }
       const title = document.createElement('li');
@@ -266,23 +326,86 @@ Object.assign(App, {
       const countEl = document.getElementById('favoritesCount');
       ul.innerHTML = '';
       const favTracks = this.tracks.filter(t => this.favorites.has(t.id));
+      // «Reproducir Todo» sin favoritos no pinta nada: se oculta (el
+      // estado vacío ya lo explica). Y si Favoritos es la lista que
+      // suena, el botón lo dice con el mismo anillo que el hero.
+      const playBtn = document.getElementById('btnPlayFavoritesNow');
+      if (playBtn) {
+        playBtn.style.display = favTracks.length ? '' : 'none';
+        playBtn.classList.toggle('is-playing',
+          favTracks.length > 0 && this.isPlaying &&
+          !!this.playContext && this.playContext.type === 'favorites');
+      }
       if (countEl) {
         const n = favTracks.length;
         countEl.textContent = n === 0
           ? this.t('favorites_count_zero')
           : (n === 1 ? this.t('favorites_count_one') : this.t('favorites_count_many').replace('X', n));
+        // El estado vacío ya explica que no hay favoritos.
+        countEl.hidden = n === 0;
       }
       if (favTracks.length === 0) {
-        ul.innerHTML = '<li class="track-row" style="justify-content:center;color:var(--text-3);font-size:13px;padding:24px">' + this.t('toast_no_favorites_yet') + '</li>';
+        // Estado vacío sin botón de «ir a Biblioteca»: Favoritos ya es
+        // una pestaña junto a Biblioteca en la barra inferior, así que
+        // el CTA era un rodeo innecesario (petición expresa del usuario).
+        ul.innerHTML = '';
+        const li = document.createElement('li');
+        li.className = 'empty-state fav-empty';
+        li.innerHTML = this.emptyStateHtml({
+          icon: 'heart',
+          title: this.t('favorites_empty_title'),
+          text: this.t('favorites_count_zero')
+        });
+        ul.appendChild(li);
         return;
       }
       // Para que pulsar una pista desde favoritos reproduzca TODA la lista
       // de favoritos (no solo la pista aislada), construimos el contexto.
-      favTracks.forEach((t) => {
-        if (typeof this.makeTrackRow === 'function') {
-          ul.appendChild(this.makeTrackRow(t, { playContext: { type: 'favorites' } }));
-        }
-      });
+      // Virtualizada como la cola y la biblioteca: con cientos de
+      // favoritos, crear todas las filas de golpe congelaba la hoja.
+      if (typeof this.fillVirtualList === 'function' && typeof this.makeTrackRow === 'function') {
+        this.fillVirtualList(ul, favTracks,
+          (t) => this.makeTrackRow(t, { playContext: { type: 'favorites' } }),
+          { scroller: ul.closest('.sheet-body'), rowHeight: 64 });
+      }
+    },
+
+    /* «Más valoradas» (§60): espejo de Favoritos — Reproducción en
+     * curso marcada en el botón, contador y filas con su insignia
+     * (la encargada de pintarla es makeTrackRow). */
+    renderRated() {
+      const ul = document.getElementById('ratedList');
+      if (!ul) return;
+      const countEl = document.getElementById('ratedCount');
+      ul.innerHTML = '';
+      const rated = typeof this.getTopRatedTracks === 'function' ? this.getTopRatedTracks() : [];
+      const playBtn = document.getElementById('btnPlayRatedNow');
+      if (playBtn) {
+        playBtn.style.display = rated.length ? '' : 'none';
+        playBtn.classList.toggle('is-playing',
+          rated.length > 0 && this.isPlaying &&
+          !!this.playContext && this.playContext.type === 'rated');
+      }
+      if (countEl) {
+        countEl.hidden = rated.length === 0;
+        if (rated.length) countEl.textContent = this.fmtTracksCount(rated.length);
+      }
+      if (rated.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'empty-state fav-empty';
+        li.innerHTML = this.emptyStateHtml({
+          icon: 'star',
+          title: this.t('rated_title'),
+          text: this.t('rated_empty')
+        });
+        ul.appendChild(li);
+        return;
+      }
+      if (typeof this.fillVirtualList === 'function' && typeof this.makeTrackRow === 'function') {
+        this.fillVirtualList(ul, rated,
+          (t) => this.makeTrackRow(t, { playContext: { type: 'rated' } }),
+          { scroller: ul.closest('.sheet-body'), rowHeight: 64 });
+      }
     },
 
     /* Compartir resumen de estadísticas de reproducción en Delta Chat */

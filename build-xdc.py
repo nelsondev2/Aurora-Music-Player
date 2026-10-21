@@ -33,13 +33,9 @@ APP_ENTRIES = [
     "manifest.toml",   # nombre visible y código fuente
     "icon.png",        # icono del chat
     "LICENSE",
-    "styles.css",
-    "data.js",
-    "storage.js",
-    "uploader.js",
-    "webxdc.js",       # stub con guarda: nunca pisa la API del cliente
-    "js",
-    "assets",
+    "css",             # todas las hojas de estilo
+    "js",              # todo el JS propio (sin webxdc.js: lo inyecta el cliente)
+    "assets",          # JS vendorizado (js/jsmediatags.min.js) y demás
 ]
 
 # Fecha fija en las entradas → builds reproducibles (mismo contenido,
@@ -174,9 +170,13 @@ def validate_sources(files):
                           % (width, MIN_ICON, MAX_ICON))
 
     html = read_text("index.html")
-    css = read_text("styles.css") if "styles.css" in names else ""
+    css = read_text("css/styles.css") if "css/styles.css" in names else ""
 
     for ref in sorted(local_refs(html) | css_refs(css)):
+        if ref == "webxdc.js":
+            # Lo proporciona el mensajero al servir la app (spec webxdc:
+            # no debe viajar en el .xdc, ver la regla siguiente).
+            continue
         if ref.startswith("/"):
             ok = fail("ruta absoluta «%s»: en un .xdc los recursos son relativos" % ref)
         elif ref not in names:
@@ -185,12 +185,14 @@ def validate_sources(files):
     for url in network_refs(html):
         ok = fail("carga remota «%s»: un .xdc funciona sin red" % url)
 
-    # La API la inyecta el cliente; el stub solo debe actuar si no existe.
-    if "webxdc.js" in names:
-        stub = read_text("webxdc.js")
-        if "if (window.webxdc) return;" not in stub:
-            ok = fail("webxdc.js debe salir si window.webxdc ya existe "
-                      "(nunca debe pisar la API del cliente)")
+    # Spec webxdc: «webxdc.js» lo proporciona el mensajero y NO debe
+    # incluirse en el .xdc. Si viajara uno propio (p. ej. en js/), el
+    # cliente no lo reemplazaría y todo envío al chat caería en él,
+    # sin llegar nunca a ningún chat (fue el fallo del §53).
+    for rel in sorted(names):
+        if rel.rsplit("/", 1)[-1] == "webxdc.js":
+            ok = fail("«%s» no debe viajar en el .xdc: la API webxdc la "
+                      "inyecta el mensajero para la ruta «webxdc.js»" % rel)
 
     return ok
 

@@ -15,6 +15,12 @@ Object.assign(App, {
      * ============================================================ */
     coverSrcForRow(track, size) {
       if (!track) return null;
+      // La portada personalizada manda sobre la de los metadatos.
+      if (track.customCover) {
+        return size >= 160
+          ? (track.customCover.lg || track.customCover.thumb)
+          : (track.customCover.thumb || track.customCover.lg);
+      }
       if (size >= 160 && track.coverThumbLg) return track.coverThumbLg;
       if (track.coverThumb) return track.coverThumb;
       if (size >= 160 && track.coverThumb) return track.coverThumb;
@@ -25,7 +31,7 @@ Object.assign(App, {
       if (!canvas || !track) return;
       const ctx = canvas.getContext('2d');
       const W = canvas.width, H = canvas.height;
-      const isImage = track.coverIsImage || (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:')));
+      const isImage = !!track.customCover || track.coverIsImage || (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:')));
       const thumb = this.coverSrcForRow(track, Math.max(W, H));
 
       const paintImg = (src) => {
@@ -108,8 +114,110 @@ Object.assign(App, {
       }
     },
 
+    /* ============================================================
+     *  Portada personalizada por pista
+     *  La imagen que elige el usuario pasa a ser LA portada de la
+     *  pista en todas partes (filas, reproductor, mosaicos de listas,
+     *  sesión). Se guarda en track.customCover como dos miniaturas
+     *  JPEG (96 y 256 px, recorte cuadrado centrado con el mismo
+     *  resizeDataUrl del importador) y tiene prioridad sobre la
+     *  portada de los metadatos en todos los resolvedores: ni un
+     *  re-etiquetado puede pisarla, y quitarla devuelve la original,
+     *  que nunca se modifica.
+     * ============================================================ */
+    async pickCustomCover(trackId) {
+      // Delta Chat nativo: selector integrado antes que <input> (§42)
+      const nativeFiles = await this.pickFilesWebxdc({ extensions: ['.jpg', '.jpeg', '.png', '.webp', '.gif'], multiple: false });
+      if (nativeFiles) {
+        if (nativeFiles.length > 0) await this.setCustomCover(trackId, nativeFiles[0]);
+        return;
+      }
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.style.display = 'none';
+      document.body.appendChild(input);
+      const cleanup = () => { try { input.remove(); } catch (e) {} };
+      let settled = false;
+      input.addEventListener('change', async (e) => {
+        settled = true;
+        const file = e.target.files && e.target.files[0];
+        cleanup();
+        if (file) await this.setCustomCover(trackId, file);
+      });
+      // Si el usuario cancela, algunos navegadores no disparan change:
+      // al recuperar el foco se retira el input (sin nodos huérfanos).
+      window.addEventListener('focus', () => {
+        setTimeout(() => { if (!settled) cleanup(); }, 300);
+      }, { once: true });
+      input.click();
+    },
+
+    async setCustomCover(trackId, file) {
+      const t = this.tracks.find(x => x.id === trackId);
+      if (!t || !file) return false;
+      const looksImage = (file.type && file.type.indexOf('image/') === 0) ||
+        /\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(file.name || '');
+      if (!looksImage) { this.toast(this.t('toast_cover_error')); return false; }
+      if (file.size > 15 * 1024 * 1024) { this.toast(this.t('toast_file_too_large')); return false; }
+      try {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = () => reject(r.error || new Error('lectura'));
+          r.readAsDataURL(file);
+        });
+        const U = window.AuroraUploader;
+        if (!U || typeof U.resizeDataUrl !== 'function') throw new Error('sin resizeDataUrl');
+        const lg = await U.resizeDataUrl(dataUrl, 256);
+        const thumb = await U.resizeDataUrl(dataUrl, 96);
+        if (!lg && !thumb) throw new Error('imagen ilegible');
+        t.customCover = { thumb: thumb || lg, lg: lg || thumb };
+        await this.persistTrack(t);
+        this._refreshCoverSurfaces(t);
+        this.toast(this.t('toast_cover_updated'));
+        return true;
+      } catch (e) {
+        this.toast(this.t('toast_cover_error'));
+        return false;
+      }
+    },
+
+    async removeCustomCover(trackId) {
+      const t = this.tracks.find(x => x.id === trackId);
+      if (!t || !t.customCover) return;
+      delete t.customCover;
+      await this.persistTrack(t);
+      this._refreshCoverSurfaces(t);
+      this.toast(this.t('toast_cover_removed'));
+    },
+
+    /* Tras cambiar/quitar la portada: la caché de artwork del
+     * reproductor (Media Session incluida) y los mosaicos de las
+     * listas que contienen la pista quedan obsoletos; se invalidan y
+     * se repintan las superficies visibles. */
+    _refreshCoverSurfaces(t) {
+      if (!t) return;
+      if (typeof this._invalidateArtwork === 'function') this._invalidateArtwork(t.id);
+      this.playlists.forEach(pl => {
+        if ((pl.trackIds || []).includes(t.id)) this._invalidatePlaylistCover(pl);
+      });
+      this.renderPlaylists();
+      this.renderQueue();
+      this.renderFavorites();
+      if (typeof this.renderHome === 'function') this.renderHome();
+      if (this.currentTrack && this.currentTrack.id === t.id) {
+        this.renderCurrentTrack();
+        if (typeof this.updateMiniPlayer === 'function') this.updateMiniPlayer();
+      }
+      // La cabecera del menú de pista también pinta la portada.
+      const menuCv = document.getElementById('trackMenuCover');
+      if (menuCv && this._menuTrackId === t.id) this.drawRowCover(menuCv, t);
+    },
+
     _playlistTrackArtSrc(t) {
       if (!t) return null;
+      if (t.customCover) return t.customCover.lg || t.customCover.thumb;
       if (t.coverThumbLg) return t.coverThumbLg;
       if (t.coverThumb) return t.coverThumb;
       if (typeof t.cover === 'string' && (t.cover.startsWith('data:') || t.cover.startsWith('blob:'))) return t.cover;
@@ -164,8 +272,10 @@ Object.assign(App, {
     getPlaylistCover(pl) {
       const fallback = this._playlistCoverFallback(pl);
       this._hydratePlaylistCover(pl);
+      // Con el índice id->pista: buscar cada id con find() sobre miles
+      // de pistas hacía renderPlaylists cuadrático (medido en el estrés).
       const tracks = (pl.trackIds || [])
-        .map(id => this.tracks.find(t => t.id === id))
+        .map(id => this.getTrackById(id))
         .filter(Boolean);
       const withImage = tracks.filter(t => this._playlistTrackArtSrc(t));
 
@@ -410,6 +520,9 @@ Object.assign(App, {
       Array.from(ul.children).forEach(ch => {
         if (ch === spacer) return;
         const idx = parseInt(ch.dataset.virtIdx, 10);
+        // La fila que se está arrastrando no se retira aunque salga de
+        // la ventana al hacer autoscroll: desaparecería a mitad de gesto.
+        if (state.dragIdx != null && idx === state.dragIdx) { keep.add(idx); return; }
         if (idx < start || idx >= end) ch.remove();
         else keep.add(idx);
       });
@@ -431,19 +544,20 @@ Object.assign(App, {
       const ul = document.getElementById('queueList');
       if (!ul) return;
       ul.innerHTML = '';
-      // Subtítulo con el contexto actual ("Reproduciendo desde X")
+      // Subtítulo con el contexto actual ("Reproduciendo desde X"),
+      // la misma frase que usa la cabecera del reproductor.
       const ctxLabel = document.getElementById('queueContextLabel');
       if (ctxLabel) {
         const cl = this.getPlayContextLabel();
         if (cl) {
-          ctxLabel.textContent = this.t('playing_from') + ' · ' + cl;
+          ctxLabel.textContent = this.t('playing_from') + ' ' + cl;
           ctxLabel.style.display = '';
         } else {
           ctxLabel.textContent = '';
           ctxLabel.style.display = 'none';
         }
       }
-      const cleaned = this.queue.filter(id => this.tracks.some(t => t.id === id));
+      const cleaned = this.queue.filter(id => this.trackMap().has(id));
       if (cleaned.length !== this.queue.length) {
         const curId = this.currentTrack && this.currentTrack.id;
         this.queue = cleaned;
@@ -451,7 +565,14 @@ Object.assign(App, {
         this.queueIdx = nq >= 0 ? nq : Math.min(this.queueIdx, Math.max(0, this.queue.length - 1));
       }
       if (this.queue.length === 0) {
-        ul.innerHTML = '<li class="track-row" style="justify-content:center;color:var(--text-3);font-size:13px;padding:24px">' + this.t('queue_empty') + '</li>';
+        ul.innerHTML = '';
+        const emptyLi = document.createElement('li');
+        emptyLi.className = 'empty-state compact';
+        emptyLi.innerHTML = this.emptyStateHtml({
+          icon: 'list-ol',
+          title: this.t('queue_empty')
+        });
+        ul.appendChild(emptyLi);
         return;
       }
       const makeQueueRow = (id, i) => {
@@ -460,15 +581,16 @@ Object.assign(App, {
         const li = document.createElement('li');
         li.className = 'queue-item' + (i === this.queueIdx ? ' current' : '');
         li.dataset.idx = i;
+        li.dataset.trackId = id;
         li.innerHTML = `
-          <button class="drag-handle" aria-label="Mover"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
+          <button class="drag-handle" aria-label="${this.esc(this.t('move'))}"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
-            <div class="row-sub">${this.esc(t.artist)}</div>
+            <div class="row-sub">${this.esc(t.artist)} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>
           </div>
-          <div class="row-duration">${this.fmtTime(t.duration)}</div>
-          <button class="row-action queue-remove" aria-label="Quitar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <div class="row-duration">${this.fmtRowDuration(t)}</div>
+          <button class="row-action queue-remove" aria-label="${this.esc(this.t('remove'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
         `;
         // Click normal → reproducir
         li.addEventListener('click', (e) => {
@@ -476,24 +598,6 @@ Object.assign(App, {
           this.playFromQueue(i);
           if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
         });
-        // Tap-and-hold (500ms) → modo reordenar
-        let holdTimer = null;
-        const startHold = (e) => {
-          if (e.target.closest('.drag-handle, .queue-remove')) return;
-          holdTimer = setTimeout(() => {
-            li.classList.add('reorder-mode');
-            this.toast(this.t('toast_reorder_mode'), 2000);
-            if (navigator.vibrate) navigator.vibrate(30);
-          }, 500);
-        };
-        const cancelHold = () => { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; } };
-        li.addEventListener('touchstart', startHold, { passive: true });
-        li.addEventListener('touchend', cancelHold);
-        li.addEventListener('touchmove', cancelHold, { passive: true });
-        li.addEventListener('mousedown', startHold);
-        li.addEventListener('mouseup', cancelHold);
-        li.addEventListener('mouseleave', cancelHold);
-
         // Quitar de la cola
         li.querySelector('.queue-remove').addEventListener('click', (e) => {
           e.stopPropagation();
@@ -530,86 +634,155 @@ Object.assign(App, {
       });
     },
 
-    /* Reordenar con drag handle (touch + mouse) */
+    /* Reordenar arrastrando el asa (Pointer Events: un solo camino
+     * para dedo y ratón, con captura del puntero para no perder el
+     * gesto al salir de la fila).
+     * - La fila sigue al dedo con transform; una línea de acento marca
+     *   el hueco destino (una sola fila cada vez).
+     * - Cerca del borde superior/inferior la lista se desplaza sola
+     *   (autoscroll) para poder llevar una pista lejos incluso en
+     *   colas largas; con lista virtualizada (>80) la fila arrastrada
+     *   se marca en el estado (dragIdx) para que el repintado al
+     *   desplazar no la elimine del DOM a mitad de gesto.
+     * - Al soltar se calcula el índice final con el modelo de
+     *   inserción (el hueco antes/después de cada fila) y se aplica:
+     *   en la cola, también a _originalQueue si el aleatorio está
+     *   activo (para que al desactivarlo no se pierda el orden nuevo)
+     *   y se guarda la sesión al momento. */
     wireDragHandle(li, idx, ul, itemSelector, opts) {
       const handle = li.querySelector('.drag-handle');
       if (!handle) return;
+      const scroller = ul.closest('.sheet-body') || ul.parentElement;
       let dragging = false;
-      let startY = 0, startIdx = idx;
-      let ghost = null;
-      const items = () => Array.from(ul.querySelectorAll(itemSelector));
+      let startY = 0;
+      let startIdx = idx;
+      let startScroll = 0;
+      let lastY = 0;
+      let scrollTimer = null;
 
-      const onStart = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        dragging = true;
-        startY = (e.touches ? e.touches[0].clientY : e.clientY);
-        startIdx = parseInt(li.dataset.idx, 10);
-        li.classList.add('dragging');
-        if (navigator.vibrate) navigator.vibrate(15);
-      };
-      const onMove = (e) => {
-        if (!dragging) return;
-        const y = (e.touches ? e.touches[0].clientY : e.clientY);
-        const dy = y - startY;
-        li.style.transform = `translateY(${dy}px)`;
-        li.style.zIndex = '10';
-        // Resaltar destino
-        const mid = li.offsetTop + li.offsetHeight/2 + dy;
-        items().forEach(it => {
-          if (it === li) return;
-          const t = it.offsetTop + it.offsetHeight/2;
-          it.classList.toggle('drop-above', t > mid && parseInt(it.dataset.idx,10) < startIdx);
-          it.classList.toggle('drop-below', t < mid && parseInt(it.dataset.idx,10) > startIdx);
-        });
-      };
-      const onEnd = (e) => {
-        if (!dragging) return;
-        dragging = false;
-        li.style.transform = '';
-        li.style.zIndex = '';
-        li.classList.remove('dragging');
-        const y = (e.changedTouches ? e.changedTouches[0].clientY : e.clientY);
-        // Determinar nuevo índice
-        let newIdx = startIdx;
-        const siblings = items();
-        for (let i = 0; i < siblings.length; i++) {
-          const it = siblings[i];
-          if (it === li) continue;
-          const t = it.offsetTop + it.offsetHeight/2;
-          if (y < t) { newIdx = parseInt(it.dataset.idx, 10); break; }
-          newIdx = parseInt(it.dataset.idx, 10);
-        }
-        items().forEach(it => it.classList.remove('drop-above','drop-below'));
-        // Reordenar
-        if (newIdx !== startIdx) {
-          if (opts && typeof opts.onReorder === 'function') {
-            opts.onReorder(startIdx, newIdx);
-          } else {
-            const moved = this.queue.splice(startIdx, 1)[0];
-            this.queue.splice(newIdx, 0, moved);
-            if (this.queueIdx === startIdx) this.queueIdx = newIdx;
-            else if (startIdx < this.queueIdx && newIdx >= this.queueIdx) this.queueIdx--;
-            else if (startIdx > this.queueIdx && newIdx <= this.queueIdx) this.queueIdx++;
-            this.renderQueue();
+      const items = () => Array.from(ul.querySelectorAll(itemSelector));
+      const targetIndexFor = (clientY) => {
+        const rows = items().filter(it => it !== li);
+        if (!rows.length) return startIdx;
+        let placed = null;
+        for (const it of rows) {
+          const r = it.getBoundingClientRect();
+          if (clientY < r.top + r.height / 2) {
+            placed = parseInt(it.dataset.idx, 10);
+            break;
           }
         }
+        if (placed === null) placed = parseInt(rows[rows.length - 1].dataset.idx, 10) + 1;
+        if (isNaN(placed)) return startIdx;
+        // «placed» es el hueco de inserción sin la fila arrastrada:
+        // se convierte a índice final tras extraerla de startIdx.
+        let to = placed > startIdx ? placed - 1 : placed;
+        const maxIdx = (opts && opts.maxIndex != null)
+          ? opts.maxIndex
+          : this.queue.length - 1;
+        return Math.max(0, Math.min(maxIdx, to));
+      };
+      const markTarget = (clientY) => {
+        const to = targetIndexFor(clientY);
+        items().forEach(it => {
+          if (it === li) return;
+          const i = parseInt(it.dataset.idx, 10);
+          // El hueco destino es antes de la fila «to» (o después de la
+          // última si se suelta al final): se marca solo esa fila.
+          it.classList.toggle('drop-above', i === to && to <= startIdx);
+          it.classList.toggle('drop-below', i === to && to > startIdx);
+        });
+        return to;
+      };
+      const clearMarks = () => items().forEach(it => it.classList.remove('drop-above', 'drop-below'));
+      const stopAutoScroll = () => {
+        if (scrollTimer) { clearInterval(scrollTimer); scrollTimer = null; }
+      };
+      // Sin compensación, al desplazarse la lista la fila se despegaría
+      // del dedo: el transform suma lo que el contenido haya bajado.
+      const paintDrag = () => {
+        const scrolled = scroller ? scroller.scrollTop - startScroll : 0;
+        li.style.transform = `translateY(${lastY - startY + scrolled}px)`;
+      };
+      const autoScroll = (clientY) => {
+        if (!scroller || scroller === ul) return;
+        const r = scroller.getBoundingClientRect();
+        const EDGE = 56;
+        const STEP = 14;
+        let dy = 0;
+        if (clientY < r.top + EDGE) dy = -STEP;
+        else if (clientY > r.bottom - EDGE) dy = STEP;
+        if (!dy) { stopAutoScroll(); return; }
+        if (scrollTimer) return;
+        // Aunque el dedo no se mueva, cada tick recoloca la fila y
+        // recalcula el destino con las filas recién pintadas.
+        scrollTimer = setInterval(() => {
+          scroller.scrollTop += dy;
+          paintDrag();
+          markTarget(lastY);
+        }, 16);
       };
 
-      handle.addEventListener('touchstart', onStart, { passive: false });
-      handle.addEventListener('touchmove', onMove, { passive: false });
-      handle.addEventListener('touchend', onEnd);
-      handle.addEventListener('mousedown', onStart);
-      const onWinMove = (e) => onMove(e);
-      const onWinUp = (e) => {
-        onEnd(e);
-        window.removeEventListener('mousemove', onWinMove);
-        window.removeEventListener('mouseup', onWinUp);
-      };
-      handle.addEventListener('mousedown', () => {
-        window.addEventListener('mousemove', onWinMove);
-        window.addEventListener('mouseup', onWinUp);
+      handle.addEventListener('pointerdown', (e) => {
+        if (dragging) return;
+        e.preventDefault();
+        e.stopPropagation();
+        dragging = true;
+        startY = e.clientY;
+        lastY = e.clientY;
+        startScroll = scroller ? scroller.scrollTop : 0;
+        startIdx = parseInt(li.dataset.idx, 10);
+        if (isNaN(startIdx)) startIdx = idx;
+        try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+        li.classList.add('dragging');
+        li.style.zIndex = '10';
+        if (ul._virt) ul._virt.dragIdx = startIdx;
+        if (navigator.vibrate) navigator.vibrate(15);
       });
+      handle.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        e.preventDefault();
+        lastY = e.clientY;
+        paintDrag();
+        autoScroll(e.clientY);
+        markTarget(e.clientY);
+      });
+      const finish = (e, commit) => {
+        if (!dragging) return;
+        dragging = false;
+        stopAutoScroll();
+        const to = commit ? markTarget(e.clientY) : startIdx;
+        clearMarks();
+        li.classList.remove('dragging');
+        li.style.transform = '';
+        li.style.zIndex = '';
+        if (ul._virt && ul._virt.dragIdx === startIdx) ul._virt.dragIdx = null;
+        if (!commit || to === startIdx) return;
+        if (opts && typeof opts.onReorder === 'function') {
+          opts.onReorder(startIdx, to);
+          return;
+        }
+        const moved = this.queue.splice(startIdx, 1)[0];
+        this.queue.splice(to, 0, moved);
+        if (this.queueIdx === startIdx) this.queueIdx = to;
+        else if (startIdx < this.queueIdx && to >= this.queueIdx) this.queueIdx--;
+        else if (startIdx > this.queueIdx && to <= this.queueIdx) this.queueIdx++;
+        // Con aleatorio activo la cola visible es una permutación:
+        // la misma mudanza se refleja en la original por id (si un id
+        // estuviera repetido se mueve la primera aparición; la cola
+        // no suele tener duplicados).
+        if (this.shuffle && Array.isArray(this._originalQueue) && this._originalQueue.length) {
+          const fromOrig = this._originalQueue.indexOf(moved);
+          if (fromOrig >= 0) {
+            this._originalQueue.splice(fromOrig, 1);
+            this._originalQueue.splice(Math.min(to, this._originalQueue.length), 0, moved);
+          }
+        }
+        if (typeof this.saveSession === 'function') this.saveSession();
+        this.renderQueue();
+      };
+      handle.addEventListener('pointerup', (e) => finish(e, true));
+      handle.addEventListener('pointercancel', (e) => finish(e, false));
     },
 
     clearUpcomingQueue() {
@@ -626,24 +799,6 @@ Object.assign(App, {
       }
       this.renderQueue();
       this.toast(this.t('toast_queue_cleared'));
-    },
-
-    renderLibrary() {
-      const ul = document.getElementById('libraryTracks');
-      // Contador de la sección (siempre, también con 0 pistas).
-      const countEl = document.getElementById('librarySongsCount');
-      if (countEl) countEl.textContent = String(this.tracks.length);
-      if (!ul) return;
-      if (this.tracks.length === 0) {
-        this.unbindVirtualList(ul);
-        ul.innerHTML = '<li class="track-row empty-placeholder">' + this.t('no_tracks_loaded') + '</li>';
-        return;
-      }
-      const list = (typeof this.sortedTracks === 'function') ? this.sortedTracks() : this.tracks.slice();
-      this.fillVirtualList(ul, list, (tr) => this.makeTrackRow(tr, { playContext: { type: 'all' } }), {
-        scroller: ul.closest('.sheet-body'),
-        rowHeight: 64
-      });
     },
 
     playlistDuration(pl) {
@@ -670,10 +825,16 @@ Object.assign(App, {
       return !!(this.playContext && this.playContext.type === 'playlist' && this.playContext.id === pl.id);
     },
 
+    /* «1 pista» / «N pistas»: el plural a secas («1 pistas») salía en
+     * tarjetas de lista, explorar y resultados de búsqueda (M1). */
+    fmtTracksCount(n) {
+      return n === 1 ? this.t('track_count_one') : n + ' ' + this.t('tracks_count');
+    },
+
     playlistMetaLabel(pl) {
       const n = (pl.trackIds || []).length;
       const dur = this.fmtDurationLabel(this.playlistDuration(pl));
-      let s = n + ' ' + this.t('tracks_count');
+      let s = this.fmtTracksCount(n);
       if (dur) s += ' · ' + dur;
       if (pl.description) s += ' · ' + pl.description;
       return s;
@@ -688,14 +849,30 @@ Object.assign(App, {
         countEl.textContent = n === 0
           ? this.t('playlist_count_zero')
           : (n === 1 ? this.t('playlist_count_one') : this.t('playlist_count_many').replace('X', n));
+        // Con el estado vacío visible, «0 listas» es redundante.
+        countEl.hidden = n === 0;
       }
       // Contador de la sección «Listas de reproducción» de la biblioteca.
       const libCountEl = document.getElementById('libraryPlaylistsCount');
-      if (libCountEl) libCountEl.textContent = String(this.playlists.length);
+      if (libCountEl) {
+        libCountEl.textContent = String(this.playlists.length);
+        libCountEl.hidden = this.playlists.length === 0;
+      }
+      // Tarjeta inteligente «Más valoradas» (§60): solo en la rejilla
+      // de Biblioteca (en «Tus listas» sería una lista falsa a la que
+      // no se puede añadir nada). No vive en this.playlists: se
+      // compone al momento desde getTopRatedTracks().
+      const ratedCard = (() => {
+        const rated = typeof this.getTopRatedTracks === 'function' ? this.getTopRatedTracks() : [];
+        return rated.length
+          ? { id: '__rated', name: this.t('rated_title'), trackIds: rated.map(t => t.id) }
+          : null;
+      })();
       [ul, grid].forEach(target => {
         if (!target) return;
         target.innerHTML = '';
-        if (this.playlists.length === 0 && target === ul) {
+        const source = (target === grid && ratedCard) ? [ratedCard, ...this.playlists] : this.playlists;
+        if (source.length === 0 && target === ul) {
           const li = document.createElement('li');
           li.className = 'empty-state pl-empty';
           li.innerHTML = `
@@ -709,86 +886,98 @@ Object.assign(App, {
           target.appendChild(li);
           return;
         }
-        if (this.playlists.length === 0 && target === grid) {
+        if (source.length === 0 && target === grid) {
           // Rejilla de la biblioteca sin listas: mensaje breve. El botón
           // «Nueva» ya está en la cabecera de la misma sección.
           const li = document.createElement('li');
-          li.className = 'lib-empty';
-          li.textContent = this.t('no_playlists_hint');
+          li.className = 'lib-empty empty-state compact';
+          li.innerHTML = this.emptyStateHtml({
+            icon: 'compact-disc',
+            title: this.t('no_playlists_yet'),
+            text: this.t('no_playlists_hint')
+          });
           target.appendChild(li);
           return;
         }
-        this.playlists.forEach(pl => {
+        source.forEach(pl => {
           const li = document.createElement('li');
           const playing = this.isPlaylistPlaying(pl);
           li.className = (target === grid ? 'pl-card' : 'pl-row') + (playing ? ' is-playing' : '');
           const cover = this.getPlaylistCover(pl);
           // Nunca interpolar una portada sin validar dentro de style="":
-          // una comilla o un `)` permitiría inyectar CSS/HTML desde un backup.
+          // una comilla o un `)` permitiría inyectar CSS/HTML desde datos no fiables.
           const hasArt = typeof cover === 'string' && this._safeImageDataUrl(cover);
           const coverBg = hasArt
             ? `background-image:url('${cover}');background-size:cover;background-position:center;`
             : `background:linear-gradient(135deg, ${cover.from || '#6E5CFF'}, ${cover.to || '#FF7AB6'});`;
-          const fallbackIcon = pl.id === 'favoritos' ? 'heart-solid' : 'list-ul';
+          const fallbackIcon = pl.id === 'favoritos' ? 'heart-solid' : (pl.id === '__rated' ? 'star' : 'list-ul');
           const tracksLabel = this.playlistMetaLabel(pl);
           // Ya no hay lista predefinida: ninguna lleva insignia.
           const badge = '';
           const live = playing
             ? '<span class="pl-live"><span class="pl-bars"><i></i><i></i><i></i></span></span>'
             : '';
+          // En las tarjetas (carril de la biblioteca) el play va sobre la
+          // portada como disco de acento. En las filas de «Tus listas» la
+          // miniatura es pequeña y el disco la tapaba: el play pasa a una
+          // columna de acciones propia, junto al borrado.
+          const fabHtml = target === grid
+            ? `<button class="pl-play-fab" type="button" aria-label="${this.esc(this.t('play_all_btn'))}">
+                 <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
+               </button>`
+            : '';
           const coverHtml = `
             <div class="pl-cover${hasArt ? ' has-art' : ''}" data-pl-cover="${this.esc(pl.id)}">
               <div class="pl-cover-grad" style="${coverBg}" data-pl-cover="${this.esc(pl.id)}"></div>
               ${hasArt ? '' : this.ico(fallbackIcon, 'pl-cover-icon')}
               ${live}
-              <button class="pl-play-fab" type="button" aria-label="${this.esc(this.t('play_all_btn'))}">
-                <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
-              </button>
+              ${fabHtml}
             </div>
           `;
           if (target === grid) {
             li.innerHTML = coverHtml + `<div class="pl-card-info"><h4>${this.esc(pl.name)}</h4><p>${this.esc(tracksLabel)}</p>${badge}</div>`;
           } else {
             li.innerHTML = coverHtml + `<div class="pl-info"><h4>${this.esc(pl.name)}</h4><p>${this.esc(tracksLabel)}</p></div>`;
+            const actions = document.createElement('div');
+            actions.className = 'pl-row-actions';
+            const playBtn = document.createElement('button');
+            playBtn.type = 'button';
+            playBtn.className = 'pl-row-play';
+            playBtn.setAttribute('aria-label', this.t('play_all_btn'));
+            playBtn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>';
+            playBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              this.playPlaylist(pl.id);
+            });
             const delBtn = document.createElement('button');
-            delBtn.className = 'row-action';
+            delBtn.type = 'button';
+            delBtn.className = 'row-action pl-row-delete';
             delBtn.setAttribute('aria-label', this.t('delete_playlist_btn'));
             delBtn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>';
             delBtn.addEventListener('click', (e) => {
               e.stopPropagation();
               this.deletePlaylist(pl.id);
             });
-            li.appendChild(delBtn);
+            actions.append(playBtn, delBtn);
+            li.appendChild(actions);
           }
           const fab = li.querySelector('.pl-play-fab');
           if (fab) fab.addEventListener('click', (e) => {
             e.stopPropagation();
+            // La tarjeta inteligente no es una lista editable: su ▶
+            // reproduce las mejor valoradas y su cuerpo abre la hoja.
+            if (pl.id === '__rated') { this.playRated(); return; }
             this.playPlaylist(pl.id);
           });
           li.addEventListener('click', (e) => {
-            if (e.target.closest('.row-action, .pl-play-fab')) return;
+            if (e.target.closest('.row-action, .pl-play-fab, .pl-row-play')) return;
+            if (pl.id === '__rated') { this.goNav('rated'); return; }
             if (this._selectPlaylistForAdd) {
               this._selectPlaylistForAdd = false;
-              const batchIds = this._batchAddIds;
-              this._batchAddIds = null;
               const tid = this._trackToAddId || (this.currentTrack && this.currentTrack.id) || null;
               this._trackToAddId = null;
               this.closeSheet('sheetPlaylists');
-              if (Array.isArray(batchIds) && batchIds.length) {
-                let added = 0;
-                batchIds.forEach(id => { if (this._addTrackIdToPlaylist(id, pl.id)) added++; });
-                if (added > 0) {
-                  if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
-                  this.persistPlaylist(pl);
-                  this.renderPlaylists();
-                  this.toast(added + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + pl.name);
-                } else {
-                  this.toast(this.t('picker_already_in'));
-                }
-              } else if (tid) {
-                this.addTrackToPlaylist(tid, pl.id);
-              }
-              if (this._batchMode) this.toggleBatchMode(false);
+              if (tid) this.addTrackToPlaylist(tid, pl.id);
               return;
             }
             this.openEditPlaylist(pl.id);
@@ -798,8 +987,9 @@ Object.assign(App, {
       });
     },
 
-    /* Elimina una playlist. Todas se pueden borrar: ya no existe la lista
-     * predefinida «Mi Música» (se migra fuera al arrancar). */
+    /* Elimina una playlist. Todas se pueden borrar, también «Mi
+     * Música»: borrarla deja una marca para que no resucite sola al
+     * arrancar (solo vuelve al agregar canciones fuera de una lista). */
     async deletePlaylist(playlistId) {
       const pl = this.playlists.find(p => p.id === playlistId);
       if (!pl) return;
@@ -808,8 +998,12 @@ Object.assign(App, {
         okLabel: this.t('confirm_delete')
       });
       if (!ok) return;
+      // Igual que con las pistas: el borrado se puede deshacer durante
+      // 8 s y el borrado real de IndexedDB se aplaza hasta entonces.
+      if (typeof this._commitPendingPlaylistDelete === 'function') this._commitPendingPlaylistDelete();
+      const idx = this.playlists.findIndex(p => p.id === playlistId);
+      this._pendingPlaylistDelete = { playlist: pl, idx, timer: null };
       this.playlists = this.playlists.filter(p => p.id !== playlistId);
-      this.deletePlaylistFromStorage(playlistId);
       // Si la lista eliminada era el contexto actual, dejarlo en «biblioteca»
       // para que la barra superior no muestre una lista que ya no existe.
       if (this.playContext && this.playContext.type === 'playlist' && this.playContext.id === playlistId) {
@@ -818,7 +1012,48 @@ Object.assign(App, {
       }
       if (this._editingPlaylistId === playlistId) this.closeSheet('sheetEditPlaylist');
       this.renderPlaylists();
-      this.toast(this.t('toast_playlist_deleted'), 'danger');
+      const pending = this._pendingPlaylistDelete;
+      pending.timer = setTimeout(() => this._commitPendingPlaylistDelete(pending), 8000);
+      this.toast(this.t('toast_playlist_deleted'), {
+        danger: true,
+        ms: 8000,
+        action: { label: this.t('undo'), onClick: () => this._undoDeletePlaylist(pending) }
+      });
+    },
+
+    _commitPendingPlaylistDelete(pending) {
+      const p = pending || this._pendingPlaylistDelete;
+      if (!p || p.committed) return;
+      p.committed = true;
+      clearTimeout(p.timer);
+      if (this._pendingPlaylistDelete === p) this._pendingPlaylistDelete = null;
+      this.deletePlaylistFromStorage(p.playlist.id);
+      // Borrar «Mi Música» es una decisión, no un accidente: se anota
+      // para que el arranque no la resucite (migrateMiMusica). Volverá
+      // sola cuando se agregue otra canción fuera de una lista.
+      if (p.playlist.id === 'mi-musica') {
+        try { localStorage.setItem('aurora_mimusica_removed', '1'); } catch (e) {}
+      }
+    },
+
+    _undoDeletePlaylist(pending) {
+      const p = pending || this._pendingPlaylistDelete;
+      if (!p || !p.playlist || p.committed) return;
+      if (this._pendingPlaylistDelete && this._pendingPlaylistDelete !== p) return;
+      clearTimeout(p.timer);
+      if (this._pendingPlaylistDelete === p) this._pendingPlaylistDelete = null;
+      if (!this.playlists.some(x => x.id === p.playlist.id)) {
+        const at = Math.max(0, Math.min(p.idx, this.playlists.length));
+        this.playlists.splice(at, 0, p.playlist);
+        this.persistPlaylist(p.playlist);
+        // Deshacer el borrado de «Mi Música» retira la marca anti-resurrección.
+        if (p.playlist.id === 'mi-musica') {
+          try { localStorage.removeItem('aurora_mimusica_removed'); } catch (e) {}
+        }
+      }
+      this.renderPlaylists();
+      if (typeof this.renderHome === 'function') this.renderHome();
+      this.toast(this.t('toast_restored'));
     },
 
     renderPickTracks() {
@@ -853,7 +1088,7 @@ Object.assign(App, {
     playPlaylist(playlistId) {
       const pl = this.playlists.find(p => p.id === playlistId);
       if (!pl) return;
-      const ids = pl.trackIds.map(id => id).filter(id => this.tracks.some(t => t.id === id));
+      const ids = pl.trackIds.map(id => id).filter(id => this.trackMap().has(id));
       if (ids.length === 0) { this.toast(this.t('toast_playlist_empty')); return; }
       this.queue = ids;
       this.queueIdx = 0;
@@ -868,6 +1103,40 @@ Object.assign(App, {
       this.renderQueue();  // refrescar la cola con las pistas de la playlist
       if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
       this.toast(this.t('toast_now_playing') + ' ' + pl.name);
+    },
+
+    /* «Más valoradas» (§60): las canciones con estrellas, de mejor
+     * nota a menor; a igual nota, las más reproducidas primero y el
+     * título desempatando. Es una lista inteligente: se calcula al
+     * momento, sin guardar una lista paralela que mantener. */
+    getTopRatedTracks() {
+      const plays = (this.stats && this.stats.plays) || {};
+      return this.tracks
+        .filter(t => this._ratingOf(t) > 0)
+        .sort((a, b) =>
+          (this._ratingOf(b) - this._ratingOf(a)) ||
+          ((plays[b.id] || 0) - (plays[a.id] || 0)) ||
+          String(a.title || '').localeCompare(String(b.title || '')));
+    },
+
+    /* Reproduce las mejor valoradas como contexto propio, igual que
+     * Favoritos reproduce la suya. */
+    playRated() {
+      const rated = this.getTopRatedTracks();
+      if (rated.length === 0) {
+        this.toast(this.t('rated_empty'));
+        return;
+      }
+      this.queue = rated.map(t => t.id);
+      this.queueIdx = 0;
+      this.playContext = { type: 'rated' };
+      if (this.shuffle) this._applyShuffle(this.queue[0]);
+      else this._originalQueue = null;
+      this.playFromQueue(0);
+      this.renderCurrentTrack();
+      this.renderQueue();
+      if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
+      this.toast(this.t('toast_now_playing') + ' ' + this.t('rated_title'));
     },
 
     /* Reproduce la lista de favoritos como una playlist independiente */
@@ -896,8 +1165,17 @@ Object.assign(App, {
       if (this.playContext.type === 'favorites') {
         return this.t('favorites_playlist_name');
       }
+      if (this.playContext.type === 'rated') {
+        return this.t('rated_title');
+      }
       if (this.playContext.type === 'playlist') {
-        return this.playContext.name || this.t('your_playlists');
+        // El nombre se resuelve por id en el momento de pintar: si la
+        // lista se renombra mientras suena, la etiqueta «Reproduciendo
+        // desde…» no debe quedarse con el nombre del día del play.
+        const pl = this.playContext.id
+          ? (this.playlists || []).find(p => p && p.id === this.playContext.id)
+          : null;
+        return (pl && pl.name) || this.playContext.name || this.t('your_playlists');
       }
       if (this.playContext.type === 'all') {
         return this.t('all_tracks_section');
@@ -909,7 +1187,9 @@ Object.assign(App, {
         return this.playContext.name || null;
       }
       if (this.playContext.type === 'radio') {
-        return this.t('ctx_start_radio');
+        // Sustantivo, no el verbo del menú: «Reproduciendo desde Radio»,
+        // no «…desde Iniciar radio».
+        return this.t('radio_label');
       }
       return null;
     },

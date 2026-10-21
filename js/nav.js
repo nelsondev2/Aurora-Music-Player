@@ -25,8 +25,16 @@ Object.assign(App, {
        * - Solo en vistas de navegación general (Inicio, Biblioteca, Buscar, Favoritos)
        * - NUNCA en pantalla completa de Now Playing ni en Letras
        * - NUNCA cuando hay un menú, modal o diálogo de confirmación abierto
-       * - Solo si hay una pista actual y no estamos en modo escritorio dividido */
-      const showMini = !wide && !!this.currentTrack && !lyrics && !player && !hasModal;
+       * - Solo si hay una pista actual y no estamos en modo escritorio dividido
+       * - En Inicio (sin ninguna pestaña encima), solo mientras suena:
+       *   en pausa sobra, porque el hero «Retomar en…» ya ofrece seguir
+       *   donde ibas y la pantalla queda limpia (§52). Fuera de Inicio
+       *   se comporta como siempre, también en pausa. */
+      const homeView = document.getElementById('viewHome');
+      const tabOpen = openSheets.some(s => s.classList.contains('sheet-tab'));
+      const onHome = !!(homeView && homeView.classList.contains('active')) && !tabOpen;
+      const showMini = !wide && !!this.currentTrack && !lyrics && !player && !hasModal
+        && !(onHome && !this.isPlaying);
 
       screen.classList.toggle('has-mini', showMini);
       screen.classList.toggle('has-overlay', !wide && hasModal);
@@ -86,12 +94,20 @@ Object.assign(App, {
 
     setNavActive(nav) {
       document.querySelectorAll('.nav-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.nav === nav);
+        const on = b.dataset.nav === nav;
+        b.classList.toggle('active', on);
+        // El lector de pantalla también debe saber dónde estás.
+        if (on) b.setAttribute('aria-current', 'page');
+        else b.removeAttribute('aria-current');
       });
     },
 
     goNav(nav) {
-      this.setNavActive(nav);
+      /* El resaltado se aplica AL FINAL, no al principio: cerrar la
+       * pestaña anterior dispara en closeSheet() el «volver a Inicio»,
+       * y si la pestaña nueva ya se había marcado, ese reset la borraba
+       * y el resaltado se quedaba en Inicio (reportado en dispositivo
+       * al saltar entre Favoritos, Buscar y Biblioteca). */
       if (nav === 'home') {
         this.closeAllSheets();
         this.showView('home');
@@ -106,6 +122,12 @@ Object.assign(App, {
         this.showView('home');
         this.renderFavorites();
         this.openSheet('sheetFavorites');
+      } else if (nav === 'rated') {
+        this.closeAllSheets();
+        this.showView('home');
+        this.renderRated();
+        this.openSheet('sheetRated');
+        nav = 'home'; // no es pestaña: el resaltado se queda en Inicio
       } else if (nav === 'search') {
         this.closeAllSheets();
         this.showView('home');
@@ -116,6 +138,7 @@ Object.assign(App, {
           if (inp) inp.focus();
         }, 350);
       }
+      this.setNavActive(nav);
       this.updateChrome();
     },
 
@@ -128,6 +151,11 @@ Object.assign(App, {
       const homeView = document.getElementById('viewHome');
       if (homeView) homeView.classList.toggle('is-empty', !this.tracks.length);
       if (!this.tracks.length) {
+        // Bienvenida de primer arranque. Sin wordmark «AURORA» bajo el
+        // icono (el icono ya es la marca), con Ajustes a mano —la cabecera
+        // de Inicio se oculta en este estado y dejaba la app sin ajustes
+        // hasta cargar música— y perks informativos con descripción,
+        // para que no parezcan botones que no hacen nada.
         root.innerHTML = `
           <div class="home-welcome">
             <div class="home-welcome-aurora" aria-hidden="true">
@@ -135,10 +163,12 @@ Object.assign(App, {
               <span class="hw-orb hw-orb-b"></span>
               <span class="hw-orb hw-orb-c"></span>
             </div>
+            <button class="icon-btn home-welcome-settings" id="btnHomeWelcomeSettings" type="button" data-i18n-aria="settings_title" aria-label="${this.esc(this.t('settings_title'))}">
+              <svg class="ico" aria-hidden="true"><use href="#i-gear"></use></svg>
+            </button>
             <div class="home-welcome-mark">
               <img src="icon.png" alt="" width="88" height="88">
             </div>
-            <p class="home-welcome-brand">Aurora</p>
             <h2>${this.esc(this.t('home_welcome_title'))}</h2>
             <p class="home-welcome-lead">${this.esc(this.t('home_welcome_lead'))}</p>
             <button class="primary-btn home-welcome-cta" id="btnHomeLoad" type="button">
@@ -146,29 +176,43 @@ Object.assign(App, {
               <span>${this.esc(this.t('load_music'))}</span>
             </button>
             <ul class="home-welcome-formats" aria-label="${this.esc(this.t('empty_format_hint'))}">
-              <li>MP3</li><li>FLAC</li><li>M4A</li><li>WAV</li><li>OGG</li>
+              <li>MP3</li><li>FLAC</li><li>M4A</li><li>WAV</li><li>OGG</li><li>OPUS</li>
             </ul>
             <div class="home-welcome-perks">
-              <div><svg class="ico" aria-hidden="true"><use href="#i-align-left"></use></svg><span>${this.esc(this.t('home_perk_lyrics'))}</span></div>
-              <div><svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg><span>${this.esc(this.t('home_perk_playlists'))}</span></div>
-              <div><svg class="ico" aria-hidden="true"><use href="#i-lock"></use></svg><span>${this.esc(this.t('home_perk_offline'))}</span></div>
+              <div><svg class="ico" aria-hidden="true"><use href="#i-align-left"></use></svg><span class="hw-perk-text"><strong>${this.esc(this.t('home_perk_lyrics'))}</strong><small>${this.esc(this.t('home_perk_lyrics_desc'))}</small></span></div>
+              <div><svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg><span class="hw-perk-text"><strong>${this.esc(this.t('home_perk_playlists'))}</strong><small>${this.esc(this.t('home_perk_playlists_desc'))}</small></span></div>
+              <div><svg class="ico" aria-hidden="true"><use href="#i-lock"></use></svg><span class="hw-perk-text"><strong>${this.esc(this.t('home_perk_offline'))}</strong><small>${this.esc(this.t('home_perk_offline_desc'))}</small></span></div>
             </div>
           </div>`;
         const btn = document.getElementById('btnHomeLoad');
         if (btn) btn.addEventListener('click', () => this.openFilePicker());
+        const btnSettings = document.getElementById('btnHomeWelcomeSettings');
+        if (btnSettings) btnSettings.addEventListener('click', () => this.openSheet('sheetSettings'));
         return;
       }
 
       const t = this.currentTrack;
       let hero = '';
       if (t) {
+        // La tarjeta «Continuar» es la misma pista que muestra el
+        // mini-reproductor: para que aporte algo más que un duplicado,
+        // si hay posición de reproducción enseña dónde retomar
+        // («Retomar en 1:24»). Sin posición queda título y artista.
+        // Y si la pista ESTÁ SONANDO no hay nada que «seguir»
+        // escuchando: nace oculta y updatePlayUI la conmuta (§49).
+        const pos = (this.audio && this.audio.currentTime) || 0;
+        const dur = (this.audio && this.audio.duration) || t.duration || 0;
+        const resumeLine = (pos > 5 && (!dur || pos < dur - 2))
+          ? `<span class="home-hero-resume">${this.esc(this.t('home_resume_at').replace('X', this.fmtTime(pos)))}</span>`
+          : '';
         hero = `
-          <button class="home-hero" id="homeHero" type="button">
+          <button class="home-hero" id="homeHero" type="button" data-track="${this.esc(t.id)}"${this.isPlaying ? ' hidden' : ''}>
             <div class="home-hero-cover"><canvas id="homeHeroCanvas" width="160" height="160"></canvas></div>
             <div class="home-hero-text">
               <span class="home-kicker">${this.esc(this.t('home_continue'))}</span>
               <strong>${this.esc(t.title)}</strong>
               <span>${this.esc(t.artist || this.t('unknown_artist'))}</span>
+              ${resumeLine}
             </div>
             <svg class="ico home-hero-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>
           </button>`;
@@ -181,7 +225,8 @@ Object.assign(App, {
       root.innerHTML = hero +
         this._homeRail('homeRecent', this.t('home_recent'), recent, 'track') +
         this._homePlaylists(lists) +
-        this._homeRail('homeTop', this.t('home_top'), top, 'track');
+        this._homeRail('homeTop', this.t('home_top'), top, 'track') +
+        this._homeRatedRail();
 
       if (t) {
         const cv = document.getElementById('homeHeroCanvas');
@@ -192,19 +237,62 @@ Object.assign(App, {
       this._bindHomeRails();
     },
 
+    /* Cabecera de sección con «Ver todo»: lleva a Biblioteca, donde
+     * viven la lista completa de canciones y la de listas. */
+    _sectionHead(title, target) {
+      return `<div class="home-section-head">
+        <h3 class="home-section-title">${this.esc(title)}</h3>
+        <button class="home-see-all" type="button" data-see-all="${target || 'library'}">${this.esc(this.t('see_all'))}</button>
+      </div>`;
+    },
+
     _homeRail(id, title, tracks, kind) {
       if (!tracks || !tracks.length) return '';
+      const curId = this.currentTrack && this.currentTrack.id;
       const items = tracks.map(t => {
         if (!t) return '';
-        return `<button class="home-card" type="button" data-kind="${kind}" data-id="${this.esc(t.id)}">
-          <div class="home-card-cover"><canvas width="120" height="120"></canvas></div>
+        // La pista cargada se marca en su tarjeta: distintivo de
+        // ecualizador sobre la portada (animado solo si está sonando).
+        const isCur = t.id === curId;
+        const nowBadge = isCur
+          ? `<span class="eq-badge${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
+          : '';
+        return `<button class="home-card${isCur ? ' is-current' : ''}" type="button" data-kind="${kind}" data-id="${this.esc(t.id)}">
+          <div class="home-card-cover"><canvas width="120" height="120"></canvas>${nowBadge}</div>
           <span class="home-card-title">${this.esc(t.title)}</span>
           <span class="home-card-sub">${this.esc(t.artist || '')}</span>
         </button>`;
       }).join('');
       return `<section class="home-section">
-        <h3 class="home-section-title">${this.esc(title)}</h3>
+        ${this._sectionHead(title)}
         <div class="home-rail" id="${id}">${items}</div>
+      </section>`;
+    },
+
+    /* Raíl «Más valoradas» de Inicio (§60): solo si hay alguna nota.
+     * Las tarjetas suenan dentro del contexto 'rated' y el «Ver todo»
+     * abre la hoja completa en vez de Biblioteca. */
+    _homeRatedRail() {
+      const rated = typeof this.getTopRatedTracks === 'function' ? this.getTopRatedTracks().slice(0, 10) : [];
+      if (!rated.length) return '';
+      const curId = this.currentTrack && this.currentTrack.id;
+      const items = rated.map(t => {
+        const isCur = t.id === curId;
+        const nowBadge = isCur
+          ? `<span class="eq-badge${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
+          : '';
+        return `<button class="home-card${isCur ? ' is-current' : ''}" type="button" data-kind="track" data-id="${this.esc(t.id)}">
+          <div class="home-card-cover"><canvas width="120" height="120"></canvas>${nowBadge}</div>
+          <span class="home-card-title">${this.esc(t.title)}</span>
+          <span class="home-card-sub">${'★'.repeat(this._ratingOf(t))} ${this.esc(t.artist || '')}</span>
+        </button>`;
+      }).join('');
+      return `<section class="home-section">
+        <div class="home-section-head">
+          <h3 class="home-section-title">${this.esc(this.t('rated_title'))}</h3>
+          <button class="home-see-all" type="button" data-see-all="rated">${this.esc(this.t('see_all'))}</button>
+        </div>
+        <div class="home-rail" id="homeRated">${items}</div>
       </section>`;
     },
 
@@ -215,16 +303,20 @@ Object.assign(App, {
         return `<button class="home-card" type="button" data-kind="playlist" data-id="${this.esc(pl.id)}">
           <div class="home-card-cover" data-pl="${this.esc(pl.id)}" data-pl-cover="${this.esc(pl.id)}"></div>
           <span class="home-card-title">${this.esc(pl.name)}</span>
-          <span class="home-card-sub">${n} ${this.esc(this.t('tracks_count'))}</span>
+          <span class="home-card-sub">${this.esc(this.fmtTracksCount(n))}</span>
         </button>`;
       }).join('');
       return `<section class="home-section">
-        <h3 class="home-section-title">${this.esc(this.t('home_playlists'))}</h3>
+        ${this._sectionHead(this.t('home_playlists'))}
         <div class="home-rail" id="homePlaylists">${items}</div>
       </section>`;
     },
 
     _bindHomeRails() {
+      // «Ver todo» de cada sección → Biblioteca.
+      document.querySelectorAll('#homeContent [data-see-all]').forEach(btn => {
+        btn.addEventListener('click', () => this.goNav(btn.dataset.seeAll));
+      });
       document.querySelectorAll('#homeContent .home-card').forEach(card => {
         const kind = card.dataset.kind;
         const id = card.dataset.id;
@@ -233,7 +325,13 @@ Object.assign(App, {
           const cv = card.querySelector('canvas');
           if (cv && t) this.drawRowCover(cv, t);
           card.addEventListener('click', () => {
-            this.playTrack(id, { type: 'all' });
+            // Tarjeta del raíl de valoradas: manda el contexto 'rated'
+            // (§60). Tarjeta suelta de Inicio: la lista de la canción
+            // manda (mismo criterio que Buscar, §38), no «Todas».
+            const ctx = card.closest('#homeRated')
+              ? { type: 'rated' }
+              : (typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(t) : { type: 'all' });
+            this.playTrack(id, ctx);
             this.updateChrome();
             if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
           });
@@ -264,37 +362,14 @@ Object.assign(App, {
     },
 
     /* ============================================================
-     *  Biblioteca: una sola vista con dos secciones
-     *    1) Listas de reproducción
-     *    2) Todas las canciones
-     *  Antes había pestañas (Canciones/Álbumes/Artistas/Listas); se
-     *  quitaron para simplificar. Álbumes y artistas siguen accesibles
+     *  Biblioteca: solo listas de reproducción (§47). Antes había
+     *  pestañas y después una sección «Todas las canciones» con su
+     *  ordenación y su selección por lotes: todo eso se fue a
+     *  petición del usuario. Álbumes y artistas siguen accesibles
      *  desde el menú de cada pista («Ir al artista» / «Ir al álbum»).
      * ============================================================ */
     renderLibrarySections() {
       this.renderPlaylists();
-      this.renderLibrary();
-    },
-
-    setLibrarySort(sort) {
-      this._librarySort = sort;
-      document.querySelectorAll('.lib-sort').forEach(b => {
-        b.classList.toggle('active', b.dataset.sort === sort);
-      });
-      this.renderLibrary();
-    },
-
-    sortedTracks() {
-      const sort = this._librarySort || 'title';
-      const arr = this.tracks.slice();
-      const coll = (a, b) => String(a || '').localeCompare(String(b || ''), undefined, { sensitivity: 'base' });
-      if (sort === 'artist') arr.sort((a, b) => coll(a.artist, b.artist) || coll(a.title, b.title));
-      else if (sort === 'recent') {
-        arr.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
-        if (arr.every(t => !t.addedAt)) arr.reverse();
-      } else if (sort === 'duration') arr.sort((a, b) => (b.duration || 0) - (a.duration || 0));
-      else arr.sort((a, b) => coll(a.title, b.title));
-      return arr;
     },
 
     albumKey(t) {
@@ -338,7 +413,7 @@ Object.assign(App, {
       const title = document.getElementById('browseTitle');
       const sub = document.getElementById('browseSubtitle');
       if (title) title.textContent = opts.title || '';
-      if (sub) sub.textContent = opts.subtitle || ((opts.tracks || []).length + ' ' + this.t('tracks_count'));
+      if (sub) sub.textContent = opts.subtitle || this.fmtTracksCount((opts.tracks || []).length);
       const coverEl = document.getElementById('browseCover');
       if (coverEl) {
         coverEl.innerHTML = '<canvas width="160" height="160"></canvas>';
@@ -411,6 +486,18 @@ Object.assign(App, {
       });
     },
 
+    /* Duración para celdas de fila: si aún no se conocen los metadatos
+     * (0/ausente) se deja la celda vacía. Mostrar «0:00» sugería que la
+     * canción dura cero segundos, como se veía en las capturas. */
+    fmtRowDuration(t) {
+      const d = t && Number(t.duration);
+      if (d > 0) return this.fmtTime(d);
+      // Duración desconocida: un «—» muy tenue mantiene el ritmo de la
+      // columna (dejar el hueco parecía un fallo de pintado). No se
+      // inventa ninguna cifra.
+      return '<span class="row-duration-na" aria-hidden="true">—</span>';
+    },
+
     /* ============================================================
      *  Fila de pista + menú contextual
      * ============================================================ */
@@ -418,28 +505,32 @@ Object.assign(App, {
       opts = opts || {};
       const li = document.createElement('li');
       const isCurrent = this.currentTrack && this.currentTrack.id === t.id;
-      const isSelected = this._selectedTrackIds && this._selectedTrackIds.has(t.id);
-      const isPending = !!(t && t._needsRelink);
-      li.className = 'track-row' + (isCurrent ? ' current' : '') + (isSelected ? ' selected' : '') + (this._batchMode ? ' batch-mode' : '') + (isPending ? ' is-pending' : '');
+      li.className = 'track-row' + (isCurrent ? ' current' : '');
       li.dataset.track = t.id;
+      // Subtítulo sin eco: el álbum se oculta cuando coincide con el
+      // título o con el artista (sencillos: «BALALAIKA» y debajo
+      // «9Lana · BALALAIKA» decía lo mismo dos veces). Igual que ya
+      // hace el reproductor con su línea de álbum.
+      const normRow = (v) => String(v == null ? '' : v).trim().toLowerCase();
+      const showAlbum = t.album && !this.isPlaceholderAlbum(t.album)
+        && normRow(t.album) !== normRow(t.title)
+        && normRow(t.album) !== normRow(t.artist);
+      // La pista cargada se marca sobre la portada con el ecualizador
+      // (animado solo si está sonando), como en las tarjetas de Inicio.
+      const nowBadge = isCurrent
+        ? `<span class="eq-badge eq-badge-row${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
+        : '';
       li.innerHTML = `
-        <div class="row-batch-check" ${this._batchMode ? '' : 'style="display:none"'}>
-          <input type="checkbox" class="batch-checkbox" aria-label="${this.esc(this.t('select_track'))}" ${isSelected ? 'checked' : ''} />
-        </div>
-        <div class="row-cover"><canvas width="44" height="44"></canvas></div>
+        <div class="row-cover"><canvas width="44" height="44"></canvas>${nowBadge}</div>
         <div class="row-text">
           <div class="row-title">${this.esc(t.title)}</div>
-          <div class="row-sub">${this.esc(t.artist)}${t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + this.esc(t.album) : ''}${isPending ? ' <span class="row-pending-badge">' + this.esc(this.t('relink_badge')) + '</span>' : ''}</div>
+          <div class="row-sub">${this.esc(t.artist)}${showAlbum ? ' · ' + this.esc(t.album) : ''} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>
         </div>
-        <div class="row-duration">${this.fmtTime(t.duration)}</div>
+        <div class="row-duration">${this.fmtRowDuration(t)}</div>
         <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>`;
       const ctx = opts.playContext || { type: 'all' };
       li.addEventListener('click', (e) => {
         if (e.target.closest('.track-menu-btn')) return;
-        if (this._batchMode) {
-          this.toggleTrackSelection(t.id);
-          return;
-        }
         this.playTrack(t.id, ctx);
         this.updateChrome();
         // Elegir canción en una lista abre el reproductor.
@@ -465,12 +556,9 @@ Object.assign(App, {
         timer = setTimeout(() => {
           timer = null;
           fired = true;
-          if (!this._batchMode) {
-            this.toggleBatchMode(true);
-            this.toggleTrackSelection(trackId);
-          } else {
-            this.openTrackMenu(trackId);
-          }
+          // Pulsación larga = menú de la canción (antes entraba en
+          // el modo lote de «Todas las canciones», eliminado en §47).
+          this.openTrackMenu(trackId);
           if (navigator.vibrate) navigator.vibrate(25);
         }, 520);
       };
@@ -496,18 +584,94 @@ Object.assign(App, {
       const title = document.getElementById('trackMenuTitle');
       const sub = document.getElementById('trackMenuSub');
       if (title) title.textContent = t.title;
-      if (sub) sub.textContent = (t.artist || '') + (t.album && !this.isPlaceholderAlbum(t.album) ? ' · ' + t.album : '');
+      // Misma regla sin eco que las filas: nada de «artista · álbum»
+      // cuando el álbum repite el título o al propio artista.
+      const normMenu = (v) => String(v == null ? '' : v).trim().toLowerCase();
+      const menuAlbum = t.album && !this.isPlaceholderAlbum(t.album)
+        && normMenu(t.album) !== normMenu(t.title)
+        && normMenu(t.album) !== normMenu(t.artist);
+      if (sub) sub.textContent = (t.artist || '') + (menuAlbum ? ' · ' + t.album : '');
       const cv = document.getElementById('trackMenuCover');
       if (cv) this.drawRowCover(cv, t);
       const goAlbum = document.getElementById('ctxGoAlbum');
       if (goAlbum) goAlbum.style.display = (t.album && !this.isPlaceholderAlbum(t.album)) ? '' : 'none';
       const goArtist = document.getElementById('ctxGoArtist');
       if (goArtist) goArtist.style.display = (t.artist && !this.isPlaceholderArtist(t.artist)) ? '' : 'none';
+      // La fila de favorito refleja el estado real de esta pista (el menú
+      // se reutiliza: no puede quedarse con el estado de la anterior).
+      const favRow = document.getElementById('ctxToggleFavorite');
+      const favLabel = document.getElementById('ctxFavoriteLabel');
+      const isFav = this.favorites.has(trackId);
+      if (favRow) {
+        favRow.setAttribute('aria-pressed', isFav ? 'true' : 'false');
+        favRow.classList.toggle('is-fav', isFav);
+        const use = favRow.querySelector('use');
+        if (use) use.setAttribute('href', isFav ? '#i-heart-solid' : '#i-heart');
+      }
+      if (favLabel) favLabel.textContent = this.t('favorite');
+      // «Restablecer portada» solo tiene sentido si hay una personalizada.
+      const rmCover = document.getElementById('ctxRemoveCover');
+      if (rmCover) rmCover.hidden = !t.customCover;
+      this._syncRatingUI(t);
       this.openSheet('sheetTrackMenu');
     },
 
     menuTrack() {
       return this.tracks.find(x => x.id === this._menuTrackId) || null;
+    },
+
+    /* ============================================================
+     *  Valoración por estrellas (§58)
+     * ============================================================
+     * track.rating guarda 1..5 (ausente/0 = sin valorar). Vive en el
+     * registro de la pista: persistTrack() lo guarda en IndexedDB
+     * sin tocar nada más. Tocar la estrella ya puesta quita la nota. */
+    _ratingOf(t) {
+      const r = t && parseInt(t.rating, 10);
+      return Number.isFinite(r) ? Math.max(0, Math.min(5, r)) : 0;
+    },
+
+    setTrackRating(trackId, value) {
+      const t = this.tracks.find(x => x.id === trackId);
+      if (!t) return;
+      const v = Math.max(1, Math.min(5, parseInt(value, 10) || 0));
+      t.rating = this._ratingOf(t) === v ? 0 : v;
+      this.persistTrack(t);
+      this._syncRatingUI(t);
+      // La hoja de «Más valoradas», si está abierta, se rinde otra vez:
+      // la canción puede entrar, salir o cambiar de puesto (§60).
+      const ratedSheet = document.getElementById('sheetRated');
+      if (ratedSheet && ratedSheet.classList.contains('open') && typeof this.renderRated === 'function') {
+        this.renderRated();
+      }
+    },
+
+    /* Pinta el estado de las estrellas en los tres sitios vivos: el
+     * menú de la canción, el Reproductor y las filas ya renderizadas
+     * (sin re-renderizar listas: se toca solo la insignia de la fila). */
+    _syncRatingUI(t) {
+      if (!t) return;
+      const r = this._ratingOf(t);
+      const paint = (rootId) => {
+        const root = document.getElementById(rootId);
+        if (!root) return;
+        root.querySelectorAll('.rate-star').forEach(b => {
+          const v = parseInt(b.dataset.value, 10) || 0;
+          b.classList.toggle('on', v <= r);
+          b.setAttribute('aria-checked', v === r ? 'true' : 'false');
+        });
+      };
+      if (this._menuTrackId === t.id) paint('ctxRatingStars');
+      if (this.currentTrack && this.currentTrack.id === t.id) paint('npRatingStars');
+      // data-track (filas makeTrackRow), data-track-id (lista y cola)
+      document.querySelectorAll(
+        '.track-row[data-track="' + t.id + '"] .row-rating, ' +
+        '.track-row[data-track-id="' + t.id + '"] .row-rating, ' +
+        '.queue-item[data-track-id="' + t.id + '"] .row-rating'
+      ).forEach(slot => {
+        slot.textContent = r ? '★'.repeat(r) : '';
+        slot.hidden = !r;
+      });
     },
 
     /* ============================================================
@@ -538,7 +702,6 @@ Object.assign(App, {
       await this.persistTrack(t);
       this.closeSheet('sheetEditTrack');
       this.closeSheet('sheetTrackMenu');
-      this.renderLibrary();
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();
@@ -547,171 +710,5 @@ Object.assign(App, {
       if (this._browse) this.renderBrowseTracks();
       this.updateMiniPlayer();
       this.toast(this.t('edit_track_saved'));
-    },
-
-    /* ============================================================
-     *  Edición y selección de pistas por lotes (#23)
-     * ============================================================ */
-    toggleBatchMode(forceState) {
-      this._batchMode = forceState !== undefined ? !!forceState : !this._batchMode;
-      if (!this._selectedTrackIds) this._selectedTrackIds = new Set();
-      if (!this._batchMode) this._selectedTrackIds.clear();
-      this.updateBatchUI();
-      this.renderLibrary();
-    },
-
-    toggleTrackSelection(trackId) {
-      if (!this._selectedTrackIds) this._selectedTrackIds = new Set();
-      if (this._selectedTrackIds.has(trackId)) {
-        this._selectedTrackIds.delete(trackId);
-      } else {
-        this._selectedTrackIds.add(trackId);
-      }
-      this.updateBatchUI();
-      const row = document.querySelector(`.track-row[data-track="${trackId}"]`);
-      if (row) {
-        const isSel = this._selectedTrackIds.has(trackId);
-        row.classList.toggle('selected', isSel);
-        const chk = row.querySelector('.batch-checkbox');
-        if (chk) chk.checked = isSel;
-      }
-    },
-
-    selectAllTracks() {
-      if (!this._selectedTrackIds) this._selectedTrackIds = new Set();
-      const allSelected = this._selectedTrackIds.size === this.tracks.length && this.tracks.length > 0;
-      if (allSelected) {
-        this._selectedTrackIds.clear();
-      } else {
-        this.tracks.forEach(t => this._selectedTrackIds.add(t.id));
-      }
-      this.updateBatchUI();
-      this.renderLibrary();
-    },
-
-    clearTrackSelection() {
-      if (this._selectedTrackIds) this._selectedTrackIds.clear();
-      this.updateBatchUI();
-      this.renderLibrary();
-    },
-
-    updateBatchUI() {
-      const bar = document.getElementById('batchActionBar');
-      const countEl = document.getElementById('batchCount');
-      const btnSelect = document.getElementById('btnBatchSelect');
-      const n = this._selectedTrackIds ? this._selectedTrackIds.size : 0;
-
-      if (btnSelect) {
-        btnSelect.classList.toggle('active', this._batchMode);
-        btnSelect.setAttribute('aria-pressed', this._batchMode ? 'true' : 'false');
-      }
-
-      if (bar) {
-        if (this._batchMode) {
-          bar.removeAttribute('hidden');
-          bar.classList.add('open');
-        } else {
-          bar.setAttribute('hidden', '');
-          bar.classList.remove('open');
-        }
-      }
-
-      if (countEl) {
-        countEl.textContent = this.t('batch_selected_count').replace('X', n);
-      }
-
-      const btnEdit = document.getElementById('btnBatchEditTags');
-      const btnDel = document.getElementById('btnBatchDelete');
-      [btnEdit, btnDel].forEach(b => {
-        if (b) b.disabled = n === 0;
-      });
-    },
-
-    openBatchEditModal() {
-      if (!this._selectedTrackIds || !this._selectedTrackIds.size) return;
-      const artist = document.getElementById('batchEditArtist');
-      const album = document.getElementById('batchEditAlbum');
-      if (artist) artist.value = '';
-      if (album) album.value = '';
-      const summary = document.getElementById('batchEditSummary');
-      if (summary) {
-        summary.textContent = this.t('batch_selected_count').replace('X', this._selectedTrackIds.size);
-      }
-      this.openSheet('sheetBatchEditTags');
-    },
-
-    async saveBatchEditTags() {
-      if (!this._selectedTrackIds || !this._selectedTrackIds.size) return;
-      const artistInput = (document.getElementById('batchEditArtist') || {}).value || '';
-      const albumInput = (document.getElementById('batchEditAlbum') || {}).value || '';
-      const newArtist = artistInput.trim();
-      const newAlbum = albumInput.trim();
-
-      if (!newArtist && !newAlbum) {
-        this.closeSheet('sheetBatchEditTags');
-        return;
-      }
-
-      let count = 0;
-      for (const id of this._selectedTrackIds) {
-        const t = this.getTrackById ? this.getTrackById(id) : this.tracks.find(x => x.id === id);
-        if (t) {
-          if (newArtist) t.artist = newArtist;
-          if (newAlbum) t.album = newAlbum;
-          // persistTrack devuelve false si IndexedDB falló (cuota): no
-          // contarlo como actualizado evita un toast mentiroso.
-          const ok = await this.persistTrack(t);
-          if (ok !== false) count++;
-        }
-      }
-
-      this.closeSheet('sheetBatchEditTags');
-      this.toggleBatchMode(false);
-      this.renderLibrary();
-      this.renderPlaylists();
-      this.renderQueue();
-      this.renderFavorites();
-      this.renderHome();
-      if (this.currentTrack) this.renderCurrentTrack();
-      this.toast(this.t('batch_updated_toast').replace('X', count));
-    },
-
-    async batchDeleteTracks() {
-      if (!this._selectedTrackIds || !this._selectedTrackIds.size) return;
-      const count = this._selectedTrackIds.size;
-      // Antes borraba directamente: un toque accidental eliminaba N pistas
-      // de IndexedDB sin confirmación ni deshacer.
-      const ok = await this.showConfirm({
-        message: this.t('batch_delete_confirm').replace('X', String(count)),
-        okLabel: this.t('confirm_delete')
-      });
-      if (!ok) return;
-      const ids = Array.from(this._selectedTrackIds);
-      for (const id of ids) {
-        await this.deleteTrack(id, { silent: true });
-      }
-      this.toggleBatchMode(false);
-      this.renderLibrary();
-      this.renderPlaylists();
-      this.renderQueue();
-      this.renderFavorites();
-      this.renderHome();
-      this.toast(this.t('batch_deleted_toast').replace('X', String(count)), 'danger');
-    },
-
-    /* Añade todas las pistas seleccionadas a una lista existente. */
-    async batchAddToPlaylist() {
-      if (!this._selectedTrackIds || !this._selectedTrackIds.size) return;
-      const ids = Array.from(this._selectedTrackIds);
-      const pls = this.playlists.slice();
-      if (!pls.length) {
-        this.toast(this.t('no_playlists_yet'));
-        return;
-      }
-      this._batchAddIds = ids;
-      this._selectPlaylistForAdd = true;
-      this.closeSheet('sheetLibrary');
-      this.renderPlaylists();
-      this.openSheet('sheetPlaylists');
     }
 });

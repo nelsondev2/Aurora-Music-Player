@@ -8,6 +8,11 @@
 'use strict';
 
 function bootAurora() {
+  // Si main.js se evalúa dos veces en el mismo contexto (hay clientes
+  // WebXDC que reinjectan los scripts), sin esta guarda el arranque se
+  // lanzaba dos veces. init() también se autoprotege, por si acaso.
+  if (window.__auroraBooted) return;
+  window.__auroraBooted = true;
   // Si el script se inyecta cuando el documento ya cargó (tests, snippets,
   // carga diferida), DOMContentLoaded nunca llegaría y la app quedaría en
   // blanco. Se comprueba readyState.

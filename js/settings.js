@@ -28,13 +28,15 @@ Object.assign(App, {
           currentTrackCoverIsImage: t?.coverIsImage || false,
           currentTrackDuration: t?.duration || 0,
           currentTrackLrc: t?.lrc || null,
-          queue: this.queue,
+          // Copias, no referencias: la sesión debe ser una foto del
+          // instante, no un alias que siga mutando con la cola viva.
+          queue: Array.isArray(this.queue) ? this.queue.slice() : [],
           queueIdx: this.queueIdx,
           currentTime: this.audio?.currentTime || 0,
           shuffle: this.shuffle,
           repeat: this.repeat,
           playContext: this.playContext,
-          originalQueue: this._originalQueue,
+          originalQueue: Array.isArray(this._originalQueue) ? this._originalQueue.slice() : null,
           ts: Date.now()
         };
         const fingerprint = JSON.stringify(Object.assign({}, session, {
@@ -43,6 +45,11 @@ Object.assign(App, {
         }));
         if (fingerprint === this._lastSessionFingerprint && !this.isPlaying) return;
         this._lastSessionFingerprint = fingerprint;
+        /* Espejo síncrono de emergencia: al cerrar la WebView, la escritura
+         * asíncrona en IndexedDB puede no completarse. localStorage guarda
+         * la misma foto al instante y restoreSession() elige la más nueva.
+         * Si la cuota no lo admite, IndexedDB sigue siendo la vía principal. */
+        try { localStorage.setItem('aurora_session_v1', JSON.stringify(session)); } catch (e) {}
         await window.AuroraStorage.setSetting('session', session);
       } catch (e) {}
     },
@@ -50,7 +57,9 @@ Object.assign(App, {
     /* La sesión se guarda cada 5 s: nunca persistir la portada original
      * (puede ser un dataURL de MBs). Solo degradado o miniatura. */
     _coverForSession(t) {
-      if (!t || !t.cover) return null;
+      if (!t) return null;
+      if (t.customCover) return t.customCover.lg || t.customCover.thumb || null;
+      if (!t.cover) return null;
       if (typeof t.cover === 'object') return t.cover;
       return t.coverThumbLg || t.coverThumb || null;
     },
@@ -58,7 +67,17 @@ Object.assign(App, {
     async restoreSession() {
       try {
         if (!window.AuroraStorage) return false;
-        const session = await window.AuroraStorage.getSetting('session');
+        let session = await window.AuroraStorage.getSetting('session');
+        /* El espejo síncrono puede ser más reciente que IndexedDB si la
+         * app se cerró a mitad de una escritura asíncrona. Gana el mayor ts. */
+        try {
+          const rawMirror = localStorage.getItem('aurora_session_v1');
+          const mirror = rawMirror ? JSON.parse(rawMirror) : null;
+          if (mirror && typeof mirror === 'object' &&
+              Number(mirror.ts || 0) > Number((session && session.ts) || 0)) {
+            session = mirror;
+          }
+        } catch (e) {}
         if (!session || typeof session !== 'object' || !session.currentTrackId) return false;
         // Verificar que la pista todavía existe
         const trackIdx = this.tracks.findIndex(t => t.id === session.currentTrackId);
@@ -66,27 +85,35 @@ Object.assign(App, {
         // Restaurar estado
         this.currentTrackIdx = trackIdx;
         this.currentTrack = this.tracks[trackIdx];
-        // Filtrar cola para que solo contenga pistas existentes y no haya
-        // duplicados (una sesión corrupta podría repetir ids).
+        // Filtrar solo ids inexistentes. Los duplicados se conservan:
+        // una cola puede contener legítimamente la misma canción dos
+        // veces, y deduplicarla al reabrir cambiaba lo que iba a sonar.
         const known = new Set(this.tracks.map(t => t.id));
         const restoredQueue = Array.isArray(session.queue) ? session.queue : [];
-        this.queue = [...new Set(restoredQueue.filter(id => known.has(id)))];
+        this.queue = restoredQueue.filter(id => known.has(id));
         if (this.queue.length === 0) {
           this.queue = this.tracks.map(t => t.id);
         }
-        // Restaurar queueIdx al índice de la pista actual
-        const qIdx = this.queue.indexOf(session.currentTrackId);
-        this.queueIdx = qIdx >= 0 ? qIdx : 0;
+        // Con duplicados, indexOf() acertaría la primera copia aunque la
+        // sesión se guardara en la segunda: se respeta queueIdx si apunta
+        // a la pista actual, y solo entonces se busca la primera copia.
+        const savedIdx = Number(session.queueIdx);
+        if (Number.isInteger(savedIdx) && this.queue[savedIdx] === session.currentTrackId) {
+          this.queueIdx = savedIdx;
+        } else {
+          const qIdx = this.queue.indexOf(session.currentTrackId);
+          this.queueIdx = qIdx >= 0 ? qIdx : 0;
+        }
         this.shuffle = !!session.shuffle;
         this.repeat = session.repeat || 'off';
         if (this.shuffle && Array.isArray(session.originalQueue) && session.originalQueue.length) {
-          this._originalQueue = session.originalQueue.filter(id => this.tracks.some(t => t.id === id));
+          this._originalQueue = session.originalQueue.filter(id => this.trackMap().has(id));
         } else {
           this._originalQueue = null;
         }
         // playContext se usa para decidir la cola y se pinta en la barra:
-        // aceptar solo formas conocidas evita objetos arbitrarios de un backup.
-        const allowedCtx = ['all', 'queue', 'playlist', 'favorites', 'album', 'artist', 'radio'];
+        // aceptar solo formas conocidas evita objetos arbitrarios de datos guardados.
+        const allowedCtx = ['all', 'queue', 'playlist', 'favorites', 'rated', 'album', 'artist', 'radio'];
         if (session.playContext && typeof session.playContext === 'object' && allowedCtx.includes(session.playContext.type)) {
           this.playContext = {
             type: session.playContext.type,
@@ -96,21 +123,35 @@ Object.assign(App, {
           };
         }
 
-        // Cargar la pista en el audio SIN reproducir (el usuario debe tocar play)
-        this.audio.src = this.currentTrack.src;
-        this.audio.load();
-        // Restaurar posición cuando los metadatos carguen
-        const restoreTime = Number(session.currentTime) || 0;
-        const onMeta = () => {
-          try {
-            if (restoreTime > 0 && restoreTime < (this.audio.duration || 0)) {
-              this.audio.currentTime = restoreTime;
-            }
-          } catch (e) {}
-          this.updateProgress();
-          this.audio.removeEventListener('loadedmetadata', onMeta);
-        };
-        this.audio.addEventListener('loadedmetadata', onMeta);
+        // Cargar la pista en el audio SIN reproducir (el usuario debe tocar
+        // play). Se resuelve la URL con getTrackUrl(): asignar
+        // currentTrack.src a ciegas convertía las pistas restauradas de
+        // una copia (sin blob todavía) en la URL literal «undefined».
+        const restoreUrl = typeof this.getTrackUrl === 'function'
+          ? this.getTrackUrl(this.currentTrack)
+          : (this.currentTrack && this.currentTrack.src) || null;
+        if (this.audio) {
+          if (restoreUrl) {
+            this.audio.src = restoreUrl;
+            this.audio.load();
+            // Restaurar posición cuando los metadatos carguen
+            const restoreTime = Number(session.currentTime) || 0;
+            const onMeta = () => {
+              try {
+                if (restoreTime > 0 && restoreTime < (this.audio.duration || 0)) {
+                  this.audio.currentTime = restoreTime;
+                }
+              } catch (e) {}
+              this.updateProgress();
+              this.audio.removeEventListener('loadedmetadata', onMeta);
+            };
+            this.audio.addEventListener('loadedmetadata', onMeta);
+          } else {
+            // Sin audio enlazado: el elemento queda limpio y en pausa;
+            // loadAndPlay() avisará y saltará al reproducir.
+            try { this.audio.removeAttribute('src'); this.audio.load(); } catch (e) {}
+          }
+        }
 
         return true;
       } catch (e) {
@@ -252,12 +293,16 @@ Object.assign(App, {
      *  Temas personalizables (#11)
      * ============================================================ */
     THEMES: {
+      // «Sistema» no tiene paleta propia: applyTheme() resuelve la
+      // preferencia real con prefers-color-scheme y usa dark o light.
+      // Tener la clave aquí permite guardarla y validarla como el resto.
+      system: { system: true },
       dark: {
         bg0: '#050509', bg1: '#0a0a12', bg2: '#14141f', bg3: '#1d1d2b',
         text1: '#ffffff',
         text2: 'rgba(255,255,255,0.72)',
         text3: 'rgba(255,255,255,0.48)',
-        text4: 'rgba(255,255,255,0.30)',
+        text4: 'rgba(255,255,255,0.36)',
         surface: 'rgba(255,255,255,0.05)',
         surface2: 'rgba(255,255,255,0.08)',
         surfaceHi: 'rgba(255,255,255,0.12)',
@@ -287,7 +332,7 @@ Object.assign(App, {
         text1: '#ffffff',
         text2: 'rgba(255,255,255,0.72)',
         text3: 'rgba(255,255,255,0.50)',
-        text4: 'rgba(255,255,255,0.34)',
+        text4: 'rgba(255,255,255,0.40)',
         surface: 'rgba(255,255,255,0.06)',
         surface2: 'rgba(255,255,255,0.09)',
         surfaceHi: 'rgba(255,255,255,0.14)',
@@ -298,12 +343,20 @@ Object.assign(App, {
         danger: '#E85A5A'
       }
     },
+    /* Rellenos (fill/fill2) deliberadamente oscuros: sobre ellos va texto
+     * e iconos BLANCOS (--accent-on-fill). Un degradado con el extremo
+     * claro de antes (rosa, turquesa, amarillo) dejaba el texto en 1.6–2.4:1.
+     * Ahora ambos extremos cumplen AA (≥4.5:1 con blanco) en los 5 acentos.
+     * Los tonos brillantes siguen en from/to/accent/accent2, que se usan
+     * como color de texto sobre fondo oscuro o en portadas (sin texto).
+     * fillLight/fillLight2 se usan en tema claro y también cumplen AA
+     * sobre --bg-0/bg-1 claros. */
     ACCENTS: {
-      aurora: { from: '#6E5CFF', to: '#FF7AB6', accent: '#8B7CFF', accent2: '#FF7AB6', fill: '#6B5AE8', fillLight: '#5344C9' },
-      ocean:  { from: '#1A6A88', to: '#3EC8B8', accent: '#3AA8C0', accent2: '#5ED4C4', fill: '#1F7A92', fillLight: '#186878' },
-      moss:   { from: '#2A6B48', to: '#A8C86A', accent: '#5A9A68', accent2: '#B4D07A', fill: '#3D7A52', fillLight: '#2F6844' },
-      amber:  { from: '#C45C18', to: '#E8B84A', accent: '#E09438', accent2: '#F0C46A', fill: '#C87820', fillLight: '#A86218' },
-      cherry: { from: '#A61B3A', to: '#E85A7A', accent: '#D44A68', accent2: '#F090A0', fill: '#B83852', fillLight: '#9A2E44' }
+      aurora: { from: '#6E5CFF', to: '#FF7AB6', accent: '#8B7CFF', accent2: '#FF7AB6', fill: '#5B49D6', fill2: '#4A3BBF', fillLight: '#4E3FC8', fillLight2: '#3E32A8' },
+      ocean:  { from: '#1A6A88', to: '#3EC8B8', accent: '#3AA8C0', accent2: '#5ED4C4', fill: '#1A6B80', fill2: '#146173', fillLight: '#146173', fillLight2: '#0F5867' },
+      moss:   { from: '#2A6B48', to: '#A8C86A', accent: '#5A9A68', accent2: '#B4D07A', fill: '#2F6844', fill2: '#2A5C3B', fillLight: '#2A5C3B', fillLight2: '#24502F' },
+      amber:  { from: '#C45C18', to: '#E8B84A', accent: '#E09438', accent2: '#F0C46A', fill: '#A86218', fill2: '#8A4E0E', fillLight: '#91520F', fillLight2: '#7A440C' },
+      cherry: { from: '#A61B3A', to: '#E85A7A', accent: '#D44A68', accent2: '#F090A0', fill: '#B83852', fill2: '#99243D', fillLight: '#9A2E44', fillLight2: '#8E2036' }
     },
     _ACCENT_ALIASES: { purple: 'aurora', blue: 'ocean', green: 'moss', orange: 'amber', pink: 'cherry' },
 
@@ -334,17 +387,52 @@ Object.assign(App, {
         this.theme = 'dark';
         this.accent = 'aurora';
       }
+      this._bindSystemThemeListener();
       this.applyTheme();
+    },
+
+    /* Devuelve el tema real que se pinta. «system» se resuelve con la
+     * preferencia del sistema en cada momento (no se congela al cargar). */
+    resolveTheme(pref) {
+      const p = pref || this.theme || 'dark';
+      if (p !== 'system') return this.THEMES[p] ? p : 'dark';
+      let prefersLight = false;
+      try {
+        prefersLight = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
+      } catch (e) {}
+      return prefersLight ? 'light' : 'dark';
+    },
+
+    /* Escucha el cambio de tema del sistema para repintar si el usuario
+     * eligió «Sistema». Se registra una sola vez. */
+    _bindSystemThemeListener() {
+      if (this._systemThemeMq) return;
+      try {
+        if (!window.matchMedia) return;
+        const mq = window.matchMedia('(prefers-color-scheme: light)');
+        if (!mq || typeof mq.addEventListener !== 'function') return;
+        this._systemThemeMq = mq;
+        mq.addEventListener('change', () => {
+          if (this.theme === 'system') this.applyTheme();
+        });
+      } catch (e) {}
     },
 
     applyTheme() {
       const root = document.documentElement;
-      const t = this.THEMES[this.theme] || this.THEMES.dark;
+      // this.theme es la PREFERENCIA (puede ser «system»); resolved es la
+      // paleta que se aplica realmente.
+      const pref = this.THEMES[this.theme] ? this.theme : 'dark';
+      const resolved = this.resolveTheme(pref);
+      const t = this.THEMES[resolved] || this.THEMES.dark;
       this.accent = this._migrateAccent(this.accent);
       const a = this.ACCENTS[this.accent] || this.ACCENTS.aurora;
-      const light = this.theme === 'light';
+      const light = resolved === 'light';
       const accent = light ? (a.fillLight || a.fill || a.accent) : a.accent;
       const fill = light ? (a.fillLight || a.fill || a.accent) : (a.fill || a.accent);
+      const fill2 = light
+        ? (a.fillLight2 || a.fill2 || a.fillLight || a.fill || a.accent)
+        : (a.fill2 || a.fill || a.accent);
 
       root.style.setProperty('--bg-0', t.bg0);
       root.style.setProperty('--bg-1', t.bg1);
@@ -365,13 +453,24 @@ Object.assign(App, {
       root.style.setProperty('--accent', accent);
       root.style.setProperty('--accent-2', a.accent2);
       root.style.setProperty('--accent-fill', fill);
+      // Segundo extremo del degradado. Antes se usaba --accent-2 (rosa,
+      // turquesa, amarillo…), demasiado claro para texto blanco.
+      root.style.setProperty('--accent-fill-2', fill2);
+      // Segundo extremo para degradados de texto sobre el fondo: brillante
+      // en oscuro, oscuro en claro (siempre ≥4.5:1 como texto normal).
+      root.style.setProperty('--accent-text-2', light
+        ? (a.fillLight2 || a.fillLight || a.fill || a.accent)
+        : (a.accent2 || a.accent));
       root.style.setProperty('--accent-on-fill', '#ffffff');
       root.style.setProperty('--accent-rgb', this._hexToRgb(fill));
       if (!this.currentTrack) {
         root.style.setProperty('--cover-from', a.from);
         root.style.setProperty('--cover-to', a.to);
       }
-      root.setAttribute('data-theme', this.theme);
+      // data-theme refleja la paleta aplicada (dark/light/amoled) para que
+      // el CSS funcione; data-theme-pref conserva la preferencia («system»).
+      root.setAttribute('data-theme', resolved);
+      root.setAttribute('data-theme-pref', pref);
       // Semántico (depuración y selectores futuros); el color real va en
       // las variables --accent*. Antes solo se aplicaba el tema.
       root.setAttribute('data-accent', this.accent);
@@ -381,10 +480,11 @@ Object.assign(App, {
     },
 
     setTheme(theme) {
-      this.theme = theme;
-      try { localStorage.setItem('aurora_theme', theme); } catch (e) {}
+      this.theme = this.THEMES[theme] ? theme : 'dark';
+      try { localStorage.setItem('aurora_theme', this.theme); } catch (e) {}
       this.applyTheme();
-      this.toast(this.t('toast_theme_applied') + ' ' + theme);
+      const label = this.t('theme_' + this.theme);
+      this.toast(this.t('toast_theme_applied') + ' ' + (label !== 'theme_' + this.theme ? label : this.theme));
     },
 
     setAccent(accent) {
@@ -486,10 +586,18 @@ Object.assign(App, {
       });
       // Atributo lang del <html>
       document.documentElement.setAttribute('lang', this.lang);
+      // Las bandas del EQ crean su aria-label al construirse (pueden
+      // nacer antes de resolver el idioma y quedarse en español para
+      // siempre): se re-etiquetan con el idioma actual en cada applyLang
+      // (hallazgo A4 de la revisión externa).
+      document.querySelectorAll('#eqBands input[type="range"]').forEach(inp => {
+        const wrap = inp.parentElement;
+        const lab = wrap && wrap.querySelector('.eq-band-label');
+        if (lab) inp.setAttribute('aria-label', this.t('eq_band_label').replace('X', lab.textContent.trim()));
+      });
       // Nota: document.title es ignorado en WebXDC; el nombre viene de manifest.toml
       // Re-renderizar listas dinámicas para que se traduzcan
       try {
-        this.renderLibrary();
         this.renderPlaylists();
         this.renderQueue();
         this.renderFavorites();
@@ -517,7 +625,6 @@ Object.assign(App, {
       this.applyLang();
       this.buildLangList();
       // Refrescar etiquetas dinámicas (no data-i18n) en el nuevo idioma
-      if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
       if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
       this.toast(this.t('toast_lang_applied'));
     },
@@ -563,6 +670,12 @@ Object.assign(App, {
       document.querySelectorAll('.xfade-opt').forEach(b => {
         b.classList.toggle('active', Number(b.dataset.xfade) === xf);
       });
+      const sVal = document.getElementById('settingsSpeedVal');
+      if (sVal) sVal.textContent = (this.playbackRate || 1).toFixed(1) + '×';
+      const bDown = document.getElementById('btnSpeedDown');
+      if (bDown) bDown.disabled = (this.playbackRate || 1) <= 0.5;
+      const bUp = document.getElementById('btnSpeedUp');
+      if (bUp) bUp.disabled = (this.playbackRate || 1) >= 2.0;
       const ver = document.getElementById('aboutVersion');
       if (ver) {
         let vText = this.VERSION || '1.0.0';

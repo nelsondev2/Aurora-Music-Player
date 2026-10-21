@@ -14,6 +14,11 @@ Object.assign(App, {
      *  Eventos
      * ============================================================ */
     wireEvents() {
+      // Segunda línea de defensa (ver init()): si el cableado ya se hizo,
+      // repetirlo duplicaría cada listener y anularía los botones de tipo
+      // interruptor (play/pausa, pantalla completa, aleatorio…).
+      if (this._wired.events) return;
+      this._wired.events = true;
       // Helper null-safe: si el elemento no existe, devuelve un objeto con
       // addEventListener no-op para que no se rompa el wiring completo.
       const $ = (id) => {
@@ -48,6 +53,13 @@ Object.assign(App, {
       }
       const btnHomeAdd = document.getElementById('btnHomeAdd');
       if (btnHomeAdd) btnHomeAdd.addEventListener('click', () => this.openFilePicker());
+      // Ajustes desde Inicio: no depende de tener una pista cargada.
+      const btnHomeSettings = document.getElementById('btnHomeSettings');
+      if (btnHomeSettings) btnHomeSettings.addEventListener('click', () => this.openSheet('sheetSettings'));
+      // Opciones desde Inicio (§54): mismo motivo —la copia de
+      // seguridad se importa también en una instalación vacía—.
+      const btnHomeMore = document.getElementById('btnHomeMore');
+      if (btnHomeMore) btnHomeMore.addEventListener('click', () => this.openSheet('sheetMore'));
       const coverArt = document.getElementById('coverArt');
       if (coverArt) {
         let cvX = 0, cvY = 0, cvVol = 1, mode = null, lpTimer = null, pid = null;
@@ -214,7 +226,6 @@ Object.assign(App, {
       if (btnSettings) btnSettings.addEventListener('click', () => {
         this.closeSheet('sheetMore');
         if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
-        if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
         this.openSheet('sheetSettings');
       });
       // Temas desde Ajustes
@@ -235,14 +246,6 @@ Object.assign(App, {
         this.closeSheet('sheetSettings');
         this.toast(this.t('toast_retag_start'));
         this.retagExistingTracks().catch(() => {});
-      });
-      const btnExport = document.getElementById('menuExportLibrary');
-      if (btnExport) btnExport.addEventListener('click', () => {
-        this.exportLibrary();
-      });
-      const btnImport = document.getElementById('menuImportLibrary');
-      if (btnImport) btnImport.addEventListener('click', () => {
-        this.importLibrary();
       });
       const btnRelink = document.getElementById('menuRelinkAudio');
       if (btnRelink) btnRelink.addEventListener('click', () => {
@@ -284,6 +287,17 @@ Object.assign(App, {
       const togglePreservePitch = document.getElementById('chkPreservePitch');
       if (togglePreservePitch) togglePreservePitch.addEventListener('change', () => {
         this.setPreservesPitch(togglePreservePitch.checked);
+      });
+      // Velocidad de reproducción también desde Ajustes (antes solo
+      // existía en la pantalla de Letras: hallazgo A3). Es el mismo
+      // ajuste; setPlaybackRate sincroniza ambas etiquetas.
+      const btnSpeedDown = document.getElementById('btnSpeedDown');
+      if (btnSpeedDown) btnSpeedDown.addEventListener('click', () => {
+        this.setPlaybackRate(this.playbackRate - 0.1);
+      });
+      const btnSpeedUp = document.getElementById('btnSpeedUp');
+      if (btnSpeedUp) btnSpeedUp.addEventListener('click', () => {
+        this.setPlaybackRate(this.playbackRate + 0.1);
       });
       const toggleMarquee = document.getElementById('toggleMarquee');
       if (toggleMarquee) toggleMarquee.addEventListener('change', () => {
@@ -420,9 +434,6 @@ Object.assign(App, {
       $('btnOpenNewPlaylist').addEventListener('click', () => {
         this.openCreatePlaylistSheet();
       });
-      // Botón "Borrar todo" en biblioteca
-      const btnDeleteAll = document.getElementById('btnDeleteAllTracks');
-      if (btnDeleteAll) btnDeleteAll.addEventListener('click', () => this.deleteAllTracks());
 
       // Guardar playlist: crea una nueva (vacía o con pistas) O añade pistas a una existente
       $('btnSavePlaylist').addEventListener('click', () => {
@@ -510,19 +521,39 @@ Object.assign(App, {
         b.addEventListener('click', () => this.goNav(b.dataset.nav));
       });
 
-      document.querySelectorAll('.lib-sort').forEach(b => {
-        b.addEventListener('click', () => this.setLibrarySort(b.dataset.sort));
-      });
-
       const btnPlayBrowse = document.getElementById('btnPlayBrowse');
       if (btnPlayBrowse) btnPlayBrowse.addEventListener('click', () => this.playBrowse());
 
+      // Favorito desde el menú de pista: funciona sin abrir el reproductor
+      // y para cualquier pista, no solo la que está sonando.
+      // Estrellas (§58): en el menú valoran la canción del menú; en el
+      // Reproductor, la que suena. Tocar la misma estrella quita la nota.
+      document.querySelectorAll('#ctxRatingStars .rate-star').forEach(b => {
+        b.addEventListener('click', () => {
+          const t = this.menuTrack();
+          if (t) this.setTrackRating(t.id, parseInt(b.dataset.value, 10));
+        });
+      });
+      document.querySelectorAll('#npRatingStars .rate-star').forEach(b => {
+        b.addEventListener('click', () => {
+          if (this.currentTrack) this.setTrackRating(this.currentTrack.id, parseInt(b.dataset.value, 10));
+        });
+      });
+      const ctxFav = document.getElementById('ctxToggleFavorite');
+      if (ctxFav) ctxFav.addEventListener('click', () => {
+        const t = this.menuTrack();
+        this.closeSheet('sheetTrackMenu');
+        if (t) this.toggleFavoriteFor(t.id);
+      });
       const ctxPlayNow = document.getElementById('ctxPlayNow');
       if (ctxPlayNow) ctxPlayNow.addEventListener('click', () => {
         const t = this.menuTrack();
         this.closeSheet('sheetTrackMenu');
         if (t) {
-          this.playTrack(t.id, { type: 'all' });
+          // «Reproducir ahora» desde el menú de una lista no debe
+          // saltar a «Todas las canciones»: manda la lista de la
+          // canción, como en Buscar (§38).
+          this.playTrack(t.id, typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(t) : { type: 'all' });
           if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
         }
       });
@@ -531,7 +562,7 @@ Object.assign(App, {
         const t = this.menuTrack();
         this.closeSheet('sheetTrackMenu');
         if (!t) return;
-        if (!this.currentTrack) this.playTrack(t.id, { type: 'all' });
+        if (!this.currentTrack) this.playTrack(t.id, typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(t) : { type: 'all' });
         else this.playNext(t.id);
       });
       const ctxAddQueue = document.getElementById('ctxAddQueue');
@@ -585,6 +616,18 @@ Object.assign(App, {
         const t = this.menuTrack();
         if (t) this.shareTrack(t.id);
       });
+      const ctxCover = document.getElementById('ctxChangeCover');
+      if (ctxCover) ctxCover.addEventListener('click', () => {
+        const t = this.menuTrack();
+        this.closeSheet('sheetTrackMenu');
+        if (t) this.pickCustomCover(t.id);
+      });
+      const ctxRmCover = document.getElementById('ctxRemoveCover');
+      if (ctxRmCover) ctxRmCover.addEventListener('click', () => {
+        const t = this.menuTrack();
+        this.closeSheet('sheetTrackMenu');
+        if (t) this.removeCustomCover(t.id);
+      });
       const ctxDelete = document.getElementById('ctxDelete');
       if (ctxDelete) ctxDelete.addEventListener('click', async () => {
         const t = this.menuTrack();
@@ -600,24 +643,6 @@ Object.assign(App, {
       if (btnSaveEdit) btnSaveEdit.addEventListener('click', () => this.saveEditTrack());
       const btnSaveEditP = document.getElementById('btnSaveEditTrackPrimary');
       if (btnSaveEditP) btnSaveEditP.addEventListener('click', () => this.saveEditTrack());
-
-      // Selección múltiple y edición por lotes (#23)
-      const btnBatchSel = document.getElementById('btnBatchSelect');
-      if (btnBatchSel) btnBatchSel.addEventListener('click', () => this.toggleBatchMode());
-      const btnBatchAll = document.getElementById('btnBatchSelectAll');
-      if (btnBatchAll) btnBatchAll.addEventListener('click', () => this.selectAllTracks());
-      const btnBatchEdit = document.getElementById('btnBatchEditTags');
-      if (btnBatchEdit) btnBatchEdit.addEventListener('click', () => this.openBatchEditModal());
-      const btnBatchCancel = document.getElementById('btnBatchCancel');
-      if (btnBatchCancel) btnBatchCancel.addEventListener('click', () => this.toggleBatchMode(false));
-      const btnBatchDel = document.getElementById('btnBatchDelete');
-      if (btnBatchDel) btnBatchDel.addEventListener('click', () => this.batchDeleteTracks());
-      const btnBatchAddPl = document.getElementById('btnBatchAddPlaylist');
-      if (btnBatchAddPl) btnBatchAddPl.addEventListener('click', () => this.batchAddToPlaylist());
-      const btnSaveBatch = document.getElementById('btnSaveBatchEdit');
-      if (btnSaveBatch) btnSaveBatch.addEventListener('click', () => this.saveBatchEditTags());
-      const btnSaveBatchP = document.getElementById('btnSaveBatchEditPrimary');
-      if (btnSaveBatchP) btnSaveBatchP.addEventListener('click', () => this.saveBatchEditTags());
 
       // Búsqueda (debounce 150 ms)
       $('searchInput').addEventListener('input', (e) => {
@@ -674,6 +699,11 @@ Object.assign(App, {
       const btnPlayFav = document.getElementById('btnPlayFavoritesNow');
       if (btnPlayFav) btnPlayFav.addEventListener('click', () => {
         this.playFavorites();
+      });
+      // Botón «Reproducir Todo» en el sheet de más valoradas (§60)
+      const btnPlayRated = document.getElementById('btnPlayRatedNow');
+      if (btnPlayRated) btnPlayRated.addEventListener('click', () => {
+        this.playRated();
       });
 
       // Cerrar sheets
@@ -792,6 +822,10 @@ Object.assign(App, {
           return;
         }
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        // El slider de progreso es un div[role=slider] con su propio
+        // manejo de flechas (±5 s): si el evento también llega aquí, el
+        // salto se duplica (hallazgo A2 de la revisión externa).
+        if (e.target.closest && e.target.closest('[role="slider"]')) return;
         if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
           e.preventDefault();
           const sh = document.getElementById('sheetShortcuts');
@@ -835,7 +869,6 @@ Object.assign(App, {
               (!this.currentTrack.duration || this.currentTrack.duration === 0)) {
             this.currentTrack.duration = Math.floor(dur);
             this.persistTrack(this.currentTrack);
-            this.renderLibrary();
             this.renderQueue();
             if (this._editingPlaylistId) this.renderEditPlaylist();
           }
@@ -852,18 +885,18 @@ Object.assign(App, {
         };
         this._onAudioError = (e) => {
           if (this._xfadeStarted || this._xfadeTimer) this._cancelCrossfade();
-          const msg = (e && e.message) || (this.audio && this.audio.error && this.audio.error.message) || 'unknown';
-          this._lastError = { msg: 'audio error: ' + msg, ts: Date.now() };
-          this._decodeSkipCount = (this._decodeSkipCount || 0) + 1;
-          if (typeof this.setBuffering === 'function') this.setBuffering(false);
-          this.toast(this.t('toast_audio_error'));
-          if (this._decodeSkipCount >= 3) {
-            this.toast(this.t('toast_skipped_give_up').replace('X', String(this._decodeSkipCount)));
-            this._decodeSkipCount = 0;
-            this.togglePlay(false);
+          /* Sin fuente no hay archivo corrupto: es el ruido de vaciar
+           * el elemento (borrar la pista actual, limpiar al cerrar).
+           * Contarlo saltaba canciones que nadie había pedido saltar. */
+          if (!this.currentTrack || !this.audio || !this.audio.getAttribute('src')) {
+            if (typeof this.setBuffering === 'function') this.setBuffering(false);
             return;
           }
-          this.next(true);
+          const msg = (e && e.message) || (this.audio.error && this.audio.error.message) || 'unknown';
+          this._lastError = { msg: 'audio error: ' + msg, ts: Date.now() };
+          // Política compartida con play(): recorrer la cola una vez.
+          if (typeof this._handleDecodeFailure === 'function') this._handleDecodeFailure();
+          else this.next(true);
         };
         this._onAudioPlaying = () => {
           this._decodeSkipCount = 0;
@@ -905,19 +938,31 @@ Object.assign(App, {
     },
 
     wireGestures() {
+      // Ídem que wireEvents(): los gestos tampoco se cablean dos veces.
+      if (this._wired.gestures) return;
       const screen = document.getElementById('deviceScreen');
-      let sx = 0, sy = 0, st = 0, swiping = false;
+      let sx = 0, sy = 0, st = 0, swiping = false, swipeFromUi = false;
+      // Zonas donde un arrastre NUNCA significa «cambiar de canción» ni
+      // «cerrar Letras»: la barra de herramientas (ahora desplazable en
+      // horizontal: arrastrarla para ver más ajustes saltaba a la
+      // siguiente canción), la cabecera, la mini-cabecera, la barra de
+      // controles y cualquier control interactivo. El gesto se marca al
+      // nacer (touchstart), porque el dedo puede terminar sobre otro
+      // elemento distinto del que lo empezó.
+      const SWIPE_UI = '.lyrics-toolbar, .lyrics-top-bar, .lyrics-mini, .lyrics-controls, .lyrics-loop-indicator, button, input, textarea, select, a, [role="slider"]';
       screen.addEventListener('touchstart', (e) => {
         if (e.touches.length !== 1) return;
         sx = e.touches[0].clientX;
         sy = e.touches[0].clientY;
         st = Date.now();
         swiping = true;
+        swipeFromUi = !!(e.target && e.target.closest && e.target.closest(SWIPE_UI));
       }, { passive: true });
 
       screen.addEventListener('touchend', (e) => {
         if (!swiping) return;
         swiping = false;
+        if (swipeFromUi) { swipeFromUi = false; return; }
         const dx = e.changedTouches[0].clientX - sx;
         const dy = e.changedTouches[0].clientY - sy;
         const dt = Date.now() - st;
@@ -932,18 +977,10 @@ Object.assign(App, {
           else this.prev();
           if (navigator.vibrate) navigator.vibrate(10);
         }
-        // Swipe vertical: SOLO cierra la vista de letras (deslizar hacia
-        // abajo). La vista de letras se abre exclusivamente con #btnLyrics:
-        // antes, deslizar hacia arriba en cualquier vista (por ejemplo al
-        // hacer scroll en Inicio o en el reproductor) la abría sin pulsar
-        // ningún botón. Si la vista ya está abierta no se hace nada.
-        if (ay > 80 && ay > ax * 1.5 && dt < 700) {
-          const target = e.target;
-          if (target.closest('.sheet, .bottom-nav, #coverArt, #progressTrack')) return;
-          const lyricsView = document.getElementById('viewLyrics');
-          if (!(lyricsView && lyricsView.classList.contains('active'))) return;
-          if (dy > 0) this.showView('player');
-        }
+        // Sin swipe vertical: deslizar hacia abajo ya NO cierra
+        // Letras (a petición del usuario). Era fácil dispararlo sin
+        // querer al hacer scroll por la letra; para salir queda el
+        // botón de volver de la cabecera (y el de pantalla completa).
         // Doble tap en portada → like
       });
 

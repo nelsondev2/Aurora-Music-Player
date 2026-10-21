@@ -37,9 +37,13 @@ Object.assign(App, {
         for (const f of this.eqFilters) { node.connect(f); node = f; }
 
         this.analyser = this.audioCtx.createAnalyser();
-        this.analyser.fftSize = 256;       // 128 bins — mejor resolución
-        this.analyser.smoothingTimeConstant = 0.82;
+        /* fftSize 2048 (1024 bins): las bandas logarítmicas del espectro
+         * y la onda fluida necesitan resolución de verdad; con 256 la
+         * onda solo tenía 128 muestras y salía dentada. */
+        this.analyser.fftSize = 2048;
+        this.analyser.smoothingTimeConstant = 0.8;
         this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
+        this._visTimeData = new Uint8Array(this.analyser.fftSize);
         node.connect(this.analyser);
 
         this.gainNode = this.audioCtx.createGain();
@@ -191,7 +195,7 @@ Object.assign(App, {
         // Cola = pistas de esa playlist (en orden), filtrando las que existen
         const pl = this.playlists.find(p => p.id === context.id);
         if (pl) {
-          this.queue = pl.trackIds.filter(id => this.tracks.some(t => t.id === id));
+          this.queue = pl.trackIds.filter(id => this.trackMap().has(id));
           const qIdx = this.queue.indexOf(trackId);
           // La pista puede no pertenecer ya a la lista (se quitó mientras
           // sonaba otra): insertarla para que next/prev sigan teniendo
@@ -206,6 +210,13 @@ Object.assign(App, {
           this.queue = [trackId];
           this.queueIdx = 0;
         }
+      } else if (context && context.type === 'rated') {
+        // Cola = las mejor valoradas, en ese orden (§60)
+        const ratedIds = (typeof this.getTopRatedTracks === 'function' ? this.getTopRatedTracks() : []).map(t => t.id);
+        this.queue = ratedIds.length ? ratedIds : [trackId];
+        const qIdx = this.queue.indexOf(trackId);
+        if (qIdx < 0) { this.queue.unshift(trackId); this.queueIdx = 0; }
+        else this.queueIdx = qIdx;
       } else if (context && context.type === 'favorites') {
         // Cola = pistas favoritas
         const favIds = this.tracks.filter(t => this.favorites.has(t.id)).map(t => t.id);
@@ -274,7 +285,7 @@ Object.assign(App, {
       const url = this.getTrackUrl(t);
       if (!url) {
         console.warn('[Aurora] Sin URL de audio para', t.id);
-        // Pista pendiente de re-vincular (restaurada de un backup): avisar
+        // Pista sin fuente de audio utilizable (blob perdido): avisar
         // y saltar a la siguiente sin bloquear la reproducción.
         this.toast(this.t('toast_track_no_audio'));
         this._noAudioSkips = (this._noAudioSkips || 0) + 1;
@@ -341,6 +352,31 @@ Object.assign(App, {
       this.renderLyrics();
       this.updateMediaSession();
       this.updatePlayUI();
+    },
+
+    /* Política única ante un archivo que no se puede decodificar.
+     * Antes se abandonaba tras 3 fallos seguidos, aunque la cuarta
+     * canción de la cola fuera válida. Ahora se recorre la cola una
+     * vez (tantos intentos como posiciones tenga) y solo se rinde al
+     * agotarla; el contador se reinicia en cuanto algo suena. Solo se
+     * avisa en el primer fallo y al rendirse: nada de un toast por
+     * cada archivo roto. Devuelve true si ya actuó. */
+    _handleDecodeFailure() {
+      if (typeof this.setBuffering === 'function') this.setBuffering(false);
+      this.isPlaying = false;
+      if (typeof this.updatePlayUI === 'function') this.updatePlayUI();
+      this._decodeSkipCount = (this._decodeSkipCount || 0) + 1;
+      const limit = Math.max(1, Array.isArray(this.queue) && this.queue.length ? this.queue.length : 1);
+      if (this._decodeSkipCount >= limit) {
+        const skipped = this._decodeSkipCount;
+        this._decodeSkipCount = 0;
+        this.toast(this.t('toast_skipped_give_up').replace('X', String(skipped)));
+        try { if (this.audio) this.audio.pause(); } catch (e) {}
+        return true;
+      }
+      if (this._decodeSkipCount === 1) this.toast(this.t('toast_audio_error'));
+      setTimeout(() => this.next(true), 0);
+      return true;
     },
 
     setBuffering(on) {
@@ -453,16 +489,11 @@ Object.assign(App, {
               this.toast(this.t('toast_play_blocked'));
               return;
             }
-            // NotSupportedError u otros: el archivo no se puede reproducir → saltar
-            // a la siguiente (misma política que el manejador de 'error' de audio).
-            this.toast(this.t('toast_audio_error'));
-            this._decodeSkipCount = (this._decodeSkipCount || 0) + 1;
-            if (this._decodeSkipCount >= 3) {
-              this._decodeSkipCount = 0;
-              this.togglePlay(false);
-            } else {
-              setTimeout(() => this.next(true), 0);
-            }
+            // NotSupportedError u otros: el archivo no se puede reproducir.
+            // Misma política que el evento 'error': recorrer la cola una
+            // vez antes de rendirse (ver _handleDecodeFailure).
+            if (typeof this._handleDecodeFailure === 'function') this._handleDecodeFailure();
+            else setTimeout(() => this.next(true), 0);
           });
         }
       } else {
@@ -571,7 +602,7 @@ Object.assign(App, {
       if (!this.shuffle && this.playContext && this.playContext.type === 'playlist' && this.playContext.id) {
         const pl = this.playlists.find(p => p.id === this.playContext.id);
         if (pl && pl.trackIds.length) {
-          const ids = pl.trackIds.filter(id => this.tracks.some(t => t.id === id));
+          const ids = pl.trackIds.filter(id => this.trackMap().has(id));
           if (ids.length && (this.queue.length !== ids.length || ids.some((id, i) => this.queue[i] !== id))) {
             const cur = this.currentTrack && this.currentTrack.id;
             this.queue = ids;
@@ -668,7 +699,7 @@ Object.assign(App, {
         return;
       }
       const cur = this.currentTrack && this.currentTrack.id;
-      const restored = this._originalQueue.filter(id => this.tracks.some(t => t.id === id));
+      const restored = this._originalQueue.filter(id => this.trackMap().has(id));
       this._originalQueue = null;
       if (!restored.length) return;
       this.queue = restored;
@@ -899,13 +930,21 @@ Object.assign(App, {
 
     toggleFavorite() {
       if (!this.currentTrack) return;
-      const id = this.currentTrack.id;
-      if (this.favorites.has(id)) this.favorites.delete(id);
-      else this.favorites.add(id);
+      this.toggleFavoriteFor(this.currentTrack.id);
+    },
+
+    /* Alterna el favorito de CUALQUIER pista (no solo la que suena).
+     * Lo usa el menú de pista, porque antes la única forma de marcar una
+     * canción era abrirla en el reproductor y pulsar el corazón. */
+    toggleFavoriteFor(trackId) {
+      const t = this.tracks.find(x => x.id === trackId);
+      if (!t) return;
+      if (this.favorites.has(trackId)) this.favorites.delete(trackId);
+      else this.favorites.add(trackId);
       this.saveFavorites();
-      this.updateFavoriteUI();
+      if (this.currentTrack && this.currentTrack.id === trackId) this.updateFavoriteUI();
       if (typeof this.renderFavorites === 'function') this.renderFavorites();
-      this.toast(this.favorites.has(id) ? this.t('toast_added_fav') : this.t('toast_removed_fav'));
+      this.toast(this.favorites.has(trackId) ? this.t('toast_added_fav') : this.t('toast_removed_fav'));
     },
 
     updateFavoriteUI() {
@@ -1081,6 +1120,10 @@ Object.assign(App, {
           canvas.height = h;
           this._visGrad = null;
           this._visGradKey = null;
+          this._visBarsGrad = null;
+          this._visBarsKey = null;
+          this._visWaveFill = null;
+          this._visWaveFillKey = null;
         }
       } catch (e) {}
     },
@@ -1129,6 +1172,7 @@ Object.assign(App, {
         }
         this._visRafId = requestAnimationFrame(render);
         if (now - last < 33) return; // ~30 fps bastan en móvil
+        const dt = Math.min(100, Math.max(1, now - (last || now - 33)));
         last = now;
         // Reajustar si el layout cambió (vista oculta al arrancar, rotación)
         try {
@@ -1137,7 +1181,7 @@ Object.assign(App, {
             this._fitVisualizerCanvas(canvas);
           }
         } catch (e) {}
-        this.drawVisualizerFrame(canvas, ctx);
+        this.drawVisualizerFrame(canvas, ctx, dt);
       };
       this._visRafId = requestAnimationFrame(render);
     },
@@ -1158,7 +1202,125 @@ Object.assign(App, {
       }
     },
 
-    drawVisualizerFrame(canvas, ctx) {
+    /* ---------- Visualizador: utilidades de dibujo ---------- */
+
+    /* Colores del visualizador: la paleta de la portada que suena
+     * (cover.from/cover.to, las mismas --cover-from/--cover-to del
+     * fondo). Antes el gradiente era violeta/rosa fijo y nunca usó la
+     * paleta dinámica pese a calcularse «para el fondo y
+     * visualizador». Sin portada con paleta, el clásico de siempre. */
+    _visColors() {
+      const cov = (this.currentTrack && typeof this.currentTrack.cover === 'object' && this.currentTrack.cover)
+        ? this.currentTrack.cover : null;
+      return {
+        from: (cov && typeof cov.from === 'string' && cov.from) || '#7C3AED',
+        to: (cov && typeof cov.to === 'string' && cov.to) || '#EC4899'
+      };
+    },
+
+    /* '#RRGGBB' (o '#RGB') + alpha → 'rgba(r,g,b,a)'. Si el color no
+     * es hex, se devuelve tal cual (el alpha lo pondrá el degradado
+     * con dos paradas del mismo color si hace falta). */
+    _hexA(hex, alpha) {
+      if (typeof hex !== 'string') return hex;
+      let m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
+      if (!m) {
+        const sh = /^#([0-9a-f]{3})$/i.exec(hex.trim());
+        if (sh) m = [null, sh[1][0] + sh[1][0] + sh[1][1] + sh[1][1] + sh[1][2] + sh[1][2]];
+      }
+      if (!m) return hex;
+      const n = parseInt(m[1], 16);
+      return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + alpha + ')';
+    },
+
+    /* Bandas logarítmicas 35 Hz–16 kHz: la energía musical vive
+     * abajo; con el muestreo lineal anterior los graves se pegaban
+     * al techo y los agudos ni se movían. Pares [binIni, binFin),
+     * cacheados por (nº de barras, bins, sampleRate). */
+    _visLogBands(count, binCount, sampleRate) {
+      const key = count + ':' + binCount + ':' + sampleRate;
+      if (this._visBandsCache && this._visBandsKey === key) return this._visBandsCache;
+      const binHz = sampleRate / (binCount * 2);
+      const fMin = 35;
+      const fMax = Math.min(16000, (sampleRate / 2) * 0.92);
+      const bands = [];
+      for (let i = 0; i < count; i++) {
+        const f0 = fMin * Math.pow(fMax / fMin, i / count);
+        const f1 = fMin * Math.pow(fMax / fMin, (i + 1) / count);
+        const b0 = Math.max(1, Math.floor(f0 / binHz));
+        const b1 = Math.min(binCount - 1, Math.max(b0 + 1, Math.round(f1 / binHz)));
+        bands.push([b0, b1]);
+      }
+      this._visBandsCache = bands;
+      this._visBandsKey = key;
+      return bands;
+    },
+
+    /* Nivel objetivo (0..1) por banda: máximo del rango con gamma
+     * 0.78, que levanta los pasajes flojos sin pegar todo al techo. */
+    _visBarTargets(bands) {
+      if (!this._visTargets || this._visTargets.length !== bands.length) {
+        this._visTargets = new Float32Array(bands.length);
+      }
+      const data = this.freqData;
+      const out = this._visTargets;
+      for (let i = 0; i < bands.length; i++) {
+        const b0 = bands[i][0], b1 = bands[i][1];
+        let m = 0;
+        for (let b = b0; b < b1; b++) { if (data[b] > m) m = data[b]; }
+        out[i] = Math.pow(m / 255, 0.78);
+      }
+      return out;
+    },
+
+    /* Suavizado ataque/caída independiente del frame-rate y picos
+     * que caen despacio: convierte el parpadeo nervioso de antes en
+     * un espectro con peso. Estado persistente entre frames. */
+    _visStepBars(targets, dtMs) {
+      const n = targets.length;
+      if (!this._visBarVals || this._visBarVals.length !== n) {
+        this._visBarVals = new Float32Array(n);
+        this._visBarPeaks = new Float32Array(n);
+      }
+      const vals = this._visBarVals, peaks = this._visBarPeaks;
+      const atk = 1 - Math.exp(-dtMs / 42);
+      const rel = 1 - Math.exp(-dtMs / 175);
+      const peakFall = dtMs * 0.00042;
+      for (let i = 0; i < n; i++) {
+        const t = targets[i];
+        vals[i] += (t - vals[i]) * (t > vals[i] ? atk : rel);
+        if (vals[i] > peaks[i]) peaks[i] = vals[i];
+        else if (peaks[i] > vals[i]) peaks[i] = Math.max(vals[i], peaks[i] - peakFall);
+      }
+      return { vals, peaks };
+    },
+
+    /* Onda fluida: diezma el dominio temporal quedándose con la
+     * muestra de mayor amplitud de cada tramo (conserva la forma sin
+     * el zigzag de unir miles de puntos crudos) y suaviza el
+     * resultado entre frames: la línea «respira» en vez de temblar. */
+    _visWavePoints(timeData, count, dtMs) {
+      if (!this._visWavePts || this._visWavePts.length !== count) {
+        this._visWavePts = new Float32Array(count);
+      }
+      const pts = this._visWavePts;
+      const k = 1 - Math.exp(-dtMs / 55);
+      const bucket = timeData.length / count;
+      for (let i = 0; i < count; i++) {
+        const start = Math.floor(i * bucket);
+        const stop = Math.min(timeData.length, Math.floor((i + 1) * bucket));
+        let best = 0, bestAbs = -1;
+        for (let j = start; j < stop; j++) {
+          const v = (timeData[j] - 128) / 128;
+          const a = v < 0 ? -v : v;
+          if (a > bestAbs) { bestAbs = a; best = v; }
+        }
+        pts[i] += (best - pts[i]) * k;
+      }
+      return pts;
+    },
+
+    drawVisualizerFrame(canvas, ctx, dtMs) {
       const w = canvas.width;
       const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
@@ -1166,61 +1328,125 @@ Object.assign(App, {
       if (!this.analyser || !this.freqData) {
         return;
       }
+      const dt = (typeof dtMs === 'number' && dtMs > 0) ? Math.min(100, dtMs) : 33;
+      const cols = this._visColors();
 
       if (this.visualizerMode === 'wave') {
-        this.analyser.getByteTimeDomainData(this.freqData);
-        ctx.lineWidth = Math.max(2, Math.min(3, w / 220));
-        const key = 'wave:' + w;
+        // Buffer temporal propio (fftSize muestras; antes se reusaba
+        // el de frecuencias, la mitad de largo: onda pobre y dentada).
+        if (!this._visTimeData || (this.analyser.fftSize && this._visTimeData.length !== this.analyser.fftSize)) {
+          this._visTimeData = new Uint8Array(this.analyser.fftSize || this.freqData.length);
+        }
+        this.analyser.getByteTimeDomainData(this._visTimeData);
+        const cssW = canvas.clientWidth || Math.round(w / 2);
+        const count = Math.max(64, Math.min(140, Math.round(cssW / 4)));
+        const pts = this._visWavePoints(this._visTimeData, count, dt);
+        const midY = h / 2;
+        const amp = h * 0.42;
+
+        const key = 'wave:' + w + ':' + cols.from + '>' + cols.to;
         if (!this._visGrad || this._visGradKey !== key) {
           const grad = ctx.createLinearGradient(0, 0, w, 0);
-          grad.addColorStop(0, 'rgba(124, 58, 237, 0.85)');
-          grad.addColorStop(0.5, 'rgba(236, 72, 153, 0.95)');
-          grad.addColorStop(1, 'rgba(6, 182, 212, 0.85)');
+          grad.addColorStop(0, cols.from);
+          grad.addColorStop(0.5, cols.to);
+          grad.addColorStop(1, cols.from);
           this._visGrad = grad;
           this._visGradKey = key;
         }
-        ctx.strokeStyle = this._visGrad;
-        ctx.beginPath();
-        const sliceWidth = w / this.freqData.length;
-        let x = 0;
-        for (let i = 0; i < this.freqData.length; i++) {
-          const v = this.freqData[i] / 128.0;
-          const y = (v * h) / 2;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-          x += sliceWidth;
+        const fkey = 'wavefill:' + h + ':' + cols.from + '>' + cols.to;
+        if (!this._visWaveFill || this._visWaveFillKey !== fkey) {
+          const fg = ctx.createLinearGradient(0, 0, 0, h);
+          fg.addColorStop(0, this._hexA(cols.to, 0.05));
+          fg.addColorStop(0.5, this._hexA(cols.to, 0.22));
+          fg.addColorStop(1, this._hexA(cols.to, 0.05));
+          this._visWaveFill = fg;
+          this._visWaveFillKey = fkey;
         }
+
+        // Trazo suavizado con curvas cuadráticas por puntos medios
+        const tracePath = () => {
+          ctx.beginPath();
+          let px = 0, py = midY + pts[0] * amp;
+          ctx.moveTo(px, py);
+          for (let i = 1; i < count; i++) {
+            const x = (i / (count - 1)) * w;
+            const y = midY + pts[i] * amp;
+            ctx.quadraticCurveTo(px, py, (px + x) / 2, (py + y) / 2);
+            px = x; py = y;
+          }
+          ctx.lineTo(px, py);
+        };
+
+        const lineW = Math.max(2, Math.min(3.2, w / 220));
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        // Halo ancho y tenue bajo el trazo: la «fluidez» visual
+        ctx.save();
+        ctx.globalAlpha = 0.15;
+        ctx.strokeStyle = this._visGrad;
+        ctx.lineWidth = lineW * 3.4;
+        tracePath();
+        ctx.stroke();
+        ctx.restore();
+        // Relleno suave entre la onda y su línea central
+        tracePath();
+        ctx.lineTo(w, midY);
+        ctx.lineTo(0, midY);
+        ctx.closePath();
+        ctx.fillStyle = this._visWaveFill;
+        ctx.fill();
+        // Trazo principal
+        ctx.strokeStyle = this._visGrad;
+        ctx.lineWidth = lineW;
+        tracePath();
         ctx.stroke();
       } else {
         this.analyser.getByteFrequencyData(this.freqData);
-        // Un solo gradiente por altura (antes: 32 por frame)
-        const bkey = 'bars:' + h;
+        const sampleRate = (this.analyser.context && this.analyser.context.sampleRate)
+          || (this.audioCtx && this.audioCtx.sampleRate) || 48000;
+        const cssW = canvas.clientWidth || Math.round(w / 2);
+        // Nº de barras según el ancho real: ni columnas enanas en
+        // pantallas grandes ni láminas de 1 px en las pequeñas.
+        const numBars = Math.max(24, Math.min(56, Math.round(cssW / 11)));
+        const bands = this._visLogBands(numBars, this.freqData.length, sampleRate);
+        const state = this._visStepBars(this._visBarTargets(bands), dt);
+        const vals = state.vals, peaks = state.peaks;
+
+        const bkey = 'bars:' + h + ':' + cols.from + '>' + cols.to;
         if (!this._visBarsGrad || this._visBarsKey !== bkey) {
           const bg = ctx.createLinearGradient(0, 0, 0, h);
-          bg.addColorStop(0, 'rgba(236, 72, 153, 0.95)');
-          bg.addColorStop(1, 'rgba(124, 58, 237, 0.65)');
+          bg.addColorStop(0, this._hexA(cols.to, 0.95));
+          bg.addColorStop(0.62, this._hexA(cols.from, 0.85));
+          bg.addColorStop(1, this._hexA(cols.from, 0.55));
           this._visBarsGrad = bg;
           this._visBarsKey = bkey;
         }
+        const gap = Math.max(2, Math.round(w / 300));
+        const pitch = w / numBars;
+        const barWidth = Math.max(1.5, pitch - gap);
+        const usable = h - Math.max(7, Math.round(h * 0.14)); // aire para el pico
+        const r = Math.min(barWidth / 2, Math.max(1.5, w / 260));
         ctx.fillStyle = this._visBarsGrad;
-        const numBars = 32;
-        const barWidth = Math.floor(w / numBars) - 3;
-        const step = Math.max(1, Math.floor(this.freqData.length / (numBars * 1.6)));
         for (let i = 0; i < numBars; i++) {
-          const val = this.freqData[i * step] || 0;
-          const pct = val / 255;
-          const barHeight = Math.max(3, pct * (h - 8));
-          const x = i * (barWidth + 3) + 2;
+          const barHeight = Math.max(2, vals[i] * usable);
+          const x = i * pitch + gap / 2;
           const y = h - barHeight;
-
           ctx.beginPath();
-          const r = Math.min(barWidth / 2, 3);
           if (typeof ctx.roundRect === 'function') {
             ctx.roundRect(x, y, barWidth, barHeight, [r, r, 0, 0]);
           } else {
             ctx.rect(x, y, barWidth, barHeight);
           }
           ctx.fill();
+        }
+        // Marcas de pico en una sola pasada y un solo fillStyle
+        const capH = Math.max(2, Math.round(h * 0.055));
+        ctx.fillStyle = 'rgba(255,255,255,0.78)';
+        for (let i = 0; i < numBars; i++) {
+          if (peaks[i] <= 0.02) continue;
+          const x = i * pitch + gap / 2;
+          const capY = Math.max(0, h - Math.max(2, peaks[i] * usable) - capH - 2);
+          ctx.fillRect(x, capY, barWidth, capH);
         }
       }
     }

@@ -14,6 +14,16 @@ Object.assign(App, {
      *  Inicialización
      * ============================================================ */
     async init() {
+      // init() NO es idempotente: cablea listeners globales en
+      // wireEvents(). Si el arranque se dispara dos veces en el mismo
+      // contexto (el cliente WebXDC puede re-evaluar main.js o reemitir
+      // DOMContentLoaded), cada botón queda con el listener duplicado y
+      // los de tipo «interruptor» se anulan a sí mismos: un toque en
+      // play/pausa reproducía y pausaba a la vez, y el de pantalla
+      // completa de Letras entraba y salía en el mismo clic. Por eso el
+      // usuario veía ambos botones «muertos». Una sola pasada, siempre.
+      if (this._initStarted) return;
+      this._initStarted = true;
       this.tracks = [];
       this.audio = document.getElementById('audioEl');
       this.audio.volume = this.volume;
@@ -35,9 +45,9 @@ Object.assign(App, {
       // Restaurar sesión (cola, pista actual, posición, shuffle, repeat)
       const restored = await this.restoreSession();
 
-      // La lista predefinida «Mi Música» ya no existe. Si la sesión guardada
-      // apuntaba a una lista que ya no está (o a la eliminada), volver a la
-      // biblioteca para no mostrar un contexto fantasma en la barra.
+      // Si la sesión guardada apuntaba a una lista que ya no está,
+      // volver a la biblioteca para no mostrar un contexto fantasma
+      // en la barra («Reproduciendo desde…»).
       this.sanitizePlayContext();
 
       if (!restored) {
@@ -49,9 +59,7 @@ Object.assign(App, {
 
       this.wireEvents();
       this.wireGestures();
-      this.renderLibrary();
       this.renderPlaylists();
-      if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
       if (typeof this.renderHome === 'function') this.renderHome();
       this.showView('home');
       this.setNavActive('home');
@@ -80,6 +88,11 @@ Object.assign(App, {
         // En bfcache (pagehide persisted=true) NO revocar: al volver atrás
         // los objectURL deben seguir vivos.
         if (e && e.type === 'pagehide' && e.persisted) return;
+        // Un borrado con «Deshacer» pendiente no debe sobrevivir al cierre:
+        // si se cierra la app, se confirma para que la pista/lista no
+        // reaparezca al volver a abrirla.
+        try { if (this._pendingTrackDelete) this._commitPendingTrackDelete(); } catch (err) {}
+        try { if (this._pendingPlaylistDelete) this._commitPendingPlaylistDelete(); } catch (err) {}
         try { this.saveSession(); } catch (err) {}
         try { this.releaseAllUrls(); } catch (err) {}
       };
@@ -126,7 +139,6 @@ Object.assign(App, {
       }
 
       if (typeof this.maybeShowBackgroundNotice === 'function') this.maybeShowBackgroundNotice();
-      if (typeof this.maybeShowLibraryMissingNotice === 'function') this.maybeShowLibraryMissingNotice();
 
       this._initialized = true;
       document.dispatchEvent(new CustomEvent('aurora:ready', { detail: { tracks: this.tracks.length } }));
@@ -156,34 +168,6 @@ Object.assign(App, {
           }).catch(() => {});
         };
         setTimeout(() => attempt(8), 700);
-      } catch (e) {}
-    },
-
-    /* Si la biblioteca está vacía pero el marcador dice que había música,
-     * el almacenamiento se perdió fuera de la app (limpieza del sistema,
-     * cuota, u otra copia del .xdc): avisar y ofrecer importar un backup
-     * en vez de mostrar un estado vacío silencioso. */
-    maybeShowLibraryMissingNotice() {
-      try {
-        if (this.tracks.length > 0) return;
-        let expected = 0;
-        try { expected = parseInt(localStorage.getItem('aurora_lib_count') || '0', 10) || 0; } catch (e) {}
-        if (expected <= 0) return;
-        const attempt = (left) => {
-          if (document.querySelector('.sheet.open')) {
-            if (left > 0) setTimeout(() => attempt(left - 1), 1000);
-            return;
-          }
-          this.showConfirm({
-            message: this.t('library_missing_text'),
-            okLabel: this.t('settings_import'),
-            cancelLabel: this.t('cancel'),
-            danger: false
-          }).then((ok) => {
-            if (ok && typeof this.importLibrary === 'function') this.importLibrary();
-          }).catch(() => {});
-        };
-        setTimeout(() => attempt(8), 1400);
       } catch (e) {}
     },
 
@@ -243,38 +227,90 @@ Object.assign(App, {
         this.playlists = [];
       }
 
-      // Migración: borrar la antigua lista predefinida «Mi Música» y
-      // limpiar isDefault (ninguna lista es especial ya).
-      this.migrateRemoveDefaultPlaylist();
+      // «Mi Música»: la lista automática donde viven las canciones
+      // agregadas fuera de cualquier lista (ver migrateMiMusica).
+      this.migrateMiMusica();
     },
 
-    /* Migración (una vez por arranque, idempotente) del modelo antiguo:
-     *   - elimina de memoria y de IndexedDB la lista «Mi Música»
-     *     (id legacy 'mi-musica');
-     *   - quita isDefault de cualquier lista antigua para que todas se
-     *     puedan borrar;
-     *   - si el contexto de reproducción apuntaba a esa lista, lo pasa a
-     *     «biblioteca».
-     * Las pistas que estuvieran dentro siguen en la biblioteca: la lista
-     * solo agrupaba, nunca era dueña del audio. */
-    migrateRemoveDefaultPlaylist() {
-      const LEGACY_ID = 'mi-musica';
-      const removed = this.playlists.filter(p => p && p.id === LEGACY_ID);
-      if (removed.length) {
-        this.playlists = this.playlists.filter(p => p && p.id !== LEGACY_ID);
-        this.deletePlaylistFromStorage(LEGACY_ID);
-      }
+    /* «Mi Música» (id fijo 'mi-musica') es la lista automática de la
+     * casa: recoge las canciones que se agregan fuera de cualquier
+     * lista concreta. Modelo (decisión del usuario, que revierte la
+     * retirada anterior de esta lista):
+     *   - Al importar sin lista destino, las canciones entran en
+     *     ella; si no existe, se crea SOLO con las de esa importación
+     *     (antes se sembraba con toda la biblioteca y se colaban las
+     *     canciones de las demás listas: fallo reportado, §46).
+     *   - Al arrancar se reconstruye solo si falta, y se siembra con
+     *     las canciones que no viven en ninguna otra lista — es lo
+     *     que «agregadas fuera de una lista» puede saberse sin
+     *     guardar la procedencia de cada pista. Si no hay ninguna,
+     *     no nace vacía: aparecerá con la primera importación suelta.
+     *   - Si el usuario la borra a propósito, NO se resucita al
+     *     arrancar: queda la marca 'aurora_mimusica_removed' y solo
+     *     vuelve cuando agregue otra canción fuera de una lista.
+     * La lista solo agrupa: quitar una canción de ella no la borra de
+     * la biblioteca, como en cualquier otra lista. */
+    migrateMiMusica() {
+      const ID = 'mi-musica';
       this.playlists.forEach(p => {
         if (p && p.isDefault) {
           p.isDefault = false;
           this.persistPlaylist(p);
         }
       });
-      if (this.playContext && this.playContext.type === 'playlist' &&
-          (!this.playContext.id || this.playContext.id === LEGACY_ID)) {
-        this.playContext = { type: 'all' };
+      const exists = this.playlists.some(p => p && p.id === ID);
+      if (exists || !this.tracks.length) return;
+      let removed = false;
+      try { removed = localStorage.getItem('aurora_mimusica_removed') === '1'; } catch (e) {}
+      if (removed) return;
+      // Canciones «sueltas»: en la biblioteca pero en ninguna lista
+      // del usuario. Las de otras listas NO entran (§46).
+      const enListas = new Set();
+      this.playlists.forEach(p => {
+        if (p && p.id !== ID && Array.isArray(p.trackIds)) {
+          p.trackIds.forEach(id => enListas.add(id));
+        }
+      });
+      const sueltas = this.tracks.map(t => t.id).filter(id => !enListas.has(id));
+      if (sueltas.length) this._createMiMusica(sueltas);
+    },
+
+    _createMiMusica(trackIds) {
+      const pl = {
+        id: 'mi-musica',
+        name: 'Mi Música',
+        description: '',
+        trackIds: [...new Set((trackIds || []).filter(Boolean))]
+      };
+      this.playlists.unshift(pl);
+      this.persistPlaylist(pl);
+      try { localStorage.removeItem('aurora_mimusica_removed'); } catch (e) {}
+      return pl;
+    },
+
+    /* Garantiza que «Mi Música» existe y contiene los ids dados.
+     * Al crearla entran SOLO esos ids (los de la importación que la
+     * provoca): sembrarla con toda la biblioteca colaba las
+     * canciones de las demás listas (§46). Y sin ids no se
+     * materializa una lista vacía por una importación fallida. */
+    _ensureMiMusica(extraIds) {
+      const pl = this.playlists.find(p => p && p.id === 'mi-musica');
+      if (!pl) {
+        const seed = [...new Set((extraIds || []).filter(Boolean))];
+        return seed.length ? this._createMiMusica(seed) : null;
       }
-      return removed.length;
+      let changed = false;
+      for (const id of extraIds || []) {
+        if (id && !pl.trackIds.includes(id)) {
+          pl.trackIds.push(id);
+          changed = true;
+        }
+      }
+      if (changed) {
+        if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
+        this.persistPlaylist(pl);
+      }
+      return pl;
     },
 
     /* Si el contexto guardado apunta a una lista que no existe, se
@@ -349,7 +385,7 @@ Object.assign(App, {
             pl._coverCacheHash = pl.coverArtHash || null;
           }
         });
-        this.migrateRemoveDefaultPlaylist();
+        this.migrateMiMusica();
       } catch (e) {
         this.playlists = [];
       }

@@ -43,8 +43,27 @@ Object.assign(App, {
       }
     },
 
-    openFilePicker(useDirectory, targetPlaylistId) {
+    async openFilePicker(useDirectory, targetPlaylistId) {
       if (useDirectory && !this.supportsFolderPicker()) useDirectory = false;
+
+      // En Delta Chat nativo manda su selector integrado
+      // (webxdc.importFiles, §42). El modo carpeta no existe allí y ya
+      // viene degradado a archivos por supportsFolderPicker(). Si el
+      // usuario cancela, devuelve []: no se reintenta con el <input>.
+      if (!useDirectory) {
+        const U0 = window.AuroraUploader;
+        const exts = ((U0 && typeof U0.ACCEPTED === 'string')
+          ? U0.ACCEPTED : '.mp3,.m4a,.flac,.wav,.ogg,.webm,.opus')
+          .split(',').map(x => x.trim()).filter(x => x.charAt(0) === '.');
+        exts.push('.lrc', '.txt');
+        const nativeFiles = await this.pickFilesWebxdc({ extensions: exts, multiple: true });
+        if (nativeFiles) {
+          if (nativeFiles.length > 0) {
+            await this.handleFileInput(nativeFiles, false, targetPlaylistId || null);
+          }
+          return;
+        }
+      }
       const UPLOADER = window.AuroraUploader;
       const acceptedTypes = (UPLOADER && typeof UPLOADER.ACCEPTED === 'string')
         ? UPLOADER.ACCEPTED
@@ -64,6 +83,7 @@ Object.assign(App, {
         input.setAttribute('mozdirectory', '');
         input.setAttribute('nwdirectory', '');
       } else {
+        // Audio y letras sueltas (.lrc se enlaza con su canción).
         input.accept = acceptedTypes + ',.lrc,.txt';
       }
 

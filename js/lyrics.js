@@ -197,7 +197,7 @@ Object.assign(App, {
 
       // Aplicar tamaño de fuente guardado
       const scroll = document.getElementById('lyricsScroll');
-      if (scroll) scroll.style.setProperty('--lrc-font-size', this.lrcFontSize + 'px');
+      if (scroll) scroll.style.setProperty('--lrc-font-size', this._lrcFontCss());
 
       if (!t || !t.lrc || (Array.isArray(t.lrc) && t.lrc.length === 0)) {
         this.lrcLines = [];
@@ -458,7 +458,13 @@ Object.assign(App, {
     /* ============================================================
      *  Cargar .lrc externo (#1)
      * ============================================================ */
-    loadExternalLrc() {
+    async loadExternalLrc() {
+      // Delta Chat nativo: selector integrado antes que <input> (§42)
+      const nativeFiles = await this.pickFilesWebxdc({ extensions: ['.lrc', '.txt'], multiple: false });
+      if (nativeFiles) {
+        if (nativeFiles.length > 0) await this._applyExternalLrc(nativeFiles[0]);
+        return;
+      }
       let input = document.getElementById('lrcFileInput');
       if (!input) {
         input = document.createElement('input');
@@ -469,26 +475,31 @@ Object.assign(App, {
         document.body.appendChild(input);
         input.addEventListener('change', async (e) => {
           const file = e.target.files[0];
-          if (!file) return;
-          try {
-            const text = await file.text();
-            if (this.currentTrack) {
-              const lines = text.split(/\r?\n/);
-              this.currentTrack.lrc = lines;
-              // Invalidar caché
-              this.currentTrack._lrcCache = null;
-              this.persistTrack(this.currentTrack);
-              this.renderLyrics();
-              this.toast(this.t('lrc_loaded'));
-            }
-          } catch (err) {
-            this.toast(this.t('toast_load_error'));
-          }
+          if (file) await this._applyExternalLrc(file);
           e.target.value = '';
         });
       }
       input.value = '';
       input.click();
+    },
+
+    /* Aplica el .lrc elegido (del <input> o de webxdc.importFiles). */
+    async _applyExternalLrc(file) {
+      if (!file) return;
+      try {
+        const text = await file.text();
+        if (this.currentTrack) {
+          const lines = text.split(/\r?\n/);
+          this.currentTrack.lrc = lines;
+          // Invalidar caché
+          this.currentTrack._lrcCache = null;
+          this.persistTrack(this.currentTrack);
+          this.renderLyrics();
+          this.toast(this.t('lrc_loaded'));
+        }
+      } catch (err) {
+        this.toast(this.t('toast_load_error'));
+      }
     },
 
     /* ============================================================
@@ -546,13 +557,13 @@ Object.assign(App, {
       const caption = `📜 Letra: ${title}` + (artist ? ` · ${artist}` : '');
 
       try {
-        await this.exportFile({
+        const ok = await this.exportFile({
           name: fileName,
           content: text,
           mimeType: 'text/plain;charset=utf-8',
           caption
         });
-        this.toast(this.t('toast_lrc_exported'));
+        this.toast(ok ? this.t('toast_lrc_exported') : this.t('toast_share_error'), ok ? undefined : 'danger');
       } catch (e) {
         this.toast(this.t('toast_share_error'));
       }
@@ -618,13 +629,20 @@ Object.assign(App, {
     /* ============================================================
      *  Tamaño de fuente ajustable (#7)
      * ============================================================ */
+    /* El tamaño guardado sigue en «px equivalentes» (12–32) por
+     * compatibilidad con ajustes ya guardados, pero se aplica en rem para
+     * que escale con el tamaño de fuente del sistema. */
+    _lrcFontCss() {
+      return ((Number(this.lrcFontSize) || 19) / 16) + 'rem';
+    },
+
     setLrcFontSize(size) {
       this.lrcFontSize = Math.max(12, Math.min(32, size));
       try { localStorage.setItem('aurora_lrc_fontsize', this.lrcFontSize); } catch (e) {}
       // Setear la variable CSS en todos los contenedores relevantes
       const scroll = document.getElementById('lyricsScroll');
       const content = document.getElementById('lyricsContent');
-      const val = this.lrcFontSize + 'px';
+      const val = this._lrcFontCss();
       if (scroll) scroll.style.setProperty('--lrc-font-size', val);
       if (content) content.style.setProperty('--lrc-font-size', val);
       // Reflejar los límites: si ya no se puede subir o bajar, el botón
@@ -663,6 +681,14 @@ Object.assign(App, {
       }
       const label = document.getElementById('lrcSpeedLabel');
       if (label) label.textContent = this.playbackRate.toFixed(1) + '×';
+      // El mismo ajuste se ofrece en Ajustes → Reproducción (A3):
+      // ambas etiquetas y los topes del stepper quedan sincronizados.
+      const sVal = document.getElementById('settingsSpeedVal');
+      if (sVal) sVal.textContent = this.playbackRate.toFixed(1) + '×';
+      const bDown = document.getElementById('btnSpeedDown');
+      if (bDown) bDown.disabled = this.playbackRate <= 0.5;
+      const bUp = document.getElementById('btnSpeedUp');
+      if (bUp) bUp.disabled = this.playbackRate >= 2.0;
       try { localStorage.setItem('aurora_playback_rate', this.playbackRate); } catch (e) {}
       if (this.currentTrack) {
         this.currentTrack.lrcSpeed = this.playbackRate;

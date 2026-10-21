@@ -38,31 +38,37 @@ Object.assign(App, {
       this.setMarqueeText(document.getElementById('trackArtist'), t.artist || this.t('unknown_artist'));
       const albumEl = document.getElementById('trackAlbum');
       if (albumEl) {
-        const hasAlbum = t.album && !this.isPlaceholderAlbum(t.album);
+        // El álbum se oculta si no aporta nada: vacío/marcador, o igual
+        // al título (típico en sencillos: el mismo nombre dos veces)
+        // o al artista. La comparación ignora mayúsculas y espacios.
+        const normTxt = (v) => String(v == null ? '' : v).trim().toLowerCase();
+        const hasAlbum = t.album && !this.isPlaceholderAlbum(t.album)
+          && normTxt(t.album) !== normTxt(t.title)
+          && normTxt(t.album) !== normTxt(t.artist);
         albumEl.textContent = hasAlbum ? t.album : '';
         albumEl.style.display = hasAlbum ? '' : 'none';
       }
+      // Estrellas del Reproductor (§58): reflejan la nota de la pista.
+      if (typeof this._syncRatingUI === 'function') this._syncRatingUI(t);
       document.getElementById('timeTotal').textContent = this.fmtTime(t.duration);
       document.getElementById('miniTitle').textContent = t.title;
       document.getElementById('miniArtist').textContent = t.artist;
-      document.getElementById('lyricsTrackName').textContent = t.title + ' — ' + t.artist;
-      // Cabecera: bajo «REPRODUCIENDO AHORA» va el TÍTULO de la pista en curso.
-      // Antes se mostraba el álbum o el contexto («Reproduciendo desde X»), que
-      // se leía como si fuera el nombre de la canción. El contexto no se pierde:
-      // queda en el tooltip y, visible, en el sheet de la cola (#queueContextLabel).
+      // La cabecera de Letras ya no repite título — artista (va en la
+      // mini-cabecera). Su barra inferior sí muestra la duración total.
+      const lrcTotal = document.getElementById('lyricsTimeTotal');
+      if (lrcTotal) lrcTotal.textContent = this.fmtTime(t.duration);
+      // Cabecera en una sola frase: «Reproduciendo desde <contexto>»
+      // (la lista, Favoritos, el álbum…). Sin contexto se queda el
+      // texto neutro de la biblioteca. El título no va aquí: ya va en
+      // grande bajo la portada; completo queda en el tooltip.
       const ctxEl = document.getElementById('nowPlayingContext');
       if (ctxEl) {
-        ctxEl.textContent = t.title || this.t('unknown_track');
-        const ctxLabel = this.getPlayContextLabel();
-        let detail = '';
-        if (ctxLabel) {
-          detail = this.t('playing_from') + ' · ' + ctxLabel;
-        } else if (t.album && !this.isPlaceholderAlbum(t.album)) {
-          detail = t.album;
-        } else if (t.artist) {
-          detail = t.artist;
-        }
-        if (detail) ctxEl.setAttribute('title', detail);
+        const ctxLabel = (typeof this.getPlayContextLabel === 'function') ? this.getPlayContextLabel() : null;
+        ctxEl.textContent = ctxLabel
+          ? this.t('playing_from') + ' ' + ctxLabel
+          : this.t('your_library');
+        const fullTitle = (t.title || '') + (t.artist ? ' — ' + t.artist : '');
+        if (fullTitle) ctxEl.setAttribute('title', fullTitle);
         else ctxEl.removeAttribute('title');
       }
 
@@ -100,19 +106,29 @@ Object.assign(App, {
       // Si la portada es una imagen (dataURL), dibujarla
       const isImage = track.coverIsImage || (typeof track.cover === 'string' && track.cover.startsWith('data:'));
       if (isImage) {
-        const img = new Image();
-        img.onload = () => {
-          ctx.clearRect(0, 0, w, h);
-          // Modo "cover"
-          const ratio = Math.max(w / img.width, h / img.height);
-          const dw = img.width * ratio, dh = img.height * ratio;
-          ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
-        };
-        img.src = typeof track.cover === 'string' ? track.cover : (track.cover.dataURL || '');
-        // Fondo provisional mientras carga
-        ctx.fillStyle = '#222';
-        ctx.fillRect(0, 0, w, h);
-        return;
+        /* Hay pistas que pueden traer `coverIsImage` sin el campo
+         * `cover`; antes se leía
+         * `track.cover.dataURL` sin proteger y la vista del reproductor
+         * reventaba. Se usa la miniatura disponible y, si no hay nada
+         * dibujable, se cae al gradiente como en las filas. */
+        const src = typeof track.cover === 'string' ? track.cover
+          : (this.coverSrcForRow ? this.coverSrcForRow(track, Math.max(w, h)) : null)
+            || (track.cover && track.cover.dataURL) || '';
+        if (src) {
+          const img = new Image();
+          img.onload = () => {
+            ctx.clearRect(0, 0, w, h);
+            // Modo "cover"
+            const ratio = Math.max(w / img.width, h / img.height);
+            const dw = img.width * ratio, dh = img.height * ratio;
+            ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+          };
+          img.src = src;
+          // Fondo provisional mientras carga
+          ctx.fillStyle = '#222';
+          ctx.fillRect(0, 0, w, h);
+          return;
+        }
       }
 
       // Generar gradiente dinámico
@@ -204,6 +220,46 @@ Object.assign(App, {
       this.updateCoverA11y();
       if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
 
+      /* Los anillos de «esta lista está sonando» (hero de la lista
+       * abierta y «Reproducir Todo» de Favoritos) se pintan al
+       * renderizar, pero pausar desde el mini-reproductor con la hoja
+       * abierta no re-renderiza: quedaban encendidos en pausa. Aquí
+       * se re-sincronizan con cada cambio de play/pausa. */
+      const favBtn = document.getElementById('btnPlayFavoritesNow');
+      if (favBtn) {
+        favBtn.classList.toggle('is-playing',
+          this.isPlaying && !!this.playContext && this.playContext.type === 'favorites');
+      }
+      const ratedBtn = document.getElementById('btnPlayRatedNow');
+      if (ratedBtn) {
+        ratedBtn.classList.toggle('is-playing',
+          this.isPlaying && !!this.playContext && this.playContext.type === 'rated');
+      }
+      if (this._editingPlaylistId && typeof this.isPlaylistPlaying === 'function') {
+        const pl = (this.playlists || []).find(p => p && p.id === this._editingPlaylistId);
+        if (pl) {
+          const on = this.isPlaylistPlaying(pl);
+          const hero = document.getElementById('btnPlayPlaylistNow');
+          if (hero) hero.classList.toggle('is-playing', on);
+          const cover = document.getElementById('editPlaylistCover');
+          if (cover) cover.classList.toggle('is-playing', on);
+        }
+      }
+
+      /* «Seguir escuchando» de Inicio: mientras la pista suena, la
+       * tarjeta sobra (ya la estás escuchando); al pausar vuelve
+       * como «retomar». Se conmuta sin repintar Inicio entero. Si
+       * la pista cambió con Inicio montado, el data-track no
+       * coincide y sí se repinta para no enseñar la anterior. */
+      const homeHeroEl = document.getElementById('homeHero');
+      if (homeHeroEl) {
+        if (this.currentTrack && homeHeroEl.dataset.track && homeHeroEl.dataset.track !== this.currentTrack.id) {
+          if (typeof this.renderHome === 'function') this.renderHome();
+        } else {
+          homeHeroEl.hidden = !!this.isPlaying;
+        }
+      }
+
       // Visualizador en tiempo real
       if (this.isPlaying) {
         if (typeof this.startVisualizer === 'function') this.startVisualizer();
@@ -220,6 +276,12 @@ Object.assign(App, {
         const el = document.getElementById(id);
         if (el) el.style.display = hasTrack ? '' : 'none';
       });
+
+      /* Cada cambio de play/pausa pasa por aquí, y la visibilidad del
+       * mini reproductor depende de isPlaying (en Inicio se oculta en
+       * pausa, §52): sin este refresco, el mini solo obedecía al
+       * navegar y quedaba congelado tras pausar o reanudar. */
+      if (typeof this.updateChrome === 'function') this.updateChrome();
     },
 
     updateProgress() {
@@ -251,6 +313,13 @@ Object.assign(App, {
       const fill = document.getElementById('progressFill');
       const curEl = document.getElementById('timeCurrent');
       if (fill) fill.style.width = pct + '%';
+      // Barra de progreso de la vista de Letras (misma fuente de verdad).
+      const lrcFill = document.getElementById('lyricsProgressFill');
+      if (lrcFill) lrcFill.style.width = pct + '%';
+      const lrcCur = document.getElementById('lyricsTimeCurrent');
+      if (lrcCur) lrcCur.textContent = this.fmtTime(cur);
+      const lrcTot = document.getElementById('lyricsTimeTotal');
+      if (lrcTot && dur > 0) lrcTot.textContent = this.fmtTime(dur);
       const mini = document.getElementById('miniProgress');
       if (mini) mini.style.width = pct + '%';
       if (curEl) curEl.textContent = this.fmtTime(cur);
@@ -275,9 +344,15 @@ Object.assign(App, {
     fmtTime(s) {
       if (!s || isNaN(s)) return '0:00';
       s = Math.floor(s);
-      const m = Math.floor(s / 60);
       const r = s % 60;
-      return m + ':' + (r < 10 ? '0' : '') + r;
+      const pad = (n) => (n < 10 ? '0' : '') + n;
+      // A partir de una hora, «90:00» engaña: formato h:mm:ss.
+      if (s >= 3600) {
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        return h + ':' + pad(m) + ':' + pad(r);
+      }
+      return Math.floor(s / 60) + ':' + pad(r);
     },
 
     setMarqueeText(el, text) {

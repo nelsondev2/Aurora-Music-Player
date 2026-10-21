@@ -53,15 +53,17 @@ const SUPPORTED_LANGS = [
 
 const I18N = {
   /* ---------- App general ---------- */
+  /* Solo «Aurora»: no existe una versión «Pro» (ni otra que no lo sea),
+   * así que el antiguo «Aurora · Reproductor Pro» prometía de más. */
   app_title: {
-    es: 'Aurora · Reproductor Pro',
-    en: 'Aurora · Player Pro',
-    pt: 'Aurora · Player Pro',
-    zh: 'Aurora · 专业播放器',
-    ja: 'Aurora · プロプレーヤー',
-    fr: 'Aurora · Player Pro',
-    it: 'Aurora · Player Pro',
-    ru: 'Aurora · Про-плеер'
+    es: 'Aurora',
+    en: 'Aurora',
+    pt: 'Aurora',
+    zh: 'Aurora',
+    ja: 'Aurora',
+    fr: 'Aurora',
+    it: 'Aurora',
+    ru: 'Aurora'
   },
   now_playing_label: {
     es: 'REPRODUCIENDO AHORA',
@@ -102,6 +104,26 @@ const I18N = {
     fr: 'Charger musique',
     it: 'Carica musica',
     ru: 'Загрузить музыку'
+  },
+  rated_title: {
+    es: 'Más valoradas', en: 'Top rated', pt: 'Mais valorizadas',
+    zh: '评分最高', ja: '高評価', fr: 'Les mieux notées',
+    it: 'Le più votate', ru: 'Лучшие по оценке'
+  },
+  rated_empty: {
+    es: 'Todavía no has valorado ninguna canción. Toca las estrellas de una canción y las mejores aparecerán aquí.',
+    en: "You haven't rated any songs yet. Tap the stars on a song and the best ones will show up here.",
+    pt: 'Ainda não classificaste nenhuma música. Toca nas estrelas de uma música e as melhores aparecem aqui.',
+    zh: '你还没有给任何歌曲评分。点一首歌的星星，高分的就会出现在这里。',
+    ja: 'まだ評価した曲がありません。曲の星をタップすると、高評価の曲がここに集まります。',
+    fr: 'Vous n’avez pas encore noté de chansons. Touchez les étoiles d’une chanson et les meilleures apparaîtront ici.',
+    it: 'Non hai ancora valutato nessun brano. Tocca le stelle di un brano e i migliori appariranno qui.',
+    ru: 'Вы ещё не оценили ни одной песни. Коснитесь звёзд у песни — лучшие соберутся здесь.'
+  },
+  rating_label: {
+    es: 'Valoración', en: 'Rating', pt: 'Classificação',
+    zh: '评分', ja: '評価', fr: 'Note',
+    it: 'Valutazione', ru: 'Оценка'
   },
   favorite: {
     es: 'Favorito',
@@ -343,6 +365,8 @@ const I18N = {
     it: 'Le tue liste',
     ru: 'Ваши списки'
   },
+  /* Importación de listas M3U (la exportación ya existía como
+   * «Compartir lista»). Placeholders: N = nombre, X/Y = encontradas/total. */
   new_playlist: {
     es: 'Nueva',
     en: 'New',
@@ -373,16 +397,8 @@ const I18N = {
     it: 'Chiudi',
     ru: 'Закрыть'
   },
-  done_btn: {
-    es: 'Listo',
-    en: 'Done',
-    pt: 'Concluído',
-    zh: '完成',
-    ja: '完了',
-    fr: 'Terminé',
-    it: 'Fatto',
-    ru: 'Готово'
-  },
+  /* done_btn («Listo») se eliminó: cada hoja tiene ya su × de cierre y
+   * el botón de texto solo lo duplicaba (ver cabeceras en index.html). */
   clear_btn: {
     es: 'Vaciar',
     en: 'Clear',
@@ -397,11 +413,6 @@ const I18N = {
     es: 'Listas de reproducción', en: 'Playlists', pt: 'Listas de reprodução',
     zh: '播放列表', ja: 'プレイリスト', fr: 'Listes de lecture',
     it: 'Playlist', ru: 'Плейлисты'
-  },
-  library_songs_section: {
-    es: 'Todas las canciones', en: 'All songs', pt: 'Todas as músicas',
-    zh: '所有歌曲', ja: 'すべての曲', fr: 'Toutes les chansons',
-    it: 'Tutti i brani', ru: 'Все треки'
   },
   library_title: {
     es: 'Biblioteca',
@@ -442,6 +453,18 @@ const I18N = {
     fr: 'Thèmes et accents',
     it: 'Temi e accenti',
     ru: 'Темы и акценты'
+  },
+  theme_section: {
+    es: 'Tema', en: 'Theme', pt: 'Tema',
+    zh: '主题', ja: 'テーマ', fr: 'Thème', it: 'Tema', ru: 'Тема'
+  },
+  accent_section: {
+    es: 'Color de acento', en: 'Accent color', pt: 'Cor de destaque',
+    zh: '强调色', ja: 'アクセントカラー', fr: 'Couleur d’accent', it: 'Colore accento', ru: 'Цвет акцента'
+  },
+  settings_speed: {
+    es: 'Velocidad de reproducción', en: 'Playback speed', pt: 'Velocidade de reprodução',
+    zh: '播放速度', ja: '再生速度', fr: 'Vitesse de lecture', it: 'Velocità di riproduzione', ru: 'Скорость воспроизведения'
   },
   stats_title: {
     es: 'Estadísticas',
@@ -870,15 +893,17 @@ const I18N = {
     it: 'Tutte le tracce',
     ru: 'Все треки'
   },
+  /* Placeholder completo: antes venía truncado con «…» en el propio
+   * diccionario («Canción, artista o ál…») y se cortaba en pantalla. */
   search_placeholder: {
-    es: 'Canción, artista o ál…',
-    en: 'Song, artist or al…',
-    pt: 'Música, artista ou al…',
-    zh: '歌曲、艺术家或专辑…',
-    ja: '曲、アーティスト、アルバム…',
-    fr: 'Chanson, artiste ou al…',
-    it: 'Brano, artista o al…',
-    ru: 'Песня, исполнитель или ал…'
+    es: 'Canción, artista o álbum',
+    en: 'Song, artist or album',
+    pt: 'Música, artista ou álbum',
+    zh: '歌曲、艺术家或专辑',
+    ja: '曲、アーティスト、アルバム',
+    fr: 'Chanson, artiste ou album',
+    it: 'Brano, artista o album',
+    ru: 'Песня, исполнитель или альбом'
   },
   no_playlists_yet: {
     es: 'Sin listas todavía',
@@ -957,6 +982,18 @@ const I18N = {
   theme_dark: { es: 'Oscuro', en: 'Dark', pt: 'Escuro', zh: '深色', ja: 'ダーク', fr: 'Sombre', it: 'Scuro', ru: 'Тёмная' },
   theme_light: { es: 'Claro', en: 'Light', pt: 'Claro', zh: '浅色', ja: 'ライト', fr: 'Clair', it: 'Chiaro', ru: 'Светлая' },
   theme_amoled: { es: 'AMOLED', en: 'AMOLED', pt: 'AMOLED', zh: 'AMOLED', ja: 'AMOLED', fr: 'AMOLED', it: 'AMOLED', ru: 'AMOLED' },
+  // Tema que sigue la preferencia del sistema (claro/oscuro). Se resuelve
+  // en applyTheme() y se escucha el cambio con matchMedia.
+  theme_system: { es: 'Sistema', en: 'System', pt: 'Sistema', zh: '跟随系统', ja: 'システム', fr: 'Système', it: 'Sistema', ru: 'Системная' },
+  // Acción de deshacer en el toast (borrados con posibilidad de recuperar).
+  undo: { es: 'Deshacer', en: 'Undo', pt: 'Desfazer', zh: '撤销', ja: '元に戻す', fr: 'Annuler', it: 'Annulla', ru: 'Отменить' },
+  toast_restored: { es: 'Restaurado', en: 'Restored', pt: 'Restaurado', zh: '已恢复', ja: '復元しました', fr: 'Restauré', it: 'Ripristinato', ru: 'Восстановлено' },
+  // Etiquetas que estaban fijas en español en el marcado (aria-label).
+  back_btn: { es: 'Volver', en: 'Back', pt: 'Voltar', zh: '返回', ja: '戻る', fr: 'Retour', it: 'Indietro', ru: 'Назад' },
+  view_player: { es: 'Reproductor', en: 'Player', pt: 'Reprodutor', zh: '播放器', ja: 'プレーヤー', fr: 'Lecteur', it: 'Lettore', ru: 'Плеер' },
+  exit_fs: { es: 'Salir de pantalla completa', en: 'Exit full screen', pt: 'Sair da tela cheia', zh: '退出全屏', ja: '全画面表示を終了', fr: 'Quitter le plein écran', it: 'Esci da schermo intero', ru: 'Выйти из полноэкранного режима' },
+  remove: { es: 'Quitar', en: 'Remove', pt: 'Remover', zh: '移除', ja: '削除', fr: 'Retirer', it: 'Rimuovi', ru: 'Убрать' },
+  favorites_empty_title: { es: 'Aún no hay favoritos', en: 'No favorites yet', pt: 'Ainda não há favoritos', zh: '还没有收藏', ja: 'お気に入りはまだありません', fr: 'Pas encore de favoris', it: 'Ancora nessun preferito', ru: 'Пока нет избранного' },
   accent_aurora: { es: 'Aurora', en: 'Aurora', pt: 'Aurora', zh: '极光', ja: 'オーロラ', fr: 'Aurore', it: 'Aurora', ru: 'Сияние' },
   accent_ocean: { es: 'Océano', en: 'Ocean', pt: 'Oceano', zh: '海洋', ja: 'オーシャン', fr: 'Océan', it: 'Oceano', ru: 'Океан' },
   accent_moss: { es: 'Musgo', en: 'Moss', pt: 'Musgo', zh: '苔绿', ja: 'モス', fr: 'Mousse', it: 'Muschio', ru: 'Мох' },
@@ -1038,6 +1075,10 @@ const I18N = {
   },
   min_short: { es: 'min', en: 'min', pt: 'min', zh: '分钟', ja: '分', fr: 'min', it: 'min', ru: 'мин' },
   hour_short: { es: 'h', en: 'h', pt: 'h', zh: '时', ja: '時間', fr: 'h', it: 'h', ru: 'ч' },
+  track_count_one: {
+    es: '1 pista', en: '1 track', pt: '1 faixa',
+    zh: '1 首音轨', ja: '1 トラック', fr: '1 piste', it: '1 brano', ru: '1 трек'
+  },
   tracks_count: {
     es: 'pistas',
     en: 'tracks',
@@ -1221,16 +1262,6 @@ const I18N = {
     it: 'Radio basata su:',
     ru: 'Радио на основе:'
   },
-  toast_reorder_mode: {
-    es: 'Modo reordenar: arrastra el icono',
-    en: 'Reorder mode: drag the icon',
-    pt: 'Modo reordenar: arraste o ícone',
-    zh: '重新排序模式：拖动图标',
-    ja: '並べ替えモード：アイコンをドラッグ',
-    fr: 'Mode réorganiser : glisser l\'icône',
-    it: 'Modalità riordino: trascina l\'icona',
-    ru: 'Режим перестановки: перетащите значок'
-  },
   toast_playlist_empty: {
     es: 'Lista vacía',
     en: 'Empty playlist',
@@ -1320,16 +1351,6 @@ const I18N = {
     fr: 'Aléatoire désactivé',
     it: 'Casuale disattivato',
     ru: 'Случайный порядок выкл.'
-  },
-  delete_all_btn: {
-    es: 'Borrar todo',
-    en: 'Delete all',
-    pt: 'Apagar tudo',
-    zh: '全部删除',
-    ja: 'すべて削除',
-    fr: 'Tout supprimer',
-    it: 'Elimina tutto',
-    ru: 'Удалить всё'
   },
   delete_all_confirm: {
     es: '¿Borrar TODAS las pistas de tu biblioteca? Esta acción no se puede deshacer.',
@@ -1740,14 +1761,6 @@ const I18N = {
     es: 'Resetear EQ', en: 'Reset EQ', pt: 'Redefinir EQ', zh: '重置EQ', ja: 'EQをリセット',
     fr: 'Réinitialiser EQ', it: 'Reimposta EQ', ru: 'Сбросить EQ'
   },
-  settings_export: {
-    es: 'Exportar biblioteca', en: 'Export library', pt: 'Exportar biblioteca', zh: '导出媒体库', ja: 'ライブラリをエクスポート',
-    fr: 'Exporter la bibliothèque', it: 'Esporta libreria', ru: 'Экспортировать библиотеку'
-  },
-  settings_import: {
-    es: 'Importar biblioteca', en: 'Import library', pt: 'Importar biblioteca', zh: '导入媒体库', ja: 'ライブラリをインポート',
-    fr: 'Importer la bibliothèque', it: 'Importa libreria', ru: 'Импортировать библиотеку'
-  },
   settings_retag: {
     es: 'Releer metadatos', en: 'Reread metadata', pt: 'Relê metadados', zh: '重新读取元数据', ja: 'メタデータを再読込',
     fr: 'Relire les métadonnées', it: 'Rileggi metadati', ru: 'Перечитать метаданные'
@@ -1788,10 +1801,6 @@ const I18N = {
     es: 'pista(s) duplicada(s) omitida(s)', en: 'duplicate track(s) skipped', pt: 'faixa(s) duplicada(s) ignorada(s)',
     zh: '首重复音轨已跳过', ja: '重複トラックをスキップしました', fr: 'piste(s) en double ignorée(s)',
     it: 'traccia(e) duplicata/e saltata/e', ru: 'дубликат(ов) пропущено'
-  },
-  toast_exported: {
-    es: 'Metadatos exportados (sin audio)', en: 'Metadata exported (no audio)', pt: 'Metadados exportados (sem áudio)', zh: '已导出元数据（不含音频）', ja: 'メタデータを書き出しました（音声なし）',
-    fr: 'Métadonnées exportées (sans audio)', it: 'Metadati esportati (senza audio)', ru: 'Метаданные экспортированы (без аудио)'
   },
   toast_imported: {
     es: 'Biblioteca importada', en: 'Library imported', pt: 'Biblioteca importada', zh: '媒体库已导入', ja: 'ライブラリをインポートしました',
@@ -1969,16 +1978,6 @@ const I18N = {
     it: 'Il browser ha bloccato la riproduzione. Tocca ▶ per iniziare.',
     ru: 'Браузер заблокировал воспроизведение. Нажмите ▶, чтобы начать.'
   },
-  library_missing_text: {
-    es: 'Esta copia tenía música guardada y ahora está vacía: el sistema pudo borrar el almacenamiento, o estás abriendo otra copia de Aurora (cada copia tiene su propia biblioteca). ¿Importar una copia de seguridad?',
-    en: 'This copy had saved music and is now empty: the system may have cleared storage, or you opened a different Aurora copy (each copy keeps its own library). Import a backup?',
-    pt: 'Esta cópia tinha música guardada e agora está vazia: o sistema pode ter limpado o armazenamento, ou abriste outra cópia do Aurora (cada cópia tem a sua biblioteca). Importar uma cópia de segurança?',
-    zh: '此副本曾保存过音乐，现在却为空：系统可能已清除存储，或你打开了另一个 Aurora 副本（每个副本都有自己的曲库）。要导入备份吗？',
-    ja: 'このコピーには音楽が保存されていたはずですが空です。システムがストレージを消去したか、別の Aurora コピーを開いています（コピーごとにライブラリは別）。バックアップを読み込みますか？',
-    fr: 'Cette copie contenait de la musique et elle est vide : le système a peut-être effacé le stockage, ou vous avez ouvert une autre copie d’Aurora (chaque copie a sa bibliothèque). Importer une sauvegarde ?',
-    it: 'Questa copia aveva musica salvata ed è vuota: il sistema potrebbe aver cancellato lo spazio, oppure hai aperto un’altra copia di Aurora (ogni copia ha la sua libreria). Importare un backup?',
-    ru: 'В этой копии была сохранённая музыка, а теперь пусто: система могла очистить хранилище, либо вы открыли другую копию Aurora (у каждой копии своя библиотека). Импортировать резервную копию?'
-  },
   confirm_ok: {
     es: 'Aceptar',
     en: 'OK',
@@ -2011,25 +2010,15 @@ const I18N = {
     zh: '最常播放', ja: 'よく聴く曲', fr: 'Les plus écoutées',
     it: 'Più ascoltate', ru: 'Самые слушаемые'
   },
-  lib_sort_title: {
-    es: 'Título', en: 'Title', pt: 'Título',
-    zh: '标题', ja: 'タイトル', fr: 'Titre',
-    it: 'Titolo', ru: 'Название'
+  home_resume_at: {
+    es: 'Retomar en X', en: 'Resume at X', pt: 'Retomar em X',
+    zh: '从 X 继续', ja: 'X から再開', fr: 'Reprendre à X',
+    it: 'Riprendi da X', ru: 'Продолжить с X'
   },
-  lib_sort_artist: {
-    es: 'Artista', en: 'Artist', pt: 'Artista',
-    zh: '艺术家', ja: 'アーティスト', fr: 'Artiste',
-    it: 'Artista', ru: 'Исполнитель'
-  },
-  lib_sort_recent: {
-    es: 'Recientes', en: 'Recent', pt: 'Recentes',
-    zh: '最近', ja: '最近', fr: 'Récentes',
-    it: 'Recenti', ru: 'Недавние'
-  },
-  lib_sort_duration: {
-    es: 'Duración', en: 'Duration', pt: 'Duração',
-    zh: '时长', ja: '長さ', fr: 'Durée',
-    it: 'Durata', ru: 'Длительность'
+  see_all: {
+    es: 'Ver todo', en: 'See all', pt: 'Ver tudo',
+    zh: '查看全部', ja: 'すべて見る', fr: 'Tout voir',
+    it: 'Vedi tutto', ru: 'Показать все'
   },
   ctx_play_now: {
     es: 'Reproducir ahora', en: 'Play now', pt: 'Reproduzir agora',
@@ -2050,6 +2039,31 @@ const I18N = {
     es: 'Editar etiquetas', en: 'Edit tags', pt: 'Editar tags',
     zh: '编辑标签', ja: 'タグを編集', fr: 'Modifier les tags',
     it: 'Modifica tag', ru: 'Править теги'
+  },
+  ctx_change_cover: {
+    es: 'Cambiar portada', en: 'Change cover art', pt: 'Mudar capa',
+    zh: '更换封面', ja: 'ジャケットを変更', fr: 'Changer la pochette',
+    it: 'Cambia copertina', ru: 'Сменить обложку'
+  },
+  ctx_remove_cover: {
+    es: 'Restablecer portada', en: 'Restore original cover', pt: 'Repor capa original',
+    zh: '恢复原始封面', ja: '元のジャケットに戻す', fr: 'Rétablir la pochette',
+    it: 'Ripristina copertina', ru: 'Вернуть исходную обложку'
+  },
+  toast_cover_updated: {
+    es: 'Portada actualizada', en: 'Cover updated', pt: 'Capa atualizada',
+    zh: '封面已更新', ja: 'ジャケットを更新しました', fr: 'Pochette mise à jour',
+    it: 'Copertina aggiornata', ru: 'Обложка обновлена'
+  },
+  toast_cover_removed: {
+    es: 'Portada restablecida', en: 'Original cover restored', pt: 'Capa original reposta',
+    zh: '已恢复原始封面', ja: '元のジャケットに戻しました', fr: 'Pochette d’origine rétablie',
+    it: 'Copertina originale ripristinata', ru: 'Исходная обложка возвращена'
+  },
+  toast_cover_error: {
+    es: 'No se pudo usar esa imagen', en: 'That image could not be used', pt: 'Não foi possível usar essa imagem',
+    zh: '无法使用该图片', ja: 'その画像は使えませんでした', fr: 'Impossible d’utiliser cette image',
+    it: 'Impossibile usare quell’immagine', ru: 'Не удалось использовать изображение'
   },
   edit_track_title: {
     es: 'Editar pista', en: 'Edit track', pt: 'Editar faixa',
@@ -2145,6 +2159,11 @@ const I18N = {
     zh: '开始电台', ja: 'ラジオを開始', fr: 'Lancer la radio',
     it: 'Avvia radio', ru: 'Запустить радио'
   },
+  radio_label: {
+    es: 'Radio', en: 'Radio', pt: 'Rádio',
+    zh: '电台', ja: 'ラジオ', fr: 'Radio',
+    it: 'Radio', ru: 'Радио'
+  },
   rename_playlist_btn: {
     es: 'Renombrar', en: 'Rename', pt: 'Mudar nome',
     zh: '重命名', ja: '名前を変更', fr: 'Renommer',
@@ -2159,6 +2178,21 @@ const I18N = {
     es: 'Búsquedas recientes', en: 'Recent searches', pt: 'Pesquisas recentes',
     zh: '最近搜索', ja: '最近的搜索', fr: 'Recherches récentes',
     it: 'Ricerche recenti', ru: 'Недавние запросы'
+  },
+  search_empty_title: {
+    es: 'Sin búsquedas recientes', en: 'No recent searches', pt: 'Sem pesquisas recentes',
+    zh: '暂无最近搜索', ja: '最近の検索はありません', fr: 'Aucune recherche récente',
+    it: 'Nessuna ricerca recente', ru: 'Нет недавних запросов'
+  },
+  search_empty_hint: {
+    es: 'Escribe arriba para buscar por canción, artista o álbum en tu biblioteca.',
+    en: 'Type above to search your library by song, artist or album.',
+    pt: 'Escreve acima para pesquisar por música, artista ou álbum na tua biblioteca.',
+    zh: '在上方输入，按歌曲、艺人或专辑搜索你的曲库。',
+    ja: '上で入力すると、曲名・アーティスト・アルバムでライブラリを検索できます。',
+    fr: 'Saisis ci-dessus pour chercher par titre, artiste ou album dans ta bibliothèque.',
+    it: 'Scrivi sopra per cercare per brano, artista o album nella tua libreria.',
+    ru: 'Введите выше, чтобы искать по треку, исполнителю или альбому в библиотеке.'
   },
   search_section_songs: {
     es: 'Canciones', en: 'Songs', pt: 'Músicas',
@@ -2180,35 +2214,25 @@ const I18N = {
     zh: '清除记录', ja: '履歴を消去', fr: 'Effacer l\'historique',
     it: 'Cancella cronologia', ru: 'Очистить историю'
   },
-  settings_export_hint: {
-    es: 'Solo metadatos (listas, favoritos, etiquetas). No incluye los archivos de audio.',
-    en: 'Metadata only (playlists, likes, tags). Audio files are not included.',
-    pt: 'Só metadados (listas, favoritos, etiquetas). Sem ficheiros de áudio.',
-    zh: '仅元数据（播放列表、收藏、标签）。不含音频文件。',
-    ja: 'メタデータのみ（リスト・お気に入り・タグ）。音声ファイルは含まれません。',
-    fr: 'Métadonnées seulement (listes, favoris, tags). Pas de fichiers audio.',
-    it: 'Solo metadati (playlist, preferiti, tag). Nessun file audio.',
-    ru: 'Только метаданные (плейлисты, избранное, теги). Без аудиофайлов.'
+  toast_lrc_attached: {
+    es: 'X letra(s) enlazada(s)',
+    en: 'X lyric file(s) linked',
+    pt: 'X letra(s) associada(s)',
+    zh: '已关联 X 个歌词文件',
+    ja: '歌詞ファイル X 件を関連付けました',
+    fr: 'X fichier(s) de paroles associé(s)',
+    it: 'X file di testi collegati',
+    ru: 'Связано текстов: X'
   },
-  relink_pending: {
-    es: 'X pistas sin audio — toca para vincular',
-    en: 'X tracks without audio — tap to link',
-    pt: 'X faixas sem áudio — toca para vincular',
-    zh: 'X 首歌曲缺失音频 — 点击重新关联',
-    ja: '音声のない曲がX件 — タップして関連付け',
-    fr: 'X morceaux sans audio — touchez pour associer',
-    it: 'X brani senza audio — tocca per collegare',
-    ru: 'X треков без аудио — нажмите, чтобы привязать'
-  },
-  relink_done: {
-    es: 'X pistas vinculadas',
-    en: 'X tracks linked',
-    pt: 'X faixas vinculadas',
-    zh: '已关联 X 首',
-    ja: 'X件を関連付けました',
-    fr: 'X morceaux associés',
-    it: 'X brani collegati',
-    ru: 'Привязано треков: X'
+  toast_lrc_none: {
+    es: 'Ninguna letra coincidió con tus canciones',
+    en: 'No lyrics matched your songs',
+    pt: 'Nenhuma letra coincidiu com as tuas músicas',
+    zh: '没有歌词与你的歌曲匹配',
+    ja: '一致する歌詞はありませんでした',
+    fr: 'Aucune parole n’a correspondu à vos titres',
+    it: 'Nessun testo corrisponde ai tuoi brani',
+    ru: 'Ни один текст не подошёл к вашим песням'
   },
   toast_track_no_audio: {
     es: 'Pista sin audio: vuelve a importarla para escucharla',
@@ -2219,16 +2243,6 @@ const I18N = {
     fr: 'Morceau sans audio : réimportez-le pour l\'écouter',
     it: 'Brano senza audio: importalo di nuovo per ascoltarlo',
     ru: 'Нет аудио: импортируйте трек заново'
-  },
-  relink_badge: {
-    es: 'Sin audio',
-    en: 'No audio',
-    pt: 'Sem áudio',
-    zh: '无音频',
-    ja: '音声なし',
-    fr: 'Sans audio',
-    it: 'Senza audio',
-    ru: 'Без аудио'
   },
   bg_notice_text: {
     es: 'Consejo: usa el botón inicio para salir sin detener la música. El botón atrás cierra Aurora y detiene la reproducción.',
@@ -2290,16 +2304,6 @@ const I18N = {
     zh: 'X 首 · Y', ja: 'X 曲 · Y', fr: 'X pistes · Y',
     it: 'X brani · Y', ru: 'X треков · Y'
   },
-  toast_imported_meta: {
-    es: 'Metadatos importados. Vuelve a cargar el audio desde el dispositivo.',
-    en: 'Metadata imported. Load the audio files from your device again.',
-    pt: 'Metadados importados. Carregue de novo os ficheiros de áudio.',
-    zh: '已导入元数据。请重新从设备加载音频。',
-    ja: 'メタデータを読み込みました。音声ファイルを再度追加してください。',
-    fr: 'Métadonnées importées. Rechargez les fichiers audio depuis l\'appareil.',
-    it: 'Metadati importati. Ricarica i file audio dal dispositivo.',
-    ru: 'Метаданные импортированы. Снова загрузите аудио с устройства.'
-  },
 
   /* ---------- Fase 4: Now Playing y letras ---------- */
   np_loading: {
@@ -2344,14 +2348,16 @@ const I18N = {
     ru: 'Твоя музыка здесь'
   },
   home_welcome_lead: {
-    es: 'Carga canciones del teléfono. Sin cuenta, sin nube, sin anuncios.',
-    en: 'Load songs from your phone. No account, no cloud, no ads.',
-    pt: 'Carregue músicas do telemóvel. Sem conta, sem nuvem, sem anúncios.',
-    zh: '从手机加载歌曲。无需账号、云端或广告。',
-    ja: 'スマホから曲を読み込む。アカウントもクラウドも広告もなし。',
-    fr: 'Chargez des titres depuis le téléphone. Sans compte, sans cloud, sans pubs.',
-    it: 'Carica brani dal telefono. Niente account, cloud o pubblicità.',
-    ru: 'Загрузите песни с телефона. Без аккаунта, облака и рекламы.'
+    /* Neutro de plataforma: la app también se usa en Delta Chat de
+     * escritorio, así que nada de «del teléfono»: «tu dispositivo». */
+    es: 'Carga canciones desde tu dispositivo. Sin cuenta, sin nube, sin anuncios.',
+    en: 'Load songs from your device. No account, no cloud, no ads.',
+    pt: 'Carregue músicas do seu dispositivo. Sem conta, sem nuvem, sem anúncios.',
+    zh: '从你的设备加载歌曲。无需账号、云端或广告。',
+    ja: 'デバイスから曲を読み込む。アカウントもクラウドも広告もなし。',
+    fr: 'Chargez des titres depuis votre appareil. Sans compte, sans cloud, sans pubs.',
+    it: 'Carica brani dal tuo dispositivo. Niente account, cloud o pubblicità.',
+    ru: 'Загрузите песни со своего устройства. Без аккаунта, облака и рекламы.'
   },
   home_perk_lyrics: {
     es: 'Letras sincronizadas', en: 'Synced lyrics', pt: 'Letra sincronizada',
@@ -2367,6 +2373,25 @@ const I18N = {
     es: 'Local y privado', en: 'Local and private', pt: 'Local e privado',
     zh: '本地且私密', ja: 'ローカルでプライベート', fr: 'Local et privé',
     it: 'Locale e privato', ru: 'Локально и приватно'
+  },
+  /* Descripciones de una línea bajo cada ventaja de la bienvenida: la
+   * ventaja sola parecía un botón; con descripción se lee como lo que
+   * es, información. */
+  home_perk_lyrics_desc: {
+    es: 'Con tus archivos .lrc, línea a línea', en: 'With your .lrc files, line by line', pt: 'Com seus arquivos .lrc, linha a linha',
+    zh: '使用 .lrc 文件逐行同步', ja: '.lrcファイルで一行ずつ同期', fr: 'Avec vos fichiers .lrc, ligne par ligne',
+    it: 'Con i tuoi file .lrc, riga per riga', ru: 'С файлами .lrc — строка за строкой'
+  },
+  home_perk_playlists_desc: {
+    es: 'Crea listas y marca favoritos', en: 'Build playlists and save favorites', pt: 'Crie listas e salve favoritos',
+    zh: '创建歌单并收藏喜欢的歌曲', ja: 'プレイリスト作成とお気に入り登録', fr: 'Créez des listes et des favoris',
+    it: 'Crea liste e salva i preferiti', ru: 'Создавайте плейлисты и отмечайте избранное'
+  },
+  home_perk_offline_desc: {
+    /* También neutro: en PC «tu teléfono» no tiene sentido. */
+    es: 'Todo queda en tu dispositivo', en: 'Everything stays on your device', pt: 'Tudo fica no seu dispositivo',
+    zh: '一切都只保存在你的设备中', ja: 'データはすべて端末の中だけ', fr: 'Tout reste sur votre appareil',
+    it: 'Tutto resta sul tuo dispositivo', ru: 'Всё хранится только на вашем устройстве'
   },
 
   shortcuts_title: {
@@ -2564,6 +2589,13 @@ const I18N = {
     zh: 'A-B 循环', ja: 'A-B ループ', fr: 'Boucle A-B',
     it: 'Loop A-B', ru: 'Петля A-B'
   },
+  /* Etiqueta corta bajo el botón A-B: junto al distintivo «A-B» se lee
+   * «Bucle A-B» sin ocupar el ancho completo de la fila secundaria. */
+  ab_label: {
+    es: 'Bucle', en: 'Loop', pt: 'Loop',
+    zh: '循环', ja: 'ループ', fr: 'Boucle',
+    it: 'Loop', ru: 'Петля'
+  },
   ab_set_a: {
     es: 'Punto A fijado en X. Pulsa para fijar B', en: 'Point A set at X. Tap to set B', pt: 'Ponto A fixado em X. Toque para fixar B',
     zh: 'A 点已设置在 X。再次点击设置 B 点', ja: 'A 地点を X に設定しました。タップして B を設定', fr: 'Point A défini à X. Touchez pour définir B',
@@ -2588,70 +2620,6 @@ const I18N = {
     es: 'Mantiene el tono natural de la voz sin distorsionar el pitch.', en: 'Keeps natural voice pitch without chipmunk effect.', pt: 'Mantém o tom natural da voz sem distorcer o pitch.',
     zh: '保持自然声音音调，避免变声效果。', ja: '声の高さを変えずに自然なトーンを維持します。', fr: 'Maintient la voix naturelle sans effet accéléré.',
     it: 'Mantiene il timbro vocale naturale senza alterare l’intonazione.', ru: 'Сохраняет естественную тональность голоса без искажения.'
-  },
-  batch_select: {
-    es: 'Seleccionar', en: 'Select', pt: 'Selecionar',
-    zh: '多选', ja: '選択', fr: 'Sélectionner',
-    it: 'Seleziona', ru: 'Выбрать'
-  },
-  batch_cancel: {
-    es: 'Cancelar selección', en: 'Cancel selection', pt: 'Cancelar seleção',
-    zh: '取消多选', ja: '選択解除', fr: 'Annuler la sélection',
-    it: 'Annulla selezione', ru: 'Отменить выбор'
-  },
-  batch_selected_count: {
-    es: 'X seleccionadas', en: 'X selected', pt: 'X selecionadas',
-    zh: '已选 X 首', ja: 'X 曲を選択中', fr: 'X sélectionnées',
-    it: 'X selezionate', ru: 'Выбрано: X'
-  },
-  batch_edit_tags: {
-    es: 'Editar etiquetas', en: 'Edit tags', pt: 'Editar etiquetas',
-    zh: '批量修改标签', ja: '一括タグ編集', fr: 'Modifier les tags',
-    it: 'Modifica tag', ru: 'Пакетное редактирование'
-  },
-  batch_add_to_playlist: {
-    es: 'Añadir a lista', en: 'Add to playlist', pt: 'Adicionar à lista',
-    zh: '添加到歌单', ja: 'プレイリストに追加', fr: 'Ajouter à la liste',
-    it: 'Aggiungi a playlist', ru: 'Добавить в плейлист'
-  },
-  batch_delete: {
-    es: 'Eliminar pistas', en: 'Delete tracks', pt: 'Excluir faixas',
-    zh: '批量删除', ja: '一括削除', fr: 'Supprimer pistes',
-    it: 'Elimina brani', ru: 'Удалить треки'
-  },
-  batch_edit_title: {
-    es: 'Edición por lote', en: 'Batch Edit', pt: 'Edição em lote',
-    zh: '批量编辑', ja: '一括編集', fr: 'Édition par lot',
-    it: 'Modifica di gruppo', ru: 'Пакетное редактирование'
-  },
-  batch_edit_hint: {
-    es: 'Los campos que dejes vacíos no se modificarán.', en: 'Fields left blank will not be modified.', pt: 'Os campos deixados em branco não serão alterados.',
-    zh: '留空的字段不会被修改。', ja: '空欄の項目は変更されません。', fr: 'Les champs laissés vides ne seront pas modifiés.',
-    it: 'I campi lasciati vuoti non verranno modificati.', ru: 'Пустые поля не будут изменены.'
-  },
-  batch_edit_saved: {
-    es: 'Etiquetas actualizadas en X pistas', en: 'Tags updated for X tracks', pt: 'Etiquetas atualizadas em X faixas',
-    zh: '已更新 X 首歌曲的标签', ja: 'X 曲のタグを更新しました', fr: 'Tags mis à jour pour X pistes',
-    it: 'Tag aggiornati per X brani', ru: 'Теги обновлены для X треков'
-  },
-  batch_delete_confirm: {
-    es: '¿Eliminar X canciones seleccionadas de la biblioteca?', en: 'Delete X selected songs from library?', pt: 'Excluir X músicas selecionadas da biblioteca?',
-    zh: '确定从曲库中删除选中的 X 首歌曲吗？', ja: '選択した X 曲をライブラリから削除しますか？', fr: 'Supprimer les X morceaux sélectionnés de la bibliothèque ?',
-    it: 'Eliminare i X brani selezionati dalla libreria?', ru: 'Удалить выбранные X треков из библиотеки?'
-  },
-  batch_updated_toast: {
-    es: 'Etiquetas actualizadas en X pistas', en: 'Tags updated for X tracks', pt: 'Etiquetas atualizadas em X faixas',
-    zh: '已更新 X 首歌曲的标签', ja: 'X 曲のタグを更新しました', fr: 'Tags mis à jour pour X pistes',
-    it: 'Tag aggiornati per X brani', ru: 'Теги обновлены для X треков'
-  },
-  batch_deleted_toast: {
-    es: 'X pistas eliminadas', en: 'X tracks deleted', pt: 'X faixas excluídas',
-    zh: '已删除 X 首歌曲', ja: 'X 曲を削除しました', fr: 'X pistes supprimées',
-    it: 'X brani eliminati', ru: 'Удалено треков: X'
-  },
-  batch_select_all: {
-    es: 'Seleccionar todo', en: 'Select all', pt: 'Selecionar tudo',
-    zh: '全选', ja: 'すべて選択', fr: 'Tout sélectionner', it: 'Seleziona tutto', ru: 'Выбрать всё'
   },
   sleep_invalid: {
     es: 'Introduce un número de minutos válido (1–1440).', en: 'Enter a valid number of minutes (1–1440).',
@@ -2722,10 +2690,6 @@ const I18N = {
   move: {
     es: 'Mover', en: 'Move', pt: 'Mover',
     zh: '移动', ja: '移動', fr: 'Déplacer', it: 'Sposta', ru: 'Переместить'
-  },
-  select_track: {
-    es: 'Seleccionar pista', en: 'Select track', pt: 'Selecionar faixa',
-    zh: '选择歌曲', ja: '曲を選択', fr: 'Sélectionner le morceau', it: 'Seleziona brano', ru: 'Выбрать трек'
   },
   toast_playlist_deleted: {
     es: 'Lista eliminada', en: 'Playlist deleted', pt: 'Lista excluída',
