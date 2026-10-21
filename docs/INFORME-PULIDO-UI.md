@@ -1000,3 +1000,59 @@ regresiones habitual (detalles 6/6, Mi Música 15/15, navegación 9/9,
 AAA 12/12, i18n 403×8) en repo y detalles 6/6 sobre el `.xdc`
 extraído (343,5 KB, sha256 `f439cbd9…`). El juicio visual final es
 del usuario en su dispositivo.
+
+## 41. Segunda barrida con lupa (todas las áreas)
+
+Auditoría por referencias cruzadas (iconos, i18n, IDs, etiquetas) más
+lectura de código. **Cinco imperfecciones reales**, todas corregidas:
+
+### 41.1 «Reproduciendo desde Iniciar radio»
+La etiqueta de contexto reutilizaba la clave del botón de menú
+`ctx_start_radio` («Iniciar radio», verbo): el reproductor anunciaba
+«Reproduciendo desde Iniciar radio». Nueva clave sustantiva
+`radio_label` («Radio» y equivalentes en los 8 idiomas; diccionario
+404 claves × 8).
+
+### 41.2 `fmtTime` desbordaba los minutos a partir de una hora
+Una pista de 90 minutos mostraba «90:00». Ahora `h:mm:ss` desde los
+3600 segundos; por debajo, `m:ss` intacto. Afecta a los tiempos del
+reproductor y a las filas (`fmtRowDuration`).
+
+### 41.3 Estadísticas reproducía sin contexto
+El clic en «Canciones más escuchadas» llamaba a `playTrack(tid)` sin
+contexto: la cola pasaba a ser toda la biblioteca conservando la
+etiqueta del contexto anterior. Ahora usa `trackPlayContextFor()`
+(§39): la canción suena desde su lista.
+
+### 41.4 Contraste de `.lt-btn.emphasis`
+Blanco sobre `--accent` (≈3,9:1). Pasa al par de relleno seguro
+`--accent-fill`/`--accent-on-fill` (≥4,5:1 garantizado), el mismo de
+la barra de Letras y del botón de Favoritos.
+
+### 41.5 Dos símbolos de icono muertos
+`i-backward` e `i-font` definidos en el sprite y jamás usados,
+retirados. Verificado antes de tocar: `i-volume-xmark` NO era muerto
+(se invoca dinámicamente por nombre en `_updateVolumeIcon()`) y se
+conserva.
+
+**Verificado limpio en esta pasada** (sin cambios): referencias de
+iconos (ninguna usada-sin-definir), claves i18n invocadas sin definir
+(solo falsos positivos de `createElement`), IDs (sin duplicados;
+todos los buscados existen en HTML o se crean dinámicamente),
+hojas (las 23 con cierre), Escape global, progreso con
+`aria-valuenow`/`valuetext`, textos de error sin literales en español
+fuera de i18n, singular/plural de conteos, duración 0 como «—».
+
+**Verificación**: regresión específica 10/10 (radio, fmtTime,
+estadísticas, emphasis, integridad de iconos, 0 errores); batería
+completa en verde (detalles 6/6, mimusica 15/15, fav 9/9, letras 9/9,
+nav 9/9, AAA 12/12, i18n 404×8); `.xdc` reconstruido y revalidado
+sobre la copia extraída.
+
+## Cierre de la sesión §41
+
+| Check | Resultado |
+|---|---|
+| Etiqueta «Reproduciendo desde Radio» + fmtTime h:mm:ss + estadísticas con contexto + contraste emphasis + sprite sin muertos | ✅ |
+| Batería completa (mimusica 15/15, AAA 12/12, nav 9/9, letras 9/9, fav 9/9, detalles 6/6, i18n 404×8) | ✅ |
+| `.xdc` válido (343,8 KB, sha256 `a6ca85fe…`) + regresiones sobre extraído | ✅ |
