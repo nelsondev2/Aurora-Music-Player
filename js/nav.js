@@ -184,13 +184,15 @@ Object.assign(App, {
         // mini-reproductor: para que aporte algo más que un duplicado,
         // si hay posición de reproducción enseña dónde retomar
         // («Retomar en 1:24»). Sin posición queda título y artista.
+        // Y si la pista ESTÁ SONANDO no hay nada que «seguir»
+        // escuchando: nace oculta y updatePlayUI la conmuta (§49).
         const pos = (this.audio && this.audio.currentTime) || 0;
         const dur = (this.audio && this.audio.duration) || t.duration || 0;
         const resumeLine = (pos > 5 && (!dur || pos < dur - 2))
           ? `<span class="home-hero-resume">${this.esc(this.t('home_resume_at').replace('X', this.fmtTime(pos)))}</span>`
           : '';
         hero = `
-          <button class="home-hero" id="homeHero" type="button">
+          <button class="home-hero" id="homeHero" type="button" data-track="${this.esc(t.id)}"${this.isPlaying ? ' hidden' : ''}>
             <div class="home-hero-cover"><canvas id="homeHeroCanvas" width="160" height="160"></canvas></div>
             <div class="home-hero-text">
               <span class="home-kicker">${this.esc(this.t('home_continue'))}</span>

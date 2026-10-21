@@ -1443,3 +1443,45 @@ sobre el `.xdc` extraído.
 | Diálogo de confirmación con caja serena de 44 px (sin losas ni resplandor) | ✅ |
 | Regresión confirm 10/10 + batería completa | ✅ |
 | `.xdc` válido (342,5 KB, sha256 `65177baa…`) + regresiones sobre extraído | ✅ |
+
+## 49. «Seguir escuchando» ya no ofrece la canción que está sonando
+
+Reporte del usuario: en Inicio, la tarjeta «Seguir escuchando»
+mostraba la canción incluso mientras se estaba reproduciendo —
+no hay nada que «seguir» escuchando de lo que ya suena (la tarjeta
+duplicaba al mini-reproductor sin aportar ni el «Retomar en…»).
+
+**Corrección** (`js/nav.js`, `js/player-ui.js`, `css/styles.css`):
+
+- La tarjeta nace con el atributo `hidden` cuando algo está
+  sonando, y con `data-track` de la pista que muestra.
+- `updatePlayUI()` — el punto único por el que pasa cada cambio de
+  play/pausa — la conmuta sin repintar Inicio: suena → oculta,
+  pausa → visible como «retomar». Nada de rebuilds ni parpadeos.
+- Si la pista cambió con Inicio montado (avance automático), el
+  `data-track` ya no coincide y ahí sí se repinta Inicio, para que
+  al pausar no reaparezca la canción anterior.
+- `.home-hero[hidden] { display: none }`: el `display:flex` de la
+  tarjeta ganaba al `[hidden]` del navegador y la habría dejado
+  visible pese al atributo.
+
+Las otras secciones de Inicio no cambian: en «Añadidas
+recientemente» y «Más escuchadas» la pista actual sigue saliendo
+con su distintivo de ecualizador, que es lo correcto en una lista.
+
+**Verificación**: regresión específica 8/8 (pausado visible,
+sonando oculta vía `updatePlayUI`, pausa la devuelve, render en
+reproducción que nace oculta, cambio de pista que se repinta a la
+nueva, sin pista no hay tarjeta, regla CSS, 0 errores). Batería
+completa en verde (sololistas 15/15, confirm 10/10, mimusica
+21/21, visualizador 19/19, importFiles 16/16, lupa 10/10, detalles
+6/6, fav/letras/nav 9/9, AAA 12/12, i18n 384×8) y regresión
+repetida sobre el `.xdc` extraído.
+
+## Cierre de la sesión §49
+
+| Check | Resultado |
+|---|---|
+| «Seguir escuchando» oculto mientras suena y de vuelta al pausar | ✅ |
+| Regresión hero 8/8 + batería completa | ✅ |
+| `.xdc` válido (342,8 KB, sha256 `533982a9…`) + regresiones sobre extraído | ✅ |

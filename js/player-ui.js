@@ -239,6 +239,20 @@ Object.assign(App, {
         }
       }
 
+      /* «Seguir escuchando» de Inicio: mientras la pista suena, la
+       * tarjeta sobra (ya la estás escuchando); al pausar vuelve
+       * como «retomar». Se conmuta sin repintar Inicio entero. Si
+       * la pista cambió con Inicio montado, el data-track no
+       * coincide y sí se repinta para no enseñar la anterior. */
+      const homeHeroEl = document.getElementById('homeHero');
+      if (homeHeroEl) {
+        if (this.currentTrack && homeHeroEl.dataset.track && homeHeroEl.dataset.track !== this.currentTrack.id) {
+          if (typeof this.renderHome === 'function') this.renderHome();
+        } else {
+          homeHeroEl.hidden = !!this.isPlaying;
+        }
+      }
+
       // Visualizador en tiempo real
       if (this.isPlaying) {
         if (typeof this.startVisualizer === 'function') this.startVisualizer();

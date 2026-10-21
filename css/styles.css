@@ -3058,6 +3058,7 @@ button,
   padding: 48px 16px 24px;
   min-height: 70%;
 }
+.home-hero[hidden] { display: none; }
 .home-hero {
   display: flex;
   align-items: center;
