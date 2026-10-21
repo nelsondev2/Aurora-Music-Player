@@ -700,6 +700,11 @@ Object.assign(App, {
       if (btnPlayFav) btnPlayFav.addEventListener('click', () => {
         this.playFavorites();
       });
+      // Botón «Reproducir Todo» en el sheet de más valoradas (§60)
+      const btnPlayRated = document.getElementById('btnPlayRatedNow');
+      if (btnPlayRated) btnPlayRated.addEventListener('click', () => {
+        this.playRated();
+      });
 
       // Cerrar sheets
       document.querySelectorAll('[data-close-sheet]').forEach(el => {

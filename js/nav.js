@@ -122,6 +122,12 @@ Object.assign(App, {
         this.showView('home');
         this.renderFavorites();
         this.openSheet('sheetFavorites');
+      } else if (nav === 'rated') {
+        this.closeAllSheets();
+        this.showView('home');
+        this.renderRated();
+        this.openSheet('sheetRated');
+        nav = 'home'; // no es pestaña: el resaltado se queda en Inicio
       } else if (nav === 'search') {
         this.closeAllSheets();
         this.showView('home');
@@ -219,7 +225,8 @@ Object.assign(App, {
       root.innerHTML = hero +
         this._homeRail('homeRecent', this.t('home_recent'), recent, 'track') +
         this._homePlaylists(lists) +
-        this._homeRail('homeTop', this.t('home_top'), top, 'track');
+        this._homeRail('homeTop', this.t('home_top'), top, 'track') +
+        this._homeRatedRail();
 
       if (t) {
         const cv = document.getElementById('homeHeroCanvas');
@@ -232,10 +239,10 @@ Object.assign(App, {
 
     /* Cabecera de sección con «Ver todo»: lleva a Biblioteca, donde
      * viven la lista completa de canciones y la de listas. */
-    _sectionHead(title) {
+    _sectionHead(title, target) {
       return `<div class="home-section-head">
         <h3 class="home-section-title">${this.esc(title)}</h3>
-        <button class="home-see-all" type="button" data-see-all="library">${this.esc(this.t('see_all'))}</button>
+        <button class="home-see-all" type="button" data-see-all="${target || 'library'}">${this.esc(this.t('see_all'))}</button>
       </div>`;
     },
 
@@ -259,6 +266,33 @@ Object.assign(App, {
       return `<section class="home-section">
         ${this._sectionHead(title)}
         <div class="home-rail" id="${id}">${items}</div>
+      </section>`;
+    },
+
+    /* Raíl «Más valoradas» de Inicio (§60): solo si hay alguna nota.
+     * Las tarjetas suenan dentro del contexto 'rated' y el «Ver todo»
+     * abre la hoja completa en vez de Biblioteca. */
+    _homeRatedRail() {
+      const rated = typeof this.getTopRatedTracks === 'function' ? this.getTopRatedTracks().slice(0, 10) : [];
+      if (!rated.length) return '';
+      const curId = this.currentTrack && this.currentTrack.id;
+      const items = rated.map(t => {
+        const isCur = t.id === curId;
+        const nowBadge = isCur
+          ? `<span class="eq-badge${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
+          : '';
+        return `<button class="home-card${isCur ? ' is-current' : ''}" type="button" data-kind="track" data-id="${this.esc(t.id)}">
+          <div class="home-card-cover"><canvas width="120" height="120"></canvas>${nowBadge}</div>
+          <span class="home-card-title">${this.esc(t.title)}</span>
+          <span class="home-card-sub">${'★'.repeat(this._ratingOf(t))} ${this.esc(t.artist || '')}</span>
+        </button>`;
+      }).join('');
+      return `<section class="home-section">
+        <div class="home-section-head">
+          <h3 class="home-section-title">${this.esc(this.t('rated_title'))}</h3>
+          <button class="home-see-all" type="button" data-see-all="rated">${this.esc(this.t('see_all'))}</button>
+        </div>
+        <div class="home-rail" id="homeRated">${items}</div>
       </section>`;
     },
 
@@ -291,9 +325,13 @@ Object.assign(App, {
           const cv = card.querySelector('canvas');
           if (cv && t) this.drawRowCover(cv, t);
           card.addEventListener('click', () => {
-            // Tarjeta suelta de Inicio: la lista de la canción manda
-            // (mismo criterio que Buscar, §38), no «Todas» a secas.
-            this.playTrack(id, typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(t) : { type: 'all' });
+            // Tarjeta del raíl de valoradas: manda el contexto 'rated'
+            // (§60). Tarjeta suelta de Inicio: la lista de la canción
+            // manda (mismo criterio que Buscar, §38), no «Todas».
+            const ctx = card.closest('#homeRated')
+              ? { type: 'rated' }
+              : (typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(t) : { type: 'all' });
+            this.playTrack(id, ctx);
             this.updateChrome();
             if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
           });
@@ -600,6 +638,12 @@ Object.assign(App, {
       t.rating = this._ratingOf(t) === v ? 0 : v;
       this.persistTrack(t);
       this._syncRatingUI(t);
+      // La hoja de «Más valoradas», si está abierta, se rinde otra vez:
+      // la canción puede entrar, salir o cambiar de puesto (§60).
+      const ratedSheet = document.getElementById('sheetRated');
+      if (ratedSheet && ratedSheet.classList.contains('open') && typeof this.renderRated === 'function') {
+        this.renderRated();
+      }
     },
 
     /* Pinta el estado de las estrellas en los tres sitios vivos: el

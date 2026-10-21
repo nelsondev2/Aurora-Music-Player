@@ -210,6 +210,13 @@ Object.assign(App, {
           this.queue = [trackId];
           this.queueIdx = 0;
         }
+      } else if (context && context.type === 'rated') {
+        // Cola = las mejor valoradas, en ese orden (§60)
+        const ratedIds = (typeof this.getTopRatedTracks === 'function' ? this.getTopRatedTracks() : []).map(t => t.id);
+        this.queue = ratedIds.length ? ratedIds : [trackId];
+        const qIdx = this.queue.indexOf(trackId);
+        if (qIdx < 0) { this.queue.unshift(trackId); this.queueIdx = 0; }
+        else this.queueIdx = qIdx;
       } else if (context && context.type === 'favorites') {
         // Cola = pistas favoritas
         const favIds = this.tracks.filter(t => this.favorites.has(t.id)).map(t => t.id);

@@ -1782,3 +1782,73 @@ El título de fila es de una sola línea con ellipsis en toda la app, pero en es
 - Nuevo `check-listas-colas.js`: **11/11** — la lista enseña las 4 estrellas de la pista valorada y oculta el hueco en la que no tiene nota; valorar enciende la fila en sitio; la cola muestra y actualiza la nota (incluido apagarla al quitarla); el CSS contiene las reglas de dos líneas y gap 8 para ambas listas; las demás filas conservan su insignia. Cero errores. (Dos asertos de CSS fallaron primero por doble escape en las regex del propio test, no de la app.)
 - Los widgets de valorar (menú y Reproductor, §58) no se han tocado.
 - `.xdc` reconstruido y válido para Delta Chat.
+
+## 60. «Más valoradas»: la lista inteligente de estrellas (§58 rematado)
+
+«Vamos ahora con lo de las más valoradas.» Dicho y hecho: las notas de
+las estrellas dejan de ser solo un adorno y forman **la lista de las
+mejores canciones**, siempre al día porque se calcula al momento (no
+es una lista guardada que haya que mantener: es la vista de tus
+canciones ordenada por nota).
+
+### Qué es y cómo ordena
+
+`getTopRatedTracks()` (js/playlist-ui.js): recoge las canciones con
+alguna estrella y ordena por **nota (mayor primero) → reproducciones
+(más oídas primero) → título (A–Z)**. A igual nota, tus más escuchadas
+van delante. Las sin nota no aparecen.
+
+### Dónde se encuentra
+
+- **Inicio**: nuevo raíl «Más valoradas» tras «Lo más reproducido»
+  (solo si hay alguna nota). La tarjeta lleva las estrellas en el
+  subtítulo (`★★★★★ · artista`), y «Ver todo» abre la hoja (antes
+  todos los raíles mandaban a Biblioteca; el raíl de valoradas declara
+  su propio destino). Tocar una tarjeta suena **dentro** del contexto
+  valoradas (la cola es la lista), no con el contexto de su lista.
+- **Biblioteca**: la tarjeta inteligente encabeza la rejilla de listas
+  («Más valoradas», con su portada y conteo). **No** aparece en «Tus
+  listas» a propósito: allí no sería una lista real a la que añadir
+  canciones. Su ▶ reproduce directamente; el cuerpo abre la hoja.
+- **La hoja** (`#sheetRated`, espejo de Favoritos): contador,
+  «Reproducir Todo» discreto con su marca de «está sonando» y filas
+  con la insignia de estrellas. Vacía (sin notas) enseña el estado
+  vacío con instrucciones.
+
+### Reproducción con contexto propio
+
+- `playRated()` construye la cola en el orden de la lista dentro del
+  contexto nuevo **`rated`**: el reproductor dice «Reproduciendo
+  desde Más valoradas», el ▶/⏸ conmutan, y la sesión recuerda de
+  dónde venías (añadido a los contextos restaurables).
+- Tocar una fila entra con la lista entera como cola.
+- Esto tiene en cuenta lo valorado al instante: valorar una canción
+  con la hoja abierta la **actualiza sola** (la canción entra, sale o
+  se mueve sin tener que cerrar). La cola ya sonando no se toca:
+  cambiar la nota de una canción no expulsa a la que suena.
+
+### Archivos e i18n
+
+index.html (hoja nueva), js/playlist-ui.js (`getTopRatedTracks`,
+`playRated`, etiqueta de contexto, tarjeta inteligente en Biblioteca),
+js/stats-ui.js (`renderRated`), js/nav.js (raíl de Inicio con
+subtítulo de estrellas y destino propio en `goNav`, refresco de la
+hoja al valorar), js/audio.js (cola por contexto `rated`), js/events.js
+(boton «Reproducir Todo»), js/player-ui.js (marca «está sonando» del
+botón), js/settings.js (contexto restaurable), js/data.js (2 claves
+nuevas × 8 idiomas: **373 × 8 sin huecos**).
+
+### Verificación
+
+- **Check §60** `/tmp/check-valoradas.js`: **21/21** (el arnés hubo
+  que recrearlo una vez más tras perderse `/tmp`; el pintor de
+  contexto de canvas ahora usa un proxy encadenable para no romper
+  los pintores de portadas). Cubierto: sin notas no hay ni raíl, ni
+  tarjeta, ni filas; el orden exacto (5★ muy oída > 5★ > 3★); el
+  subtítulo con estrellas; «Ver todo» abriendo la hoja; contador y
+  primera fila; tarjeta en Biblioteca sí y en «Tus listas» no;
+  `playRated` con cola ordenada y contexto `rated`; la frase
+  «Reproduciendo desde Más valoradas»; tocar una fila respetando la
+  cola; valorar/quitar con la hoja abierta actualizándola; 0 errores.
+- `node --check` en todos los JS; **build .xdc válido**: 27 archivos,
+  335,6 KB comprimidos (966,0 KB sin comprimir).

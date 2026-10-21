@@ -370,6 +370,44 @@ Object.assign(App, {
       }
     },
 
+    /* «Más valoradas» (§60): espejo de Favoritos — Reproducción en
+     * curso marcada en el botón, contador y filas con su insignia
+     * (la encargada de pintarla es makeTrackRow). */
+    renderRated() {
+      const ul = document.getElementById('ratedList');
+      if (!ul) return;
+      const countEl = document.getElementById('ratedCount');
+      ul.innerHTML = '';
+      const rated = typeof this.getTopRatedTracks === 'function' ? this.getTopRatedTracks() : [];
+      const playBtn = document.getElementById('btnPlayRatedNow');
+      if (playBtn) {
+        playBtn.style.display = rated.length ? '' : 'none';
+        playBtn.classList.toggle('is-playing',
+          rated.length > 0 && this.isPlaying &&
+          !!this.playContext && this.playContext.type === 'rated');
+      }
+      if (countEl) {
+        countEl.hidden = rated.length === 0;
+        if (rated.length) countEl.textContent = this.fmtTracksCount(rated.length);
+      }
+      if (rated.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'empty-state fav-empty';
+        li.innerHTML = this.emptyStateHtml({
+          icon: 'star',
+          title: this.t('rated_title'),
+          text: this.t('rated_empty')
+        });
+        ul.appendChild(li);
+        return;
+      }
+      if (typeof this.fillVirtualList === 'function' && typeof this.makeTrackRow === 'function') {
+        this.fillVirtualList(ul, rated,
+          (t) => this.makeTrackRow(t, { playContext: { type: 'rated' } }),
+          { scroller: ul.closest('.sheet-body'), rowHeight: 64 });
+      }
+    },
+
     /* Compartir resumen de estadísticas de reproducción en Delta Chat */
     async shareStats() {
       const topTracks = typeof this.getTopTracks === 'function' ? this.getTopTracks(5) : [];

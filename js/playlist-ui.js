@@ -858,10 +858,21 @@ Object.assign(App, {
         libCountEl.textContent = String(this.playlists.length);
         libCountEl.hidden = this.playlists.length === 0;
       }
+      // Tarjeta inteligente «Más valoradas» (§60): solo en la rejilla
+      // de Biblioteca (en «Tus listas» sería una lista falsa a la que
+      // no se puede añadir nada). No vive en this.playlists: se
+      // compone al momento desde getTopRatedTracks().
+      const ratedCard = (() => {
+        const rated = typeof this.getTopRatedTracks === 'function' ? this.getTopRatedTracks() : [];
+        return rated.length
+          ? { id: '__rated', name: this.t('rated_title'), trackIds: rated.map(t => t.id) }
+          : null;
+      })();
       [ul, grid].forEach(target => {
         if (!target) return;
         target.innerHTML = '';
-        if (this.playlists.length === 0 && target === ul) {
+        const source = (target === grid && ratedCard) ? [ratedCard, ...this.playlists] : this.playlists;
+        if (source.length === 0 && target === ul) {
           const li = document.createElement('li');
           li.className = 'empty-state pl-empty';
           li.innerHTML = `
@@ -875,7 +886,7 @@ Object.assign(App, {
           target.appendChild(li);
           return;
         }
-        if (this.playlists.length === 0 && target === grid) {
+        if (source.length === 0 && target === grid) {
           // Rejilla de la biblioteca sin listas: mensaje breve. El botón
           // «Nueva» ya está en la cabecera de la misma sección.
           const li = document.createElement('li');
@@ -888,7 +899,7 @@ Object.assign(App, {
           target.appendChild(li);
           return;
         }
-        this.playlists.forEach(pl => {
+        source.forEach(pl => {
           const li = document.createElement('li');
           const playing = this.isPlaylistPlaying(pl);
           li.className = (target === grid ? 'pl-card' : 'pl-row') + (playing ? ' is-playing' : '');
@@ -899,7 +910,7 @@ Object.assign(App, {
           const coverBg = hasArt
             ? `background-image:url('${cover}');background-size:cover;background-position:center;`
             : `background:linear-gradient(135deg, ${cover.from || '#6E5CFF'}, ${cover.to || '#FF7AB6'});`;
-          const fallbackIcon = pl.id === 'favoritos' ? 'heart-solid' : 'list-ul';
+          const fallbackIcon = pl.id === 'favoritos' ? 'heart-solid' : (pl.id === '__rated' ? 'star' : 'list-ul');
           const tracksLabel = this.playlistMetaLabel(pl);
           // Ya no hay lista predefinida: ninguna lleva insignia.
           const badge = '';
@@ -953,10 +964,14 @@ Object.assign(App, {
           const fab = li.querySelector('.pl-play-fab');
           if (fab) fab.addEventListener('click', (e) => {
             e.stopPropagation();
+            // La tarjeta inteligente no es una lista editable: su ▶
+            // reproduce las mejor valoradas y su cuerpo abre la hoja.
+            if (pl.id === '__rated') { this.playRated(); return; }
             this.playPlaylist(pl.id);
           });
           li.addEventListener('click', (e) => {
             if (e.target.closest('.row-action, .pl-play-fab, .pl-row-play')) return;
+            if (pl.id === '__rated') { this.goNav('rated'); return; }
             if (this._selectPlaylistForAdd) {
               this._selectPlaylistForAdd = false;
               const tid = this._trackToAddId || (this.currentTrack && this.currentTrack.id) || null;
@@ -1090,6 +1105,40 @@ Object.assign(App, {
       this.toast(this.t('toast_now_playing') + ' ' + pl.name);
     },
 
+    /* «Más valoradas» (§60): las canciones con estrellas, de mejor
+     * nota a menor; a igual nota, las más reproducidas primero y el
+     * título desempatando. Es una lista inteligente: se calcula al
+     * momento, sin guardar una lista paralela que mantener. */
+    getTopRatedTracks() {
+      const plays = (this.stats && this.stats.plays) || {};
+      return this.tracks
+        .filter(t => this._ratingOf(t) > 0)
+        .sort((a, b) =>
+          (this._ratingOf(b) - this._ratingOf(a)) ||
+          ((plays[b.id] || 0) - (plays[a.id] || 0)) ||
+          String(a.title || '').localeCompare(String(b.title || '')));
+    },
+
+    /* Reproduce las mejor valoradas como contexto propio, igual que
+     * Favoritos reproduce la suya. */
+    playRated() {
+      const rated = this.getTopRatedTracks();
+      if (rated.length === 0) {
+        this.toast(this.t('rated_empty'));
+        return;
+      }
+      this.queue = rated.map(t => t.id);
+      this.queueIdx = 0;
+      this.playContext = { type: 'rated' };
+      if (this.shuffle) this._applyShuffle(this.queue[0]);
+      else this._originalQueue = null;
+      this.playFromQueue(0);
+      this.renderCurrentTrack();
+      this.renderQueue();
+      if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
+      this.toast(this.t('toast_now_playing') + ' ' + this.t('rated_title'));
+    },
+
     /* Reproduce la lista de favoritos como una playlist independiente */
     playFavorites() {
       const favTracks = this.tracks.filter(t => this.favorites.has(t.id));
@@ -1115,6 +1164,9 @@ Object.assign(App, {
       if (!this.playContext) return null;
       if (this.playContext.type === 'favorites') {
         return this.t('favorites_playlist_name');
+      }
+      if (this.playContext.type === 'rated') {
+        return this.t('rated_title');
       }
       if (this.playContext.type === 'playlist') {
         // El nombre se resuelve por id en el momento de pintar: si la
