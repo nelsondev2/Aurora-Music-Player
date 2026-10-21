@@ -2258,6 +2258,21 @@ const I18N = {
     it: 'Nessun testo corrisponde ai tuoi brani',
     ru: 'Ни один текст не подошёл к вашим песням'
   },
+  relink_after_import_prompt: {
+    es: 'La copia trae X canciones que todavía no tienen audio en este dispositivo. Elige ahora tus archivos de música y se enlazarán automáticamente con tus listas y favoritos; lo que no se encuentre quedará marcado como «Sin audio».',
+    en: 'The backup brings X songs that have no audio on this device yet. Choose your music files now and they will link automatically to your playlists and favorites; anything not found stays marked as “No audio”.',
+    pt: 'A cópia traz X músicas que ainda não têm áudio neste dispositivo. Escolhe agora os teus ficheiros de música e eles ligam-se automaticamente às tuas listas e favoritos; o que não for encontrado fica marcado como «Sem áudio».',
+    zh: '备份中有 X 首歌曲在这台设备上还没有音频。现在选择你的音乐文件，它们会自动关联到歌单和收藏；找不到的会标记为“暂无音频”。',
+    ja: 'バックアップには、この端末にまだ音声のない曲が X 曲あります。今音楽ファイルを選ぶと、プレイリストやお気に入りに自動でリンクします。見つからないものは「未リンク」のままになります。',
+    fr: 'La sauvegarde contient X chansons sans audio sur cet appareil. Choisissez maintenant vos fichiers musicaux : ils se relieront automatiquement à vos listes et favoris ; le reste restera marqué « Pas d’audio ».',
+    it: 'Il backup contiene X brani senza audio su questo dispositivo. Scegli ora i tuoi file musicali e si collegheranno automaticamente a liste e preferiti; ciò che non si trova resterà «Audio mancante».',
+    ru: 'В копии есть X песен, у которых на этом устройстве пока нет аудио. Выберите сейчас свои музыкальные файлы — они автоматически привяжутся к плейлистам и избранному; ненайденное останется помечено «Аудио ещё нет».'
+  },
+  not_now: {
+    es: 'Ahora no', en: 'Not now', pt: 'Agora não',
+    zh: '暂不', ja: '後で', fr: 'Plus tard',
+    it: 'Non ora', ru: 'Не сейчас'
+  },
   relink_prompt: {
     es: '«X» todavía no tiene audio en este dispositivo: vino de la copia de seguridad. Elige su archivo para vincularlo y poder escucharla.',
     en: "\u201CX\u201D has no audio on this device yet: it came from the backup. Choose its file to link it and play it.",

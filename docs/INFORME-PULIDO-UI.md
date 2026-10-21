@@ -1687,3 +1687,29 @@ Tres capas del mismo problema:
 - Nuevo `check-vincular.js`: **16/16** — cura por nombre con otro tamaño y por título+artista con nombre cambiado; ambigüedad no adivina; la cura deja URL y tamaño real; tocar una pendiente con «cancelar» no procesa nada y con «aceptar» vincula el archivo elegido (aunque su nombre no coincida) y lo reproduce; el aviso de Now Playing aparece solo en pendientes y se apaga al curar; la fila de la lista lleva la insignia; y de punta a punta: reimportar el audio con otro tamaño cura la pista del backup sin crear duplicado y la lista sigue apuntando a ella. Cero errores.
 - `check-chat.js` (§53, recreado tras perderse `/tmp`) en verde: 12/12.
 - `.xdc` reconstruido y válido para Delta Chat: 27 archivos, 345,0 KB.
+
+---
+
+## 56. Al cargar el backup, ¿no puede enlazar las canciones automáticamente? Casi: un solo gesto
+
+**Pregunta del usuario:** «¿Y no puede al cargar el backup simplemente enlazar las canciones automáticamente?».
+
+### La respuesta honesta
+
+Automático del todo, sin tocar nada, no puede: la copia es un JSON sin audio (así puede viajar por un chat) y el sandbox webxdc **no permite explorar el dispositivo** buscando archivos — una app solo ve los archivos que el usuario le entrega en un selector. Sin ese gesto no hay origen de audio posible. Lo que sí puede, y es lo que se ha hecho: **encadenar el selector en el mismo momento de importar la copia**, para que el «automático» cueste exactamente una elección de archivos.
+
+### Arreglo
+
+Tras aplicar una copia, si quedan pistas sin audio, además del aviso de siempre aparece un diálogo: «La copia trae X canciones que todavía no tienen audio en este dispositivo. Elige ahora tus archivos de música y se enlazarán automáticamente con tus listas y favoritos; lo que no se encuentre quedará marcado como «Sin audio».» — botones **Cargar música** / **Ahora no**.
+
+- Si acepta: se abre el selector (el integrado de Delta o el del navegador) y la importación normal hace el resto: cura cada pendiente que case por nombre de archivo o por título+artista (§55), avisa «X pistas vinculadas» y lo que no case queda con su insignia y su diálogo de vinculación individual.
+- Si dice «Ahora no»: no se abre nada más; quedan las vías del §55 (fila de Ajustes «N pistas sin audio», insignias, tocar la pista).
+- El camino inverso ya era automático: quien carga primero la música y luego importa la copia nunca ve pendientes, porque `_importLibraryData` reutiliza las pistas que ya tienen audio.
+
+I18n: nuevas `relink_after_import_prompt` y `not_now` → **384 claves × 8 idiomas, sin huecos**.
+
+### Verificación
+
+- Nuevo `check-autolink.js`: **10/10** — de punta a punta con la API del mensajero simulada: importar copia (2 canciones con tamaños «de otro ripeo») → se ofrece cargar la música indicando el número → al aceptar se abre el selector y **las dos quedan enlazadas solas**, sin duplicados fantasma y con la lista restaurada apuntando a pistas con audio; con «Ahora no» no se abre ningún selector y las canciones quedan pendientes y marcadas. Cero errores. (Dos asertos se afinaron al depurar: el conteo de diálogos filtra por el botón «Cargar música» para no contar el consejo de navegación de la app, y el segundo escenario parte de memoria limpia porque la IndexedDB falsa es singleton del proceso de test.)
+- Sin regresiones: `check-vincular.js` (§55) 16/16, `check-chat.js` (§53) 12/12.
+- `.xdc` reconstruido y válido para Delta Chat.

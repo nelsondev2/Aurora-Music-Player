@@ -1041,6 +1041,24 @@ Object.assign(App, {
         } else {
           this.toast(this.t('toast_imported_meta'));
         }
+        /* Enlace (casi) automático tras restaurar (§56): la copia no
+         * trae el audio y la app no puede buscar archivos por el
+         * dispositivo (el sandbox webxdc solo ve lo que el usuario
+         * entrega en un selector). Lo que sí puede: encadenar ese
+         * selector aquí mismo. El usuario elige su música una vez y
+         * la importación normal cura cada pista que case por nombre o
+         * por título+artista; el resto queda marcado «Sin audio». */
+        if (pending > 0 && typeof this.showConfirm === 'function') {
+          try {
+            const go = await this.showConfirm({
+              message: this.t('relink_after_import_prompt').replace('X', String(pending)),
+              okLabel: this.t('load_music'),
+              cancelLabel: this.t('not_now'),
+              danger: false
+            });
+            if (go) this.openFilePicker(false);
+          } catch (e) { /* sin diálogo: quedan las insignias y el aviso (§55) */ }
+        }
         this.syncLibCountMarker();
       } catch (err) {
         console.warn('[Aurora] Importación inválida:', err && err.message);
