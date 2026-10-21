@@ -5009,3 +5009,72 @@ html.aurora-wide .toast {
   .controls-main { gap: 6px; }
   .ctrl-play { width: 64px; height: 64px; }
 }
+
+/* =====================================================================
+ * Dentro de una lista: controles discretos (petición del usuario).
+ * Se conserva TODO — reproducir, subir, renombrar, compartir, vaciar,
+ * eliminar, menú por pista, quitar y arrastrar — pero baja el volumen
+ * visual del conjunto: sombras suaves, pastillas planas y, sobre todo,
+ * ningún rojo permanente. Vaciar/Eliminar y el ✕ de cada pista son
+ * neutros en reposo; el rojo aparece donde debe: en la confirmación.
+ * Acotado al editor de lista para no tocar Favoritos ni la cola.
+ * ===================================================================== */
+#sheetEditPlaylist .edit-pl-cover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+}
+#sheetEditPlaylist .pl-hero-play {
+  box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.22);
+}
+#sheetEditPlaylist .pl-hero-play.is-playing {
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.20),
+              0 6px 16px rgba(var(--accent-rgb), 0.22);
+}
+#sheetEditPlaylist .pl-action-btn {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-3);
+  font-weight: 500;
+}
+#sheetEditPlaylist .pl-action-btn .ico {
+  width: 15px;
+  height: 15px;
+  color: var(--text-3);
+}
+/* Destructivas en reposo: neutras, como las demás. */
+#sheetEditPlaylist .pl-action-btn.pl-action-danger,
+#sheetEditPlaylist .pl-action-btn.pl-action-danger .ico {
+  color: var(--text-3);
+}
+#sheetEditPlaylist .pl-action-btn:active {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-1);
+}
+@media (hover: hover) and (pointer: fine) {
+  #sheetEditPlaylist .pl-action-btn:hover,
+  #sheetEditPlaylist .pl-action-btn.pl-action-danger:hover {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text-1);
+  }
+}
+/* Controles de cada pista: presentes pero en voz baja. El asa sigue
+ * siendo 40×44 (objetivo táctil) y el ✕ ya no se tiñe al tocarlo:
+ * quitar una canción tiene su propio feedback (la fila desaparece). */
+#editPlaylistTracks .row-action,
+#editPlaylistTracks .drag-handle {
+  background: transparent;
+}
+#editPlaylistTracks .row-action .ico { width: 15px; height: 15px; }
+#editPlaylistTracks .remove-from-pl { color: var(--text-3); }
+#editPlaylistTracks .remove-from-pl:active {
+  color: var(--text-1);
+  background: var(--surface);
+}
+@media (hover: hover) and (pointer: fine) {
+  #editPlaylistTracks .remove-from-pl:hover,
+  #editPlaylistTracks .track-menu-btn:hover {
+    color: var(--text-1);
+    background: var(--surface);
+  }
+}

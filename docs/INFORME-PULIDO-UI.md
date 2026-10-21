@@ -803,3 +803,33 @@ Verificación: regresión específica escrita antes de corregir (5 ok / 4 fail,
 fallando justo los saltos entre pestañas) y **9/9** tras la corrección;
 regresión AAA 12/12 e i18n 403×8, todo repetido sobre el `.xdc` extraído
 (339,6 KB, sha256 `79ba0c22…`).
+
+## 35. Dentro de la lista: mismo contenido, menos ruido (petición del usuario)
+
+El usuario aceptó la interfaz en general pero los botones de dentro de
+las listas «aún no le convencían». Preguntado, acotó: **el conjunto
+entero** (cabecera, fila de acciones y controles por pista) y la
+dirección **discreta**: conservar todo, bajando el volumen visual.
+
+Cambios, solo de pintura y acotados al editor de lista
+(`#sheetEditPlaylist` / `#editPlaylistTracks`), sin tocar
+funcionalidad ni otras pantallas que reutilizan las clases:
+
+- La portada y el botón hero de reproducir pierden la mitad de su
+  sombra; el anillo de «esta lista está sonando» se mantiene.
+- Las pastillas de acción (Subir, Renombrar, Compartir, Vaciar,
+  Eliminar) pasan a fondo transparente, texto e icono en gris
+  `--text-3` y peso 500: ya no compiten con el botón de reproducir.
+- **Sin rojo permanente**: Vaciar, Eliminar y el ✕ de cada pista son
+  neutros en reposo, al pasar el ratón y al tocarlos. El rojo queda
+  donde protege de verdad, en el diálogo de confirmación, que no ha
+  cambiado.
+- Los controles por pista (asa, ⋯, ✕) quedan en voz baja: icono de
+  15 px, sin fondos teñidos; el asa conserva sus 40×44 táctiles.
+
+Verificación: como es solo CSS, lo que se comprueba es la cascada
+(especificidad con `#sheetEditPlaylist` por encima de las reglas
+anteriores, incluidos los `:hover` genéricos que teñían de rojo) y que
+nada funcional se rompió: navegación 9/9, AAA 12/12 e i18n 403×8 en
+repo y en el `.xdc` extraído (340,1 KB, sha256 `baad97f5…`). El juicio
+visual final es del usuario en su dispositivo.
