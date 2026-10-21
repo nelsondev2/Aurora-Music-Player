@@ -2733,11 +2733,6 @@ const I18N = {
     zh: '保持自然声音音调，避免变声效果。', ja: '声の高さを変えずに自然なトーンを維持します。', fr: 'Maintient la voix naturelle sans effet accéléré.',
     it: 'Mantiene il timbro vocale naturale senza alterare l’intonazione.', ru: 'Сохраняет естественную тональность голоса без искажения.'
   },
-  batch_select: {
-    es: 'Seleccionar', en: 'Select', pt: 'Selecionar',
-    zh: '多选', ja: '選択', fr: 'Sélectionner',
-    it: 'Seleziona', ru: 'Выбрать'
-  },
   batch_cancel: {
     es: 'Cancelar selección', en: 'Cancel selection', pt: 'Cancelar seleção',
     zh: '取消多选', ja: '選択解除', fr: 'Annuler la sélection',

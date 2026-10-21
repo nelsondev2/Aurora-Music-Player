@@ -619,9 +619,9 @@
             <section class="lib-section" id="libSectionSongs">
               <!-- Cabecera + acciones + ordenación en un bloque fijo
                    (sticky): al recorrer una biblioteca larga no hay que
-                   volver arriba para reproducir todo o reordenar. Y
-                   «Seleccionar» vive fuera de la fila con scroll — dentro
-                   nacía cortado a media pastilla en pantallas estrechas. -->
+                   volver arriba para reproducir todo o reordenar. La
+                   selección múltiple no tiene botón (§45): se entra con
+                   pulsación larga sobre una canción. -->
               <div class="lib-songs-sticky">
               <div class="lib-section-head">
                 <h4 class="lib-section-title" data-i18n="library_songs_section">Todas las canciones</h4>
@@ -651,10 +651,6 @@
                   <button class="lib-sort" type="button" data-sort="recent" data-i18n="lib_sort_recent">Recientes</button>
                   <button class="lib-sort" type="button" data-sort="duration" data-i18n="lib_sort_duration">Duración</button>
                 </div>
-                <button class="lib-batch-btn" id="btnBatchSelect" type="button" aria-pressed="false" data-i18n-aria="batch_select" aria-label="Seleccionar">
-                  <svg class="ico" aria-hidden="true"><use href="#i-check"></use></svg>
-                  <span data-i18n="batch_select">Seleccionar</span>
-                </button>
               </div>
               </div>
               <ul class="track-list" id="libraryTracks"></ul>
@@ -678,7 +674,7 @@
                 <svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>
                 <span data-i18n="batch_delete">Eliminar pistas</span>
               </button>
-              <button class="batch-act" id="btnBatchCancel" type="button" data-close-sheet="sheetLibrary">
+              <button class="batch-act" id="btnBatchCancel" type="button">
                 <svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg>
                 <span data-i18n="batch_cancel">Cancelar selección</span>
               </button>

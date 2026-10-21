@@ -1228,3 +1228,57 @@ final es del usuario en su dispositivo.
 | Cabecera de «Todas las canciones» con la fórmula serena (caja única 40 px, un acento, sin discontinuos ni rojo permanente) | ✅ |
 | Regresión cabecera 10/10 + batería completa | ✅ |
 | `.xdc` válido (348,2 KB, sha256 `9cc4a4ec…`) + regresiones sobre extraído | ✅ |
+
+## 45. Fuera el botón «Seleccionar» de «Todas las canciones»
+
+Petición del usuario: el botón solo estorba. Se elimina **el
+botón**, no la función: la selección múltiple conserva su otra
+entrada natural — **pulsación larga sobre cualquier canción**
+(0,52 s, ya existía en `wireTrackLongPress`) — que entra en el
+modo, marca esa canción y muestra la barra de lote con todas sus
+acciones (editar etiquetas, añadir a lista, eliminar, seleccionar
+todo, cancelar).
+
+**Limpieza completa de referencias** (nada de botón fantasma):
+
+- `index.html`: botón fuera; el comentario de la cabecera fija
+  ahora dice cómo se entra en el modo.
+- `js/events.js`: binding del botón fuera.
+- `js/nav.js`: `updateBatchUI()` ya no sincroniza clase ni
+  `aria-pressed` de un elemento inexistente.
+- `js/data.js`: clave huérfana `batch_select` fuera (diccionario:
+  403 claves × 8, sin huecos).
+- `css/styles.css`: clase `.lib-batch-btn` eliminada entera (base,
+  regla de la fila de ordenación y las menciones en el bloque §44,
+  que queda vigente para los botones que sí quedan: caja de 40 px,
+  «Borrar todo» discreto).
+
+**Hallazgo al hacer hueco**: el «Cancelar selección» de la barra
+de lote llevaba un `data-close-sheet="sheetLibrary"` heredado, así
+que cancelar la selección **cerraba la biblioteca entera**. Sin el
+botón de la cabecera, ese botón pasa a ser la única salida visible
+del modo: se le quita el atributo y ahora hace solo lo que su
+etiqueta promete (verificado por regresión).
+
+Los chips de orden ganan el ancho que ocupaba el botón; la fila
+ahora respira a todo lo ancho.
+
+**Verificación**: regresión específica 18/18 (cero referencias al
+botón en HTML/CSS/JS/i18n; fórmula §44 intacta en lo que queda;
+pulsación larga real con `mousedown` + 720 ms que entra en el modo
+y selecciona la pista; barra visible con contador; «Cancelar
+selección» que sale y limpia sin cerrar; Reproducir Todo/Aleatorio
+y chips vivos; 0 errores). La regresión §44 queda superada por
+esta (sus dos asertos del botón ya no aplican). Batería completa
+en verde (visualizador 19/19, importFiles 16/16, lupa 10/10,
+detalles 6/6, mimusica 15/15, fav/letras/nav 9/9, AAA 12/12, i18n
+403×8) y regresión repetida sobre el `.xdc` extraído.
+
+## Cierre de la sesión §45
+
+| Check | Resultado |
+|---|---|
+| Botón «Seleccionar» eliminado sin referencias colgantes; lote por pulsación larga intacto | ✅ |
+| «Cancelar selección» ya no cierra la biblioteca | ✅ |
+| Regresión sinselect 18/18 + batería completa | ✅ |
+| `.xdc` válido (347,9 KB, sha256 `098ebeed…`) + regresiones sobre extraído | ✅ |

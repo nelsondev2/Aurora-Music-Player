@@ -673,8 +673,6 @@ Object.assign(App, {
       if (btnSaveEditP) btnSaveEditP.addEventListener('click', () => this.saveEditTrack());
 
       // Selección múltiple y edición por lotes (#23)
-      const btnBatchSel = document.getElementById('btnBatchSelect');
-      if (btnBatchSel) btnBatchSel.addEventListener('click', () => this.toggleBatchMode());
       const btnBatchAll = document.getElementById('btnBatchSelectAll');
       if (btnBatchAll) btnBatchAll.addEventListener('click', () => this.selectAllTracks());
       const btnBatchEdit = document.getElementById('btnBatchEditTags');

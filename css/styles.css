@@ -3273,8 +3273,8 @@ button,
   border-color: transparent;
   color: var(--accent-on-fill);
 }
-/* Fila de ordenación: los chips se desplazan y «Seleccionar» queda
- * fijo a la derecha, fuera del scroll (antes nacía cortado). */
+/* Fila de ordenación: los chips se desplazan a lo ancho; la
+ * selección múltiple se entra con pulsación larga (§45). */
 .lib-sort-wrap {
   display: flex;
   gap: 6px;
@@ -3289,7 +3289,6 @@ button,
   scrollbar-width: none;
   margin-bottom: 10px;
 }
-.lib-sort-wrap .lib-batch-btn { flex: 0 0 auto; margin-left: 0; }
 /* Cabecera de «Todas las canciones» fija al hacer scroll dentro de la
  * hoja: reproducir todo y reordenar quedan siempre a mano. El fondo es
  * el del panel para que las filas pasen por debajo sin transparentar. */
@@ -4407,28 +4406,6 @@ html.aurora-wide .toast {
 }
 
 /* Botón «Seleccionar» dentro de la fila de orden de la biblioteca */
-.lib-batch-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: auto;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px dashed var(--border);
-  background: transparent;
-  color: var(--text-2);
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  white-space: nowrap;
-  flex: 0 0 auto;
-}
-.lib-batch-btn .ico { width: 16px; height: 16px; }
-.lib-batch-btn.active {
-  background: var(--accent-fill);
-  border-color: transparent;
-  color: var(--accent-on-fill);
-}
-
 /* Casillas de selección en las filas */
 .row-batch-check {
   display: flex;
@@ -5198,8 +5175,7 @@ html.aurora-wide .toast {
  * tocan porque se usan en más sitios.
  * ============================================================ */
 #sheetLibrary .lib-songs-sticky .lib-song-actions .text-btn,
-#sheetLibrary .lib-songs-sticky .lib-sort,
-#sheetLibrary .lib-songs-sticky .lib-batch-btn {
+#sheetLibrary .lib-songs-sticky .lib-sort {
   height: 40px;
   min-height: 40px;
   padding-top: 0;
@@ -5213,24 +5189,17 @@ html.aurora-wide .toast {
   padding-left: 16px;
   padding-right: 16px;
 }
-#sheetLibrary .lib-songs-sticky .lib-sort,
-#sheetLibrary .lib-songs-sticky .lib-batch-btn {
+#sheetLibrary .lib-songs-sticky .lib-sort {
   padding-left: 14px;
   padding-right: 14px;
 }
-/* El secundario y el de selección comparten la misma discreción */
-#sheetLibrary .lib-songs-sticky .lib-song-actions .text-btn:last-child,
-#sheetLibrary .lib-songs-sticky .lib-batch-btn {
+/* El secundario comparte la discreción del resto del grupo */
+#sheetLibrary .lib-songs-sticky .lib-song-actions .text-btn:last-child {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text-1);
 }
-#sheetLibrary .lib-songs-sticky .lib-batch-btn {
-  /* Adiós al borde discontinuo: no es familia de nada más */
-  border-style: solid;
-}
-#sheetLibrary .lib-songs-sticky .lib-song-actions .text-btn .ico,
-#sheetLibrary .lib-songs-sticky .lib-batch-btn .ico {
+#sheetLibrary .lib-songs-sticky .lib-song-actions .text-btn .ico {
   width: 16px;
   height: 16px;
 }
@@ -5250,11 +5219,4 @@ html.aurora-wide .toast {
 #sheetLibrary .lib-songs-sticky .lib-section-head .text-btn.danger:active {
   color: var(--danger);
   background: rgba(239, 68, 68, 0.12);
-}
-/* El activo de «Seleccionar» recupera el acento dentro del ámbito
- * (la regla genérica de arriba ganaría por especificidad al ID). */
-#sheetLibrary .lib-songs-sticky .lib-batch-btn.active {
-  background: var(--accent-fill);
-  border-color: transparent;
-  color: var(--accent-on-fill);
 }

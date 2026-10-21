@@ -694,13 +694,7 @@ Object.assign(App, {
     updateBatchUI() {
       const bar = document.getElementById('batchActionBar');
       const countEl = document.getElementById('batchCount');
-      const btnSelect = document.getElementById('btnBatchSelect');
       const n = this._selectedTrackIds ? this._selectedTrackIds.size : 0;
-
-      if (btnSelect) {
-        btnSelect.classList.toggle('active', this._batchMode);
-        btnSelect.setAttribute('aria-pressed', this._batchMode ? 'true' : 'false');
-      }
 
       if (bar) {
         if (this._batchMode) {
