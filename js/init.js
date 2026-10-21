@@ -190,7 +190,7 @@ Object.assign(App, {
           }
           this.showConfirm({
             message: this.t('library_missing_text'),
-            okLabel: this.t('settings_import'),
+            okLabel: this.t('backup_import'),
             cancelLabel: this.t('cancel'),
             danger: false
           }).then((ok) => {

@@ -71,18 +71,12 @@ Object.assign(App, {
         return;
       }
       this._importing = true;
-      // Los .m3u/.m3u8 no son audio: se convierten en listas (contra las
-      // pistas ya presentes) y no pasan por el importador de pistas. Así,
-      // «Cargar música» también sirve para traer listas de fuera.
-      // Los .lrc tampoco son audio: se enlazan con la canción del mismo
-      // nombre (ver _attachLrcFiles) en vez de ir al importador.
+      // Los .lrc no son audio: se enlazan con la canción del mismo
+      // nombre (ver _attachLrcFiles) en vez de ir al importador. (La
+      // importación de listas .m3u se eliminó en §51.)
       const allFiles = Array.from(fileList);
-      const m3uFiles = allFiles.filter(f => /\.m3u8?$/i.test(f.name || ''));
       const lrcFiles = allFiles.filter(f => /\.lrc$/i.test(f.name || ''));
       const mediaFiles = allFiles.filter(f => !/\.m3u8?$/i.test(f.name || '') && !/\.lrc$/i.test(f.name || ''));
-      for (const m3uFile of m3uFiles) {
-        await this.importM3UFile(m3uFile);
-      }
       if (!mediaFiles.length) {
         this._importing = false;
         // Solo letras: se enlazan con canciones que ya estén en la
@@ -681,27 +675,28 @@ Object.assign(App, {
       }
     },
 
-    /* Utilidad para exportar archivos: usa webxdc.sendToChat en Delta Chat o descarga directa en navegador */
+    /* Utilidad para exportar archivos: usa webxdc.sendToChat en Delta
+     * Chat o descarga directa en navegador. Devuelve true solo si el
+     * archivo salió de verdad: los llamantes enseñan su toast según
+     * este resultado. */
     async exportFile({ name, content, mimeType = 'application/json', caption = '' }) {
       if (window.webxdc && typeof window.webxdc.sendToChat === 'function') {
-        // mimeType permite que el stub webxdc descargue el archivo con el
-        // tipo correcto (antes todo salía como text/plain).
-        const filePayload = { name, mimeType };
-        if (typeof content === 'string') {
-          filePayload.plainText = content;
-        } else if (content instanceof Blob) {
-          filePayload.blob = content;
-        }
+        /* La forma que Delta Chat acepta hoy es { name, blob }. El
+         * plainText histórico puede ser rechazado por clientes
+         * actuales, y el fallo se tragaba aquí dentro: «Compartir
+         * lista» enseñaba «compartida» sin enviar nada (§51). */
+        const blob = content instanceof Blob ? content : new Blob([content], { type: mimeType });
         try {
           await window.webxdc.sendToChat({
-            file: filePayload,
+            file: { name, blob },
             text: caption || name
           });
           return true;
         } catch (err) {
           console.warn('[WebXDC] sendToChat no completado:', err);
           if (!window.webxdc._isStub) {
-            // En Delta Chat nativo, el diálogo de compartir se gestionó o canceló
+            // En Delta nativo devolvemos false y el llamante avisa de
+            // verdad (antes enseñaba el toast de éxito igualmente).
             return false;
           }
         }
@@ -761,26 +756,26 @@ Object.assign(App, {
         const caption = `🎵 ${t.title || this.t('unknown_track')} · ${t.artist || this.t('unknown_artist')}`;
 
         if (blob) {
-          await this.exportFile({
+          const ok = await this.exportFile({
             name: fileName,
             content: blob,
             mimeType: blob.type || 'audio/mpeg',
             caption
           });
-          this.toast(this.t('toast_shared_chat'));
+          this.toast(ok ? this.t('toast_shared_chat') : this.t('toast_share_error'), ok ? undefined : 'danger');
         } else {
           // Si no hay archivo de audio accesible, enviar metadatos y letra
           const txt = `${caption}\n` +
             (t.album ? `Álbum: ${t.album}\n` : '') +
             (t.duration ? `Duración: ${this.fmtTime(t.duration)}\n` : '') +
             (t.lrc && t.lrc.length ? `\n--- Letra ---\n${t.lrc.join('\n')}` : '');
-          await this.exportFile({
+          const ok = await this.exportFile({
             name: `${safeTitle}.txt`,
             content: txt,
             mimeType: 'text/plain;charset=utf-8',
             caption
           });
-          this.toast(this.t('toast_shared_chat'));
+          this.toast(ok ? this.t('toast_shared_chat') : this.t('toast_share_error'), ok ? undefined : 'danger');
         }
       } catch (err) {
         console.error('[Aurora] error shareTrack:', err);
@@ -962,13 +957,13 @@ Object.assign(App, {
         };
         const json = JSON.stringify(data, null, 2);
         const stamp = new Date().toISOString().slice(0, 10);
-        await this.exportFile({
+        const ok = await this.exportFile({
           name: `aurora-backup-${stamp}.json`,
           content: json,
           mimeType: 'application/json',
           caption: 'Copia de seguridad de Aurora Music Player'
         });
-        this.toast(this.t('toast_exported'));
+        this.toast(ok ? this.t('toast_exported') : this.t('toast_load_error'), ok ? undefined : 'danger');
       } catch (e) {
         this.toast(this.t('toast_load_error'));
       }

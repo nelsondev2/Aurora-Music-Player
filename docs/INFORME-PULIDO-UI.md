@@ -1546,3 +1546,44 @@ por álbum en la práctica).
 | 1 decodificación por portada distinta + pool 3–6 + FLAC sin sondeo | ✅ |
 | Regresión importperf 14/14 + batería completa | ✅ |
 | `.xdc` válido (344,5 KB, sha256 `303c7477…`) + regresiones sobre extraído | ✅ |
+
+---
+
+## 51. Fuera importar .m3u/biblioteca, dentro copia de seguridad en Opciones y «Compartir lista» reparado
+
+**Encargo:** (1) eliminar la importación de listas `.m3u` y la de biblioteca tal como existían; (2) crear en su lugar un sistema de copia de seguridad —exportar los datos hacia el chat e importarlos en otra versión/dispositivo— ubicado en el menú de opciones; (3) arreglar «Compartir lista» dentro de las listas, que no funcionaba correctamente.
+
+### Por qué «Compartir lista» no funcionaba (la raíz)
+
+No era el botón ni la lista: era `exportFile()`.
+
+- Enviaba el texto como `file: { name, plainText }`. La forma que Delta Chat acepta de forma fiable hoy es `file: { name, blob }`; un cliente actual puede rechazar o ignorar el `plainText`.
+- Peor: ese rechazo se tragaba dentro de la propia función (devolvía `false` y seguía), y **todos los llamantes enseñaban el toast de éxito sin mirar el resultado**. El usuario veía «Lista compartida» mientras en el chat no llegaba nada — de ahí el «no funciona correctamente»: no fallaba ruidosamente, mentía en silencio.
+
+### Arreglo
+
+- `exportFile()` envía siempre el archivo como **Blob** (el texto se envuelve con su MIME; un Blob de audio pasa tal cual) y devuelve `true` solo si `sendToChat` resolvió —o si en navegador la descarga se disparó—.
+- Los cuatro llamantes miran ese booleano y avisan con honestidad: `exportPlaylist` («Compartir lista»), `exportLibrary` (la nueva copia), `shareTrack` (canción y respaldo de texto) y `exportCurrentLyrics` (letra). Éxito → toast de éxito; rechazo → toast de error en rojo. Se acabó el «compartido» falso.
+- El stub webxdc de navegador ya prefería `blob`: compatible sin tocarlo.
+
+### Sistema de copia de seguridad (menú Opciones)
+
+- Nuevas filas en `#sheetMore` («Opciones»): **Exportar copia de seguridad**, **Importar copia de seguridad** y una pista breve, con iconos `i-file-export`/`i-file-import`. Cierran la hoja antes de actuar, como hace «Compartir canción en chat».
+- Reutiliza los motores ya probados (`exportLibrary`/`importLibrary`, backup **v2** `aurora-backup-AAAA-MM-DD.json`): listas, favoritos, ajustes y punto de escucha; el audio no viaja —en el otro dispositivo se importan las canciones y se enlazan solas por título/artista/nombre de archivo—.
+- Fuera de Ajustes las filas sueltas «Exportar biblioteca»/«Importar biblioteca» con su nota. `menuRelinkAudio` se queda (re-enlaza audio; no es la importación eliminada).
+- La etiqueta del diálogo de bienvenida («restaurar») pasa a la clave nueva `backup_import`.
+- La exportación de una lista como `.m3u8` (Compartir lista) **se conserva**: es formato para otros reproductores; el camino Aurora→Aurora es la copia JSON.
+
+### Importación M3U eliminada por completo
+
+- Fuera el botón `#btnImportM3u` de la cabecera de Biblioteca y su binding.
+- Fuera `parseM3U`, `matchM3UEntries`, `importM3U`, `importM3UFile` de `playlist-edit.js` y la rama que desviaba `.m3u` en `handleFileInput`.
+- El selector de archivos ya no admite `.m3u/.m3u8` (`queue.js`); un `.m3u` que llegue por otra vía se descarta como hasta ahora se descartaba cualquier no-audio.
+- I18n podado (`m3u_import_btn`, `toast_m3u_imported`, `toast_m3u_none`, `toast_m3u_empty`, `imported_playlist_name`, `settings_export`, `settings_import`, `settings_export_hint`) y añadido (`backup_export`, `backup_import`, `backup_hint`): **379 claves × 8 idiomas, sin huecos**.
+
+### Verificación
+
+- Nuevo `check-backup.js`: **22/22** — estructura (copia en Opciones, nada en Ajustes, sin botón M3U), superficie eliminada (`importM3UFile`/`parseM3U`/`matchM3UEntries` ya no existen), raíz reparada (payload **Blob**, `false` honesto ante rechazo de Delta), toasts de compartir según el resultado real, la copia sale al chat como `aurora-backup-AAAA-MM-DD.json`, y el ciclo completo exportar→importar en «otro dispositivo» devuelve la lista.
+- Checks veteranos actualizados a la nueva realidad: `sololistas` 15/15 e `importfiles` 15/15 verifican ahora también la ausencia del M3U. Resto de la batería en verde: hero 8, confirm 10, mimusica 21, visualizer 19, lupa 10, detalles 6, fav-btn 9, letras-btn 9, nav 9, aaa 12, importperf 14.
+- `.xdc` reconstruido y válido: 28 archivos, 342,5 KB.
+

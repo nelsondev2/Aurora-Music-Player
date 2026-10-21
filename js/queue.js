@@ -55,7 +55,7 @@ Object.assign(App, {
         const exts = ((U0 && typeof U0.ACCEPTED === 'string')
           ? U0.ACCEPTED : '.mp3,.m4a,.flac,.wav,.ogg,.webm,.opus')
           .split(',').map(x => x.trim()).filter(x => x.charAt(0) === '.');
-        exts.push('.lrc', '.txt', '.m3u', '.m3u8');
+        exts.push('.lrc', '.txt');
         const nativeFiles = await this.pickFilesWebxdc({ extensions: exts, multiple: true });
         if (nativeFiles) {
           if (nativeFiles.length > 0) {
@@ -83,8 +83,8 @@ Object.assign(App, {
         input.setAttribute('mozdirectory', '');
         input.setAttribute('nwdirectory', '');
       } else {
-        // Audio, letras sueltas y listas .m3u (se importan como listas).
-        input.accept = acceptedTypes + ',.lrc,.txt,.m3u,.m3u8';
+        // Audio y letras sueltas (.lrc se enlaza con su canción).
+        input.accept = acceptedTypes + ',.lrc,.txt';
       }
 
       document.body.appendChild(input);

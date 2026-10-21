@@ -557,13 +557,13 @@ Object.assign(App, {
       const caption = `📜 Letra: ${title}` + (artist ? ` · ${artist}` : '');
 
       try {
-        await this.exportFile({
+        const ok = await this.exportFile({
           name: fileName,
           content: text,
           mimeType: 'text/plain;charset=utf-8',
           caption
         });
-        this.toast(this.t('toast_lrc_exported'));
+        this.toast(ok ? this.t('toast_lrc_exported') : this.t('toast_share_error'), ok ? undefined : 'danger');
       } catch (e) {
         this.toast(this.t('toast_share_error'));
       }

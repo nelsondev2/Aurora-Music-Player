@@ -347,31 +347,6 @@ const I18N = {
   },
   /* Importación de listas M3U (la exportación ya existía como
    * «Compartir lista»). Placeholders: N = nombre, X/Y = encontradas/total. */
-  m3u_import_btn: {
-    es: 'Importar .m3u', en: 'Import .m3u', pt: 'Importar .m3u',
-    zh: '导入 .m3u', ja: '.m3u を読み込む', fr: 'Importer un .m3u',
-    it: 'Importa .m3u', ru: 'Импорт .m3u'
-  },
-  imported_playlist_name: {
-    es: 'Lista importada', en: 'Imported playlist', pt: 'Lista importada',
-    zh: '导入的歌单', ja: '読み込んだリスト', fr: 'Liste importée',
-    it: 'Lista importata', ru: 'Импортированный плейлист'
-  },
-  toast_m3u_imported: {
-    es: 'Lista «N» importada: X de Y canciones encontradas', en: 'Playlist “N” imported: X of Y songs found', pt: 'Lista «N» importada: X de Y músicas encontradas',
-    zh: '已导入歌单“N”：找到 X / Y 首', ja: 'リスト「N」を読み込みました：Y曲中X曲が見つかりました', fr: 'Liste « N » importée : X titres trouvés sur Y',
-    it: 'Lista «N» importata: X di Y brani trovati', ru: 'Плейлист «N» импортирован: найдено X из Y'
-  },
-  toast_m3u_none: {
-    es: 'Ninguna canción de esa lista está en tu biblioteca', en: 'None of that playlist’s songs are in your library', pt: 'Nenhuma música dessa lista está na sua biblioteca',
-    zh: '该歌单的歌曲都不在你的音乐库中', ja: 'そのリストの曲はライブラリにありません', fr: 'Aucun titre de cette liste n’est dans votre bibliothèque',
-    it: 'Nessun brano di quella lista è nella tua libreria', ru: 'Ни одной песни из этого плейлиста нет в библиотеке'
-  },
-  toast_m3u_empty: {
-    es: 'Ese archivo no contiene ninguna lista válida', en: 'That file doesn’t contain a valid playlist', pt: 'Esse arquivo não contém uma lista válida',
-    zh: '该文件不包含有效的歌单', ja: 'そのファイルに有効なリストがありません', fr: 'Ce fichier ne contient pas de liste valide',
-    it: 'Quel file non contiene una lista valida', ru: 'В этом файле нет корректного плейлиста'
-  },
   new_playlist: {
     es: 'Nueva',
     en: 'New',
@@ -1766,14 +1741,6 @@ const I18N = {
     es: 'Resetear EQ', en: 'Reset EQ', pt: 'Redefinir EQ', zh: '重置EQ', ja: 'EQをリセット',
     fr: 'Réinitialiser EQ', it: 'Reimposta EQ', ru: 'Сбросить EQ'
   },
-  settings_export: {
-    es: 'Exportar biblioteca', en: 'Export library', pt: 'Exportar biblioteca', zh: '导出媒体库', ja: 'ライブラリをエクスポート',
-    fr: 'Exporter la bibliothèque', it: 'Esporta libreria', ru: 'Экспортировать библиотеку'
-  },
-  settings_import: {
-    es: 'Importar biblioteca', en: 'Import library', pt: 'Importar biblioteca', zh: '导入媒体库', ja: 'ライブラリをインポート',
-    fr: 'Importer la bibliothèque', it: 'Importa libreria', ru: 'Импортировать библиотеку'
-  },
   settings_retag: {
     es: 'Releer metadatos', en: 'Reread metadata', pt: 'Relê metadados', zh: '重新读取元数据', ja: 'メタデータを再読込',
     fr: 'Relire les métadonnées', it: 'Rileggi metadati', ru: 'Перечитать метаданные'
@@ -1814,6 +1781,26 @@ const I18N = {
     es: 'pista(s) duplicada(s) omitida(s)', en: 'duplicate track(s) skipped', pt: 'faixa(s) duplicada(s) ignorada(s)',
     zh: '首重复音轨已跳过', ja: '重複トラックをスキップしました', fr: 'piste(s) en double ignorée(s)',
     it: 'traccia(e) duplicata/e saltata/e', ru: 'дубликат(ов) пропущено'
+  },
+  backup_export: {
+    es: 'Exportar copia de seguridad', en: 'Export backup', pt: 'Exportar cópia de segurança',
+    zh: '导出备份', ja: 'バックアップを書き出す', fr: 'Exporter la sauvegarde',
+    it: 'Esporta backup', ru: 'Экспортировать резервную копию'
+  },
+  backup_import: {
+    es: 'Importar copia de seguridad', en: 'Import backup', pt: 'Importar cópia de segurança',
+    zh: '导入备份', ja: 'バックアップを読み込む', fr: 'Importer la sauvegarde',
+    it: 'Importa backup', ru: 'Импортировать резервную копию'
+  },
+  backup_hint: {
+    es: 'Envía la copia a un chat y guárdala: en otro dispositivo (u otra versión de Aurora) podrás importarla ahí. Viajan listas, favoritos, ajustes y tu punto de escucha; el audio no: importa también las canciones y se enlazan solas.',
+    en: "Send the backup to a chat and keep it: on another device (or another Aurora version) you can import it there. Playlists, favorites, settings and your listening point travel with it; the audio doesn't: import the songs too and they link up automatically.",
+    pt: 'Envie a cópia para um chat e guarde-a: noutro dispositivo (ou noutra versão do Aurora) poderá importá-la lá. Vão listas, favoritos, definições e o seu ponto de escuta; o áudio não: importe também as músicas e elas ligam-se sozinhas.',
+    zh: '把备份发送到一个聊天并保存好：在另一台设备（或另一个 Aurora 版本）上可以导入。歌单、收藏、设置和收听进度会一起转移；音频不会：再把歌曲也导入，它们会自动关联。',
+    ja: 'バックアップをチャットに送って保存しておくと、別の端末（または別の Aurora バージョン）で読み込めます。プレイリスト、お気に入り、設定、再生位置が移ります。音声は含まれないので、曲も一緒に読み込むと自動で結び付きます。',
+    fr: 'Envoyez la sauvegarde dans un chat et gardez-la : sur un autre appareil (ou une autre version d’Aurora), vous pourrez l’y importer. Listes, favoris, réglages et point d’écoute voyagent ; l’audio non : importez aussi les chansons, elles se rattachent toutes seules.',
+    it: 'Invia il backup in una chat e conservalo: su un altro dispositivo (o un’altra versione di Aurora) potrai importarlo lì. Viaggiano liste, preferiti, impostazioni e punto di ascolto; l’audio no: importa anche i brani e si collegano da soli.',
+    ru: 'Отправьте копию в чат и сохраните её: на другом устройстве (или в другой версии Aurora) её можно будет импортировать. Переносятся плейлисты, избранное, настройки и точка прослушивания; аудио — нет: импортируйте также песни, и они свяжутся сами.'
   },
   toast_exported: {
     es: 'Metadatos exportados (sin audio)', en: 'Metadata exported (no audio)', pt: 'Metadados exportados (sem áudio)', zh: '已导出元数据（不含音频）', ja: 'メタデータを書き出しました（音声なし）',
@@ -2240,16 +2227,6 @@ const I18N = {
     es: 'Borrar historial', en: 'Clear history', pt: 'Limpar histórico',
     zh: '清除记录', ja: '履歴を消去', fr: 'Effacer l\'historique',
     it: 'Cancella cronologia', ru: 'Очистить историю'
-  },
-  settings_export_hint: {
-    es: 'Listas, favoritos, ajustes y dónde ibas escuchando. Sin el audio: en el otro dispositivo tendrás que importar también las canciones.',
-    en: 'Playlists, favorites, settings and where you left off. No audio included: on the other device you will also need to import the songs.',
-    pt: 'Listas, favoritos, definições e onde ias a ouvir. Sem o áudio: no outro dispositivo também terás de importar as músicas.',
-    zh: '播放列表、收藏、设置和收听位置。不含音频：在另一台设备上还需要导入歌曲文件。',
-    ja: 'リスト・お気に入り・設定・再生位置。音声は含まれません：別の端末では曲ファイルのインポートも必要です。',
-    fr: 'Listes, favoris, réglages et position d’écoute. Sans l’audio : sur l’autre appareil, il faudra aussi importer les chansons.',
-    it: 'Playlist, preferiti, impostazioni e posizione di ascolto. Senza audio: sull’altro dispositivo dovrai importare anche i brani.',
-    ru: 'Плейлисты, избранное, настройки и позиция прослушивания. Без аудио: на другом устройстве нужно будет также импортировать песни.'
   },
   relink_pending: {
     es: 'X pistas sin audio — toca para vincular',

@@ -604,13 +604,6 @@
                   <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
                   <span data-i18n="new_playlist">Nueva</span>
                 </button>
-                <!-- Importar una lista .m3u/.m3u8 de otro reproductor:
-                     se crea como lista nueva con las canciones que
-                     ya estén en la biblioteca. -->
-                <button class="text-btn" id="btnImportM3u" type="button">
-                  <svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg>
-                  <span data-i18n="m3u_import_btn">Importar .m3u</span>
-                </button>
               </div>
               <ul class="playlist-rail" id="libraryPlaylists" tabindex="0" data-i18n-aria="library_playlists_section" aria-label="Listas de reproducción"></ul>
             </section>
@@ -696,6 +689,15 @@
               <svg class="ico" aria-hidden="true"><use href="#i-clock-rotate-left"></use></svg>
               <span data-i18n="settings_history">Historial</span>
             </button>
+            <button class="menu-row" id="menuBackupExport" type="button">
+              <svg class="ico" aria-hidden="true"><use href="#i-file-export"></use></svg>
+              <span data-i18n="backup_export">Exportar copia de seguridad</span>
+            </button>
+            <button class="menu-row" id="menuBackupImport" type="button">
+              <svg class="ico" aria-hidden="true"><use href="#i-file-import"></use></svg>
+              <span data-i18n="backup_import">Importar copia de seguridad</span>
+            </button>
+            <p class="settings-hint" data-i18n="backup_hint">Envía la copia a un chat y guárdala: en otro dispositivo (u otra versión de Aurora) podrás importarla ahí. Viajan listas, favoritos, ajustes y tu punto de escucha; el audio no: importa también las canciones y se enlazan solas.</p>
             <button class="menu-row" id="menuSettings">
               <svg class="ico" aria-hidden="true"><use href="#i-gear"></use></svg>
               <span data-i18n="settings_title">Ajustes</span>
@@ -888,15 +890,6 @@
             <button class="menu-row" id="menuFreeStorage">
               <svg class="ico" aria-hidden="true"><use href="#i-clear-list"></use></svg>
               <span data-i18n="settings_free_storage">Liberar espacio</span>
-            </button>
-            <button class="menu-row" id="menuExportLibrary">
-              <svg class="ico" aria-hidden="true"><use href="#i-file-export"></use></svg>
-              <span data-i18n="settings_export">Exportar biblioteca</span>
-            </button>
-            <p class="settings-hint" data-i18n="settings_export_hint">Listas, favoritos, ajustes y dónde ibas escuchando. Sin el audio: en el otro dispositivo tendrás que importar también las canciones.</p>
-            <button class="menu-row" id="menuImportLibrary">
-              <svg class="ico" aria-hidden="true"><use href="#i-file-import"></use></svg>
-              <span data-i18n="settings_import">Importar biblioteca</span>
             </button>
             <button class="menu-row" id="menuRelinkAudio" hidden>
               <svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg>

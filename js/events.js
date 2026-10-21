@@ -244,12 +244,16 @@ Object.assign(App, {
         this.toast(this.t('toast_retag_start'));
         this.retagExistingTracks().catch(() => {});
       });
-      const btnExport = document.getElementById('menuExportLibrary');
-      if (btnExport) btnExport.addEventListener('click', () => {
+      // Sistema de copia de seguridad §51: vive en Opciones (sheetMore),
+      // ya no es una fila suelta dentro de Ajustes.
+      const btnBackupExport = document.getElementById('menuBackupExport');
+      if (btnBackupExport) btnBackupExport.addEventListener('click', () => {
+        this.closeSheet('sheetMore');
         this.exportLibrary();
       });
-      const btnImport = document.getElementById('menuImportLibrary');
-      if (btnImport) btnImport.addEventListener('click', () => {
+      const btnBackupImport = document.getElementById('menuBackupImport');
+      if (btnBackupImport) btnBackupImport.addEventListener('click', () => {
+        this.closeSheet('sheetMore');
         this.importLibrary();
       });
       const btnRelink = document.getElementById('menuRelinkAudio');
@@ -438,28 +442,6 @@ Object.assign(App, {
       $('btnNewPlaylist').addEventListener('click', () => this.openCreatePlaylistSheet());
       $('btnOpenNewPlaylist').addEventListener('click', () => {
         this.openCreatePlaylistSheet();
-      });
-      // Importar lista .m3u/.m3u8: selector de un solo archivo; el
-      // parseo y la creación viven en playlist-edit.js (importM3UFile).
-      const btnImportM3u = document.getElementById('btnImportM3u');
-      if (btnImportM3u) btnImportM3u.addEventListener('click', async () => {
-        // Delta Chat nativo: selector integrado antes que <input> (§42)
-        const nativeFiles = await this.pickFilesWebxdc({ extensions: ['.m3u', '.m3u8'], multiple: false });
-        if (nativeFiles) {
-          if (nativeFiles.length > 0) await this.importM3UFile(nativeFiles[0]);
-          return;
-        }
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.m3u,.m3u8,audio/x-mpegurl,application/x-mpegurl';
-        input.style.display = 'none';
-        document.body.appendChild(input);
-        input.addEventListener('change', async () => {
-          const file = input.files && input.files[0];
-          input.remove();
-          if (file) await this.importM3UFile(file);
-        });
-        input.click();
       });
 
       // Guardar playlist: crea una nueva (vacía o con pistas) O añade pistas a una existente
