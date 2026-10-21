@@ -86,12 +86,20 @@ Object.assign(App, {
 
     setNavActive(nav) {
       document.querySelectorAll('.nav-btn').forEach(b => {
-        b.classList.toggle('active', b.dataset.nav === nav);
+        const on = b.dataset.nav === nav;
+        b.classList.toggle('active', on);
+        // El lector de pantalla también debe saber dónde estás.
+        if (on) b.setAttribute('aria-current', 'page');
+        else b.removeAttribute('aria-current');
       });
     },
 
     goNav(nav) {
-      this.setNavActive(nav);
+      /* El resaltado se aplica AL FINAL, no al principio: cerrar la
+       * pestaña anterior dispara en closeSheet() el «volver a Inicio»,
+       * y si la pestaña nueva ya se había marcado, ese reset la borraba
+       * y el resaltado se quedaba en Inicio (reportado en dispositivo
+       * al saltar entre Favoritos, Buscar y Biblioteca). */
       if (nav === 'home') {
         this.closeAllSheets();
         this.showView('home');
@@ -116,6 +124,7 @@ Object.assign(App, {
           if (inp) inp.focus();
         }, 350);
       }
+      this.setNavActive(nav);
       this.updateChrome();
     },
 

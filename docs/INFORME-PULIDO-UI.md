@@ -777,3 +777,29 @@ prueba en el dispositivo real del usuario (Delta Android/Desktop/iOS:
 importar FLAC/OGG reales, cerrar la app a mitad de canción y reabrir,
 encadenar archivos corruptos) sigue pendiente y es la única vía de subir a
 10; ningún 10 se declara sin ella.
+
+## 34. El resaltado de la navegación se quedaba en «Inicio» (reporte con capturas)
+
+**Síntoma** (capturas del usuario en Delta Android): estando en Favoritos,
+Buscar o Biblioteca, la pestaña resaltada abajo seguía siendo «Inicio».
+
+**Causa raíz**: `goNav()` marcaba la pestaña nueva **antes** de cerrar las
+anteriores. Al cerrar la pestaña previa, `closeSheet()` ejecutaba su regla
+«si no queda ninguna pestaña abierta, vuelve a Inicio» y borraba el
+resaltado recién puesto; la pestaña nueva se abría después sin volver a
+marcar. Desde Inicio (sin pestaña abierta) sí funcionaba, por eso el fallo
+solo aparecía al saltar **entre** pestañas — exactamente lo capturado.
+
+**Corrección**:
+- `goNav()` aplica `setNavActive(nav)` al final, tras cerrar y abrir.
+- `openSheet()` refuerza el invariante: abrir Biblioteca/Buscar/Favoritos
+  activa su botón, lo abra el camino que lo abra.
+- De paso, `setNavActive()` ahora también pone `aria-current="page"`:
+  el lector de pantalla anuncia la pestaña actual igual que el ojo la ve.
+- El comportamiento querido se conserva: cerrar una pestaña con la X
+  devuelve el resaltado a Inicio (cubierto por la regresión).
+
+Verificación: regresión específica escrita antes de corregir (5 ok / 4 fail,
+fallando justo los saltos entre pestañas) y **9/9** tras la corrección;
+regresión AAA 12/12 e i18n 403×8, todo repetido sobre el `.xdc` extraído
+(339,6 KB, sha256 `79ba0c22…`).

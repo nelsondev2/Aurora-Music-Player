@@ -79,6 +79,11 @@ Object.assign(App, {
         this._sheetStack.push(id);
       }
       s.classList.add('open');
+      /* Invariante de navegación: si se abre una pestaña (Biblioteca,
+       * Buscar, Favoritos), su botón inferior queda activo. Así el
+       * resaltado no depende de qué camino abrió la pestaña. */
+      const TAB_NAV = { sheetLibrary: 'library', sheetSearch: 'search', sheetFavorites: 'favorites' };
+      if (TAB_NAV[id] && typeof this.setNavActive === 'function') this.setNavActive(TAB_NAV[id]);
       // Quitar inert/aria-hidden del panel que se abre. La capa superior
       // se recalcula en _syncSheetLayer().
       try { s.inert = false; } catch (e) { s.removeAttribute('inert'); }
