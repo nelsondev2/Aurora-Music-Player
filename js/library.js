@@ -200,7 +200,6 @@ Object.assign(App, {
           }
           if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
           if (relinked > 0) {
-            this.renderLibrary();
             if (typeof this.renderHome === 'function') this.renderHome();
           }
           // Sin lista destino y sin pistas nuevas (duplicadas o
@@ -264,7 +263,6 @@ Object.assign(App, {
             if (this.shuffle && this._originalQueue) this._originalQueue.push(t.id);
           });
         }
-        this.renderLibrary();
         this.renderPlaylists();
         this.renderQueue();
         this.renderFavorites();
@@ -363,11 +361,6 @@ Object.assign(App, {
     showImportSkeleton() {
       if (this.tracks.length) return;
       const html = this._skeletonRowHtml() + this._skeletonRowHtml() + this._skeletonRowHtml();
-      const ul = document.getElementById('libraryTracks');
-      if (ul) {
-        if (typeof this.unbindVirtualList === 'function') this.unbindVirtualList(ul);
-        ul.innerHTML = html;
-      }
       const home = document.getElementById('homeContent');
       const hv = document.getElementById('viewHome');
       if (home && hv && hv.classList.contains('is-empty')) {
@@ -380,10 +373,6 @@ Object.assign(App, {
       if (skelList && !this.tracks.length && typeof this.renderHome === 'function') {
         this.renderHome();
       } else if (skelList) skelList.remove();
-      if (!this.tracks.length) {
-        const ul = document.getElementById('libraryTracks');
-        if (ul && !ul.children.length && typeof this.renderLibrary === 'function') this.renderLibrary();
-      }
     },
 
     findDuplicateTrack(fileName, fileSize) {
@@ -659,7 +648,6 @@ Object.assign(App, {
         } catch (e) {}
       }
       if (updated) {
-        this.renderLibrary();
         this.renderPlaylists();
         this.renderQueue();
         this.renderFavorites();
@@ -830,7 +818,6 @@ Object.assign(App, {
         lrcFontSize: this.lrcFontSize || 19,
         visualizerMode: this.visualizerMode || 'bars',
         eq: { preset: eqPreset, gains: eqGains },
-        librarySort: this._librarySort || 'title'
       };
     },
 
@@ -936,9 +923,6 @@ Object.assign(App, {
           }
         }
 
-        if (['title', 'artist', 'recent', 'duration'].includes(s.librarySort)) {
-          this._librarySort = s.librarySort;
-        }
       } catch (e) {
         console.warn('[Aurora] Ajustes del backup no aplicables:', e && e.message);
       }
@@ -1043,7 +1027,6 @@ Object.assign(App, {
         if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('formato');
         if (data.kind && data.kind !== 'aurora-metadata') throw new Error('kind');
         const result = this._importLibraryData(data);
-        this.renderLibrary();
         this.renderPlaylists();
         this.renderQueue();
         this.renderFavorites();
@@ -1474,7 +1457,6 @@ Object.assign(App, {
         // Saltar a siguiente/anterior en modo pausa, o quedar vacío
         this.skipToNextOrPrevPaused();
       }
-      this.renderLibrary();
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();
@@ -1539,7 +1521,6 @@ Object.assign(App, {
         this.saveFavorites();
       }
       if (this.currentTrack && this.currentTrack.id === t.id) this.updateFavoriteUI();
-      this.renderLibrary();
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();
@@ -1626,7 +1607,6 @@ Object.assign(App, {
       // 8. Re-renderizar todo y mostrar estado vacío
       this.showEmptyState();
       this.renderCurrentTrack();
-      this.renderLibrary();
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();

@@ -59,7 +59,6 @@ Object.assign(App, {
 
       this.wireEvents();
       this.wireGestures();
-      this.renderLibrary();
       this.renderPlaylists();
       if (typeof this.updateRelinkUI === 'function') this.updateRelinkUI();
       if (typeof this.renderHome === 'function') this.renderHome();

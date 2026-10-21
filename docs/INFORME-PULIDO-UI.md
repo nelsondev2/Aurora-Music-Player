@@ -1340,3 +1340,71 @@ extraído.
 | «Mi Música» nace solo con la importación que la crea; arranque solo con sueltas | ✅ |
 | Regresión mimusica 21/21 + batería completa | ✅ |
 | `.xdc` válido (348,1 KB, sha256 `46471bf2…`) + regresiones sobre extraído | ✅ |
+
+## 47. La Biblioteca es solo listas: fuera «Todas las canciones»
+
+Petición del usuario: eliminar completamente la sección «Todas las
+canciones» y dejar solo las playlists. La sección era la raíz de
+varias piezas; quitarla «completamente» es quitar también lo que
+solo vivía en ella, y así se ha hecho:
+
+**Desaparece**:
+- La sección entera del marcado (cabecera fija, «Reproducir Todo»,
+  «Aleatorio», chips de ordenación y la lista virtual de canciones)
+  y su botón «Borrar todo» de cabecera.
+- `renderLibrary()` y sus 20 llamadas (la lista queda solo con
+  `renderLibrarySections()` → `renderPlaylists()`), `playLibraryTracks()`,
+  `sortedTracks()`, `setLibrarySort()` y el estado `_librarySort`,
+  que además deja de viajar en la copia de seguridad (las copias
+  viejas que lo traigan lo ignoran sin romper).
+- **La selección/edición por lotes entera** (§45 ya había perdido
+  su botón; su casa eran estas filas): barra de lote, hoja de
+  edición por lote, las 9 funciones `toggleBatchMode`/
+  `toggleTrackSelection`/`selectAllTracks`/`clearTrackSelection`/
+  `updateBatchUI`/`openBatchEditModal`/`saveBatchEditTags`/
+  `batchDeleteTracks`/`batchAddToPlaylist`, sus 8 bindings, las
+  casillas en las filas (`makeTrackRow` ya no pinta checkbox ni
+  clases de lote), el estado `_batchMode`/`_selectedTrackIds` y la
+  rama de lote del selector de listas (la adición de una pista,
+  intacta).
+- CSS huérfano: `.lib-song-actions`, `.lib-sort*`, `.lib-songs-sticky`,
+  `.batch-bar`, `.batch-act`, `.row-batch-check`, `.batch-checkbox`,
+  `.track-row.selected/.batch-mode`, `.lib-empty-cta`, el bloque
+  §44 entero (solo hablaba de esos botones) y las menciones en las
+  listas de selectores compartidas y en el modo ancho.
+- 19 claves i18n huérfanas (diccionario: **384 × 8**, sin huecos):
+  la sección, las 4 de ordenación y toda la familia `batch_*` +
+  `select_track`.
+
+**Decisiones documentadas**:
+- La pulsación larga sobre una fila ya no entra en el modo lote:
+  abre el menú de la canción, que era su otro significado y el
+  único coherente sin lista de biblioteca.
+- **«Borrar toda la biblioteca» NO se elimina**: tenía una segunda
+  puerta viva en el menú de Ajustes (`menuDeleteLibrary`), así que
+  `deleteAllTracks()` se queda; solo muere su botón de la sección.
+- Las canciones sin lista siguen alcanzables por Buscar, Inicio
+  (recientes/top) y «Mi Música»; la re-vinculación vive en Ajustes
+  y no dependía de la sección. Las regresiones `check-sinselect` y
+  `check-libbtns` probaban la UI eliminada: jubiladas y sustituidas
+  por `check-sololistas`.
+
+**Verificación**: regresión específica 15/15 (marcado y CSS sin la
+sección ni el lote; funciones ausentes y `deleteAllTracks`
+presente; tarjetas pintadas; «Mi Música» solo con sueltas; filas
+sin casilla que reproducen desde su lista; pulsación larga real
+que abre el menú sin modo lote; importación suelta intacta;
+borrar-todo cancelado que no toca nada; 0 errores). Batería
+completa en verde (mimusica 21/21, visualizador 19/19, importFiles
+16/16, lupa 10/10, detalles 6/6, fav/letras/nav 9/9, AAA 12/12,
+i18n 384×8) y regresión repetida sobre el `.xdc` extraído (el
+paquete adelgaza ~6 KB: 342,2 KB).
+
+## Cierre de la sesión §47
+
+| Check | Resultado |
+|---|---|
+| Sección «Todas las canciones» + lote + ordenación eliminados sin restos | ✅ |
+| Biblioteca solo con listas; pulsación larga = menú de la canción | ✅ |
+| Regresión sololistas 15/15 + batería completa | ✅ |
+| `.xdc` válido (342,2 KB, sha256 `9a5ffe62…`) + regresiones sobre extraído | ✅ |

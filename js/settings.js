@@ -598,7 +598,6 @@ Object.assign(App, {
       // Nota: document.title es ignorado en WebXDC; el nombre viene de manifest.toml
       // Re-renderizar listas dinámicas para que se traduzcan
       try {
-        this.renderLibrary();
         this.renderPlaylists();
         this.renderQueue();
         this.renderFavorites();

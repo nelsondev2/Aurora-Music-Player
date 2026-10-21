@@ -461,9 +461,6 @@ Object.assign(App, {
         });
         input.click();
       });
-      // Botón "Borrar todo" en biblioteca
-      const btnDeleteAll = document.getElementById('btnDeleteAllTracks');
-      if (btnDeleteAll) btnDeleteAll.addEventListener('click', () => this.deleteAllTracks());
 
       // Guardar playlist: crea una nueva (vacía o con pistas) O añade pistas a una existente
       $('btnSavePlaylist').addEventListener('click', () => {
@@ -550,17 +547,6 @@ Object.assign(App, {
       document.querySelectorAll('.nav-btn').forEach(b => {
         b.addEventListener('click', () => this.goNav(b.dataset.nav));
       });
-
-      document.querySelectorAll('.lib-sort').forEach(b => {
-        b.addEventListener('click', () => this.setLibrarySort(b.dataset.sort));
-      });
-
-      // Acciones de la sección Todas las canciones. «Aleatorio» activa el
-      // modo shuffle real de la cola (playLibraryTracks(true)).
-      const btnLibPlayAll = document.getElementById('btnLibPlayAll');
-      if (btnLibPlayAll) btnLibPlayAll.addEventListener('click', () => this.playLibraryTracks(false));
-      const btnLibShuffle = document.getElementById('btnLibShuffle');
-      if (btnLibShuffle) btnLibShuffle.addEventListener('click', () => this.playLibraryTracks(true));
 
       const btnPlayBrowse = document.getElementById('btnPlayBrowse');
       if (btnPlayBrowse) btnPlayBrowse.addEventListener('click', () => this.playBrowse());
@@ -671,22 +657,6 @@ Object.assign(App, {
       if (btnSaveEdit) btnSaveEdit.addEventListener('click', () => this.saveEditTrack());
       const btnSaveEditP = document.getElementById('btnSaveEditTrackPrimary');
       if (btnSaveEditP) btnSaveEditP.addEventListener('click', () => this.saveEditTrack());
-
-      // Selección múltiple y edición por lotes (#23)
-      const btnBatchAll = document.getElementById('btnBatchSelectAll');
-      if (btnBatchAll) btnBatchAll.addEventListener('click', () => this.selectAllTracks());
-      const btnBatchEdit = document.getElementById('btnBatchEditTags');
-      if (btnBatchEdit) btnBatchEdit.addEventListener('click', () => this.openBatchEditModal());
-      const btnBatchCancel = document.getElementById('btnBatchCancel');
-      if (btnBatchCancel) btnBatchCancel.addEventListener('click', () => this.toggleBatchMode(false));
-      const btnBatchDel = document.getElementById('btnBatchDelete');
-      if (btnBatchDel) btnBatchDel.addEventListener('click', () => this.batchDeleteTracks());
-      const btnBatchAddPl = document.getElementById('btnBatchAddPlaylist');
-      if (btnBatchAddPl) btnBatchAddPl.addEventListener('click', () => this.batchAddToPlaylist());
-      const btnSaveBatch = document.getElementById('btnSaveBatchEdit');
-      if (btnSaveBatch) btnSaveBatch.addEventListener('click', () => this.saveBatchEditTags());
-      const btnSaveBatchP = document.getElementById('btnSaveBatchEditPrimary');
-      if (btnSaveBatchP) btnSaveBatchP.addEventListener('click', () => this.saveBatchEditTags());
 
       // Búsqueda (debounce 150 ms)
       $('searchInput').addEventListener('input', (e) => {
@@ -908,7 +878,6 @@ Object.assign(App, {
               (!this.currentTrack.duration || this.currentTrack.duration === 0)) {
             this.currentTrack.duration = Math.floor(dur);
             this.persistTrack(this.currentTrack);
-            this.renderLibrary();
             this.renderQueue();
             if (this._editingPlaylistId) this.renderEditPlaylist();
           }

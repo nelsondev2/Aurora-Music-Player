@@ -3252,76 +3252,11 @@ button,
   line-height: 1.5;
   padding: 4px 2px 8px;
 }
-.lib-song-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 2px 10px;
-}
-.lib-song-actions .text-btn {
-  margin-left: 0;
-  padding: 8px 14px;
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text-1);
-}
-.lib-song-actions .text-btn .ico { width: 15px; height: 15px; }
-/* La acción principal del bloque (reproducir todo) usa el acento. */
-.lib-song-actions .text-btn:first-child {
-  background: var(--accent-fill);
-  border-color: transparent;
-  color: var(--accent-on-fill);
-}
-/* Fila de ordenación: los chips se desplazan a lo ancho; la
- * selección múltiple se entra con pulsación larga (§45). */
-.lib-sort-wrap {
-  display: flex;
-  gap: 6px;
-  align-items: flex-start;
-}
-.lib-sort-row {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  margin-bottom: 10px;
-}
-/* Cabecera de «Todas las canciones» fija al hacer scroll dentro de la
- * hoja: reproducir todo y reordenar quedan siempre a mano. El fondo es
- * el del panel para que las filas pasen por debajo sin transparentar. */
-.lib-songs-sticky {
-  position: sticky;
-  top: -16px;
-  z-index: 7;
-  background: var(--bg-2);
-  padding-top: 6px;
-}
 /* Al final de la lista, que la última fila no quede bajo el
  * mini-reproductor (56 px + márgenes) al llegar al fondo. */
 #sheetLibrary .sheet-body { padding-bottom: 104px; }
 /* Duración desconocida («—»): casi invisible, solo sostiene la columna. */
 .row-duration-na { color: var(--text-4); }
-.lib-sort-row::-webkit-scrollbar { display: none; }
-.lib-sort {
-  min-height: 36px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  color: var(--text-2);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  white-space: nowrap;
-}
-.lib-sort.active {
-  color: var(--accent-on-fill);
-  background: var(--accent-fill);
-  border-color: transparent;
-}
-
 .artist-row {
   display: flex;
   align-items: center;
@@ -4037,7 +3972,7 @@ button,
  * ===================================================================== */
 
 .queue-item, .track-row, .pick-row, .artist-row,
-.nav-btn, .lib-sort, .eq-preset, .sleep-opt,
+.nav-btn, .eq-preset, .sleep-opt,
 .menu-row, .search-filter, .xfade-opt, .theme-opt,
 .home-hero, .home-card, .pl-row, .pl-card, .lang-row,
 .stats-row, .search-history-row, .accent-opt, .pl-action-btn {
@@ -4071,7 +4006,6 @@ button,
   .menu-row:hover,
   .settings-row:hover,
   .lang-row:hover { background: var(--surface); }
-  .lib-sort:hover,
   .search-filter:hover,
   .eq-preset:hover,
   .xfade-opt:hover {
@@ -4278,19 +4212,6 @@ html.aurora-wide #sheetLibrary .sheet-body {
   max-width: 1040px;
   margin: 0 auto;
 }
-html.aurora-wide #sheetLibrary .lib-song-actions {
-  margin-bottom: 12px;
-}
-html.aurora-wide #libraryTracks {
-  gap: 6px;
-}
-html.aurora-wide #libraryTracks .track-row {
-  padding-right: 14px;
-}
-html.aurora-wide .lib-sort-row {
-  overflow: visible;
-  flex-wrap: wrap;
-}
 /* Editor de lista: misma anchura de lectura que la biblioteca para que
  * las pastillas y las filas no queden pegadas al borde izquierdo de una
  * pantalla ultrapanorámica. */
@@ -4405,80 +4326,6 @@ html.aurora-wide .toast {
   color: var(--accent);
 }
 
-/* Botón «Seleccionar» dentro de la fila de orden de la biblioteca */
-/* Casillas de selección en las filas */
-.row-batch-check {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  flex: 0 0 auto;
-}
-.batch-checkbox {
-  width: 20px;
-  height: 20px;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-.track-row.selected { background: rgba(var(--accent-rgb), 0.12); }
-.track-row.batch-mode { cursor: pointer; }
-.track-row.batch-mode .row-duration { opacity: 0.4; }
-
-/* Barra de acciones por lote (fija al pie del sheet de biblioteca) */
-.batch-bar {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px 16px calc(12px + var(--safe-bottom));
-  border-top: 1px solid var(--border);
-  background: var(--blur-bg);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-}
-.batch-bar[hidden] { display: none; }
-.batch-bar-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.batch-count {
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--text-1);
-}
-.batch-bar-actions {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding-bottom: 2px;
-}
-.batch-bar-actions::-webkit-scrollbar { display: none; }
-.batch-act {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--text-1);
-  font-size: var(--fs-2xs);
-  font-weight: 600;
-  white-space: nowrap;
-  flex: 0 0 auto;
-}
-.batch-act .ico { width: 16px; height: 16px; }
-.batch-act:active { background: var(--surface-hi); }
-.batch-act:disabled { opacity: 0.45; cursor: not-allowed; }
-.batch-act.danger { color: var(--danger); }
-
-@media (max-width: 360px) {
-  .batch-act span { display: none; }
-  .batch-act { padding: 9px; }
-}
-
 @media (max-width: 380px) {
   /* 5 controles secundarios (incluye A-B): reducir separación */
   .controls-secondary { gap: 12px; }
@@ -4556,11 +4403,6 @@ html.aurora-wide .toast {
 .empty-state.compact .empty-icon .ico { width: 24px; height: 24px; }
 .empty-state.compact h4 { font-size: var(--fs-subtitle); }
 .empty-state.compact p { font-size: var(--fs-sm); }
-.lib-empty-cta {
-  flex: 1 0 100%;
-  width: 100%;
-  padding-top: 36px;
-}
 .empty-cta {
   display: inline-flex;
   align-items: center;
@@ -4584,7 +4426,6 @@ html.aurora-wide .toast {
 
 /* Acciones visibles al enfocar con teclado (además del hover). */
 .text-btn:focus-visible,
-.lib-song-actions .text-btn:focus-visible,
 .toast-action:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -5157,66 +4998,4 @@ html.aurora-wide .toast {
   background:
     radial-gradient(ellipse at 50% 0%, transparent 0%, transparent 55%),
     linear-gradient(180deg, transparent 52%, var(--bg-0) 97%);
-}
-
-/* ============================================================
- * Botones de «Todas las canciones»: la fórmula serena (§44)
- * ------------------------------------------------------------
- * En la captura del usuario la cabecera mezclaba cuatro cajas
- * distintas: píldora de acento enorme, píldora con borde, chips
- * de 36 px y un «Seleccionar» con borde discontinuo y «Borrar
- * todo» en rojo permanente. Se unifica como en la barra de
- * Letras (§36) y el bloque de lista (§35): UNA caja de 40 px
- * para todo el grupo, un solo protagonista plano
- * (--accent-fill: «Reproducir Todo» y el chip activo), el resto
- * discreto (superficie + borde sólido + texto) y ningún color
- * permanente de peligro. Acotado al bloque fijo de la
- * biblioteca: las clases base (.text-btn, .lib-sort…) no se
- * tocan porque se usan en más sitios.
- * ============================================================ */
-#sheetLibrary .lib-songs-sticky .lib-song-actions .text-btn,
-#sheetLibrary .lib-songs-sticky .lib-sort {
-  height: 40px;
-  min-height: 40px;
-  padding-top: 0;
-  padding-bottom: 0;
-  border-radius: var(--radius-pill);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  line-height: 1;
-}
-#sheetLibrary .lib-songs-sticky .lib-song-actions .text-btn {
-  padding-left: 16px;
-  padding-right: 16px;
-}
-#sheetLibrary .lib-songs-sticky .lib-sort {
-  padding-left: 14px;
-  padding-right: 14px;
-}
-/* El secundario comparte la discreción del resto del grupo */
-#sheetLibrary .lib-songs-sticky .lib-song-actions .text-btn:last-child {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text-1);
-}
-#sheetLibrary .lib-songs-sticky .lib-song-actions .text-btn .ico {
-  width: 16px;
-  height: 16px;
-}
-/* «Borrar todo» deja el rojo permanente: queda como utilidad
- * discreta en la cabecera (el rojo vive en la confirmación). */
-#sheetLibrary .lib-songs-sticky .lib-section-head .text-btn.danger {
-  height: 40px;
-  min-height: 40px;
-  padding-top: 0;
-  padding-bottom: 0;
-  color: var(--text-2);
-}
-#sheetLibrary .lib-songs-sticky .lib-section-head .text-btn.danger .ico {
-  width: 16px;
-  height: 16px;
-}
-#sheetLibrary .lib-songs-sticky .lib-section-head .text-btn.danger:active {
-  color: var(--danger);
-  background: rgba(239, 68, 68, 0.12);
 }

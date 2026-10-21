@@ -202,7 +202,6 @@ Object.assign(App, {
       this.playlists.forEach(pl => {
         if ((pl.trackIds || []).includes(t.id)) this._invalidatePlaylistCover(pl);
       });
-      this.renderLibrary();
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();
@@ -801,69 +800,6 @@ Object.assign(App, {
       this.toast(this.t('toast_queue_cleared'));
     },
 
-    renderLibrary() {
-      const ul = document.getElementById('libraryTracks');
-      const hasTracks = this.tracks.length > 0;
-      // Contador de la sección: con 0 no se muestra (un «0» junto al
-      // estado vacío era ruido). La cabecera se adapta al contenido.
-      const countEl = document.getElementById('librarySongsCount');
-      if (countEl) {
-        countEl.textContent = String(this.tracks.length);
-        countEl.hidden = !hasTracks;
-      }
-      const actions = document.getElementById('libSongActions');
-      if (actions) actions.hidden = !hasTracks;
-      const deleteAll = document.getElementById('btnDeleteAllTracks');
-      if (deleteAll) deleteAll.hidden = !hasTracks;
-      const sortRow = document.getElementById('libSortRow');
-      if (sortRow) sortRow.hidden = !hasTracks;
-      if (!ul) return;
-      if (!hasTracks) {
-        this.unbindVirtualList(ul);
-        ul.innerHTML = '';
-        const li = document.createElement('li');
-        li.className = 'empty-state lib-empty-cta';
-        // Mismo lenguaje que la bienvenida de Inicio, con la acción
-        // imprescindible: importar música sin salir de la biblioteca.
-        li.innerHTML = this.emptyStateHtml({
-          icon: 'music',
-          title: this.t('empty_library_title'),
-          text: this.t('empty_library_hint'),
-          cta: { id: 'btnEmptyLibraryLoad', label: this.t('load_music'), icon: 'cloud-arrow-up' }
-        });
-        const btn = li.querySelector('#btnEmptyLibraryLoad');
-        if (btn) btn.addEventListener('click', () => this.openFilePicker());
-        ul.appendChild(li);
-        return;
-      }
-      const list = (typeof this.sortedTracks === 'function') ? this.sortedTracks() : this.tracks.slice();
-      this.fillVirtualList(ul, list, (tr) => this.makeTrackRow(tr, { playContext: { type: 'all' } }), {
-        scroller: ul.closest('.sheet-body'),
-        rowHeight: 64
-      });
-    },
-
-    /* «Reproducir todo» / «Aleatorio» de la sección Todas las canciones.
-     * Usa el orden visible (sortedTracks) y, al barajar, activa de verdad
-     * el modo aleatorio de la cola (no solo cambia el icono). */
-    playLibraryTracks(shouldShuffle) {
-      if (!this.tracks.length) return;
-      const list = (typeof this.sortedTracks === 'function') ? this.sortedTracks() : this.tracks.slice();
-      const ids = list.map(t => t.id).filter(Boolean);
-      if (!ids.length) return;
-      this.shuffle = !!shouldShuffle;
-      this._originalQueue = ids.slice();
-      this.queue = ids.slice();
-      this.queueIdx = 0;
-      this.playContext = { type: 'all' };
-      if (this.shuffle) this._applyShuffle(null);
-      if (typeof this.setShuffleUI === 'function') this.setShuffleUI();
-      this.playFromQueue(0);
-      if (typeof this.renderQueue === 'function') this.renderQueue();
-      if (typeof this.updateChrome === 'function') this.updateChrome();
-      if (typeof this.saveSession === 'function') this.saveSession();
-    },
-
     playlistDuration(pl) {
       if (!pl || !pl.trackIds) return 0;
       let sum = 0;
@@ -1022,26 +958,10 @@ Object.assign(App, {
             if (e.target.closest('.row-action, .pl-play-fab, .pl-row-play')) return;
             if (this._selectPlaylistForAdd) {
               this._selectPlaylistForAdd = false;
-              const batchIds = this._batchAddIds;
-              this._batchAddIds = null;
               const tid = this._trackToAddId || (this.currentTrack && this.currentTrack.id) || null;
               this._trackToAddId = null;
               this.closeSheet('sheetPlaylists');
-              if (Array.isArray(batchIds) && batchIds.length) {
-                let added = 0;
-                batchIds.forEach(id => { if (this._addTrackIdToPlaylist(id, pl.id)) added++; });
-                if (added > 0) {
-                  if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
-                  this.persistPlaylist(pl);
-                  this.renderPlaylists();
-                  this.toast(added + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + pl.name);
-                } else {
-                  this.toast(this.t('picker_already_in'));
-                }
-              } else if (tid) {
-                this.addTrackToPlaylist(tid, pl.id);
-              }
-              if (this._batchMode) this.toggleBatchMode(false);
+              if (tid) this.addTrackToPlaylist(tid, pl.id);
               return;
             }
             this.openEditPlaylist(pl.id);

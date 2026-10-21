@@ -582,9 +582,9 @@
         </div>
       </div>
 
-      <!-- Biblioteca: dos secciones, listas de reproducción y todas las
-           canciones. Sin pestañas ni vistas de álbumes/artistas: para eso ya
-           están los accesos del menú de cada pista. -->
+      <!-- Biblioteca: solo listas de reproducción (§47: la sección
+           «Todas las canciones» se eliminó a petición del usuario; las
+           canciones viven en sus listas y en «Mi Música»). -->
       <div class="sheet sheet-full sheet-tab" id="sheetLibrary">
         <div class="sheet-backdrop" data-close-sheet="sheetLibrary"></div>
         <div class="sheet-panel">
@@ -615,70 +615,6 @@
               <ul class="playlist-rail" id="libraryPlaylists" tabindex="0" data-i18n-aria="library_playlists_section" aria-label="Listas de reproducción"></ul>
             </section>
 
-            <!-- Sección 2: todas las canciones -->
-            <section class="lib-section" id="libSectionSongs">
-              <!-- Cabecera + acciones + ordenación en un bloque fijo
-                   (sticky): al recorrer una biblioteca larga no hay que
-                   volver arriba para reproducir todo o reordenar. La
-                   selección múltiple no tiene botón (§45): se entra con
-                   pulsación larga sobre una canción. -->
-              <div class="lib-songs-sticky">
-              <div class="lib-section-head">
-                <h4 class="lib-section-title" data-i18n="library_songs_section">Todas las canciones</h4>
-                <span class="lib-section-count" id="librarySongsCount"></span>
-                <button class="text-btn danger" id="btnDeleteAllTracks" type="button">
-                  <svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>
-                  <span data-i18n="delete_all_btn">Borrar todo</span>
-                </button>
-              </div>
-              <!-- Reproducir toda la sección con el orden visible y barajar
-                   de verdad. En fila propia para no apretar la cabecera en
-                   pantallas de 320 px. -->
-              <div class="lib-song-actions" id="libSongActions">
-                <button class="text-btn" id="btnLibPlayAll" type="button" data-i18n-aria="play_all_btn" aria-label="Reproducir todo">
-                  <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
-                  <span data-i18n="play_all_btn">Reproducir Todo</span>
-                </button>
-                <button class="text-btn" id="btnLibShuffle" type="button" data-i18n-aria="shuffle" aria-label="Aleatorio">
-                  <svg class="ico" aria-hidden="true"><use href="#i-shuffle"></use></svg>
-                  <span data-i18n="shuffle">Aleatorio</span>
-                </button>
-              </div>
-              <div class="lib-sort-wrap">
-                <div class="lib-sort-row" id="libSortRow">
-                  <button class="lib-sort active" type="button" data-sort="title" data-i18n="lib_sort_title">Título</button>
-                  <button class="lib-sort" type="button" data-sort="artist" data-i18n="lib_sort_artist">Artista</button>
-                  <button class="lib-sort" type="button" data-sort="recent" data-i18n="lib_sort_recent">Recientes</button>
-                  <button class="lib-sort" type="button" data-sort="duration" data-i18n="lib_sort_duration">Duración</button>
-                </div>
-              </div>
-              </div>
-              <ul class="track-list" id="libraryTracks"></ul>
-            </section>
-          </div>
-          <div class="batch-bar" id="batchActionBar" hidden>
-            <div class="batch-bar-head">
-              <span class="batch-count" id="batchCount" aria-live="polite">0</span>
-              <button class="text-btn" id="btnBatchSelectAll" type="button" data-i18n="batch_select_all">Seleccionar todo</button>
-            </div>
-            <div class="batch-bar-actions">
-              <button class="batch-act" id="btnBatchEditTags" type="button" disabled>
-                <svg class="ico" aria-hidden="true"><use href="#i-tags"></use></svg>
-                <span data-i18n="batch_edit_tags">Editar etiquetas</span>
-              </button>
-              <button class="batch-act" id="btnBatchAddPlaylist" type="button" disabled>
-                <svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg>
-                <span data-i18n="batch_add_to_playlist">Añadir a lista</span>
-              </button>
-              <button class="batch-act danger" id="btnBatchDelete" type="button" disabled>
-                <svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>
-                <span data-i18n="batch_delete">Eliminar pistas</span>
-              </button>
-              <button class="batch-act" id="btnBatchCancel" type="button">
-                <svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg>
-                <span data-i18n="batch_cancel">Cancelar selección</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -1170,32 +1106,6 @@
               <input type="text" id="editTrackAlbum" maxlength="80" />
             </label>
             <button class="primary-btn" id="btnSaveEditTrackPrimary" data-i18n="lrc_save">Guardar</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Edición de etiquetas por lote -->
-      <div class="sheet" id="sheetBatchEditTags">
-        <div class="sheet-backdrop" data-close-sheet="sheetBatchEditTags"></div>
-        <div class="sheet-panel">
-          <div class="sheet-handle"></div>
-          <header class="sheet-header" role="presentation">
-            <button class="icon-btn-sm" data-close-sheet="sheetBatchEditTags" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
-            <h3 data-i18n="batch_edit_title">Edición por lote</h3>
-            <button class="text-btn" id="btnSaveBatchEditPrimary" data-i18n="lrc_save">Guardar</button>
-          </header>
-          <div class="sheet-body">
-            <p class="sheet-subtitle" id="batchEditSummary"></p>
-            <p class="settings-hint" data-i18n="batch_edit_hint">Los campos que dejes vacíos no se modificarán.</p>
-            <label class="field">
-              <span data-i18n="field_artist">Artista</span>
-              <input type="text" id="batchEditArtist" maxlength="80" />
-            </label>
-            <label class="field">
-              <span data-i18n="field_album">Álbum</span>
-              <input type="text" id="batchEditAlbum" maxlength="80" />
-            </label>
-            <button class="primary-btn" id="btnSaveBatchEdit" data-i18n="lrc_save">Guardar</button>
           </div>
         </div>
       </div>

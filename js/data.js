@@ -419,11 +419,6 @@ const I18N = {
     zh: '播放列表', ja: 'プレイリスト', fr: 'Listes de lecture',
     it: 'Playlist', ru: 'Плейлисты'
   },
-  library_songs_section: {
-    es: 'Todas las canciones', en: 'All songs', pt: 'Todas as músicas',
-    zh: '所有歌曲', ja: 'すべての曲', fr: 'Toutes les chansons',
-    it: 'Tutti i brani', ru: 'Все треки'
-  },
   library_title: {
     es: 'Biblioteca',
     en: 'Library',
@@ -1362,16 +1357,6 @@ const I18N = {
     it: 'Casuale disattivato',
     ru: 'Случайный порядок выкл.'
   },
-  delete_all_btn: {
-    es: 'Borrar todo',
-    en: 'Delete all',
-    pt: 'Apagar tudo',
-    zh: '全部删除',
-    ja: 'すべて削除',
-    fr: 'Tout supprimer',
-    it: 'Elimina tutto',
-    ru: 'Удалить всё'
-  },
   delete_all_confirm: {
     es: '¿Borrar TODAS las pistas de tu biblioteca? Esta acción no se puede deshacer.',
     en: 'Delete ALL tracks from your library? This action cannot be undone.',
@@ -2062,26 +2047,6 @@ const I18N = {
     zh: '查看全部', ja: 'すべて見る', fr: 'Tout voir',
     it: 'Vedi tutto', ru: 'Показать все'
   },
-  lib_sort_title: {
-    es: 'Título', en: 'Title', pt: 'Título',
-    zh: '标题', ja: 'タイトル', fr: 'Titre',
-    it: 'Titolo', ru: 'Название'
-  },
-  lib_sort_artist: {
-    es: 'Artista', en: 'Artist', pt: 'Artista',
-    zh: '艺术家', ja: 'アーティスト', fr: 'Artiste',
-    it: 'Artista', ru: 'Исполнитель'
-  },
-  lib_sort_recent: {
-    es: 'Recientes', en: 'Recent', pt: 'Recentes',
-    zh: '最近', ja: '最近', fr: 'Récentes',
-    it: 'Recenti', ru: 'Недавние'
-  },
-  lib_sort_duration: {
-    es: 'Duración', en: 'Duration', pt: 'Duração',
-    zh: '时长', ja: '長さ', fr: 'Durée',
-    it: 'Durata', ru: 'Длительность'
-  },
   ctx_play_now: {
     es: 'Reproducir ahora', en: 'Play now', pt: 'Reproduzir agora',
     zh: '立即播放', ja: '今すぐ再生', fr: 'Lire maintenant',
@@ -2733,65 +2698,6 @@ const I18N = {
     zh: '保持自然声音音调，避免变声效果。', ja: '声の高さを変えずに自然なトーンを維持します。', fr: 'Maintient la voix naturelle sans effet accéléré.',
     it: 'Mantiene il timbro vocale naturale senza alterare l’intonazione.', ru: 'Сохраняет естественную тональность голоса без искажения.'
   },
-  batch_cancel: {
-    es: 'Cancelar selección', en: 'Cancel selection', pt: 'Cancelar seleção',
-    zh: '取消多选', ja: '選択解除', fr: 'Annuler la sélection',
-    it: 'Annulla selezione', ru: 'Отменить выбор'
-  },
-  batch_selected_count: {
-    es: 'X seleccionadas', en: 'X selected', pt: 'X selecionadas',
-    zh: '已选 X 首', ja: 'X 曲を選択中', fr: 'X sélectionnées',
-    it: 'X selezionate', ru: 'Выбрано: X'
-  },
-  batch_edit_tags: {
-    es: 'Editar etiquetas', en: 'Edit tags', pt: 'Editar etiquetas',
-    zh: '批量修改标签', ja: '一括タグ編集', fr: 'Modifier les tags',
-    it: 'Modifica tag', ru: 'Пакетное редактирование'
-  },
-  batch_add_to_playlist: {
-    es: 'Añadir a lista', en: 'Add to playlist', pt: 'Adicionar à lista',
-    zh: '添加到歌单', ja: 'プレイリストに追加', fr: 'Ajouter à la liste',
-    it: 'Aggiungi a playlist', ru: 'Добавить в плейлист'
-  },
-  batch_delete: {
-    es: 'Eliminar pistas', en: 'Delete tracks', pt: 'Excluir faixas',
-    zh: '批量删除', ja: '一括削除', fr: 'Supprimer pistes',
-    it: 'Elimina brani', ru: 'Удалить треки'
-  },
-  batch_edit_title: {
-    es: 'Edición por lote', en: 'Batch Edit', pt: 'Edição em lote',
-    zh: '批量编辑', ja: '一括編集', fr: 'Édition par lot',
-    it: 'Modifica di gruppo', ru: 'Пакетное редактирование'
-  },
-  batch_edit_hint: {
-    es: 'Los campos que dejes vacíos no se modificarán.', en: 'Fields left blank will not be modified.', pt: 'Os campos deixados em branco não serão alterados.',
-    zh: '留空的字段不会被修改。', ja: '空欄の項目は変更されません。', fr: 'Les champs laissés vides ne seront pas modifiés.',
-    it: 'I campi lasciati vuoti non verranno modificati.', ru: 'Пустые поля не будут изменены.'
-  },
-  batch_edit_saved: {
-    es: 'Etiquetas actualizadas en X pistas', en: 'Tags updated for X tracks', pt: 'Etiquetas atualizadas em X faixas',
-    zh: '已更新 X 首歌曲的标签', ja: 'X 曲のタグを更新しました', fr: 'Tags mis à jour pour X pistes',
-    it: 'Tag aggiornati per X brani', ru: 'Теги обновлены для X треков'
-  },
-  batch_delete_confirm: {
-    es: '¿Eliminar X canciones seleccionadas de la biblioteca?', en: 'Delete X selected songs from library?', pt: 'Excluir X músicas selecionadas da biblioteca?',
-    zh: '确定从曲库中删除选中的 X 首歌曲吗？', ja: '選択した X 曲をライブラリから削除しますか？', fr: 'Supprimer les X morceaux sélectionnés de la bibliothèque ?',
-    it: 'Eliminare i X brani selezionati dalla libreria?', ru: 'Удалить выбранные X треков из библиотеки?'
-  },
-  batch_updated_toast: {
-    es: 'Etiquetas actualizadas en X pistas', en: 'Tags updated for X tracks', pt: 'Etiquetas atualizadas em X faixas',
-    zh: '已更新 X 首歌曲的标签', ja: 'X 曲のタグを更新しました', fr: 'Tags mis à jour pour X pistes',
-    it: 'Tag aggiornati per X brani', ru: 'Теги обновлены для X треков'
-  },
-  batch_deleted_toast: {
-    es: 'X pistas eliminadas', en: 'X tracks deleted', pt: 'X faixas excluídas',
-    zh: '已删除 X 首歌曲', ja: 'X 曲を削除しました', fr: 'X pistes supprimées',
-    it: 'X brani eliminati', ru: 'Удалено треков: X'
-  },
-  batch_select_all: {
-    es: 'Seleccionar todo', en: 'Select all', pt: 'Selecionar tudo',
-    zh: '全选', ja: 'すべて選択', fr: 'Tout sélectionner', it: 'Seleziona tutto', ru: 'Выбрать всё'
-  },
   sleep_invalid: {
     es: 'Introduce un número de minutos válido (1–1440).', en: 'Enter a valid number of minutes (1–1440).',
     pt: 'Introduza um número de minutos válido (1–1440).', zh: '请输入有效的分钟数（1–1440）。',
@@ -2861,10 +2767,6 @@ const I18N = {
   move: {
     es: 'Mover', en: 'Move', pt: 'Mover',
     zh: '移动', ja: '移動', fr: 'Déplacer', it: 'Sposta', ru: 'Переместить'
-  },
-  select_track: {
-    es: 'Seleccionar pista', en: 'Select track', pt: 'Selecionar faixa',
-    zh: '选择歌曲', ja: '曲を選択', fr: 'Sélectionner le morceau', it: 'Seleziona brano', ru: 'Выбрать трек'
   },
   toast_playlist_deleted: {
     es: 'Lista eliminada', en: 'Playlist deleted', pt: 'Lista excluída',
