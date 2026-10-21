@@ -1587,3 +1587,26 @@ No era el botón ni la lista: era `exportFile()`.
 - Checks veteranos actualizados a la nueva realidad: `sololistas` 15/15 e `importfiles` 15/15 verifican ahora también la ausencia del M3U. Resto de la batería en verde: hero 8, confirm 10, mimusica 21, visualizer 19, lupa 10, detalles 6, fav-btn 9, letras-btn 9, nav 9, aaa 12, importperf 14.
 - `.xdc` reconstruido y válido: 28 archivos, 342,5 KB.
 
+
+---
+
+## 52. En Inicio, con la música en pausa, no se muestra el mini reproductor
+
+**Encargo:** si la música está en pausa, el mini reproductor no debe aparecer en Inicio.
+
+### Motivación
+
+En Inicio, en pausa, el mini reproductor duplicaba al hero «Retomar en…» (§49): dos controles para lo mismo en la misma pantalla. En pausa, la pantalla de Inicio queda limpia y el hero es quien retoma; mientras suena, el mini sigue ofreciendo pausa/siguiente sin bajar a Now Playing.
+
+### Implementación
+
+- `updateChrome()` (nav.js) calcula si Inicio está «en primer plano»: `viewHome` activa **y** ninguna pestaña (Biblioteca, Buscar o Favoritos, que son hojas sobre Inicio) abierta encima. Solo en ese caso el mini depende de `isPlaying`:
+  `showMini = … && !(onHome && !this.isPlaying)`.
+  Fuera de Inicio el comportamiento no cambia: en Biblioteca/Buscar/Favoritos el mini sigue visible también en pausa, y se mantienen las reglas previas (nunca en Now Playing ni en Letras, nunca con un modal abierto, nunca sin pista actual ni en modo ancho).
+- Los cambios de play/pausa no pasan por `updateChrome()`, solo por `updatePlayUI()`: pausar con el mini visible lo dejaba «congelado» en pantalla. Al final de `updatePlayUI()` (player-ui.js) se refresca ahora el chrome, de modo que pausar oculta el mini al instante y reanudar lo devuelve, sin navegar. Esto cubre también la pausa/reanudación desde Now Playing o desde el propio mini antes de que se oculte.
+
+### Verificación
+
+- Nuevo `check-minipausa.js`: **13/13** — Inicio en pausa sin mini; Inicio sonando con mini; pausar/reanudar sin navegar oculta/devuelve el mini al momento; Biblioteca en pausa conserva el mini (§52 es solo Inicio); volver a Inicio en pausa lo oculta; sin pista nunca hay mini; Now Playing sigue sin mini; el hero §49 y el mini se relevan (pausa: hero visible y mini oculto; sonando: al revés); con un modal abierto no hay mini y al cerrarlo vuelve. Cero errores de consola.
+- Nota de infraestructura: `/tmp` se había perdido entre sesiones; el arnés (jsdom + fake-indexeddb) se reconstruyó con stubs de canvas/viewport de teléfono. La batería histórica completa quedó verde en §51 sobre este mismo HEAD base.
+- `.xdc` reconstruido y válido para Delta Chat.

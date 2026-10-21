@@ -269,6 +269,12 @@ Object.assign(App, {
         const el = document.getElementById(id);
         if (el) el.style.display = hasTrack ? '' : 'none';
       });
+
+      /* Cada cambio de play/pausa pasa por aquí, y la visibilidad del
+       * mini reproductor depende de isPlaying (en Inicio se oculta en
+       * pausa, §52): sin este refresco, el mini solo obedecía al
+       * navegar y quedaba congelado tras pausar o reanudar. */
+      if (typeof this.updateChrome === 'function') this.updateChrome();
     },
 
     updateProgress() {

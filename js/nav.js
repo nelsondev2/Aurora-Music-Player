@@ -25,8 +25,16 @@ Object.assign(App, {
        * - Solo en vistas de navegación general (Inicio, Biblioteca, Buscar, Favoritos)
        * - NUNCA en pantalla completa de Now Playing ni en Letras
        * - NUNCA cuando hay un menú, modal o diálogo de confirmación abierto
-       * - Solo si hay una pista actual y no estamos en modo escritorio dividido */
-      const showMini = !wide && !!this.currentTrack && !lyrics && !player && !hasModal;
+       * - Solo si hay una pista actual y no estamos en modo escritorio dividido
+       * - En Inicio (sin ninguna pestaña encima), solo mientras suena:
+       *   en pausa sobra, porque el hero «Retomar en…» ya ofrece seguir
+       *   donde ibas y la pantalla queda limpia (§52). Fuera de Inicio
+       *   se comporta como siempre, también en pausa. */
+      const homeView = document.getElementById('viewHome');
+      const tabOpen = openSheets.some(s => s.classList.contains('sheet-tab'));
+      const onHome = !!(homeView && homeView.classList.contains('active')) && !tabOpen;
+      const showMini = !wide && !!this.currentTrack && !lyrics && !player && !hasModal
+        && !(onHome && !this.isPlaying);
 
       screen.classList.toggle('has-mini', showMini);
       screen.classList.toggle('has-overlay', !wide && hasModal);
