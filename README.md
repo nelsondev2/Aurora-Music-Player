@@ -22,7 +22,7 @@ El script comprueba antes de comprimir:
 - ninguna carga remota (un `.xdc` no tiene red)
 - que ningún `webxdc.js` viaje en el paquete (lo inyecta el cliente)
 
-El resultado es un ZIP con compresión Deflate, **28 archivos y ~297 KB**, reproducible (mismo contenido → mismo SHA-256).
+El resultado es un ZIP con compresión Deflate, **27 archivos y ~336 KB**, reproducible (mismo contenido → mismo SHA-256).
 
 ### Probar en Delta Chat
 
