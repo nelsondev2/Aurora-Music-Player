@@ -2611,3 +2611,38 @@ Android, Electron de escritorio).
   en pausa no actúa; con el ajuste apagado no pausa; IDs vacíos no
   inventan) y arranque sin errores en un entorno sin `mediaDevices`.
 - `node --check` total y **build .xdc válido**: 27 archivos.
+
+## §77. La pausa al retirar los audífonos no funcionaba: plan B
+
+El usuario probó §76 en su dispositivo: nada. Era el riesgo nº 1
+declarado — su WebView enumera un único «default» que no cambia al
+desenchufar, así que la «retirada demostrable» nunca se demostraba
+y la regla conservadora se quedaba esperando para siempre.
+
+Regla nueva, por orden (manejador único `_handleAudioDeviceEvent(source)`):
+
+1. **Retirada demostrable** (la foto distingue dispositivos y
+   desaparece una salida): pausa. Conectar nunca pausa. Como antes.
+2. **Foto inútil pero el sistema avisó**: un solo «default» inmóvil,
+   IDs vacíos o enumeración fallida + evento `devicechange` →
+   pausa. Si el sistema se molestó en avisar sonando música, algo
+   cambió en la ruta de audio (el precio aceptado: conectar unos
+   Bluetooth en ese WebView también pausaría; el toast lo explica
+   y el ajuste puede apagarlo).
+3. **Sondeo cada 4 s** para WebViews que enumeran bien pero no
+   disparan el evento (solo pausa por la vía 1; sin aviso no se
+   adivina), y foto fresca al empezar a sonar para comparar contra
+   lo que había al darle al play.
+
+### Verificación
+
+- **Check §77** `/tmp/check-vista77.js`: **16/16** — el caso real
+  del usuario reproducido y ya pausando («default» inmóvil +
+  evento), conectar sin pausar con enumeración útil, sondeo sin
+  falsas pausas, sondeo con retirada demostrable pausando, ajuste
+  apagado y en pausa sin actuar, arranque limpio sin mediaDevices.
+- `node --check` total y **build .xdc válido**: 27 archivos.
+
+Pendiente honesto: si ni el evento ni una enumeración útil existen
+en su WebView, no hay señal web que explotar y esto tampoco
+saltará; la prueba del usuario manda.
