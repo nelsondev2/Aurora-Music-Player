@@ -426,11 +426,6 @@ Object.assign(App, {
       // en vez de pausar.
       const actuallyPlaying = this.audio ? !this.audio.paused : this.isPlaying;
       const wantPlay = forcePlay !== undefined ? forcePlay : !actuallyPlaying;
-      // §77: foto de salidas fresca al empezar (la retirada se compara
-      // contra lo que había cuando empezó a sonar).
-      if (wantPlay && this._unplugWatchInit) {
-        this._snapshotAudioOutputs().then(list => { if (list) this._audioOutputs = list; });
-      }
       if (wantPlay && !this.audio.getAttribute('src')) {
         // Arranque sin sesión restaurada: hay pista elegida (tracks[0]) pero
         // el <audio> aún no tiene fuente. Sin esta guarda, play() falla con
@@ -866,78 +861,6 @@ Object.assign(App, {
       }
       this.updateProgress();
       this.updateMediaPosition(true);
-    },
-
-    /* ============================================================
-     *  Pausar al retirar los audífonos (§76, endurecido en §77)
-     *  Un webxdc no recibe el aviso nativo «el audio se va a oír por
-     *  el altavoz»; lo único disponible es `devicechange` de
-     *  mediaDevices. La primera versión (§76) solo pausaba si la
-     *  enumeración DEMOSTRABA la retirada, y en el dispositivo real
-     *  del usuario no funcionó: su WebView enumera un único
-     *  «default» que nunca cambia al desenchufar, así que la prueba
-     *  nunca llegaba. Regla ahora, por orden:
-     *    1. Si la foto distingue dispositivos y desaparece una
-     *       salida conocida → pausa (conectar nunca pausa).
-     *    2. Si la foto no puede probar nada (un solo «default»,
-     *       IDs vacíos o sin enumeración) pero el SISTEMA avisó
-     *       (evento), algo cambió en la ruta de audio → pausa.
-     *  Y un sondeo cada 4 s cubre WebViews que enumeran bien pero
-     *  no disparan el evento. Sin soporte, queda inerte.
-     *  VEREDICTO EN DISPOSITIVO REAL (§78): en el teléfono del
-     *  usuario ni el evento ni la enumeración dan señal alguna (su
-     *  WebView no expone mediaDevices aprovechable): allí es
-     *  imposible desde la web y esto queda inerte, sin estorbar.
-     *  En clientes que sí lo exponen (Chromium de escritorio) la
-     *  vía 1 funciona tal cual.
-     * ============================================================ */
-    async _snapshotAudioOutputs() {
-      try {
-        if (!navigator.mediaDevices || typeof navigator.mediaDevices.enumerateDevices !== 'function') return null;
-        const ds = await navigator.mediaDevices.enumerateDevices();
-        return ds.filter(d => d.kind === 'audiooutput').map(d => d.deviceId || '').sort();
-      } catch (e) { return null; }
-    },
-    async _handleAudioDeviceEvent(source) {
-      if (this._unplugHandling) return;
-      this._unplugHandling = true;
-      try {
-        const now = await this._snapshotAudioOutputs();
-        const before = this._audioOutputs;
-        if (now) this._audioOutputs = now;
-        if (this._pauseOnUnplug === false || !this.isPlaying) return;
-        const pause = () => {
-          this.togglePlay(false);
-          this.toast(this.t('toast_unplug_paused'));
-        };
-        if (!before || !now) {
-          if (source === 'event') pause();
-          return;
-        }
-        const gone = before.filter(id => id && !now.includes(id));
-        if (gone.length > 0 && now.length < before.length) { pause(); return; }
-        // ¿La enumeración distingue más de un dispositivo? Si no,
-        // la foto no puede probar ni desmentir la retirada.
-        const util = before.length > 1 || now.length > 1 ||
-          new Set([...before, ...now].filter(Boolean)).size > 1;
-        if (!util && source === 'event') pause();
-      } finally {
-        this._unplugHandling = false;
-      }
-    },
-    _initHeadphoneWatch() {
-      if (this._unplugWatchInit) return;
-      const md = navigator.mediaDevices;
-      if (!md || (typeof md.addEventListener !== 'function' && typeof md.enumerateDevices !== 'function')) return;
-      this._unplugWatchInit = true;
-      this._audioOutputs = null;
-      this._snapshotAudioOutputs().then(list => { this._audioOutputs = list; });
-      if (typeof md.addEventListener === 'function') {
-        md.addEventListener('devicechange', () => this._handleAudioDeviceEvent('event'));
-      }
-      if (typeof md.enumerateDevices === 'function' && !this._unplugPoll) {
-        this._unplugPoll = setInterval(() => this._handleAudioDeviceEvent('poll'), 4000);
-      }
     },
 
     setVolume(v) {

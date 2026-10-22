@@ -2668,3 +2668,26 @@ el CHANGELOG y este informe dicen ahora exactamente dónde sí y
 dónde no. Si el usuario prefiere que desaparezca también el
 interruptor por no hacer nada en su teléfono, es un commit de un
 minuto.
+
+## §79. Regresión: fuera la pausa al retirar los audífonos
+
+Por orden del usuario, se elimina TODO lo de §§76–78: el motor de
+vigilancia (`_snapshotAudioOutputs`, `_handleAudioDeviceEvent`,
+`_initHeadphoneWatch`, el sondeo y la foto al reproducir), el
+interruptor de Ajustes y su persistencia, el campo de estado y las
+dos claves i18n (`settings_pause_unplug`, `toast_unplug_paused`:
+el catálogo vuelve a **374×8**). También sale su línea del
+CHANGELOG: la 1.2.0 aún no está lanzada y no debe anunciar lo que
+no lleva. El veredicto de §78 queda en este informe como memoria
+de por qué no está: sin señal del WebView no hay pausa posible
+desde la web; si algún día Delta expone algo, se reharía desde
+aquí, no desde el código retirado.
+
+### Verificación
+
+- **Check §79** `/tmp/check-vista79.js`: **11/11** — cero restos
+  (`unplug|devicechange|_audioOutputs|…` sin coincidencias en JS ni
+  HTML), i18n de vuelta a 374×8 sin huecos, arranque limpio, la
+  fila vecina (vinilo) y el guardado de ajustes intactos, y
+  play/pausa funcionando tras la retirada.
+- `node --check` total y **build .xdc válido**: 27 archivos.

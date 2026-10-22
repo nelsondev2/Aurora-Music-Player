@@ -148,7 +148,6 @@
     _marqueeEnabled: true,
     _vinylEnabled: false,
     _showRemaining: false, // §72: la duración total alterna a «tiempo restante» al tocarla
-    _pauseOnUnplug: true, // §76: pausar si desaparece una salida de audio sonando
 
     ico(name, extra) {
       const cls = extra ? ('ico ' + extra) : 'ico';

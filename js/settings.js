@@ -696,7 +696,6 @@ Object.assign(App, {
           }
           if (typeof s.marquee === 'boolean') this._marqueeEnabled = s.marquee;
           if (typeof s.vinyl === 'boolean') this._vinylEnabled = s.vinyl;
-          if (typeof s.pauseUnplug === 'boolean') this._pauseOnUnplug = s.pauseUnplug;
         }
       } catch (e) {}
     },
@@ -707,8 +706,7 @@ Object.assign(App, {
           normalize: !!this._normalizeVolume,
           crossfade: this.crossfadeDuration || 0,
           marquee: this._marqueeEnabled !== false,
-          vinyl: !!this._vinylEnabled,
-          pauseUnplug: this._pauseOnUnplug !== false
+          vinyl: !!this._vinylEnabled
         }));
       } catch (e) {}
     },
@@ -721,8 +719,6 @@ Object.assign(App, {
       if (m) m.checked = this._marqueeEnabled !== false;
       const v = document.getElementById('toggleVinyl');
       if (v) v.checked = !!this._vinylEnabled;
-      const pu = document.getElementById('togglePauseUnplug');
-      if (pu) pu.checked = this._pauseOnUnplug !== false;
       if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
       const xf = this.crossfadeDuration || 0;
       document.querySelectorAll('.xfade-opt').forEach(b => {
