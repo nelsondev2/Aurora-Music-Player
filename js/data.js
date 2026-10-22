@@ -684,16 +684,6 @@ const I18N = {
     it: 'Carica intera cartella',
     ru: 'Загрузить всю папку'
   },
-  menu_add_to_playlist: {
-    es: 'Añadir a una lista',
-    en: 'Add to playlist',
-    pt: 'Adicionar a uma lista',
-    zh: '添加到歌单',
-    ja: 'プレイリストに追加',
-    fr: 'Ajouter à une liste',
-    it: 'Aggiungi a lista',
-    ru: 'Добавить в список'
-  },
   menu_go_to_artist: {
     es: 'Ir al artista',
     en: 'Go to artist',
@@ -1881,16 +1871,6 @@ const I18N = {
     fr: 'Décalage : X',
     it: 'Scostamento: X',
     ru: 'Смещение: X'
-  },
-  toast_already_in_playlist: {
-    es: 'Ya está en la lista',
-    en: 'Already in this playlist',
-    pt: 'Já está nesta lista',
-    zh: '已在歌单中',
-    ja: '既にプレイリストにあります',
-    fr: 'Déjà dans cette liste',
-    it: 'Già in questa lista',
-    ru: 'Уже в этом списке'
   },
   picker_already_in: {
     es: 'en la lista',

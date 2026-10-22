@@ -994,14 +994,6 @@ Object.assign(App, {
           });
           li.addEventListener('click', (e) => {
             if (e.target.closest('.row-action, .pl-play-fab, .pl-row-play')) return;
-            if (this._selectPlaylistForAdd) {
-              this._selectPlaylistForAdd = false;
-              const tid = this._trackToAddId || (this.currentTrack && this.currentTrack.id) || null;
-              this._trackToAddId = null;
-              this.closeSheet('sheetPlaylists');
-              if (tid) this.addTrackToPlaylist(tid, pl.id);
-              return;
-            }
             this.openEditPlaylist(pl.id);
           });
           target.appendChild(li);
@@ -1208,10 +1200,6 @@ Object.assign(App, {
       return null;
     },
 
-    /* Añade la pista actual a una playlist existente (atajo desde el menú "Más") */
-    /* Añade una pista concreta a una playlist (generalización de
-     * addCurrentTrackToPlaylist: permite añadir cualquier pista de la
-     * biblioteca, no solo la que está sonando). */
     /* Primitiva sin toasts: añade si no está. Devuelve true si cambió.
      * La usan tanto el flujo individual como la selección por lote. */
     _addTrackIdToPlaylist(trackId, playlistId) {
@@ -1225,33 +1213,4 @@ Object.assign(App, {
       return true;
     },
 
-    addTrackToPlaylist(trackId, playlistId) {
-      const pl = this.playlists.find(p => p.id === playlistId);
-      if (!pl) return;
-      const t = this.getTrackById ? this.getTrackById(trackId) : this.tracks.find(x => x.id === trackId);
-      if (!t) {
-        this.toast(this.t('toast_pick_at_least_one'));
-        return;
-      }
-      if (pl.trackIds.includes(trackId)) {
-        this.toast(this.t('toast_already_in_playlist') + ' ♥ ' + pl.name);
-        return;
-      }
-      this._addTrackIdToPlaylist(trackId, playlistId);
-      this.persistPlaylist(pl);
-      this.renderPlaylists();
-      // Si el sheet de edición de esa playlist está abierto (debajo),
-      // refrescarlo para que la pista reaparezca al instante
-      if (this._editingPlaylistId === pl.id) this.renderEditPlaylist();
-      this.toast('♥ ' + this.t('toast_added_to_playlist_plural') + ' ' + pl.name);
-    },
-
-    /* Atajo: añade la pista que está sonando */
-    addCurrentTrackToPlaylist(playlistId) {
-      if (!this.currentTrack) {
-        this.toast(this.t('toast_pick_at_least_one'));
-        return;
-      }
-      this.addTrackToPlaylist(this.currentTrack.id, playlistId);
-    },
 });

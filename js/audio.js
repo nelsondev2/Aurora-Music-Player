@@ -41,7 +41,9 @@ Object.assign(App, {
          * y la onda fluida necesitan resolución de verdad; con 256 la
          * onda solo tenía 128 muestras y salía dentada. */
         this.analyser.fftSize = 2048;
-        this.analyser.smoothingTimeConstant = 0.8;
+        // 0.68 (antes 0.8): con el suavizado propio de las barras
+        // (_visStepBars) encima, 0.8 hacía el espectro perezoso (§68).
+        this.analyser.smoothingTimeConstant = 0.68;
         this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
         this._visTimeData = new Uint8Array(this.analyser.fftSize);
         node.connect(this.analyser);
@@ -1175,7 +1177,7 @@ Object.assign(App, {
           return;
         }
         this._visRafId = requestAnimationFrame(render);
-        if (now - last < 33) return; // ~30 fps bastan en móvil
+        if (now - last < 16) return; // ~60 fps: a 30 las barras iban a saltos (§68)
         const dt = Math.min(100, Math.max(1, now - (last || now - 33)));
         last = now;
         // Reajustar si el layout cambió (vista oculta al arrancar, rotación)
@@ -1287,8 +1289,8 @@ Object.assign(App, {
         this._visBarPeaks = new Float32Array(n);
       }
       const vals = this._visBarVals, peaks = this._visBarPeaks;
-      const atk = 1 - Math.exp(-dtMs / 42);
-      const rel = 1 - Math.exp(-dtMs / 175);
+      const atk = 1 - Math.exp(-dtMs / 34);
+      const rel = 1 - Math.exp(-dtMs / 160);
       const peakFall = dtMs * 0.00042;
       for (let i = 0; i < n; i++) {
         const t = targets[i];

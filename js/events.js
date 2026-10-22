@@ -584,16 +584,6 @@ Object.assign(App, {
       if (btnExpPl) btnExpPl.addEventListener('click', () => this.exportPlaylist());
       const editPlName = document.getElementById('editPlaylistName');
       if (editPlName) editPlName.addEventListener('click', () => this.startRenamePlaylist());
-      const ctxAddPlaylist = document.getElementById('ctxAddPlaylist');
-      if (ctxAddPlaylist) ctxAddPlaylist.addEventListener('click', () => {
-        const t = this.menuTrack();
-        this.closeSheet('sheetTrackMenu');
-        if (!t) return;
-        this._trackToAddId = t.id;
-        this._selectPlaylistForAdd = true;
-        this.renderPlaylists();
-        this.openSheet('sheetPlaylists');
-      });
       const ctxGoArtist = document.getElementById('ctxGoArtist');
       if (ctxGoArtist) ctxGoArtist.addEventListener('click', () => {
         const t = this.menuTrack();
@@ -665,17 +655,6 @@ Object.assign(App, {
       });
 
       // Más opciones
-      $('menuAddToPlaylist').addEventListener('click', () => {
-        this.closeSheet('sheetMore');
-        if (!this.currentTrack) {
-          this.toast(this.t('toast_pick_at_least_one'));
-          return;
-        }
-        // Activar modo "seleccionar playlist para añadir la pista actual"
-        this._selectPlaylistForAdd = true;
-        this.renderPlaylists();
-        this.openSheet('sheetPlaylists');
-      });
       $('menuGoToArtist').addEventListener('click', () => {
         this.closeSheet('sheetMore');
         if (!this.currentTrack || this.isPlaceholderArtist(this.currentTrack.artist)) {

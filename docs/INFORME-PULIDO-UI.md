@@ -2232,3 +2232,53 @@ estadísticas).
   cuenta la saliente y la entrante suma al terminar; 0 errores.
 - `node --check` total; **build .xdc válido**: 27 archivos,
   337,5 KB comprimidos (967,6 KB sin comprimir).
+
+## 68. Fuera «Añadir a una lista» de los menús; barras del visualizador fluidas
+
+Dos peticiones del mantenedor en una sección.
+
+### «Añadir a una lista» ya no está en los menús
+
+Con las listas ordenándose solas por estrellas (§64), el atajo
+perdió su razón de ser en los menús: se elimina de los dos sitios
+donde vivía —el menú de canción (`#ctxAddPlaylist`) y «Más
+opciones» (`#menuAddToPlaylist`)—. Añadir canciones a una lista se
+sigue haciendo **desde la propia lista** («Añadir canciones»,
+`openAddTracksSheet` + la primitiva por lote
+`_addTrackIdToPlaylist`, que se queda). Y se limpia la maquinaria
+que solo servía a esos atajos: el modo «elegir lista para añadir»
+(`_selectPlaylistForAdd`/`_trackToAddId`, su rama en el clic de
+«Tus listas» y su reset al cerrar), las APIs `addTrackToPlaylist` y
+`addCurrentTrackToPlaylist` (esta última ya no tenía llamantes), el
+resto en la lista de ítems contextuales de `player-ui.js`, y dos
+claves i18n (`menu_add_to_playlist`, `toast_already_in_playlist`):
+**371 × 8 sin huecos**. Tocar una lista en «Tus listas» vuelve a
+hacer una sola cosa: abrirla.
+
+### Las barras no iban fluidas
+
+El espectro tenía tres frenos apilados: el bucle capaba el dibujo
+a **~30 fps** («bastan en móvil», decía el comentario: frente a la
+pantalla se notaba a saltos), el analizador suavizaba a **0.8** —
+con el suavizado propio de las barras encima, el conjunto respondía
+perezoso— y el ataque/caída (τ 42/175 ms) era más bien flotante.
+
+- Tope del bucle: **~60 fps** (el guardado de batería por
+  visibilidad, IntersectionObserver, se mantiene).
+- `smoothingTimeConstant`: **0,8 → 0,68** (menos inercia del FFT;
+  el carácter lo sigue poniendo `_visStepBars`).
+- Ataque/caída: τ **42→34 ms** y **175→160 ms**: suben con el golpe
+  y caen con peso, sin teletransporte (verificado por dinámica).
+
+### Verificación
+
+- **Check §68** `/tmp/check-menu-viz.js`: **13/13** — las dos filas
+  fuera y el resto del menú intacto; APIs muertas ausentes y estado
+  fantasma eliminado; la primitiva por lote añade de verdad; el
+  selector «Añadir canciones» abre; tocar una lista la abre para
+  editarla; el bucle ya no capa a 30 fps y el analizador está a
+  0,68; dinámica de barras medida (ataque entre 0,2 y 0,55 en un
+  frame de 16 ms, subida monótona, caída suave con el pico nunca
+  por debajo); 0 errores.
+- `node --check` total; **build .xdc válido**: 27 archivos,
+  336,7 KB comprimidos (963,4 KB sin comprimir).

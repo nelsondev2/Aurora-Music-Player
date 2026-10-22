@@ -265,9 +265,9 @@ Object.assign(App, {
 
       // Visibilidad de las acciones del menú "Más opciones" según haya pista
       // actual. Si no hay pista (estado vacío), las acciones contextuales
-      // (ir al artista, añadir a lista) no tienen sentido y se ocultan.
+      // (ir al artista, ir al álbum) no tienen sentido y se ocultan.
       const hasTrack = !!(this.currentTrack);
-      const contextualMenuIds = ['menuAddToPlaylist', 'menuGoToArtist', 'menuGoToAlbum'];
+      const contextualMenuIds = ['menuGoToArtist', 'menuGoToAlbum'];
       contextualMenuIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = hasTrack ? '' : 'none';
