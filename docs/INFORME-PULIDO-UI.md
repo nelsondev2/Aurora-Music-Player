@@ -2510,3 +2510,23 @@ duplicando las dos acciones que la tarjeta ya ofrece en grande.
   limpio y título adaptado; sin letra: acciones y mensaje de letra;
   con letra: el vacío se esconde y la barra vuelve).
 - `node --check` total y **build .xdc válido**: 27 archivos.
+
+## §74. La línea resaltada, al centro
+
+«La letras resaltadas se muestren más al centro». La línea activa
+no iba al centro: en modo normal se aparcaba al **25 %** de la
+altura (`offsetUp = clientHeight * -0.25`) y solo en pantalla
+completa iba centrada — la misma canción cambiaba de encuadre al
+alternar modos. Ahora el centro de la línea activa vive en el
+centro del área visible en ambos, con la fracción aislada en
+`_lrcScrollTarget(el, sc)` (0,5 = centro) por si algún día se
+quiere otro encuadre. El relleno simétrico de 50vh ya permitía
+centrar también la primera y la última línea.
+
+### Verificación
+
+- **Check §74** `/tmp/check-vista74.js`: **8/8** — sin restos del
+  desplazamiento al 25 %; la fórmula probada con dos geometrías
+  (el centro de la línea cae exactamente en el centro del área);
+  letra sincronizada renderizada sin errores.
+- `node --check` total y **build .xdc válido**: 27 archivos.

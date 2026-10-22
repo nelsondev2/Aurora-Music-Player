@@ -428,9 +428,7 @@ Object.assign(App, {
         if (sc) {
           const firstActiveEl = this._lrcLineEls[activeIndices[0]];
           if (firstActiveEl) {
-            const isFullscreen = document.getElementById('viewLyrics').classList.contains('lyrics-fullscreen');
-            const offsetUp = isFullscreen ? 0 : sc.clientHeight * -0.25;
-            const targetTop = firstActiveEl.offsetTop - (sc.clientHeight / 2) + (firstActiveEl.clientHeight / 2) - offsetUp;
+            const targetTop = this._lrcScrollTarget(firstActiveEl, sc);
             const current = sc.scrollTop;
             const diff = targetTop - current;
             if (Math.abs(diff) > 0.5) {
@@ -444,6 +442,15 @@ Object.assign(App, {
       }
 
       this._updateKaraokeWords(cur);
+    },
+
+    /* Posición de reposo de la línea activa: su centro, en el centro
+     * del área visible (§74). Antes el modo normal la aparcaba al 25%
+     * de la altura (más arriba) y solo la pantalla completa la
+     * centraba: la misma canción «saltaba» al alternar modos. Si algún
+     * día se quiere otro encuadre, es esta fracción: 0.5 = centro. */
+    _lrcScrollTarget(el, sc) {
+      return el.offsetTop - (sc.clientHeight / 2) + (el.clientHeight / 2);
     },
 
     _updateKaraokeWords(cur) {
