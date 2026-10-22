@@ -308,6 +308,11 @@ Object.assign(App, {
           if (artist) this._syncMarquee(artist);
         }
       });
+      const togglePauseUnplug = document.getElementById('togglePauseUnplug');
+      if (togglePauseUnplug) togglePauseUnplug.addEventListener('change', () => {
+        this._pauseOnUnplug = !!togglePauseUnplug.checked;
+        this.savePlaybackSettings();
+      });
       const toggleVinyl = document.getElementById('toggleVinyl');
       if (toggleVinyl) toggleVinyl.addEventListener('change', () => {
         this._vinylEnabled = !!toggleVinyl.checked;
@@ -684,6 +689,7 @@ Object.assign(App, {
       });
 
       this.bindAudioElement(this.audio);
+      if (typeof this._initHeadphoneWatch === 'function') this._initHeadphoneWatch();
 
       // Progress bar seek
       const pt = $('progressTrack');

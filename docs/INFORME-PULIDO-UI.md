@@ -2578,3 +2578,36 @@ sonaba sobre violeta-rosa.
 
 Nota práctica: las portadas ya importadas adoptan su paleta la
 primera vez que suenan tras actualizar; no hay que reimportar.
+
+## §76. Pausar al retirar los audífonos (best-effort en webxdc)
+
+Pregunta del usuario: ¿se puede, aun siendo un webxdc aislado? El
+aviso nativo (Android `ACTION_AUDIO_BECOMING_NOISY`) no llega a la
+web; lo único disponible es `devicechange` de `mediaDevices`,
+presente en los Chromium que envuelven a Aurora (WebView de Delta
+Android, Electron de escritorio).
+
+- **Regla conservadora**: se mantiene una foto de las salidas de
+  audio conocidas y solo se pausa si, sonando música, la
+  enumeración demuestra que **desapareció** una salida conocida
+  (`gone.length > 0 && now.length < before.length`) → `togglePlay(false)`
+  + toast (`toast_unplug_paused` ×8). Conectar no pausa; en pausa
+  no actúa; si el WebView enumera IDs vacíos (inútil), no se
+  adivina y no se pausa.
+- **Interruptor** en Ajustes («Pausar al retirar los audífonos»,
+  activado por defecto), persistido en el mismo bloque
+  `aurora_playback` que el resto de ajustes de reproducción.
+- **Límites declarados al usuario antes de implementar**: puede
+  escaparse un blip de ms (el evento llega tras el cambio físico
+  de ruta), en iOS WKWebView probablemente quede inerte (pero iOS
+  ya pausa solo al cambiar de ruta) y solo la prueba con audífonos
+  reales confirma si el WebView de su Delta dispara el evento.
+
+### Verificación
+
+- **Check §76** `/tmp/check-vista76.js`: **15/15** — i18n **376×8**;
+  runtime con `mediaDevices` simulado (foto inicial; sin cambios no
+  pausa; conectar no pausa; retirar sonando pausa una vez y avisa;
+  en pausa no actúa; con el ajuste apagado no pausa; IDs vacíos no
+  inventan) y arranque sin errores en un entorno sin `mediaDevices`.
+- `node --check` total y **build .xdc válido**: 27 archivos.

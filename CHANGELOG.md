@@ -28,6 +28,10 @@ verificado función a función:
   pantalla (filas ×2, tarjetas y héroe incluidos), pestañas inferiores
   legibles también en oscuro y agarre táctil de la barra de progreso
   ampliado.
+- Pausa al retirar los audífonos (§76): si desaparece una salida de
+  audio mientras suena (audífonos de cable o Bluetooth), la música
+  se pausa sola, con interruptor en Ajustes. Best-effort según el
+  soporte del cliente.
 - Fondo del reproductor según la portada (§75): los colores se
   extraen de la carátula (con normalización para no ensuciar ni
   romper el contraste) y tiñen fondo, resplandor y visualizador;

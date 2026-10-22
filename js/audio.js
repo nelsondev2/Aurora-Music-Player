@@ -863,6 +863,48 @@ Object.assign(App, {
       this.updateMediaPosition(true);
     },
 
+    /* ============================================================
+     *  Pausar al retirar los audífonos (§76, best-effort)
+     *  Un webxdc no recibe el aviso nativo «el audio se va a oír por
+     *  el altavoz»; lo único disponible es `devicechange` de
+     *  mediaDevices. Se pausa SOLO si la enumeración demuestra que
+     *  desapareció una salida conocida mientras sonaba: conectar
+     *  unos audífonos no pausa, y si el WebView no enumera IDs
+     *  útiles (vacíos), no se adivina. Sin soporte, queda inerte.
+     * ============================================================ */
+    async _snapshotAudioOutputs() {
+      try {
+        if (!navigator.mediaDevices || typeof navigator.mediaDevices.enumerateDevices !== 'function') return null;
+        const ds = await navigator.mediaDevices.enumerateDevices();
+        return ds.filter(d => d.kind === 'audiooutput').map(d => d.deviceId || '').sort();
+      } catch (e) { return null; }
+    },
+    _initHeadphoneWatch() {
+      if (this._unplugWatchInit) return;
+      if (!navigator.mediaDevices || typeof navigator.mediaDevices.addEventListener !== 'function') return;
+      this._unplugWatchInit = true;
+      this._audioOutputs = null;
+      this._snapshotAudioOutputs().then(list => { this._audioOutputs = list; });
+      navigator.mediaDevices.addEventListener('devicechange', async () => {
+        if (this._unplugHandling) return;
+        this._unplugHandling = true;
+        try {
+          const now = await this._snapshotAudioOutputs();
+          const before = this._audioOutputs;
+          this._audioOutputs = now;
+          if (this._pauseOnUnplug === false || !this.isPlaying) return;
+          if (!before || !now) return;
+          const gone = before.filter(id => id && !now.includes(id));
+          if (gone.length > 0 && now.length < before.length) {
+            this.togglePlay(false);
+            this.toast(this.t('toast_unplug_paused'));
+          }
+        } finally {
+          this._unplugHandling = false;
+        }
+      });
+    },
+
     setVolume(v) {
       const n = Number(v);
       if (!isFinite(n)) return; // un <input type=range> vacío da NaN

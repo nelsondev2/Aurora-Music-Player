@@ -2524,6 +2524,16 @@ const I18N = {
     zh: '已下载', ja: 'ダウンロードしました', fr: 'Téléchargé',
     it: 'Scaricato', ru: 'Скачано'
   },
+  settings_pause_unplug: {
+    es: 'Pausar al retirar los audífonos', en: 'Pause when headphones are removed', pt: 'Pausar ao remover os fones',
+    zh: '拔下耳机时暂停', ja: 'ヘッドホンを外したら一時停止', fr: 'Pause au retrait des écouteurs',
+    it: 'Pausa rimuovendo le cuffie', ru: 'Пауза при отключении наушников'
+  },
+  toast_unplug_paused: {
+    es: 'Audífonos desconectados: pausado', en: 'Headphones disconnected: paused', pt: 'Fones desconectados: pausado',
+    zh: '耳机已断开：已暂停', ja: 'ヘッドホンが外れたため一時停止しました', fr: 'Écouteurs débranchés : pause',
+    it: 'Cuffie scollegate: pausa', ru: 'Наушники отключены: пауза'
+  },
   time_toggle_remaining: {
     es: 'Duración / tiempo restante', en: 'Duration / time remaining', pt: 'Duração / tempo restante',
     zh: '时长 / 剩余时间', ja: '長さ / 残り時間', fr: 'Durée / temps restant',
