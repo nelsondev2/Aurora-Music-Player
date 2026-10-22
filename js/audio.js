@@ -884,6 +884,12 @@ Object.assign(App, {
      *       (evento), algo cambió en la ruta de audio → pausa.
      *  Y un sondeo cada 4 s cubre WebViews que enumeran bien pero
      *  no disparan el evento. Sin soporte, queda inerte.
+     *  VEREDICTO EN DISPOSITIVO REAL (§78): en el teléfono del
+     *  usuario ni el evento ni la enumeración dan señal alguna (su
+     *  WebView no expone mediaDevices aprovechable): allí es
+     *  imposible desde la web y esto queda inerte, sin estorbar.
+     *  En clientes que sí lo exponen (Chromium de escritorio) la
+     *  vía 1 funciona tal cual.
      * ============================================================ */
     async _snapshotAudioOutputs() {
       try {

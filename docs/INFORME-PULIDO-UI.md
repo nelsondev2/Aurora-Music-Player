@@ -2646,3 +2646,25 @@ Regla nueva, por orden (manejador único `_handleAudioDeviceEvent(source)`):
 Pendiente honesto: si ni el evento ni una enumeración útil existen
 en su WebView, no hay señal web que explotar y esto tampoco
 saltará; la prueba del usuario manda.
+
+## §78. Veredicto: en el teléfono del usuario no se puede
+
+Segunda prueba en el dispositivo real, con el plan B de §77:
+tampoco. Conclusión técnica, sin paliativos: su WebView no entrega
+a la página **ninguna** de las señales que la web puede usar — ni
+el evento `devicechange`, ni una enumeración de salidas que cambie
+al desenchufar (o directamente `mediaDevices` no está expuesto en
+ese contexto). Sin señal no hay implementación posible desde
+dentro del webxdc: el aviso que usan los reproductores nativos
+(`ACTION_AUDIO_BECOMING_NOISY`) lo recibe la app contenedora, no
+la página, y Delta Chat no lo reenvía.
+
+Decisión: el motor se queda (coste cero, inerte donde no hay
+soporte, y funcional donde la plataforma sí expone dispositivos,
+como Chromium de escritorio, vía «retirada demostrable»), el
+interruptor de Ajustes se queda (permite apagarlo donde sí
+funcione), y la documentación deja de prometerlo como universal:
+el CHANGELOG y este informe dicen ahora exactamente dónde sí y
+dónde no. Si el usuario prefiere que desaparezca también el
+interruptor por no hacer nada en su teléfono, es un commit de un
+minuto.

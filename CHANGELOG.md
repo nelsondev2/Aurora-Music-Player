@@ -28,11 +28,13 @@ verificado función a función:
   pantalla (filas ×2, tarjetas y héroe incluidos), pestañas inferiores
   legibles también en oscuro y agarre táctil de la barra de progreso
   ampliado.
-- Pausa al retirar los audífonos (§§76–77): si desaparece una salida
-  de audio mientras suena (audífonos de cable o Bluetooth), la
-  música se pausa sola, con interruptor en Ajustes. Endurecido tras
-  la prueba en un dispositivo real cuyo WebView no enumera
-  dispositivos distinguibles.
+- Pausa al retirar los audífonos (§§76–78): donde el cliente lo
+  permite (clientes Chromium con enumeración de dispositivos,
+  p. ej. escritorio), si desaparece una salida de audio mientras
+  suena la música se pausa sola; con interruptor en Ajustes. En
+  WebViews que no exponen esa información al webxdc (confirmado en
+  el teléfono del autor) queda inerte: sin señal no hay pausa
+  posible desde la web.
 - Fondo del reproductor según la portada (§75): los colores se
   extraen de la carátula (con normalización para no ensuciar ni
   romper el contraste) y tiñen fondo, resplandor y visualizador;
