@@ -2282,3 +2282,69 @@ perezoso— y el ataque/caída (τ 42/175 ms) era más bien flotante.
   por debajo); 0 errores.
 - `node --check` total; **build .xdc válido**: 27 archivos,
   336,7 KB comprimidos (963,4 KB sin comprimir).
+
+## §69. Pasada visual completa: hasta lo más mínimo
+
+«Dale una pasada a todo lo visual y detecta hasta lo más mínimo»:
+auditoría estática automatizada (sprite de iconos e i18n vinculados
+en HTML/JS, variables CSS usadas sin definir, IDs duplicados,
+objetivos táctiles, cabida de las etiquetas de navegación en los 8
+idiomas) más lectura crítica de las 5.069 líneas de CSS pantalla a
+pantalla. Sin defectos duros (ningún icono o clave ausente, ninguna
+variable indefinida, ningún ID duplicado: con el arnés no se renderiza
+en navegador, así que la cobertura es de código, declarada como tal).
+Pero la lupa encontró:
+
+### Portadas blandas en pantallas densas (lo principal)
+
+Varios canvas tenían el bitmap por debajo de lo que su caja CSS
+exige a DPR 2 — se veían *casi* nítidos, que es peor que borrosos:
+
+| Canvas | Caja CSS | Antes | Ahora |
+|---|---|---|---|
+| Filas (biblioteca, listas, cola, editar, estadísticas) | 48 px | 44 | **96** |
+| Tarjetas de Inicio | ~116 px | 120 | **240** |
+| Mini-reproductor | 48 px | 80 | **120** |
+| Menú de canción | ~48 px | 64 | **112** |
+| Portada del reproductor | hasta 360 px | 600 | **720** |
+
+`drawRowCover` pinta en función de `canvas.width`, así que basta
+subir el atributo; de propina, la fuente ahora es la miniatura
+grande (256) en vez de la pequeña, porque el umbral de 160 ya se
+supera. No se tocó el fondo ambiental (borroso a propósito).
+
+### Legibilidad y tacto
+
+- **Pestaña inactiva de la barra inferior**: en oscuro estaba a
+  `--text-4` (blanco 30 %, ~2:1) — ahora `--text-3` (48 %). El tema
+  claro ya definía su propio valor y no se toca.
+- **Agarre de la barra de progreso**: la pista mide 3 px de alto;
+  `.progress-track::before` amplía la zona táctil a ~25 px sin
+  mover el layout (el cálculo de posición usa la X).
+- `.menu-row` declaraba `color` dos veces: muerta la primera.
+
+### Higiene
+
+- Fuera el CSS huérfano del antiguo panel de tests (`.tests-*`,
+  `.ts-*` y sus dos retoques del tema claro) y un comentario que
+  aún hablaba del sistema eliminado en §57.
+- Fuera dos símbolos del sprite sin ningún uso — comprobado literal
+  y dinámicamente: `i-file-export` e `i-grip`. **ojo**: `i-volume-
+  xmark` parecía muerto y no lo está (lo compone el indicador de
+  volumen con `setIco`): se conserva.
+- *Sin tocar, a propósito*: los objetivos de 40 px generalizados
+  (por encima del mínimo WCAG y coherentes en la app), los inputs a
+  15 px (el zoom al enfocar es de Safari web, no del webview del
+  mensajero) y las etiquetas de navegación, que caben en los 8
+  idiomas incluso en francés («Bibliothèque»).
+
+### Verificación
+
+- **Check §69** `/tmp/check-vista69.js`: **19/19** — estático
+  (ninguna plantilla queda a 44/40, bitmaps nuevos en plantillas e
+  `index.html`, nav legible, agarre presente, sin CSS de tests, el
+  sprite exacto) y runtime (arranque sin errores recreando el
+  arnés, filas renderizadas con canvas de 96, tarjetas de Inicio de
+  240, buscar en la barra sin errores).
+- Batería de auditoría re-ejecutada tras los cambios, `node --check`
+  total y **build .xdc válido**: 27 archivos.

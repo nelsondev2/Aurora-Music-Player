@@ -530,7 +530,7 @@ Object.assign(App, {
         const t = this.tracks.find(x => x.id === id);
         if (!t) return;
         html += `<li class="track-row" data-track="${t.id}">
-          <div class="row-cover"><canvas width="44" height="44"></canvas></div>
+          <div class="row-cover"><canvas width="96" height="96"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)}</div>

@@ -69,7 +69,6 @@
          como una mancha inclinada; este trazo se entiende sin ambigüedad
          en Vaciar cola/lista y en «Liberar espacio». -->
     <symbol id="i-clear-list" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3.5 6h11M3.5 12h11M3.5 18h6"/><path d="m15.8 15.8 4.7 4.7m0-4.7-4.7 4.7"/></g></symbol>
-    <symbol id="i-file-export" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h7l5 5v6h-2V8h-5V3H6v18h6v2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm10 11 5 4-5 4v-3h-5v-2h5v-3z"/></symbol>
     <symbol id="i-file-import" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h7l5 5v6h-2V8h-5V3H6v18h6v2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm15 15-5-4v3h-5v2h5v3l5-4z"/></symbol>
     <symbol id="i-file-arrow-up" viewBox="0 0 24 24"><path fill="currentColor" d="M6 2h7l5 5v15H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5L13 3.5zM11 11v6h2v-6h2.5L12 7.5 8.5 11H11z"/></symbol>
     <symbol id="i-trash-can" viewBox="0 0 24 24"><path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v10h-2V9zm4 0h2v10h-2V9zM6 9h2v11a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9h2v11a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V9z"/></symbol>
@@ -86,7 +85,6 @@
     <symbol id="i-chevron-right" viewBox="0 0 24 24"><path fill="currentColor" d="m15.4 12-7 7-1.4-1.4L12.6 12 7 6.4 8.4 5z"/></symbol>
     <symbol id="i-expand" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></symbol>
     <symbol id="i-image" viewBox="0 0 24 24"><path fill="currentColor" d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></symbol>
-    <symbol id="i-grip" viewBox="0 0 24 24"><path fill="currentColor" d="M8 7.5A1.5 1.5 0 1 1 8 4.5 1.5 1.5 0 0 1 8 7.5zm8 0A1.5 1.5 0 1 1 16 4.5 1.5 1.5 0 0 1 16 7.5zM8 13.5A1.5 1.5 0 1 1 8 10.5 1.5 1.5 0 0 1 8 13.5zm8 0A1.5 1.5 0 1 1 16 10.5 1.5 1.5 0 0 1 16 13.5zM8 19.5A1.5 1.5 0 1 1 8 16.5 1.5 1.5 0 0 1 8 19.5zm8 0A1.5 1.5 0 1 1 16 16.5 1.5 1.5 0 0 1 16 19.5z"/></symbol>
     <!-- Icono propio de Biblioteca: tres libros en un estante. Antes la
          pestaña usaba #i-grip (un asa de arrastre) y parecía un control
          para reordenar, no una sección de la app. -->
@@ -133,7 +131,7 @@
           <div class="cover-glow" id="coverGlow" aria-hidden="true"></div>
           <div class="cover-art" id="coverArt" role="button" tabindex="0" data-i18n-aria="cover_art_aria" aria-label="Portada del álbum">
             <canvas id="coverCanvasBack" class="cover-canvas-back" width="600" height="600" aria-hidden="true"></canvas>
-            <canvas id="coverCanvas" width="600" height="600"></canvas>
+            <canvas id="coverCanvas" width="720" height="720"></canvas>
             <div class="cover-vinyl" id="coverVinyl">
               <div class="vinyl-inner"></div>
             </div>
@@ -1015,7 +1013,7 @@
           </header>
           <div class="sheet-body">
             <div class="track-menu-head">
-              <div class="row-cover"><canvas id="trackMenuCover" width="64" height="64"></canvas></div>
+              <div class="row-cover"><canvas id="trackMenuCover" width="112" height="112"></canvas></div>
               <div class="row-text">
                 <div class="row-title" id="trackMenuTitle">—</div>
                 <div class="row-sub" id="trackMenuSub"></div>
@@ -1116,7 +1114,7 @@
         <div class="mini-player" id="miniPlayer" role="group" data-i18n-aria="now_playing_label" aria-label="Reproduciendo ahora">
           <button class="mini-open" id="miniOpen" type="button" data-i18n-aria="now_playing_label" aria-label="Reproduciendo ahora"></button>
           <div class="mini-progress" id="miniProgress"></div>
-          <div class="mini-cover"><canvas id="miniPlayerCover" width="80" height="80"></canvas></div>
+          <div class="mini-cover"><canvas id="miniPlayerCover" width="120" height="120"></canvas></div>
           <div class="mini-text">
             <div class="mini-title" id="miniPlayerTitle">—</div>
             <div class="mini-artist" id="miniPlayerArtist"></div>

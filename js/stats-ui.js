@@ -62,7 +62,7 @@ Object.assign(App, {
           ${topTracks.map((t, i) => `
             <li class="stats-row" data-track="${this.esc(t.track.id)}">
               <div class="stats-rank">${i + 1}</div>
-              <div class="row-cover"><canvas width="40" height="40"></canvas></div>
+              <div class="row-cover"><canvas width="96" height="96"></canvas></div>
               <div class="stats-info">
                 <div class="stats-name">${this.esc(t.track.title)}</div>
                 <div class="stats-sub">${this.esc(t.track.artist)} · ${t.count} ${this.t('stats_plays').toLowerCase()}</div>

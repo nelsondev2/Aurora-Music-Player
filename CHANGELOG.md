@@ -24,6 +24,10 @@ verificado función a función:
 - Estadísticas (recientes, más reproducidas, historial; solo cuentan las canciones escuchadas enteras) y compartir
   canciones, listas `.m3u8` y letras por `sendToChat`.
 - Interfaz en 8 idiomas, temas y colores de acento.
+- Pasada visual (§69): portadas renderizadas a la resolución real de
+  pantalla (filas ×2, tarjetas y héroe incluidos), pestañas inferiores
+  legibles también en oscuro y agarre táctil de la barra de progreso
+  ampliado.
 
 ### Limitaciones de esta versión
 

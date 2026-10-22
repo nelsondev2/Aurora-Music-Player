@@ -252,7 +252,7 @@ Object.assign(App, {
           ? `<span class="eq-badge${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
           : '';
         return `<button class="home-card${isCur ? ' is-current' : ''}" type="button" data-kind="${kind}" data-id="${this.esc(t.id)}">
-          <div class="home-card-cover"><canvas width="120" height="120"></canvas>${nowBadge}</div>
+          <div class="home-card-cover"><canvas width="240" height="240"></canvas>${nowBadge}</div>
           <span class="home-card-title">${this.esc(t.title)}</span>
           <span class="home-card-sub">${this.esc(t.artist || '')}</span>
         </button>`;
@@ -278,7 +278,7 @@ Object.assign(App, {
           ? `<span class="eq-badge${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
           : '';
         return `<button class="home-card${isCur ? ' is-current' : ''}" type="button" data-kind="track" data-id="${this.esc(t.id)}">
-          <div class="home-card-cover"><canvas width="120" height="120"></canvas>${nowBadge}</div>
+          <div class="home-card-cover"><canvas width="240" height="240"></canvas>${nowBadge}</div>
           <span class="home-card-title">${this.esc(t.title)}</span>
           <span class="home-card-sub rated-sub"><span class="sub-stars" aria-hidden="true">${'★'.repeat(this._ratingOf(t))}</span><span class="sub-artist">${this.esc(t.artist || '')}</span></span>
         </button>`;
@@ -553,7 +553,7 @@ Object.assign(App, {
         ? `<span class="eq-badge eq-badge-row${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
         : '';
       li.innerHTML = `
-        <div class="row-cover"><canvas width="44" height="44"></canvas>${nowBadge}</div>
+        <div class="row-cover"><canvas width="96" height="96"></canvas>${nowBadge}</div>
         <div class="row-text">
           <div class="row-title">${this.esc(t.title)}</div>
           <div class="row-sub">${this.esc(t.artist)}${showAlbum ? ' · ' + this.esc(t.album) : ''} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>
