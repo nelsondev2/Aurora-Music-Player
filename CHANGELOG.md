@@ -28,6 +28,11 @@ verificado función a función:
   pantalla (filas ×2, tarjetas y héroe incluidos), pestañas inferiores
   legibles también en oscuro y agarre táctil de la barra de progreso
   ampliado.
+- Fondo del reproductor según la portada (§75): los colores se
+  extraen de la carátula (con normalización para no ensuciar ni
+  romper el contraste) y tiñen fondo, resplandor y visualizador;
+  sin portada o sin color aprovechable, el fondo de acento de
+  siempre. Adaptado a tema claro y AMOLED.
 - Letras (§74): la línea resaltada va ahora centrada en pantalla
   también en modo normal (antes quedaba alta, al 25 %).
 - Letras sin letra (§73): la vista entra en modo limpio (la barra de

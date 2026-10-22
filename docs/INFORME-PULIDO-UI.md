@@ -2530,3 +2530,51 @@ centrar también la primera y la última línea.
   (el centro de la línea cae exactamente en el centro del área);
   letra sincronizada renderizada sin errores.
 - `node --check` total y **build .xdc válido**: 27 archivos.
+
+## §75. El fondo del reproductor sigue a la portada (de verdad)
+
+El usuario lo pidió y al auditar apareció el matiz: el fondo ya
+era dinámico (degradado difuminado sobre `--cover-from/--cover-to`),
+pero solo las portadas *generadas* traían paleta propia. Con
+portada de imagen — la mayoría — nadie extraía los colores y el
+fondo era siempre el acento del tema: una carátula verde botella
+sonaba sobre violeta-rosa.
+
+- **Extractor con barandillas** (`_paletteFromPixels`, puro y
+  comprobable): muestrea la miniatura grande a 48×48, agrupa por
+  tono ponderando saturación y luz media (ignora casi blancos y
+  casi negros), elige dominante y segundo tono a ≥35°, y normaliza
+  en HSL: saturación entre 0,42 y 0,85, luminosidad encerrada en
+  banda oscura (0,30–0,46 / 0,38–0,55). Portada acromática o lavada
+  (saturación <0,18): se tiñe hacia el acento en vez de pintar gris.
+  Sin color aprovechable (gris/blanco/negro puros): `null` y manda
+  el acento — el «fondo por defecto si no hay portada» de siempre,
+  que también vuelve al no quedar pista cargada.
+- **Perezoso y persistido**: al sonar una pista con imagen sin
+  paleta, `_ensureCoverPalette` la calcula una vez, la guarda con
+  la pista y, si es la que suena, el fondo se actualiza solo. La
+  guarda «en curso» vive en un Set de sesión: en el objeto pista
+  una persistencia coincidente la habría dejado encendida en la
+  base de datos para siempre. Cambiar o quitar la portada
+  personalizada invalida la paleta.
+- **Una sola fuente**: fondo, resplandor y fondo de Letras ya iban
+  por las variables; el visualizador, que con imagen caía a un
+  violeta fijo que no era ni la portada ni el acento, ahora bebe
+  de `coverPaletteFor()` como todos.
+- **Por tema**: la paleta se guarda cruda (banda oscura) y se
+  adapta al aplicarla — en claro se apastela (45 % hacia blanco),
+  en amoled se oscurece (35 % hacia negro) — y `applyTheme()` la
+  reaplica al cambiar de tema.
+
+### Verificación
+
+- **Check §75** `/tmp/check-vista75.js`: **22/22** — la función
+  pura con píxeles sintéticos (azul → `#1c4bce` en banda; rojo/verde
+  → dos tonos separados; gris, blanco y negro → `null`), las tres
+  prioridades (diseñada > extraída > acento), la adaptación por
+  tema medida en las variables, y la extracción completa simulada
+  (lienzo falso) con fondo actualizado y sin repeticiones.
+- `node --check` total y **build .xdc válido**: 27 archivos.
+
+Nota práctica: las portadas ya importadas adoptan su paleta la
+primera vez que suenan tras actualizar; no hay que reimportar.

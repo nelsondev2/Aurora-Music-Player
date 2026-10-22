@@ -1243,11 +1243,14 @@ Object.assign(App, {
      * paleta dinámica pese a calcularse «para el fondo y
      * visualizador». Sin portada con paleta, el clásico de siempre. */
     _visColors() {
-      const cov = (this.currentTrack && typeof this.currentTrack.cover === 'object' && this.currentTrack.cover)
-        ? this.currentTrack.cover : null;
+      // §75: misma fuente que el fondo (antes, con portada de imagen,
+      // el visualizador caía a un violeta fijo que no era ni la
+      // portada ni el acento).
+      const pal = (this.currentTrack && typeof this.coverPaletteFor === 'function')
+        ? this.coverPaletteFor(this.currentTrack) : null;
       return {
-        from: (cov && typeof cov.from === 'string' && cov.from) || '#7C3AED',
-        to: (cov && typeof cov.to === 'string' && cov.to) || '#EC4899'
+        from: (pal && typeof pal.from === 'string' && pal.from) || '#7C3AED',
+        to: (pal && typeof pal.to === 'string' && pal.to) || '#EC4899'
       };
     },
 

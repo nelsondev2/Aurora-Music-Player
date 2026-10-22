@@ -27,6 +27,7 @@ Object.assign(App, {
         document.getElementById('timeCurrent').textContent = '0:00';
         this._syncLyricsButton();
         document.getElementById('progressFill').style.width = '0%';
+        this._applyCoverPalette(this.coverFallback());
         // La cabecera vuelve a su texto neutro cuando no hay pista.
         const ctxIdle = document.getElementById('nowPlayingContext');
         if (ctxIdle) {
@@ -74,11 +75,12 @@ Object.assign(App, {
         else ctxEl.removeAttribute('title');
       }
 
-      // Colores dinámicos (para el fondo y visualizador)
-      const cover = (typeof t.cover === 'object' && t.cover.from) ? t.cover : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 });
-      document.documentElement.style.setProperty('--cover-from', cover.from);
-      document.documentElement.style.setProperty('--cover-to', cover.to);
-      document.documentElement.style.setProperty('--cover-angle', (cover.angle || 135) + 'deg');
+      // Colores dinámicos (fondo y visualizador, §75): la paleta de
+      // la portada — diseñada si es generada, extraída de la imagen
+      // si la hay, y el acento por defecto si no hay nada.
+      const cover = this.coverPaletteFor(t);
+      this._applyCoverPalette(cover);
+      if (!t.coverPalette && (t.coverIsImage || t.customCover)) this._ensureCoverPalette(t);
 
       // Portada canvas (imagen si existe, si no, gradiente generado)
       if (this._shownCoverTrackId && this._shownCoverTrackId !== t.id) {

@@ -526,6 +526,11 @@ Object.assign(App, {
 
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta) meta.setAttribute('content', t.bg0);
+      // §75: la paleta de portada se adapta al tema (pastel en claro,
+      // más negra en amoled); hay que reaplicarla al cambiar.
+      if (this.currentTrack && typeof this._applyCoverPalette === 'function') {
+        this._applyCoverPalette(this.coverPaletteFor(this.currentTrack));
+      }
     },
 
     setTheme(theme) {

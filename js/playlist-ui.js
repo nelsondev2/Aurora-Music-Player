@@ -40,6 +40,183 @@ Object.assign(App, {
       return { x: (W - w) / 2, y: (H - h) / 2, w, h };
     },
 
+    /* ============================================================
+     *  Paleta extraída de la portada (§75)
+     *  El fondo del reproductor ya hablaba este idioma (--cover-from/
+     *  --cover-to), pero con portada de imagen nadie producía los
+     *  colores: siempre caía al acento del tema. Ahora se muestrean
+     *  de la miniatura grande, CON BARANDILLAS: saturación mínima y
+     *  luminosidad encerrada en banda oscura segura, para que una
+     *  portada marrón, blanca o gris no ensucie la pantalla ni rompa
+     *  el contraste del texto. Sin portada (o sin color útil), manda
+     *  el acento de siempre.
+     * ============================================================ */
+    _hexToRgbArr(hex) {
+      const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+      if (!m) return [109, 92, 255];
+      const n = parseInt(m[1], 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    },
+    _rgbToHex(r, g, b) {
+      const c = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+      return '#' + c(r) + c(g) + c(b);
+    },
+    _mixHexArr(a, b, t) {
+      return [0, 1, 2].map(i => a[i] + (b[i] - a[i]) * t);
+    },
+    _rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      const l = (mx + mn) / 2, d = mx - mn;
+      let h = 0;
+      const s = d === 0 ? 0 : (l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn));
+      if (d) {
+        if (mx === r) h = ((g - b) / d) % 6;
+        else if (mx === g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
+        h *= 60; if (h < 0) h += 360;
+      }
+      return [h, s, l];
+    },
+    _hslToHex(h, s, l) {
+      h = ((h % 360) + 360) % 360; s = Math.max(0, Math.min(1, s)); l = Math.max(0, Math.min(1, l));
+      const c = (1 - Math.abs(2 * l - 1)) * s;
+      const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+      const m = l - c / 2;
+      let rgb;
+      if (h < 60) rgb = [c, x, 0]; else if (h < 120) rgb = [x, c, 0];
+      else if (h < 180) rgb = [0, c, x]; else if (h < 240) rgb = [0, x, c];
+      else if (h < 300) rgb = [x, 0, c]; else rgb = [c, 0, x];
+      return this._rgbToHex((rgb[0] + m) * 255, (rgb[1] + m) * 255, (rgb[2] + m) * 255);
+    },
+
+    /* De los píxeles (RGBA de un lienzo 48×48) a {from, to} seguros.
+     * Puro y comprobable sin navegador. Devuelve null si la imagen
+     * no tiene color aprovechable (gris, casi blanca, casi negra). */
+    _paletteFromPixels(data, fallback) {
+      const buckets = [];
+      for (let i = 0; i < 36; i++) buckets.push({ w: 0, r: 0, g: 0, b: 0 });
+      let totalW = 0;
+      for (let i = 0; i + 3 < data.length; i += 4) {
+        if (data[i + 3] < 128) continue;
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const hsl = this._rgbToHsl(r, g, b);
+        // Peso: premia lo saturado y de luz media; ignora casi
+        // blancos y casi negros (fondos de portada que no dicen nada).
+        const vivid = hsl[1] * (1 - Math.abs(hsl[2] - 0.45) * 1.5);
+        if (vivid <= 0.03) continue;
+        const bk = buckets[Math.min(35, Math.floor(hsl[0] / 10))];
+        bk.w += vivid; bk.r += r * vivid; bk.g += g * vivid; bk.b += b * vivid;
+        totalW += vivid;
+      }
+      if (totalW <= 0) return null;
+      let dom = 0;
+      for (let i = 1; i < 36; i++) if (buckets[i].w > buckets[dom].w) dom = i;
+      const avg = (bk) => [bk.r / bk.w, bk.g / bk.w, bk.b / bk.w];
+      let domRgb = avg(buckets[dom]);
+      const domHsl = this._rgbToHsl(domRgb[0], domRgb[1], domRgb[2]);
+      // Segundo color: el tono con más peso a ≥35° del dominante;
+      // si no hay, el dominante aclarado y girado un poco.
+      let secRgb = null;
+      for (let i = 0; i < 36; i++) {
+        if (!buckets[i].w) continue;
+        const dh = Math.min(Math.abs(i - dom) * 10, 360 - Math.abs(i - dom) * 10);
+        if (dh >= 35 && (!secRgb || buckets[i].w > secRgb.w)) secRgb = { w: buckets[i].w, rgb: avg(buckets[i]) };
+      }
+      const fbFrom = this._hexToRgbArr(fallback && fallback.from);
+      // Portada acromática o lavada: teñir hacia el acento en vez de
+      // pintar la pantalla de gris.
+      if (domHsl[1] < 0.18) domRgb = this._mixHexArr(domRgb, fbFrom, 0.45);
+      const norm = (rgb, lMin, lMax) => {
+        const hsl2 = this._rgbToHsl(rgb[0], rgb[1], rgb[2]);
+        const s = Math.max(0.42, Math.min(0.85, hsl2[1]));
+        const l = Math.max(lMin, Math.min(lMax, hsl2[2]));
+        return { hex: this._hslToHex(hsl2[0], s, l), h: hsl2[0] };
+      };
+      const from = norm(domRgb, 0.30, 0.46);
+      let to;
+      if (secRgb) {
+        to = norm(secRgb.rgb, 0.38, 0.55);
+      } else {
+        const hsl3 = this._rgbToHsl(domRgb[0], domRgb[1], domRgb[2]);
+        to = { hex: this._hslToHex(hsl3[0] + 28, Math.max(0.42, Math.min(0.85, hsl3[1])), Math.min(0.55, Math.max(0.38, hsl3[2] + 0.07))), h: hsl3[0] + 28 };
+      }
+      return { from: from.hex, to: to.hex, angle: 135 };
+    },
+
+    /* Paleta vigente de una pista, síncrona: la diseñada si la
+     * portada es generada, la extraída si ya se calculó, y si no, el
+     * acento (el fondo por defecto de siempre). */
+    coverPaletteFor(track) {
+      if (!track) return this.coverFallback();
+      if (track.cover && typeof track.cover === 'object' && track.cover.from) return track.cover;
+      if (track.coverPalette && track.coverPalette.from) return track.coverPalette;
+      return this.coverFallback();
+    },
+
+    /* Aplica la paleta a las variables del fondo, adaptada al tema:
+     * en claro se apastela (el velo claro manda) y en amoled se
+     * oscurece más (su negro es un principio, no un accidente). */
+    _applyCoverPalette(palette) {
+      const root = document.documentElement;
+      const theme = root.getAttribute('data-theme');
+      let from = (palette && palette.from) || '#6E5CFF';
+      let to = (palette && palette.to) || '#FF7AB6';
+      if (theme === 'light') {
+        from = this._rgbToHex(...this._mixHexArr(this._hexToRgbArr(from), [255, 255, 255], 0.45));
+        to = this._rgbToHex(...this._mixHexArr(this._hexToRgbArr(to), [255, 255, 255], 0.45));
+      } else if (theme === 'amoled') {
+        from = this._rgbToHex(...this._mixHexArr(this._hexToRgbArr(from), [0, 0, 0], 0.35));
+        to = this._rgbToHex(...this._mixHexArr(this._hexToRgbArr(to), [0, 0, 0], 0.35));
+      }
+      root.style.setProperty('--cover-from', from);
+      root.style.setProperty('--cover-to', to);
+      root.style.setProperty('--cover-angle', ((palette && palette.angle) || 135) + 'deg');
+    },
+
+    /* Extrae y guarda la paleta de la portada (perezoso, una vez por
+     * pista): se invoca al sonar una pista con imagen sin paleta. Si
+     * esa pista está sonando al terminar, el fondo se actualiza solo. */
+    async _ensureCoverPalette(track) {
+      if (!track || track.coverPalette) return false;
+      // En curso: Set de sesión (nunca en el objeto pista: una
+      // persistencia coincidente lo dejaría «encendido» en la base
+      // de datos y la paleta no se extraería jamás).
+      if (!this._paletteInFlight) this._paletteInFlight = new Set();
+      if (this._paletteInFlight.has(track.id)) return false;
+      if (track.cover && typeof track.cover === 'object' && track.cover.from) return false;
+      const src = (track.customCover && (track.customCover.lg || track.customCover.thumb))
+        || track.coverThumbLg
+        || (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:')) ? track.cover : null);
+      if (!src) return false;
+      this._paletteInFlight.add(track.id);
+      try {
+        const img = await new Promise(resolve => {
+          const im = new Image();
+          im.onload = () => resolve(im);
+          im.onerror = () => resolve(null);
+          im.src = src;
+        });
+        if (!img || !img.width) return false;
+        const c = document.createElement('canvas');
+        c.width = 48; c.height = 48;
+        const x = c.getContext('2d');
+        if (!x) return false;
+        x.drawImage(img, 0, 0, 48, 48);
+        const data = x.getImageData(0, 0, 48, 48).data;
+        const pal = this._paletteFromPixels(data, this.coverFallback());
+        if (!pal) return false;
+        track.coverPalette = pal;
+        try { this.persistTrack(track); } catch (e) {}
+        if (this.currentTrack && this.currentTrack.id === track.id) this._applyCoverPalette(pal);
+        return true;
+      } catch (e) {
+        return false;
+      } finally {
+        this._paletteInFlight.delete(track.id);
+      }
+    },
+
     /* Pinta la portada en un canvas. Sin opciones, el clásico
      * «rellenar recortando» de filas y miniaturas. Con
      * { fit: 'ambient' } (§63, tarjetas grandes de Inicio) se enseña
@@ -237,6 +414,7 @@ Object.assign(App, {
         const thumb = await U.resizeDataUrl(dataUrl, 144);
         if (!lg && !thumb) throw new Error('imagen ilegible');
         t.customCover = { thumb: thumb || lg, lg: lg || thumb };
+        delete t.coverPalette; // §75: la paleta era de la portada anterior
         await this.persistTrack(t);
         this._refreshCoverSurfaces(t);
         this.toast(this.t('toast_cover_updated'));
@@ -251,6 +429,7 @@ Object.assign(App, {
       const t = this.tracks.find(x => x.id === trackId);
       if (!t || !t.customCover) return;
       delete t.customCover;
+      delete t.coverPalette; // §75: vuelve la de los metadatos (o el acento)
       await this.persistTrack(t);
       this._refreshCoverSurfaces(t);
       this.toast(this.t('toast_cover_removed'));
