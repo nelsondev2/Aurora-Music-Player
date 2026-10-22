@@ -2180,3 +2180,55 @@ familia de luminosidad para que la app pese igual con cualquiera:
   336,4 KB comprimidos (964,7 KB sin comprimir).
 - Chuleta visual antes/ahora generada en `/home/user/paleta-66.png`
   (fuera del repo, como material de revisión).
+
+## 67. Estadísticas honestas: solo cuenta la escucha completa
+
+Petición del mantenedor: en las estadísticas de reproducción solo
+contarán las canciones que se reproduzcan **completas**. Hasta hoy,
+`trackPlayStarted()` sumaba al *empezar* a sonar: abrir una canción
+y saltarla a los tres segundos ya contaba como reproducción (y
+alimentaba «Más escuchadas» y los tops de la pantalla de
+estadísticas).
+
+### Cómo se cuenta ahora
+
+- `trackPlayStarted()` ya no suma: solo abre el «pase» de conteo de
+  la escucha en curso (y sigue llevando el tiempo escuchado).
+- **`trackPlayCompleted()`** (js/settings.js) es el único sitio que
+  suma, con triple candado:
+  1. **Una por pase**: `_playCounted` (lo reinicia cada arranque,
+     también el entrante gapless) impide dobles conteos entre vías.
+  2. **Solo avances de verdad**: lo llaman `next(true)` —fin natural
+     o fundido— y el salto gapless al cambiar de pista. Un `next()`
+     manual nunca cuenta la saliente; un archivo que falla llega con
+     `isPlaying=false` desde `_handleDecodeFailure` y tampoco. Con
+     «repetir una», cada vuelta completa suma la suya.
+  3. **Se ha oído entera**: `_heardWholeTrack()` une los intervalos
+     realmente reproducidos (`audio.played`, inmune a pausas y
+     búsquedas) y exige todo menos los últimos 2 s. **Buscar hasta
+     el final a mano no cuenta** como escucha completa; reescuchar
+     tras buscar atrás sí suma la unión. Sin duración conocida vale
+     la llegada al final.
+- El salto gapless cuenta la saliente antes de cambiar (~80 ms
+  antes del corte) y la entrante estrena pase y base de segundos
+  (ese `play()` directo no pasaba por `trackPlayStarted()`: también
+  quedaba cojo el cómputo de tiempo en ese camino).
+- Alcance: esto es el **contador** (`stats.plays` y todo lo que
+  deriva: «Más escuchadas», tops, totales). El **historial** sigue
+  apuntando lo abierto (es un registro de actividad, como el del
+  navegador) y el **tiempo escuchado** sigue siendo tiempo real: no
+  son «canciones contadas».
+
+### Verificación
+
+- **Check §67** `/tmp/check-completas.js`: **15/15** — al empezar no
+  suma; completa suma 1 y no duplica; a medias no suma; saltar al
+  final no suma; con solapes suma la unión; `next()` manual no
+  cuenta; `next(true)` cuenta y avanza; fallo de reproducción no
+  cuenta (con asentamiento previo: el arnés sufría promesas
+  rezagadas de la IDB falsa, no era la app); repetir-una suma por
+  vuelta (con `src` en el `<audio>`, como una pista real: sin él,
+  `togglePlay` se desviaba por la guarda de arranque); gapless
+  cuenta la saliente y la entrante suma al terminar; 0 errores.
+- `node --check` total; **build .xdc válido**: 27 archivos,
+  337,5 KB comprimidos (967,6 KB sin comprimir).

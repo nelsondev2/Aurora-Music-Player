@@ -92,6 +92,7 @@
     _statsFlushTimer: null,
     _currentPlayStart: null,
     _currentPlayBaseTime: 0,
+    _playCounted: false,   // §67: la escucha en curso ya sumó (o no)
 
     /* Crossfade opt-in (0 / 3 / 6 / 12 s). 0 = off; no retrasa el next manual. */
     crossfadeEnabled: false,

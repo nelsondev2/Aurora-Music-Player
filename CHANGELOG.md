@@ -21,7 +21,7 @@ verificado función a función:
   desde…», gapless/crossfade, ecualizador, visualizador y temporizador
   de apagado.
 - Letras sincronizadas LRC (archivo o incrustadas).
-- Estadísticas (recientes, más reproducidas, historial) y compartir
+- Estadísticas (recientes, más reproducidas, historial; solo cuentan las canciones escuchadas enteras) y compartir
   canciones, listas `.m3u8` y letras por `sendToChat`.
 - Interfaz en 8 idiomas, temas y colores de acento.
 

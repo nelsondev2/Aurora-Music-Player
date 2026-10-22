@@ -24,7 +24,7 @@ Reproductor de música **offline-first** pensado para **WebXDC**: se comparte co
   «Reproducir desde…» con su contexto, reproducción continua
   (gapless/crossfade), ecualizador, visualizador y temporizador de
   apagado.
-- **Estadísticas**: recientes, más reproducidas e historial.
+- **Estadísticas**: recientes, más reproducidas e historial (las reproducciones solo cuentan cuando la canción suena entera).
 - **Comparte por el chat**: envía canciones, listas (`.m3u8`) y letras
   con `sendToChat`, sin salir de Delta Chat.
 - **8 idiomas** (es, en, pt, zh, ja, fr, it, ru), temas y colores de

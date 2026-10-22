@@ -216,12 +216,10 @@ Object.assign(App, {
     trackPlayStarted() {
       this._currentPlayStart = Date.now();
       this._currentPlayBaseTime = this.audio.currentTime || 0;
-      // Incrementar contador de reproducciones
-      if (this.currentTrack) {
-        const id = this.currentTrack.id;
-        this.stats.plays[id] = (this.stats.plays[id] || 0) + 1;
-        this.saveStats();
-      }
+      // El contador de reproducciones ya NO suma al empezar (§67):
+      // una canción solo cuenta cuando suena entera. Aquí empieza
+      // su «pase» de conteo; lo cierra trackPlayCompleted().
+      this._playCounted = false;
       // Iniciar flush periódico de tiempo escuchado
       if (this._statsFlushTimer) clearInterval(this._statsFlushTimer);
       this._statsFlushTimer = setInterval(() => {
@@ -234,6 +232,50 @@ Object.assign(App, {
           }
         }
       }, 10000);  // cada 10s
+    },
+
+    /* Registrar que la pista sonó ENTERA (§67): el único sitio donde
+     * suma el contador de reproducciones. Lo llaman el avance
+     * automático al terminar (fin natural o fundido, vía next(true))
+     * y el salto gapless al cambiar de pista; nunca un salto manual
+     * ni un archivo que falla al cargar. Una escucha por pase: el
+     * candado _playCounted lo pone trackPlayStarted() (o el propio
+     * gapless para la pista entrante). */
+    trackPlayCompleted() {
+      if (!this.currentTrack || this._playCounted) return;
+      if (!this._heardWholeTrack()) return;
+      this._playCounted = true;
+      const id = this.currentTrack.id;
+      this.stats.plays[id] = (this.stats.plays[id] || 0) + 1;
+      this.saveStats();
+    },
+
+    /* ¿Se ha oído (casi) toda la pista actual? La unión de los
+     * intervalos realmente reproducidos (audio.played) lo sabe pese
+     * a pausas y búsquedas; buscar hasta el final a mano NO cuenta
+     * como escucha completa. Sin duración conocida (p. ej. al
+     * principio de cargar), vale la llegada al final. Se perdonan
+     * los últimos 2 s (silencios de cierre y el corte gapless). */
+    _heardWholeTrack() {
+      const a = this.audio;
+      if (!a) return false;
+      const dur = a.duration;
+      if (!isFinite(dur) || dur <= 0) return true;
+      let heard = 0;
+      try {
+        const played = a.played;
+        const iv = [];
+        for (let i = 0; i < played.length; i++) iv.push([played.start(i), played.end(i)]);
+        iv.sort((x, y) => x[0] - y[0]);
+        let cs = null, ce = null;
+        for (const [ini, fin] of iv) {
+          if (cs === null) { cs = ini; ce = fin; }
+          else if (ini <= ce) { ce = Math.max(ce, fin); }
+          else { heard += ce - cs; cs = ini; ce = fin; }
+        }
+        if (cs !== null) heard += ce - cs;
+      } catch (e) { return true; }
+      return heard >= Math.max(0, dur - 2);
     },
 
     trackPlayStopped() {

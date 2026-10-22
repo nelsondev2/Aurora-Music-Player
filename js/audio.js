@@ -584,6 +584,14 @@ Object.assign(App, {
 
     next(auto) {
       if (auto && this._sleepFading) return;
+      // Fin natural o fundido: la pista saliente sonó entera y cuenta
+      // en estadísticas (§67). Un next() manual no pasa por aquí
+      // (auto=false); un archivo que falla llega con isPlaying=false
+      // desde _handleDecodeFailure; y el candado por pase evita
+      // contar dos veces si también lo cierra el gapless.
+      if (auto && this.isPlaying && typeof this.trackPlayCompleted === 'function') {
+        this.trackPlayCompleted();
+      }
       if (!auto) {
         this._cancelCrossfade();
         this._gaplessArmed = false;

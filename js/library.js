@@ -400,6 +400,9 @@ Object.assign(App, {
       this._gaplessConsumed = true;
       this._ignoreEndedUntil = Date.now() + 500;
       this._gaplessArmed = false;
+      // La saliente llegó a su fin (~80 ms antes del corte): su
+      // escucha cuenta como completa ANTES de cambiar (§67).
+      if (typeof this.trackPlayCompleted === 'function') this.trackPlayCompleted();
       this.currentTrack = nextTrack;
       this.currentTrackIdx = this.tracks.findIndex(t => t.id === nextTrackId);
       this.queueIdx = nextIdx;
@@ -413,6 +416,11 @@ Object.assign(App, {
       const p = this.audio.play();
       if (p && p.catch) p.catch(() => {});
       this.isPlaying = true;
+      // La entrante no pasa por trackPlayStarted() (play() directo):
+      // estrena pase de conteo y base de segundos escuchados (§67).
+      this._playCounted = false;
+      this._currentPlayStart = Date.now();
+      this._currentPlayBaseTime = 0;
       this.addToHistory(nextTrack.id);
       this.renderCurrentTrack();
       this.renderLyrics();
