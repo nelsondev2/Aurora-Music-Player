@@ -2474,3 +2474,39 @@ invisible que toca tres archivos), y buscar en pausa sin refresco
   repetir cambia por modo; el punto aparece solo con LRC; tocar la
   duración alterna `3:20` → `-2:05`, persiste y vuelve).
 - `node --check` total y **build .xdc válido**: 27 archivos.
+
+## §73. Letras sin letra: la pantalla se calla
+
+«Haz lo mismo con el menú de letras: no me gusta como se ve cuando
+no hay letras». La tarjeta de vacío ya existía y estaba centrada;
+lo que ensuciaba era todo lo demás: la barra de herramientas al
+completo (tamaño, desfase, velocidad, bucle, restablecer…: 8 de 11
+controles no hacen nada sin letra) seguía armada sobre el vacío,
+duplicando las dos acciones que la tarjeta ya ofrece en grande.
+
+- **Modo limpio**: `_setLyricsEmpty()` marca la vista con
+  `lrc-is-empty` y la barra de herramientas se oculta entera. Sus
+  únicas acciones útiles sin letra («Cargar .lrc», «Pegar o editar»)
+  son los botones grandes de la tarjeta. La barra vuelve sola en
+  cuanto hay letra que ajustar. De paso muere la clase `.emphasis`
+  que las destacaba (ya no hace falta destacar lo que no se ve).
+- **Variante «nada sonando»**: abrir Letras sin pista enseñaba la
+  misma tarjeta con dos botones que no tienen dónde aplicarse. Con
+  `lrc-no-track`, el título pasa a ser «Sin reproducción», la pista
+  «Carga una pista para empezar» y las acciones se esconden.
+- **La baldosa del icono respira con la canción**: usa la paleta de
+  la portada (`--cover-from/--cover-to`, como el fondo de la vista)
+  en vez del acento fijo, y crece un poco (72 px, glifo de 28).
+  Tarjeta algo más ancha (280 → 304 px).
+-Nota de la revisión: no había ningún `}` suelto en el CSS (lo
+  pareció por una salida de terminal concatenada; el balance de
+  llaves se verifica ahora en el check).
+
+### Verificación
+
+- **Check §73** `/tmp/check-vista73.js`: **16/16** — estático
+  (llaves balanceadas, reglas nuevas, sin `.emphasis` muerta, ids
+  del vacío) y runtime (arranque limpio; sin pista: vacío con modo
+  limpio y título adaptado; sin letra: acciones y mensaje de letra;
+  con letra: el vacío se esconde y la barra vuelve).
+- `node --check` total y **build .xdc válido**: 27 archivos.

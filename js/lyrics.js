@@ -180,10 +180,22 @@ Object.assign(App, {
       const scroll = document.getElementById('lyricsScroll');
       if (emptyEl) emptyEl.hidden = !on;
       if (scroll) scroll.classList.toggle('has-empty', !!on);
-      const loadBtn = document.getElementById('btnLrcLoadFile');
-      const editBtn = document.getElementById('btnLrcEdit');
-      if (loadBtn) loadBtn.classList.toggle('emphasis', !!on);
-      if (editBtn) editBtn.classList.toggle('emphasis', !!on);
+      // §73: sin letra, la barra de herramientas (tamaño, desfase,
+      // velocidad, bucle…) solo hacía ruido sobre el vacío y duplicaba
+      // las acciones de la tarjeta: la vista entra en modo limpio y la
+      // barra vuelve en cuanto hay letra que ajustar.
+      const view = document.getElementById('viewLyrics');
+      const noTrack = !!on && !this.currentTrack;
+      if (view) {
+        view.classList.toggle('lrc-is-empty', !!on);
+        view.classList.toggle('lrc-no-track', noTrack);
+      }
+      // Sin pista cargada, «Cargar .lrc» no tiene dónde aplicarse: la
+      // tarjeta cambia el mensaje y esconde las acciones.
+      const title = document.getElementById('lrcEmptyTitle');
+      const hint = document.getElementById('lrcEmptyHint');
+      if (title) title.textContent = noTrack ? this.t('no_track_playing') : this.t('lrc_empty_title');
+      if (hint) hint.textContent = noTrack ? this.t('load_track_to_start') : this.t('lrc_empty_hint');
     },
 
     /* ============================================================

@@ -28,6 +28,9 @@ verificado función a función:
   pantalla (filas ×2, tarjetas y héroe incluidos), pestañas inferiores
   legibles también en oscuro y agarre táctil de la barra de progreso
   ampliado.
+- Letras sin letra (§73): la vista entra en modo limpio (la barra de
+  herramientas inútil se oculta y manda la tarjeta de acciones), con
+  variante propia cuando no hay ninguna pista cargada.
 - Reproductor (§72): barra de progreso con avance continuo, duración
   total que alterna a tiempo restante al tocarla, botón de Letras que
   anuncia si la canción trae letra, nombre accesible del modo de
