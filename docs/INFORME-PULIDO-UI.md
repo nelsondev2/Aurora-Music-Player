@@ -2025,3 +2025,73 @@ eran fallos distintos:
 
 Trabajo sobre la rama nueva `arena/9d3a6f0b-aurora-music-player`
 (desde el merge `d0ca61d`): sin fusionar a `main` sin permiso.
+
+## 64. Las estrellas mandan en el orden: fuera la lista «Más valoradas»
+
+Idea del mantenedor, sustituyendo §60: en lugar de una lista aparte
+con las mejor valoradas, **la cola y las listas se ordenan por las
+estrellas**. Decisiones suyas (preguntadas antes de tocar): orden
+**automático siempre**; en **todas** las listas (Favoritos incluida)
+con las **sin nota al final**; empate = **el orden de la lista**; y
+de «Más valoradas» **solo queda el raíl de Inicio como escaparate**.
+De paso, a petición suya, se **eliminaron el GitHub Release v1.2.0 y
+su etiqueta** (verificado: sin releases y sin tag en el remoto):
+seguimos puliendo la 1.2.0 antes de lanzar.
+
+### El orden (js/playlist-ui.js)
+
+`sortByRating(tracks)`: nota descendente sobre una copia; las sin
+nota (0) caen al final por sí solas; el sort de JS es estable, así
+que el empate conserva el orden traído. `playlistTracksSorted(pl)`
+lo aplica a una lista. **El orden guardado nunca se reescribe**: es
+el desempate invisible. Aplicado en:
+
+- **La vista**: el detalle de la lista (`renderEditPlaylist`) y
+  Favoritos (`renderFavorites`) se muestran ordenados.
+- **La cola**: `playPlaylist`, `playFavorites` y las ramas
+  `playlist`/`favorites` de `playTrack` construyen la cola ordenada.
+- **El avance**: `next()` reconstruía la cola de la lista en su
+  orden *guardado* al avanzar — habría deshecho el orden a la
+  segunda canción—; ahora reconstruye con `playlistTracksSorted`
+  (cazado por la regresión: la cola nacía ordenada y a los 400 ms
+  volvía al orden de la lista).
+
+Consecuencias de diseño, documentadas: el **asa de arrastre** del
+detalle desaparece (con la nota mandando, arrastrar no podría
+prometer nada: la fila volvería a su sitio) junto con
+`reorderPlaylistTracks`; el orden manual queda como desempate
+guardado. Álbumes, artistas y «todas» conservan su orden natural:
+son obras con orden propio, y la ordenación es de *listas*. Valorar
+no reordena la cola que está sonando (no se eligió esa opción): el
+nuevo orden se ve al abrir la lista y manda en la próxima cola.
+
+### Lo que desaparece de §60
+
+Hoja `#sheetRated` (index.html), `renderRated` (stats-ui),
+`playRated` y la tarjeta «__rated» de Biblioteca (playlist-ui, con el
+render restaurado a su forma previa), contexto `rated` (playTrack,
+etiqueta, `allowedCtx` de sesión, anillo del botón en player-ui y su
+enlace en events), rama `rated` de `goNav`, y la clave i18n
+`rated_empty` (**372 × 8 sin huecos**; `rated_title` se queda:
+titula el escaparate). El escaparate de Inicio pierde el «Ver todo»
+(no lleva a ninguna lista) y sus tarjetas suenan con el contexto de
+la lista de cada canción, como el resto de Inicio (§38); su refresco
+al valorar (§63) se conserva.
+
+### Verificación
+
+- **Check §64** `/tmp/check-orden.js`: **20/20** — orden exacto con
+  empates por lista y sin-nota al final (con reproducciones
+  desordenadas a propósito: NO desempatan); lo guardado intacto;
+  detalle y Favoritos ordenados y sin asa; colas de lista, de fila y
+  de Favoritos ordenadas; el panel de cola enseña ese orden; todo lo
+  eliminado ausente del DOM y de la API; el escaparate sigue, sin
+  «Ver todo», y suena con contexto de lista; valorar reordena la
+  próxima vista sin tocar lo guardado; 0 errores.
+- **Sin regresión §63**: 15/15 (el escaparate se comporta igual).
+- `node --check` total; **build .xdc válido**: 27 archivos,
+  335,8 KB comprimidos (963,7 KB sin comprimir; el paquete adelgaza
+  al salir la hoja).
+
+Sigue en la rama `arena/9d3a6f0b…`: ni merge ni release hasta que la
+1.2.0 se dé por buena.

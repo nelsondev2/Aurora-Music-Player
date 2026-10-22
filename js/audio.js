@@ -195,7 +195,8 @@ Object.assign(App, {
         // Cola = pistas de esa playlist (en orden), filtrando las que existen
         const pl = this.playlists.find(p => p.id === context.id);
         if (pl) {
-          this.queue = pl.trackIds.filter(id => this.trackMap().has(id));
+          // La cola hereda el orden por estrellas de la lista (§64)
+          this.queue = this.playlistTracksSorted(pl).map(t => t.id);
           const qIdx = this.queue.indexOf(trackId);
           // La pista puede no pertenecer ya a la lista (se quitó mientras
           // sonaba otra): insertarla para que next/prev sigan teniendo
@@ -210,16 +211,9 @@ Object.assign(App, {
           this.queue = [trackId];
           this.queueIdx = 0;
         }
-      } else if (context && context.type === 'rated') {
-        // Cola = las mejor valoradas, en ese orden (§60)
-        const ratedIds = (typeof this.getTopRatedTracks === 'function' ? this.getTopRatedTracks() : []).map(t => t.id);
-        this.queue = ratedIds.length ? ratedIds : [trackId];
-        const qIdx = this.queue.indexOf(trackId);
-        if (qIdx < 0) { this.queue.unshift(trackId); this.queueIdx = 0; }
-        else this.queueIdx = qIdx;
       } else if (context && context.type === 'favorites') {
         // Cola = pistas favoritas
-        const favIds = this.tracks.filter(t => this.favorites.has(t.id)).map(t => t.id);
+        const favIds = this.sortByRating(this.tracks.filter(t => this.favorites.has(t.id))).map(t => t.id);
         this.queue = favIds;
         const qIdx = this.queue.indexOf(trackId);
         if (qIdx < 0) { this.queue.unshift(trackId); this.queueIdx = 0; }
@@ -598,11 +592,13 @@ Object.assign(App, {
         this._fireSleep();
         return;
       }
-      // Reconstruir cola de playlist solo si shuffle está off (si no, pisaría la cola barajada)
+      // Reconstruir cola de playlist solo si shuffle está off (si no, pisaría la cola barajada).
+      // Ojo: la cola de una lista vive en orden de estrellas (§64), así
+      // que la reconstrucción usa ese mismo orden, no el guardado.
       if (!this.shuffle && this.playContext && this.playContext.type === 'playlist' && this.playContext.id) {
         const pl = this.playlists.find(p => p.id === this.playContext.id);
         if (pl && pl.trackIds.length) {
-          const ids = pl.trackIds.filter(id => this.trackMap().has(id));
+          const ids = this.playlistTracksSorted(pl).map(t => t.id);
           if (ids.length && (this.queue.length !== ids.length || ids.some((id, i) => this.queue[i] !== id))) {
             const cur = this.currentTrack && this.currentTrack.id;
             this.queue = ids;

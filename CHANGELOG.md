@@ -11,9 +11,10 @@ verificado función a función:
 
 - Importación de MP3, M4A, FLAC, WAV, OGG y Opus con metadatos,
   portadas, duración real y deduplicación al reimportar.
-- Biblioteca con listas editables, Favoritos, «Mi Música» automática
-  y «Más valoradas», la lista inteligente ordenada por estrellas,
-  reproducciones y título.
+- Biblioteca con listas editables, Favoritos y «Mi Música»
+  automática. Las listas y la cola se ordenan automáticamente por
+  estrellas (mejor nota primero, sin nota al final), y el escaparate
+  «Más valoradas» de Inicio enseña las mejores notas.
 - Valoración de 1 a 5 estrellas en el menú de canción, el reproductor
   y las filas, con insignia visible en las listas y la cola.
 - Reproductor con cola, aleatorio, repetir, contexto «Reproduciendo

@@ -113,7 +113,7 @@ Object.assign(App, {
         }
         // playContext se usa para decidir la cola y se pinta en la barra:
         // aceptar solo formas conocidas evita objetos arbitrarios de datos guardados.
-        const allowedCtx = ['all', 'queue', 'playlist', 'favorites', 'rated', 'album', 'artist', 'radio'];
+        const allowedCtx = ['all', 'queue', 'playlist', 'favorites', 'album', 'artist', 'radio'];
         if (session.playContext && typeof session.playContext === 'object' && allowedCtx.includes(session.playContext.type)) {
           this.playContext = {
             type: session.playContext.type,

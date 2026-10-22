@@ -110,16 +110,6 @@ const I18N = {
     zh: '评分最高', ja: '高評価', fr: 'Les mieux notées',
     it: 'Le più votate', ru: 'Лучшие по оценке'
   },
-  rated_empty: {
-    es: 'Todavía no has valorado ninguna canción. Toca las estrellas de una canción y las mejores aparecerán aquí.',
-    en: "You haven't rated any songs yet. Tap the stars on a song and the best ones will show up here.",
-    pt: 'Ainda não classificaste nenhuma música. Toca nas estrelas de uma música e as melhores aparecem aqui.',
-    zh: '你还没有给任何歌曲评分。点一首歌的星星，高分的就会出现在这里。',
-    ja: 'まだ評価した曲がありません。曲の星をタップすると、高評価の曲がここに集まります。',
-    fr: 'Vous n’avez pas encore noté de chansons. Touchez les étoiles d’une chanson et les meilleures apparaîtront ici.',
-    it: 'Non hai ancora valutato nessun brano. Tocca le stelle di un brano e i migliori appariranno qui.',
-    ru: 'Вы ещё не оценили ни одной песни. Коснитесь звёзд у песни — лучшие соберутся здесь.'
-  },
   rating_label: {
     es: 'Valoración', en: 'Rating', pt: 'Classificação',
     zh: '评分', ja: '評価', fr: 'Note',

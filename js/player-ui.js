@@ -231,11 +231,6 @@ Object.assign(App, {
         favBtn.classList.toggle('is-playing',
           this.isPlaying && !!this.playContext && this.playContext.type === 'favorites');
       }
-      const ratedBtn = document.getElementById('btnPlayRatedNow');
-      if (ratedBtn) {
-        ratedBtn.classList.toggle('is-playing',
-          this.isPlaying && !!this.playContext && this.playContext.type === 'rated');
-      }
       if (this._editingPlaylistId && typeof this.isPlaylistPlaying === 'function') {
         const pl = (this.playlists || []).find(p => p && p.id === this._editingPlaylistId);
         if (pl) {

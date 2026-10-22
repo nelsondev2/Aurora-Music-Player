@@ -122,12 +122,6 @@ Object.assign(App, {
         this.showView('home');
         this.renderFavorites();
         this.openSheet('sheetFavorites');
-      } else if (nav === 'rated') {
-        this.closeAllSheets();
-        this.showView('home');
-        this.renderRated();
-        this.openSheet('sheetRated');
-        nav = 'home'; // no es pestaña: el resaltado se queda en Inicio
       } else if (nav === 'search') {
         this.closeAllSheets();
         this.showView('home');
@@ -269,9 +263,11 @@ Object.assign(App, {
       </section>`;
     },
 
-    /* Raíl «Más valoradas» de Inicio (§60): solo si hay alguna nota.
-     * Las tarjetas suenan dentro del contexto 'rated' y el «Ver todo»
-     * abre la hoja completa en vez de Biblioteca. */
+    /* Escaparate «Más valoradas» de Inicio (§60, redefinido en §64):
+     * solo si hay alguna nota. Ya NO es una lista aparte —sin hoja ni
+     * contexto propio—: las tarjetas suenan con el contexto de la
+     * lista de cada canción, como el resto de Inicio. Es el escaparate
+     * de las estrellas; el orden de verdad vive en las listas. */
     _homeRatedRail() {
       const rated = typeof this.getTopRatedTracks === 'function' ? this.getTopRatedTracks().slice(0, 10) : [];
       if (!rated.length) return '';
@@ -290,7 +286,6 @@ Object.assign(App, {
       return `<section class="home-section">
         <div class="home-section-head">
           <h3 class="home-section-title">${this.esc(this.t('rated_title'))}</h3>
-          <button class="home-see-all" type="button" data-see-all="rated">${this.esc(this.t('see_all'))}</button>
         </div>
         <div class="home-rail" id="homeRated">${items}</div>
       </section>`;
@@ -364,12 +359,10 @@ Object.assign(App, {
           // Tarjetas grandes de Inicio: la obra completa, sin recorte (§63)
           if (cv && t) this.drawRowCover(cv, t, { fit: 'ambient' });
           card.addEventListener('click', () => {
-            // Tarjeta del raíl de valoradas: manda el contexto 'rated'
-            // (§60). Tarjeta suelta de Inicio: la lista de la canción
-            // manda (mismo criterio que Buscar, §38), no «Todas».
-            const ctx = card.closest('#homeRated')
-              ? { type: 'rated' }
-              : (typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(t) : { type: 'all' });
+            // Tarjeta suelta de Inicio: la lista de la canción manda
+            // (mismo criterio que Buscar, §38). También en el
+            // escaparate de valoradas, que ya no es lista aparte (§64).
+            const ctx = typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(t) : { type: 'all' };
             this.playTrack(id, ctx);
             this.updateChrome();
             if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
@@ -679,10 +672,6 @@ Object.assign(App, {
       this._syncRatingUI(t);
       // La hoja de «Más valoradas», si está abierta, se rinde otra vez:
       // la canción puede entrar, salir o cambiar de puesto (§60).
-      const ratedSheet = document.getElementById('sheetRated');
-      if (ratedSheet && ratedSheet.classList.contains('open') && typeof this.renderRated === 'function') {
-        this.renderRated();
-      }
       // Y el raíl de Inicio, que es la otra superficie de la nota:
       // sin esto enseñaba la valoración de cuando se pintó (§63).
       this._refreshRatedRail();

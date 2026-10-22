@@ -128,16 +128,16 @@ Object.assign(App, {
         ul.appendChild(li);
         return;
       }
-      pl.trackIds.forEach((id, i) => {
-        const t = this.tracks.find(x => x.id === id);
-        if (!t) return;
+      // La lista se VE ordenada por estrellas (§64); el orden guardado
+      // no se toca: es el desempate entre notas iguales.
+      this.playlistTracksSorted(pl).forEach((t, i) => {
+        const id = t.id;
         const isCurrent = this.currentTrack && this.currentTrack.id === id;
         const li = document.createElement('li');
         li.className = 'track-row' + (isCurrent ? ' current' : '');
         li.dataset.trackId = id;
         li.dataset.idx = String(i);
         li.innerHTML = `
-          <button class="drag-handle" type="button" aria-label="${this.esc(this.t('move'))}"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
           <div class="row-cover"><canvas width="44" height="44"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
@@ -148,7 +148,7 @@ Object.assign(App, {
           <button class="row-action remove-from-pl" aria-label="${this.esc(this.t('remove_from_playlist'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
         `;
         li.addEventListener('click', (e) => {
-          if (e.target.closest('.remove-from-pl, .track-menu-btn, .drag-handle')) return;
+          if (e.target.closest('.remove-from-pl, .track-menu-btn')) return;
           // Reproducir esta pista dentro del contexto de la playlist.
           // playTrack se encarga de setear la cola = pistas de la playlist.
           this.playTrack(t.id, { type: 'playlist', id: pl.id, name: pl.name });
@@ -165,26 +165,10 @@ Object.assign(App, {
           e.stopPropagation();
           this.removeFromPlaylist(pl.id, t.id);
         });
-        if (typeof this.wireDragHandle === 'function') {
-          this.wireDragHandle(li, i, ul, '.track-row', {
-            maxIndex: pl.trackIds.length - 1,
-            onReorder: (from, to) => this.reorderPlaylistTracks(pl.id, from, to)
-          });
-        }
         ul.appendChild(li);
         const cv = li.querySelector('canvas');
         if (cv) this.drawRowCover(cv, t);
       });
-    },
-
-    reorderPlaylistTracks(playlistId, from, to) {
-      const pl = this.playlists.find(p => p.id === playlistId);
-      if (!pl || from === to) return;
-      if (from < 0 || to < 0 || from >= pl.trackIds.length || to >= pl.trackIds.length) return;
-      const moved = pl.trackIds.splice(from, 1)[0];
-      pl.trackIds.splice(to, 0, moved);
-      this.persistPlaylist(pl);
-      this.renderEditPlaylist();
     },
 
     startRenamePlaylist() {
