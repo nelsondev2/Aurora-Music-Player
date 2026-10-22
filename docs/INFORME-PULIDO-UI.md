@@ -2498,7 +2498,7 @@ duplicando las dos acciones que la tarjeta ya ofrece en grande.
   la portada (`--cover-from/--cover-to`, como el fondo de la vista)
   en vez del acento fijo, y crece un poco (72 px, glifo de 28).
   Tarjeta algo más ancha (280 → 304 px).
--Nota de la revisión: no había ningún `}` suelto en el CSS (lo
+- Nota de la revisión: no había ningún `}` suelto en el CSS (lo
   pareció por una salida de terminal concatenada; el balance de
   llaves se verifica ahora en el check).
 
