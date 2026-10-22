@@ -1001,6 +1001,11 @@ const I18N = {
     it: 'Il tema viene applicato all\'istante e salvato sul dispositivo.',
     ru: 'Тема применяется мгновенно и сохраняется на устройстве.'
   },
+  accent_fuchsia: {
+    es: 'Fucsia', en: 'Fuchsia', pt: 'Fúcsia',
+    zh: '紫红', ja: 'フクシア', fr: 'Fuchsia',
+    it: 'Fucsia', ru: 'Фуксия'
+  },
   lang_hint: {
     es: 'El idioma se aplica al instante y se guarda en el dispositivo.',
     en: 'The language applies instantly and is saved on the device.',

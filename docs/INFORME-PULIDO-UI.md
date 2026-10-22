@@ -2127,3 +2127,56 @@ duplicado: misma hoja, mismo destino, dos puertas.
   ⋮ del reproductor abre el mismo menú; 0 errores.
 - `node --check` total; **build .xdc válido**: 27 archivos,
   335,8 KB comprimidos (963,4 KB sin comprimir).
+
+## 66. Colores de acento: paleta renovada (y un sexto acento)
+
+«Los colores de acento se podrían mejorar.» Diagnóstico de la
+paleta vieja: Aurora salvaba el conjunto, pero Océano nacía de un
+petróleo turbio (`#1A6A88`), Musgo de un verde pantano
+(`#2A6B48→#A8C86A`) y Ámbar de un marrón (`#C45C18`); cada degradado
+pesaba distinto y las muestras se veían apagadas. La disciplina de
+la casa (comentario en `js/settings.js`) no se toca: rellenos con
+texto blanco AA y acentos legibles como texto en oscuro y en claro.
+
+### La paleta nueva
+
+Los extremos «from» ganan luz y tono claro, y los seis comparten
+familia de luminosidad para que la app pese igual con cualquiera:
+
+| Acento | Antes | Ahora |
+|---|---|---|
+| Aurora | `#6E5CFF→#FF7AB6` | `#745CFF→#FF6FA5` (violeta→rosa, más cálido) |
+| Océano | `#1A6A88→#3EC8B8` | `#1F7AE0→#23C8B2` (azul claro→turquesa) |
+| Musgo | `#2A6B48→#A8C86A` | `#1E9E62→#9BD147` (esmeralda→lima fresco) |
+| Ámbar | `#C45C18→#E8B84A` | `#E8710A→#F5B81F` (naranja vivo→oro) |
+| Cereza | `#A61B3A→#E85A7A` | `#E01A44→#FF6B81` (carmesí→rosa) |
+| **Fucsia** (nuevo) | — | `#C22BD6→#FF5CA8` (magenta: el hueco de la rueda) |
+
+- Verificados con calculador WCAG antes de escribirlos en el
+  código: **los 6 cumplen ≥4,5:1** en las ocho combinaciones que la
+  app usa (accent/accent2 sobre `#050509`; fill/fill2 sobre blanco;
+  fillLight/fillLight2 sobre `#F4F1EA` y sobre blanco) — la mayoría
+  entre 5,4:1 y 9,8:1.
+- Las claves guardadas no cambian (`aurora/ocean/moss/amber/cherry`
+  + alias heredados): quien tuviera Océano sigue en Océano, solo que
+  más bonito. Fucsia suma su clave i18n (**373 × 8 sin huecos**).
+- El `:root` de `css/styles.css` (Aurora por defecto antes de que
+  corra JS) y los degradados de las muestras se sincronizan con la
+  paleta; la parrilla pasa a **3×2** (círculos grandes) y el nombre
+  de cada muestra lleva **pastilla oscura** detrás: antes solo
+  llevaba sombra y sobre los extremos luminosos (ámbar, musgo) casi
+  no se leía — ese contraste era ~1,8:1 ya en la paleta vieja.
+
+### Verificación
+
+- **Check §66** `/tmp/check-colores.js`: **13/13** — 6 acentos con
+  sus 8 campos; WCAG recalculado desde los datos vivos de la app
+  (≥4,5:1 ×8 combinaciones ×6 acentos); los `from` turbios fuera;
+  `setAccent` aplica variables y persiste los seis; alias heredados
+  migran; la hoja ofrece las 6 muestras y tocar Fucsia lo activa;
+  `:root` CSS = Aurora nuevo; cada muestra CSS usa el from→to de su
+  acento; parrilla 3×2 y pastilla presentes; 0 errores.
+- `node --check` total; **build .xdc válido**: 27 archivos,
+  336,4 KB comprimidos (964,7 KB sin comprimir).
+- Chuleta visual antes/ahora generada en `/home/user/paleta-66.png`
+  (fuera del repo, como material de revisión).

@@ -30,16 +30,16 @@
   --text-3:      rgba(255,255,255,0.48);
   --text-4:      rgba(255,255,255,0.30);
 
-  --accent:      #8B7CFF;
-  --accent-2:    #FF7AB6;
+  --accent:      #9D8BFF;
+  --accent-2:    #FF8FB8;
   --accent-3:    #E8B84A;
-  --accent-fill: #5B49D6;
-  --accent-fill-2: #4A3BBF;
+  --accent-fill: #5B45D6;
+  --accent-fill-2: #4836B4;
   /* Segundo color para degradados de TEXTO sobre el fondo (no sobre
      relleno): claro y legible en oscuro, oscuro en tema claro. */
-  --accent-text-2: #FF7AB6;
+  --accent-text-2: #FF8FB8;
   --accent-on-fill: #ffffff;
-  --accent-rgb:  139, 124, 255;
+  --accent-rgb:  91, 69, 214;
   --success:     #3D9B7A;
   --danger:      #E85A5A;
   --warning:     #E8B84A;
@@ -2194,8 +2194,9 @@ svg { display: block; }
 
 .accent-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
+  /* Seis acentos (§66): 3×2, círculos grandes y nombres legibles. */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 }
 .accent-opt {
   aspect-ratio: 1;
@@ -2210,18 +2211,25 @@ svg { display: block; }
 }
 .accent-opt:active { transform: scale(0.9); }
 .accent-opt.active { border-color: var(--text-1); }
-.accent-opt[data-accent="aurora"] { background: linear-gradient(135deg, #6E5CFF, #FF7AB6); }
-.accent-opt[data-accent="ocean"]  { background: linear-gradient(135deg, #1A6A88, #3EC8B8); }
-.accent-opt[data-accent="moss"]   { background: linear-gradient(135deg, #2A6B48, #A8C86A); }
-.accent-opt[data-accent="amber"]  { background: linear-gradient(135deg, #C45C18, #E8B84A); }
-.accent-opt[data-accent="cherry"] { background: linear-gradient(135deg, #A61B3A, #E85A7A); }
+.accent-opt[data-accent="aurora"] { background: linear-gradient(135deg, #745CFF, #FF6FA5); }
+.accent-opt[data-accent="ocean"]  { background: linear-gradient(135deg, #1F7AE0, #23C8B2); }
+.accent-opt[data-accent="moss"]   { background: linear-gradient(135deg, #1E9E62, #9BD147); }
+.accent-opt[data-accent="amber"]  { background: linear-gradient(135deg, #E8710A, #F5B81F); }
+.accent-opt[data-accent="cherry"] { background: linear-gradient(135deg, #E01A44, #FF6B81); }
+.accent-opt[data-accent="fuchsia"] { background: linear-gradient(135deg, #C22BD6, #FF5CA8); }
 .accent-opt span {
   font-size: var(--fs-3xs);
   font-weight: 700;
-  color: rgba(255,255,255,0.9);
+  color: rgba(255,255,255,0.95);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  /* Pastilla oscura (§66): el nombre se lee sobre cualquier extremo
+   * del degradado, también los luminosos (ámbar, musgo); antes solo
+   * llevaba sombra y sobre el amarillo casi no se leía. */
+  background: rgba(0, 0, 0, 0.38);
+  padding: 2px 7px;
+  border-radius: 999px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
 }
 
 /* =====================================================================

@@ -346,17 +346,24 @@ Object.assign(App, {
     /* Rellenos (fill/fill2) deliberadamente oscuros: sobre ellos va texto
      * e iconos BLANCOS (--accent-on-fill). Un degradado con el extremo
      * claro de antes (rosa, turquesa, amarillo) dejaba el texto en 1.6–2.4:1.
-     * Ahora ambos extremos cumplen AA (≥4.5:1 con blanco) en los 5 acentos.
+     * Ahora ambos extremos cumplen AA (≥4.5:1 con blanco) en los 6 acentos.
      * Los tonos brillantes siguen en from/to/accent/accent2, que se usan
      * como color de texto sobre fondo oscuro o en portadas (sin texto).
      * fillLight/fillLight2 se usan en tema claro y también cumplen AA
      * sobre --bg-0/bg-1 claros. */
+    // Paleta renovada (§66): los extremos «from» viejos eran turbios
+    // (petróleo en Océano, pantano en Musgo, marrón en Ámbar) y cada
+    // acento pesaba distinto. Ahora los seis comparten familia de
+    // luz —degradados luminosos y con el tono claro— manteniendo la
+    // disciplina AA de arriba (verificado con calculador WCAG: los
+    // 6 acentos cumplen ≥4.5:1 en texto y rellenos, oscuro y claro).
     ACCENTS: {
-      aurora: { from: '#6E5CFF', to: '#FF7AB6', accent: '#8B7CFF', accent2: '#FF7AB6', fill: '#5B49D6', fill2: '#4A3BBF', fillLight: '#4E3FC8', fillLight2: '#3E32A8' },
-      ocean:  { from: '#1A6A88', to: '#3EC8B8', accent: '#3AA8C0', accent2: '#5ED4C4', fill: '#1A6B80', fill2: '#146173', fillLight: '#146173', fillLight2: '#0F5867' },
-      moss:   { from: '#2A6B48', to: '#A8C86A', accent: '#5A9A68', accent2: '#B4D07A', fill: '#2F6844', fill2: '#2A5C3B', fillLight: '#2A5C3B', fillLight2: '#24502F' },
-      amber:  { from: '#C45C18', to: '#E8B84A', accent: '#E09438', accent2: '#F0C46A', fill: '#A86218', fill2: '#8A4E0E', fillLight: '#91520F', fillLight2: '#7A440C' },
-      cherry: { from: '#A61B3A', to: '#E85A7A', accent: '#D44A68', accent2: '#F090A0', fill: '#B83852', fill2: '#99243D', fillLight: '#9A2E44', fillLight2: '#8E2036' }
+      aurora: { from: '#745CFF', to: '#FF6FA5', accent: '#9D8BFF', accent2: '#FF8FB8', fill: '#5B45D6', fill2: '#4836B4', fillLight: '#4E3FC8', fillLight2: '#3E32A8' },
+      ocean:  { from: '#1F7AE0', to: '#23C8B2', accent: '#5EAAE8', accent2: '#4FE0C3', fill: '#1763B8', fill2: '#12559F', fillLight: '#145FA8', fillLight2: '#0F4C8C' },
+      moss:   { from: '#1E9E62', to: '#9BD147', accent: '#5FBF7A', accent2: '#B9E26B', fill: '#177A45', fill2: '#12653A', fillLight: '#146C3E', fillLight2: '#0F5A33' },
+      amber:  { from: '#E8710A', to: '#F5B81F', accent: '#F5A623', accent2: '#FFCF4D', fill: '#B85C0E', fill2: '#9A4D0B', fillLight: '#9C550C', fillLight2: '#854708' },
+      cherry: { from: '#E01A44', to: '#FF6B81', accent: '#FB5E7E', accent2: '#FF9FB0', fill: '#C21840', fill2: '#A31236', fillLight: '#A8163A', fillLight2: '#8F1130' },
+      fuchsia:{ from: '#C22BD6', to: '#FF5CA8', accent: '#EE6BE8', accent2: '#FF8FD0', fill: '#A61FB8', fill2: '#8C169C', fillLight: '#9315A8', fillLight2: '#7A118C' }
     },
     _ACCENT_ALIASES: { purple: 'aurora', blue: 'ocean', green: 'moss', orange: 'amber', pink: 'cherry' },
 
