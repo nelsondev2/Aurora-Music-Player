@@ -2524,6 +2524,11 @@ const I18N = {
     zh: '已下载', ja: 'ダウンロードしました', fr: 'Téléchargé',
     it: 'Scaricato', ru: 'Скачано'
   },
+  time_toggle_remaining: {
+    es: 'Duración / tiempo restante', en: 'Duration / time remaining', pt: 'Duração / tempo restante',
+    zh: '时长 / 剩余时间', ja: '長さ / 残り時間', fr: 'Durée / temps restant',
+    it: 'Durata / tempo rimanente', ru: 'Длительность / осталось'
+  },
   toast_shared_chat: {
     es: 'Enviado a Delta Chat', en: 'Sent to Delta Chat', pt: 'Enviado ao Delta Chat',
     zh: '已发送至 Delta Chat', ja: 'Delta Chat に送信しました', fr: 'Envoyé à Delta Chat',

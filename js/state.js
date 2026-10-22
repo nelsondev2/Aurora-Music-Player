@@ -147,6 +147,7 @@
     VERSION: '1.2.0',
     _marqueeEnabled: true,
     _vinylEnabled: false,
+    _showRemaining: false, // §72: la duración total alterna a «tiempo restante» al tocarla
 
     ico(name, extra) {
       const cls = extra ? ('ico ' + extra) : 'ico';

@@ -28,6 +28,10 @@ verificado función a función:
   pantalla (filas ×2, tarjetas y héroe incluidos), pestañas inferiores
   legibles también en oscuro y agarre táctil de la barra de progreso
   ampliado.
+- Reproductor (§72): barra de progreso con avance continuo, duración
+  total que alterna a tiempo restante al tocarla, botón de Letras que
+  anuncia si la canción trae letra, nombre accesible del modo de
+  repetición y portadas guardadas a 800 px para el lienzo de 720.
 - Portadas de Inicio nítidas en pantallas de alta densidad (§71):
   miniaturas y lienzos dimensionados para DPR 3 (384/144 px), con
   actualización automática de las miniaturas guardadas por versiones

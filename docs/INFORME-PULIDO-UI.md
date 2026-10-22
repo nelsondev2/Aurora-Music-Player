@@ -2425,3 +2425,52 @@ a 600 px).
 Nota práctica: las portadas ya importadas se irán afinando solas a
 medida que aparezcan en Inicio/listas (primera vista en grande de
 cada una); no hay que reimportar nada.
+
+## §72. El reproductor bajo la lupa: cinco detalles
+
+«¿Crees que hallas algo mejorable en el reproductor? Cualquier
+detalle cuenta». Auditoría exclusiva de la vista de reproducción
+(marcado, `player-ui.js`, gestos, CSS). La pantalla estaba muy
+trabajada (gestos sobre la portada, buffer, A-B, marquesinas con
+reduced-motion), pero quedaban cinco cosas:
+
+1. **El progreso avanzaba a escalones.** `timeupdate` llega a
+   ~4 Hz: el relleno saltaba cada ~250 ms. Transición lineal de
+   0,3 s en `.progress-fill` — solo sonando (`:has(#coverArt.playing)`)
+   y nunca arrastrando, para que en pausa el salto al buscar siga
+   siendo inmediato.
+2. **La duración total era texto muerto.** Ahora se toca (o Enter/
+   Espacio, es `role=button`) y alterna duración ⇄ tiempo restante
+   (`-2:05`), con persistencia en `localStorage`. El refresco vive
+   en `updateProgress()` y al cargar metadatos ya no espera al
+   primer `timeupdate`. Nueva clave `time_toggle_remaining` ×8
+   (374 claves en total).
+3. **El botón «Letras» no decía si hay letra.** Un punto de acento
+   (`#btnLyrics.has-lrc`) cuando la pista trae LRC; se sincroniza al
+   cambiar de pista y al cargar/guardar una letra. La vista se abre
+   igual sin letra: desde ahí se carga el `.lrc`.
+4. **«Repetir» no distinguía modo para lectores de pantalla.**
+   `aria-pressed` era igual en «todo» y «una»: el `aria-label` ahora
+   lleva el modo (`Repetir: una`…) con las claves que ya usaba el toast.
+5. **La portada se guardaba a 600 px para un lienzo de 720.** El
+   reproductor estirara su superficie protagonista un 20%. El tope
+   de almacenamiento sube a **800 px** (`limitArtwork` y
+   `_produceArtwork`): solo beneficia a importaciones futuras — el
+   original incrustado no se conserva tras importar, así que la
+   biblioteca actual queda como está (decisión documentada, coste
+   de IndexedDB asumido).
+
+**Considerado y descartado, con motivo**: línea «A continuación: …»
+bajo los controles (la cola ya lo cubre y la pantalla vertical va
+justa), renombrar el id `btnBack` (es el «+», pero es higiene
+invisible que toca tres archivos), y buscar en pausa sin refresco
+(falso: `seekTo()` ya llama a `updateProgress()`).
+
+### Verificación
+
+- **Check §72** `/tmp/check-vista72.js`: **18/18** — i18n **374×8**;
+  estático (transición y sus dos cortes, punto de letra, tope 800
+  sin restos del 600) y runtime (arranque limpio; `aria-label` de
+  repetir cambia por modo; el punto aparece solo con LRC; tocar la
+  duración alterna `3:20` → `-2:05`, persiste y vuelve).
+- `node --check` total y **build .xdc válido**: 27 archivos.

@@ -454,11 +454,12 @@
       return null;
     },
 
-    /* ---------- Limita la portada ID3 a 600 px (JPEG) ----------
-     * Los canvas de la app son de 600/512 px como máximo: más resolución
-     * solo hincha IndexedDB y acerca la cuota en bibliotecas grandes. */
+    /* ---------- Limita la portada ID3 a 800 px (JPEG) ----------
+     * El lienzo del reproductor es de 720 px (§69): guardar a 600 lo
+     * estiraba un 20% justo en la superficie protagonista. 800 da
+     * margen de reducción sin disparar el tamaño en IndexedDB (§72). */
     limitArtwork(dataUrl, maxDim) {
-      maxDim = maxDim || 600;
+      maxDim = maxDim || 800;
       return new Promise((resolve) => {
         try {
           const img = new Image();
@@ -496,7 +497,7 @@
       });
     },
 
-    /* De UNA decodificación salen las tres copias (600 para el
+    /* De UNA decodificación salen las tres copias (800 para el
      * reproductor, 384 y 144 para las listas — §71: pensadas para
      * pantallas de DPR 3, no 2). Antes cada tamaño
      * decodificaba la imagen entera otra vez: 3 decodificaciones y
@@ -506,11 +507,11 @@
       const out = { cover: dataUrl, coverThumb: null, coverThumbLg: null };
       const img = await this._loadImage(dataUrl);
       if (!img || !(img.width > 0) || !(img.height > 0)) return out;
-      // Copia grande: encajar en 600 sin recorte (como limitArtwork)
+      // Copia grande: encajar en 800 sin recorte (como limitArtwork)
       try {
         const w = img.width, h = img.height;
-        if (Math.max(w, h) > 600) {
-          const k = 600 / Math.max(w, h);
+        if (Math.max(w, h) > 800) {
+          const k = 800 / Math.max(w, h);
           const c = document.createElement('canvas');
           c.width = Math.max(1, Math.round(w * k));
           c.height = Math.max(1, Math.round(h * k));

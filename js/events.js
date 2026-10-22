@@ -715,6 +715,26 @@ Object.assign(App, {
         }
       });
 
+      // §72: tocar la duración total alterna duración ⇄ restante.
+      const timeTotalEl = document.getElementById('timeTotal');
+      if (timeTotalEl) {
+        try { this._showRemaining = localStorage.getItem('aurora_show_remaining') === '1'; } catch (e) {}
+        timeTotalEl.classList.add('time-toggle');
+        timeTotalEl.setAttribute('role', 'button');
+        timeTotalEl.setAttribute('tabindex', '0');
+        timeTotalEl.setAttribute('title', this.t('time_toggle_remaining'));
+        timeTotalEl.setAttribute('aria-label', this.t('time_toggle_remaining'));
+        const flipRemaining = () => {
+          this._showRemaining = !this._showRemaining;
+          try { localStorage.setItem('aurora_show_remaining', this._showRemaining ? '1' : '0'); } catch (e) {}
+          this.updateProgress();
+        };
+        timeTotalEl.addEventListener('click', flipRemaining);
+        timeTotalEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flipRemaining(); }
+        });
+      }
+
       // Restore volume
       const savedVol = localStorage.getItem('aurora_volume');
       const savedN = savedVol != null ? parseFloat(savedVol) : NaN;
@@ -836,6 +856,7 @@ Object.assign(App, {
           const dur = this.audio && this.audio.duration;
           const totalEl = document.getElementById('timeTotal');
           if (totalEl) totalEl.textContent = this.fmtTime(dur);
+          this.updateProgress();
           this.updateMediaPosition(true);
           if (this.currentTrack && isFinite(dur) && dur > 0 &&
               (!this.currentTrack.duration || this.currentTrack.duration === 0)) {

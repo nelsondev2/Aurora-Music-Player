@@ -496,6 +496,7 @@ Object.assign(App, {
           this.persistTrack(this.currentTrack);
           this.renderLyrics();
           this.toast(this.t('lrc_loaded'));
+          if (typeof this._syncLyricsButton === 'function') this._syncLyricsButton();
         }
       } catch (err) {
         this.toast(this.t('toast_load_error'));
@@ -532,6 +533,7 @@ Object.assign(App, {
       this.renderLyrics();
       this.closeSheet('sheetLrcEditor');
       this.toast(this.t('lrc_saved'));
+      if (typeof this._syncLyricsButton === 'function') this._syncLyricsButton();
     },
 
     /* Exportar / compartir letra LRC activa en Delta Chat o descarga local */

@@ -620,6 +620,10 @@ svg { display: block; }
   position: absolute;
   inset: 0;
   width: 0%;
+  /* §72: timeupdate llega a ~4 Hz y el relleno avanzaba a escalones;
+     con la transición lineal el avance es continuo. Solo sonando y
+     nunca arrastrando (en pausa el salto al buscar es inmediato). */
+  transition: width .3s linear;
   background: linear-gradient(90deg, var(--cover-from), var(--cover-to));
   border-radius: var(--radius-pill);
   pointer-events: none;
@@ -637,6 +641,8 @@ svg { display: block; }
   transition: transform var(--dur) var(--ease-out);
   pointer-events: none;
 }
+.progress-track.dragging .progress-fill { transition: none; }
+.view-player:not(:has(#coverArt.playing)) .progress-fill { transition: none; }
 .progress-track.dragging .progress-thumb,
 .progress-track:hover .progress-thumb,
 .progress-track:focus-visible .progress-thumb { transform: translateY(-50%) scale(1); }
@@ -3082,6 +3088,19 @@ button,
   font-weight: 800;
   font-family: var(--font-display);
   margin: 0;
+}
+.time-total.time-toggle { cursor: pointer; }
+/* §72: punto de acento en «Letras» cuando la pista trae letra. */
+#btnLyrics { position: relative; }
+#btnLyrics.has-lrc::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: calc(50% - 15px);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-2);
 }
 .home-see-all {
   flex: 0 0 auto;

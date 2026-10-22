@@ -25,6 +25,7 @@ Object.assign(App, {
         if (albumEmpty) { albumEmpty.textContent = ''; albumEmpty.style.display = 'none'; }
         document.getElementById('timeTotal').textContent = '0:00';
         document.getElementById('timeCurrent').textContent = '0:00';
+        this._syncLyricsButton();
         document.getElementById('progressFill').style.width = '0%';
         // La cabecera vuelve a su texto neutro cuando no hay pista.
         const ctxIdle = document.getElementById('nowPlayingContext');
@@ -50,6 +51,7 @@ Object.assign(App, {
       }
       // Estrellas del Reproductor (§58): reflejan la nota de la pista.
       if (typeof this._syncRatingUI === 'function') this._syncRatingUI(t);
+      this._syncLyricsButton();
       document.getElementById('timeTotal').textContent = this.fmtTime(t.duration);
       document.getElementById('miniTitle').textContent = t.title;
       document.getElementById('miniArtist').textContent = t.artist;
@@ -173,6 +175,10 @@ Object.assign(App, {
       const mode = this.repeat || 'off';
       btn.classList.toggle('active', mode !== 'off');
       btn.dataset.mode = mode;
+      // §72: aria-pressed no distingue «todo» de «una»; el nombre sí.
+      const repLabel = mode === 'off' ? this.t('toast_repeat_off')
+                     : mode === 'all' ? this.t('toast_repeat_all') : this.t('toast_repeat_one');
+      btn.setAttribute('aria-label', this.t('repeat') + ': ' + repLabel);
       btn.style.position = 'relative';
       btn.setAttribute('aria-pressed', mode !== 'off' ? 'true' : 'false');
       let badge = btn.querySelector('.repeat-badge');
@@ -199,6 +205,16 @@ Object.assign(App, {
       const title = this.currentTrack ? ' · ' + this.currentTrack.title : '';
       ca.setAttribute('aria-label', label + title);
       ca.setAttribute('aria-pressed', this.isPlaying ? 'true' : 'false');
+    },
+
+    /* §72: el botón «Letras» de la barra secundaria se veía igual con y
+     * sin letra sincronizada. Un punto de acento lo anuncia (la vista
+     * sigue abriéndose igual: desde ahí se puede cargar el .lrc). */
+    _syncLyricsButton() {
+      const btn = document.getElementById('btnLyrics');
+      if (!btn) return;
+      const t = this.currentTrack;
+      btn.classList.toggle('has-lrc', !!(t && t.lrc && t.lrc.length));
     },
 
     updatePlayUI() {
@@ -326,6 +342,15 @@ Object.assign(App, {
       const mini = document.getElementById('miniProgress');
       if (mini) mini.style.width = pct + '%';
       if (curEl) curEl.textContent = this.fmtTime(cur);
+      // §72: la duración total puede enseñar el tiempo restante
+      // («-1:12») si el usuario lo eligió tocándola; se refresca aquí
+      // porque es el único sitio que conoce cur y dur a la vez.
+      const totEl = document.getElementById('timeTotal');
+      if (totEl && dur > 0) {
+        totEl.textContent = this._showRemaining
+          ? '-' + this.fmtTime(Math.max(0, dur - cur))
+          : this.fmtTime(dur);
+      }
       const track = document.getElementById('progressTrack');
       if (track) {
         track.setAttribute('aria-valuenow', String(Math.round(pct)));
