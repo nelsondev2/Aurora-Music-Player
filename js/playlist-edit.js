@@ -381,7 +381,7 @@ Object.assign(App, {
         });
         // Antes: toast de éxito incondicional aunque Delta no hubiera
         // enviado nada — el «no funciona» de compartir lista (§51).
-        this.toast(ok ? this.t('toast_playlist_shared') : this.t('toast_share_error'), ok ? undefined : 'danger');
+        this.toast(ok === 'chat' ? this.t('toast_playlist_shared') : ok === 'download' ? this.t('toast_downloaded') : this.t('toast_share_error'), ok ? undefined : 'danger');
       } catch (e) {
         this.toast(this.t('toast_share_error'), 'danger');
       }

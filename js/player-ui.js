@@ -156,7 +156,7 @@ Object.assign(App, {
       ctx.font = (mini ? '700 38px ' : '900 220px ') + "Outfit, ui-rounded, -apple-system, sans-serif";
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(track.title.charAt(0).toUpperCase(), cx, cy);
+      ctx.fillText(this.coverInitial(track.title), cx, cy);
       ctx.globalAlpha = 1;
     },
 
@@ -267,10 +267,17 @@ Object.assign(App, {
       // actual. Si no hay pista (estado vacío), las acciones contextuales
       // (ir al artista, ir al álbum) no tienen sentido y se ocultan.
       const hasTrack = !!(this.currentTrack);
-      const contextualMenuIds = ['menuGoToArtist', 'menuGoToAlbum'];
-      contextualMenuIds.forEach(id => {
+      const ct = this.currentTrack;
+      // §70 [3]: tampoco se muestran si la pista no tiene ese metadato
+      // (antes quedaban activas y solo respondían con un toast). El menú
+      // de canción ya hacía esto; aquí se iguala «Más opciones».
+      const vis = {
+        menuGoToArtist: hasTrack && !!ct.artist && !this.isPlaceholderArtist(ct.artist),
+        menuGoToAlbum: hasTrack && !!ct.album && !this.isPlaceholderAlbum(ct.album),
+      };
+      Object.keys(vis).forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.style.display = hasTrack ? '' : 'none';
+        if (el) el.style.display = vis[id] ? '' : 'none';
       });
 
       /* Cada cambio de play/pausa pasa por aquí, y la visibilidad del

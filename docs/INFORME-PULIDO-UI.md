@@ -2348,3 +2348,39 @@ supera. No se tocó el fondo ambiental (borroso a propósito).
   240, buscar en la barra sin errores).
 - Batería de auditoría re-ejecutada tras los cambios, `node --check`
   total y **build .xdc válido**: 27 archivos.
+
+## §70. Respuesta a la auditoría externa con navegador (14 puntos)
+
+Un agente con Chromium real auditó la app (375/768/1280/1440 px) y
+documentó 14 falencias. Cada una se contrastó con el código antes de
+tocar nada; la auditoría midió la build anterior a §69, así que tres
+puntos ya venían parcialmente hechos. Veredicto y arreglo:
+
+| # | Punto | Veredicto |
+|---|---|---|
+| 1 | KPI de estadísticas «3 IR AL ARTISTA» | **Real.** Usaba la clave del menú; nueva clave `stats_artists` ×8 idiomas. |
+| 2 | «Enviado a Delta Chat» tras descargar | **Real.** `exportFile` ahora devuelve `'chat' \| 'download' \| false` y cada llamante avisa con el toast que toca (nuevo `toast_downloaded` ×8). |
+| 3 | «Ir al artista/álbum» activos sin metadatos | **Real** en «Más opciones» (el menú de canción ya los ocultaba): ahora se ocultan igual cuando el artista/álbum es un marcador. |
+| 4 | Sin focus-trap en las hojas | **Real.** Trampa de Tab/Shift+Tab sobre la hoja superior de la pila, instalada una sola vez. Al escribirla apareció un bug propio: el selector `[href]` también casa los `<use>` del sprite SVG; se limita a `a[href]`/`area[href]` (también en el foco inicial de `openSheet`). |
+| 5 | Objetivos táctiles <44 px | **Real.** Estrellas de valorar a 44×44 (glifo igual), «Ver todo» a 40 px de alto y agarre de la barra de progreso de ~22 a ~31 px. |
+| 6 | Etiquetas del nav a 9 px | **Real.** A 10 px (`--fs-2xs`); la más larga («Bibliothèque») sigue cabiendo. |
+| 7 | Contraste de `--text-3` en oscuro | **Real.** 0,48 daba 4,32:1 calculado sobre tarjeta+superficie (la auditoría midió ~4,3:1); a **0,58** el peor caso sube a **5,57:1** y el mejor a 6,85:1 (cálculo WCAG en el check). |
+| 8 | Contenido estirado en escritorio | **Real.** En `aurora-wide`, cabecera y cuerpo de las hojas a pantalla completa se limitan a una columna de lectura de 680 px centrada. |
+| 9 | Toast «Letras reiniciadas» espontáneo | **No reproducido en código:** el único camino es el botón de reinicio; ningún cambio de pista lo llama. Sí era cierto que avisaba *aunque no hubiera nada que reiniciar*, pareciendo espontáneo: ahora solo avisa si algo cambió (desfase, tamaño, velocidad, bucle o pantalla completa). |
+| 10 | Tirador de hoja en escritorio | **Real.** `.sheet-handle` se oculta en `aurora-wide`. |
+| 11 | Visualizador vacío en pausa | **Real.** `stopVisualizer` pintaba un rectángulo limpio; ahora pinta el reposo: la misma retícula de barras en altura mínima con la paleta atenuada. |
+| 12 | Chip «En vivo» cortado sin aviso | **Real.** Difuminado de 28 px en el borde derecho de `.eq-presets` (mask) que anuncia el scroll. |
+| 13 | Inicial «<» en portadas generadas | **Real.** Nuevo `coverInitial()`: primera letra o número Unicode del título (o «♪»); aplicado en los tres pintores de portadas con letra. |
+| 14 | Dos «+» con funciones distintas | **No se sostiene:** ambos botones (cabecera de Inicio y del reproductor) llaman a `openFilePicker()` — la misma acción con el mismo icono, que es consistencia, no ambigüedad. Sin cambios. |
+
+### Verificación
+
+- **Check §70** `/tmp/check-vista70.js`: **40/40** — i18n **373×8**
+  sin huecos; tri-estado de exportación ejecutado (sin webxdc →
+  descarga y toast «Descargado», con webxdc → chat, rechazo →
+  error); filas fantasma ocultas y restauradas; Tab y Shift+Tab
+  atrapados dentro de la hoja; reinicio silencioso sin cambios y
+  con aviso si los hay; reposo del visualizador pintado; iniciales
+  saneadas («<img» → I, «!!!Hola» → H, «Éxitos» → É); contraste
+  calculado superficie a superficie; y arranque sin errores.
+- `node --check` total y **build .xdc válido**: 27 archivos.

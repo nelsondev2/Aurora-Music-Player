@@ -1204,7 +1204,34 @@ Object.assign(App, {
       const canvas = document.getElementById('visualizerCanvas');
       if (canvas) {
         const ctx = canvas.getContext('2d');
-        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // §70 [11]: antes se limpiaba a negro y el área parecía rota en
+        // pausa. Ahora se pinta el estado de reposo (barras bajas).
+        if (ctx) this._drawVisualizerIdle(canvas, ctx);
+      }
+    },
+
+    /* Estado de reposo del visualizador: la misma retícula de barras
+     * en su altura mínima, con la paleta de la portada atenuada. Se
+     * reconoce como «en pausa», no como un hueco sin contenido. */
+    _drawVisualizerIdle(canvas, ctx) {
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      const cols = this._visColors();
+      const grad = ctx.createLinearGradient(0, 0, w, 0);
+      grad.addColorStop(0, this._hexA(cols.from, 0.35));
+      grad.addColorStop(0.5, this._hexA(cols.to, 0.35));
+      grad.addColorStop(1, this._hexA(cols.from, 0.35));
+      ctx.fillStyle = grad;
+      const count = 48, gap = Math.max(2, Math.round(w * 0.004));
+      const bw = (w - gap * (count + 1)) / count;
+      const bh = Math.max(3, Math.round(h * 0.06));
+      for (let i = 0; i < count; i++) {
+        const x = gap + i * (bw + gap);
+        const y = h - bh;
+        ctx.beginPath();
+        if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, bw, bh, 2);
+        else ctx.rect(x, y, bw, bh);
+        ctx.fill();
       }
     },
 

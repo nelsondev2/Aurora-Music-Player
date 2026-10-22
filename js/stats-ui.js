@@ -38,7 +38,7 @@ Object.assign(App, {
           </div>
           <div class="stat-card">
             <div class="stat-value">${topArtists.length}</div>
-            <div class="stat-label">${this.t('menu_go_to_artist')}</div>
+            <div class="stat-label">${this.t('stats_artists')}</div>
           </div>
         </div>
 
@@ -402,13 +402,13 @@ Object.assign(App, {
       }
 
       try {
-        await this.exportFile({
+        const res = await this.exportFile({
           name: 'resumen-aurora.txt',
           content: msg,
           mimeType: 'text/plain;charset=utf-8',
           caption: msg
         });
-        this.toast(this.t('toast_shared_chat'));
+        this.toastExportResult(res);
       } catch (e) {
         this.toast(this.t('toast_share_error'));
       }

@@ -27,7 +27,8 @@
 
   --text-1:      #ffffff;
   --text-2:      rgba(255,255,255,0.72);
-  --text-3:      rgba(255,255,255,0.48);
+  /* §70 [7]: 0.48 daba ~4.3:1 sobre superficies elevadas; 0.58 supera 5:1. */
+  --text-3:      rgba(255,255,255,0.58);
   --text-4:      rgba(255,255,255,0.30);
 
   --accent:      #9D8BFF;
@@ -606,8 +607,9 @@ svg { display: block; }
   position: absolute;
   left: 0;
   right: 0;
-  top: -11px;
-  bottom: -11px;
+  /* §70 [5]: la auditoria externa midio 22px de alto util; ahora ~31px. */
+  top: -14px;
+  bottom: -14px;
 }
 .progress-track:hover,
 .progress-track:focus-visible,
@@ -803,7 +805,8 @@ svg { display: block; }
   padding: 4px 2px;
   /* §69: antes --text-4 (30% en oscuro, contraste ~2:1): apenas se leia. */
   color: var(--text-3);
-  font-size: var(--fs-3xs);
+  /* §70 [6]: 9px era poco para una etiqueta principal; 10px sigue cabiendo. */
+  font-size: var(--fs-2xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   transition: color .2s;
@@ -1675,6 +1678,10 @@ svg { display: block; }
   margin-bottom: 18px;
   overflow-x: auto;
   padding-bottom: 4px;
+  /* §70 [12]: el ultimo chip se cortaba sin avisar de que hay scroll;
+     el difuminado del borde derecho lo comunica. */
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
 }
 .eq-preset {
   padding: 8px 14px;
@@ -3081,7 +3088,11 @@ button,
   font-size: var(--fs-caption);
   font-weight: 600;
   color: var(--text-3);
-  padding: 4px 2px;
+  /* §70 [5]: medido a 22px de alto; minimo tactil razonable, 40px. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 4px 6px;
 }
 .home-see-all:active { color: var(--accent); }
 .home-rail {
@@ -3297,8 +3308,9 @@ button,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  /* §70 [5]: objetivo tactil de 44px (el glifo no crece). */
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   color: var(--text-3);
   opacity: .55;
@@ -3308,7 +3320,7 @@ button,
 .rate-star.on { color: #FFB84D; opacity: 1; }
 .rate-star:active { transform: scale(1.18); }
 .np-rating { margin-top: 6px; }
-.np-rating .rate-star { width: 32px; height: 32px; }
+.np-rating .rate-star { width: 44px; height: 44px; }
 .np-rating .rate-star .ico { width: 18px; height: 18px; }
 /* Insignia en las filas: cuántas estrellas, en dorado discreto. */
 .row-rating {
@@ -4200,6 +4212,20 @@ html.aurora-wide .sheet.open.sheet-full .sheet-panel,
 html.aurora-wide .sheet.open.sheet-desk-full .sheet-panel {
   transform: none;
 }
+/* §70 [8]: en pantallas anchas el contenido de estas hojas se limita a
+   una columna de lectura centrada (680px): filas, interruptores y
+   acciones quedan a una distancia razonable de su etiqueta. */
+html.aurora-wide .sheet.sheet-full .sheet-header,
+html.aurora-wide .sheet.sheet-desk-full .sheet-header,
+html.aurora-wide .sheet.sheet-full .sheet-body,
+html.aurora-wide .sheet.sheet-desk-full .sheet-body {
+  width: 100%;
+  max-width: 680px;
+  margin-inline: auto;
+}
+/* §70 [10]: el tirador de arrastre es un gesto movil; en el panel
+   acoplado de escritorio no arrastra nada y solo confunde. */
+html.aurora-wide .sheet-handle { display: none; }
 html.aurora-wide .sheet:not(.sheet-full):not(.sheet-desk-full) {
   position: absolute;
   left: calc(var(--np-col) + var(--side-col));

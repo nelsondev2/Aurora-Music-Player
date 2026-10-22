@@ -2514,6 +2514,16 @@ const I18N = {
     zh: '正在准备分享文件...', ja: '共有ファイルを準備中...', fr: 'Préparation du fichier à partager...',
     it: 'Preparazione file da condividere...', ru: 'Подготовка файла для отправки...'
   },
+  stats_artists: {
+    es: 'Artistas', en: 'Artists', pt: 'Artistas',
+    zh: '艺术家', ja: 'アーティスト', fr: 'Artistes',
+    it: 'Artisti', ru: 'Исполнители'
+  },
+  toast_downloaded: {
+    es: 'Descargado', en: 'Downloaded', pt: 'Baixado',
+    zh: '已下载', ja: 'ダウンロードしました', fr: 'Téléchargé',
+    it: 'Scaricato', ru: 'Скачано'
+  },
   toast_shared_chat: {
     es: 'Enviado a Delta Chat', en: 'Sent to Delta Chat', pt: 'Enviado ao Delta Chat',
     zh: '已发送至 Delta Chat', ja: 'Delta Chat に送信しました', fr: 'Envoyé à Delta Chat',

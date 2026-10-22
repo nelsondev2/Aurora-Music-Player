@@ -152,6 +152,13 @@
       const cls = extra ? ('ico ' + extra) : 'ico';
       return '<svg class="' + cls + '" aria-hidden="true"><use href="#i-' + name + '"></use></svg>';
     },
+    /* Inicial para portadas generadas: primera letra o número del
+     * texto (§70 [13]: antes era el primer carácter literal y un
+     * título como «<img…» pintaba «<»). Sin letra válida, una nota. */
+    coverInitial(text) {
+      const m = String(text || '').match(/[\p{L}\p{N}]/u);
+      return m ? m[0].toUpperCase() : '♪';
+    },
     setIco(el, name) {
       if (!el) return;
       const svg = (el.tagName && el.tagName.toLowerCase() === 'svg') ? el : el.querySelector('svg');

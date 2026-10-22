@@ -107,11 +107,38 @@ Object.assign(App, {
           }
         }
       }
-      const focusable = s.querySelector('button, [href], input:not([type="hidden"]), textarea, select, [tabindex]:not([tabindex="-1"])');
+      const focusable = s.querySelector('button, a[href], input:not([type="hidden"]), textarea, select, [tabindex]:not([tabindex="-1"])');
       setTimeout(() => {
         try { (focusable || panel).focus({ preventScroll: true }); } catch (e) {}
       }, 40);
+      // §70 [4]: las hojas declaran aria-modal pero el Tab escapaba al
+      // fondo (medido por auditoría externa). Se instala una sola vez
+      // la trampa de foco sobre la hoja superior de la pila.
+      if (!this._tabTrapBound) {
+        this._tabTrapBound = true;
+        document.addEventListener('keydown', (e) => this._sheetTabTrap(e), true);
+      }
       if (typeof this.updateChrome === 'function') this.updateChrome();
+    },
+    /* Trampa de foco (§70 [4]): con una hoja abierta, Tab/Shift+Tab
+     * ciclan dentro de su panel; si el foco ya está fuera (p. ej. tras
+     * cerrar una hoja hija), lo devuelve al primer/último control. */
+    _sheetTabTrap(e) {
+      if (e.key !== 'Tab' || !this._sheetStack || !this._sheetStack.length) return;
+      const s = document.getElementById(this._sheetStack[this._sheetStack.length - 1]);
+      if (!s || !s.classList.contains('open')) return;
+      const panel = s.querySelector('.sheet-panel') || s;
+      const sel = 'button:not([disabled]), a[href], area[href], input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      let f = Array.from(panel.querySelectorAll(sel)).filter(el => el.getClientRects().length > 0);
+      if (!f.length) f = Array.from(panel.querySelectorAll(sel));
+      if (!f.length) { e.preventDefault(); try { panel.focus({ preventScroll: true }); } catch (err) {} return; }
+      const first = f[0], last = f[f.length - 1];
+      const inside = panel.contains(document.activeElement);
+      if (e.shiftKey && (!inside || document.activeElement === first)) {
+        e.preventDefault(); try { last.focus({ preventScroll: true }); } catch (err) {}
+      } else if (!e.shiftKey && (!inside || document.activeElement === last)) {
+        e.preventDefault(); try { first.focus({ preventScroll: true }); } catch (err) {}
+      }
     },
     closeSheet(id) {
       const s = document.getElementById(id);
@@ -346,7 +373,7 @@ Object.assign(App, {
       ctx.fillStyle = 'rgba(255,255,255,0.9)';
       ctx.font = `900 ${size*0.45}px Outfit, ui-rounded, -apple-system, sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText((track.title || '?').charAt(0).toUpperCase(), size/2, size/2);
+      ctx.fillText(this.coverInitial(track.title), size/2, size/2);
       return c.toDataURL('image/png');
     },
 

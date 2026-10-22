@@ -28,6 +28,11 @@ verificado función a función:
   pantalla (filas ×2, tarjetas y héroe incluidos), pestañas inferiores
   legibles también en oscuro y agarre táctil de la barra de progreso
   ampliado.
+- Respuesta a auditoría externa con navegador (§70): etiqueta de
+  artistas en estadísticas, toast honesto al compartir (enviado vs.
+  descargado), foco de teclado contenido en las hojas, objetivos
+  táctiles y contraste reforzados, contenido de escritorio acotado y
+  visualizador con estado de reposo en pausa.
 
 ### Limitaciones de esta versión
 

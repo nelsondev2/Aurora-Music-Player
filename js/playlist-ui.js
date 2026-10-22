@@ -119,7 +119,7 @@ Object.assign(App, {
       ctx.fillStyle = 'rgba(255,255,255,0.92)';
       ctx.font = "700 " + Math.floor(H*0.48) + "px Outfit, ui-rounded, sans-serif";
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText((track.title || '?').charAt(0).toUpperCase(), W/2, H/2 + Math.floor(H*0.02));
+      ctx.fillText(this.coverInitial(track.title), W/2, H/2 + Math.floor(H*0.02));
     },
 
     async ensureCoverThumbs(track) {

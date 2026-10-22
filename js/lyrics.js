@@ -600,6 +600,16 @@ Object.assign(App, {
     resetLyricsPrefs() {
       // Reset COMPLETO: deshace todos los cambios hechos en la vista de letras
       // (offset, tamaño de fuente, velocidad, loop)
+      // §70 [9]: auditoría externa vio el toast sin origen aparente. No
+      // hay ningún camino que lo dispare al cambiar de pista (solo este
+      // botón), pero sí saltaba aunque no hubiera nada que reiniciar y
+      // parecía espontáneo: ahora solo avisa si algo cambió de verdad.
+      const view0 = document.getElementById('viewLyrics');
+      const changed = (this.lrcOffset || 0) !== 0
+        || (Number(this.lrcFontSize) || 19) !== 19
+        || (this.playbackRate || 1) !== 1
+        || !!this.lrcLoop || this._lrcLoopA != null
+        || !!(view0 && view0.classList.contains('lyrics-fullscreen'));
       // 1. Offset
       this.lrcOffset = 0;
       if (this.currentTrack) {
@@ -623,7 +633,7 @@ Object.assign(App, {
       }
       // Re-renderizar para aplicar cambios visuales
       this.renderLyrics();
-      this.toast(this.t('lrc_reset_done'));
+      if (changed) this.toast(this.t('lrc_reset_done'));
     },
 
     /* ============================================================

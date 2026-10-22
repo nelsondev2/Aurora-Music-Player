@@ -653,9 +653,11 @@ Object.assign(App, {
     },
 
     /* Utilidad para exportar archivos: usa webxdc.sendToChat en Delta
-     * Chat o descarga directa en navegador. Devuelve true solo si el
-     * archivo salió de verdad: los llamantes enseñan su toast según
-     * este resultado. */
+     * Chat o descarga directa en navegador. Devuelve 'chat' si salió
+     * por sendToChat, 'download' si fue descarga local y false si
+     * falló: los llamantes enseñan su toast según este resultado
+     * (§70: antes ambos éxitos devolvían true y «Compartir» decía
+     * «Enviado a Delta Chat» también cuando solo se descargaba). */
     async exportFile({ name, content, mimeType = 'application/json', caption = '' }) {
       if (window.webxdc && typeof window.webxdc.sendToChat === 'function') {
         /* La forma que Delta Chat acepta hoy es { name, blob }. El
@@ -668,7 +670,7 @@ Object.assign(App, {
             file: { name, blob },
             text: caption || name
           });
-          return true;
+          return 'chat';
         } catch (err) {
           console.warn('[WebXDC] sendToChat no completado:', err);
           // La spec: ante un error, la promesa se rechaza. Devolvemos
@@ -687,7 +689,15 @@ Object.assign(App, {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      return true;
+      return 'download';
+    },
+
+    /* Toast honesto tras exportFile: enviado al chat, descargado o
+     * error, según el tri-estado (§70 [2]). */
+    toastExportResult(res) {
+      if (res === 'chat') this.toast(this.t('toast_shared_chat'));
+      else if (res === 'download') this.toast(this.t('toast_downloaded'));
+      else this.toast(this.t('toast_share_error'), 'danger');
     },
 
     /* Compartir pista (audio o metadatos) en Delta Chat o descargar en navegador */
@@ -738,7 +748,7 @@ Object.assign(App, {
             mimeType: blob.type || 'audio/mpeg',
             caption
           });
-          this.toast(ok ? this.t('toast_shared_chat') : this.t('toast_share_error'), ok ? undefined : 'danger');
+          this.toastExportResult(ok);
         } else {
           // Si no hay archivo de audio accesible, enviar metadatos y letra
           const txt = `${caption}\n` +
@@ -751,7 +761,7 @@ Object.assign(App, {
             mimeType: 'text/plain;charset=utf-8',
             caption
           });
-          this.toast(ok ? this.t('toast_shared_chat') : this.t('toast_share_error'), ok ? undefined : 'danger');
+          this.toastExportResult(ok);
         }
       } catch (err) {
         console.error('[Aurora] error shareTrack:', err);
