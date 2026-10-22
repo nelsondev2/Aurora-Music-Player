@@ -1965,3 +1965,63 @@ Pendiente, sin cambios respecto a §61:
 - Decisión aplazada: si las regresiones automáticas entran en el
   repo (p. ej. `tools/`, fuera del `.xdc`) ahora que el proyecto se
   enseña en público.
+
+## 63. Inicio: portadas completas sin recorte y raíl de valoradas que no miente
+
+Primera captura real sobre `main` (ya fusionada y con release
+`v1.2.0` publicada): en Inicio, (1) la portada de Usseewa salía
+ampliada con los bordes comidos —se notaba a la izquierda— y (2) el
+subtítulo de «Más valoradas» enseñaba ★★★ de una canción valorada
+con 5. Medido sobre la propia captura con análisis de píxeles, ambos
+eran fallos distintos:
+
+- **La nota vieja**: el raíl se construye al pintar Inicio y *nada lo
+  actualizaba al valorar* (filas, reproductor, hoja y cola sí se
+  refrescan desde §58–60; el raíl era la superficie olvidada).
+  Enseñaba la nota de cuando se pintó Inicio.
+- **El recorte**: `drawRowCover` pinta «cover» (rellenar recortando)
+  y, para colmo, las miniaturas ya nacen cuadradas y recortadas al
+  importar (`thumb()`: «recorte centrado»): de la obra original solo
+  sobrevive el aspecto en `track.cover`.
+
+### Arreglos
+
+- **`_fitRect(iw, ih, W, H, modo)`** (js/playlist-ui.js): la
+  geometría de encaje, separada del pintado para poder verificarla
+  sin navegador (`cover` recorta; `contain` enseña la imagen
+  entera). Las filas y el reproductor usan `cover` con la misma
+  geometría extraída (sin cambio de comportamiento).
+- **Modo `{ fit: 'ambient' }`** en `drawRowCover`, solo para las
+  tarjetas grandes de Inicio: pinta del **original** (no de la
+  miniatura recortada) en `contain` —la obra completa— sobre fondo
+  de la misma imagen ampliada, difuminada (`ctx.filter` si el motor
+  lo soporta) y oscurecida. Las miniaturas de filas, el mini y el
+  reproductor mantienen `cover`: a 48 px, las bandas se comerían la
+  portada. Decisión documentada; si el mantenedor lo quiere también
+  en el reproductor, es un parámetro más.
+- **`_refreshRatedRail()`** (js/nav.js): al valorar, la sección de
+  «Más valoradas» se reconstruye en sitio y se re-enlazan solo sus
+  tarjetas (sin repintar Inicio ni perder el desplazamiento); si no
+  existía y ya hay valoradas, aparece; si se quita la última nota,
+  desaparece. Enlazado de Inicio extraído a `_bindSeeAll(scope)` y
+  `_bindHomeCards(scope)` para poder re-enlazar un ámbito suelto.
+- **Estrellas intocables**: el subtítulo separa
+  `.sub-stars` (doradas `#FFB84D`, `flex: 0 0 auto`, nunca se
+  recortan) de `.sub-artist` (`min-width: 0` + ellipsis: quien se
+  acorta es el nombre del artista).
+
+### Verificación
+
+- **Check §63** `/tmp/check-inicio.js` (arnés recreado otra vez tras
+  perderse `/tmp`): **15/15** — geometría cover/contain/cuadrada;
+  el escenario de la captura (3★ → valorar 5 → el raíl enseña ★★★★★
+  sin repintar Inicio); quitar la última nota hace desaparecer el
+  raíl; valorar una nueva lo crea; reordenar notas reordena el
+  raíl; tarjeta refrescada: 1 toque = 1 reproducción (sin dobles
+  enlaces); garantías CSS de las estrellas; el modo ambiente no
+  lanza con ni sin imagen; 0 errores.
+- `node --check` total; **build .xdc válido**: 27 archivos,
+  337,0 KB comprimidos (970,3 KB sin comprimir).
+
+Trabajo sobre la rama nueva `arena/9d3a6f0b-aurora-music-player`
+(desde el merge `d0ca61d`): sin fusionar a `main` sin permiso.

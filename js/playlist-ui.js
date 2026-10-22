@@ -27,33 +27,70 @@ Object.assign(App, {
       return null;
     },
 
-    drawRowCover(canvas, track) {
+    /* Geometría de encaje de una imagen en un lienzo, separada del
+     * pintado para poder verificarla sin un navegador: 'cover' rellena
+     * recortando lo que sobra; 'contain' enseña la imagen ENTERA
+     * aunque sobren bandas. Devuelve el rectángulo destino. */
+    _fitRect(iw, ih, W, H, mode) {
+      if (!iw || !ih || !W || !H) return { x: 0, y: 0, w: W || 0, h: H || 0 };
+      const r = mode === 'contain'
+        ? Math.min(W / iw, H / ih)
+        : Math.max(W / iw, H / ih);
+      const w = iw * r, h = ih * r;
+      return { x: (W - w) / 2, y: (H - h) / 2, w, h };
+    },
+
+    /* Pinta la portada en un canvas. Sin opciones, el clásico
+     * «rellenar recortando» de filas y miniaturas. Con
+     * { fit: 'ambient' } (§63, tarjetas grandes de Inicio) se enseña
+     * la obra COMPLETA: al importar, las miniaturas ya nacen
+     * cuadradas y recortadas, así que este modo pinta del original
+     * (track.cover) y rellena las bandas con la misma imagen
+     * ampliada, difuminada y oscurecida. */
+    drawRowCover(canvas, track, opts) {
       if (!canvas || !track) return;
       const ctx = canvas.getContext('2d');
       const W = canvas.width, H = canvas.height;
+      const ambient = !!(opts && opts.fit === 'ambient');
       const isImage = !!track.customCover || track.coverIsImage || (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:')));
       const thumb = this.coverSrcForRow(track, Math.max(W, H));
+      const full = (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:')))
+        ? track.cover : null;
 
       const paintImg = (src) => {
         const img = new Image();
         img.onload = () => {
           ctx.clearRect(0,0,W,H);
-          const r = Math.max(W/img.width, H/img.height);
-          const dw = img.width*r, dh = img.height*r;
-          ctx.drawImage(img, (W-dw)/2, (H-dh)/2, dw, dh);
+          if (ambient) {
+            // Fondo: la obra en grande, desenfocada si el motor lo
+            // soporta (si no, queda oscurecida sin más).
+            ctx.fillStyle = '#101018';
+            ctx.fillRect(0, 0, W, H);
+            const bg = this._fitRect(img.width, img.height, W, H, 'cover');
+            ctx.save();
+            try { ctx.filter = 'blur(10px) brightness(0.45)'; } catch (e) { /* sin filtro: fondo oscuro */ }
+            ctx.drawImage(img, bg.x - bg.w * 0.08, bg.y - bg.h * 0.08, bg.w * 1.16, bg.h * 1.16);
+            ctx.restore();
+            // La obra entera, centrada.
+            const fg = this._fitRect(img.width, img.height, W, H, 'contain');
+            ctx.drawImage(img, fg.x, fg.y, fg.w, fg.h);
+            return;
+          }
+          const r = this._fitRect(img.width, img.height, W, H, 'cover');
+          ctx.drawImage(img, r.x, r.y, r.w, r.h);
         };
         img.src = src;
         ctx.fillStyle = '#222'; ctx.fillRect(0,0,W,H);
       };
 
-      if (isImage && thumb) {
-        paintImg(thumb);
+      if (isImage && (thumb || full)) {
+        paintImg(ambient && full ? full : thumb);
         return;
       }
-      if (isImage && !thumb) {
+      if (isImage && !thumb && !full) {
         this._paintLetterCover(ctx, W, H, track);
         this.ensureCoverThumbs(track).then((ok) => {
-          if (ok && canvas.isConnected) this.drawRowCover(canvas, track);
+          if (ok && canvas.isConnected) this.drawRowCover(canvas, track, opts);
         });
         return;
       }

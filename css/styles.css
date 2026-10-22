@@ -3224,6 +3224,26 @@ button,
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Subtítulo de «Más valoradas» (§63): las estrellas JAMÁS se recortan
+ * — son la información de la tarjeta —; quien se acorta con … es el
+ * artista. Doradas, como en el resto de la superficie de notas. */
+.home-card-sub.rated-sub {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.rated-sub .sub-stars {
+  flex: 0 0 auto;
+  color: #FFB84D;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.rated-sub .sub-artist {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ---------- Biblioteca: secciones (listas + canciones) ---------- */
 /* Cabecera con un hueco simétrico al botón de cerrar para centrar el título */

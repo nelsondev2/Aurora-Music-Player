@@ -284,7 +284,7 @@ Object.assign(App, {
         return `<button class="home-card${isCur ? ' is-current' : ''}" type="button" data-kind="track" data-id="${this.esc(t.id)}">
           <div class="home-card-cover"><canvas width="120" height="120"></canvas>${nowBadge}</div>
           <span class="home-card-title">${this.esc(t.title)}</span>
-          <span class="home-card-sub">${'★'.repeat(this._ratingOf(t))} ${this.esc(t.artist || '')}</span>
+          <span class="home-card-sub rated-sub"><span class="sub-stars" aria-hidden="true">${'★'.repeat(this._ratingOf(t))}</span><span class="sub-artist">${this.esc(t.artist || '')}</span></span>
         </button>`;
       }).join('');
       return `<section class="home-section">
@@ -294,6 +294,32 @@ Object.assign(App, {
         </div>
         <div class="home-rail" id="homeRated">${items}</div>
       </section>`;
+    },
+
+    /* Refresca SOLO el raíl de valoradas en sitio (§63): al valorar,
+     * Inicio enseñaba la nota que hubiera cuando se pintó, y una
+     * canción recién valorada ni siquiera aparecía. Se reconstruye su
+     * sección y se re-enlazan sus tarjetas (sin tocar el resto de
+     * Inicio ni su posición de desplazamiento). Si aún no existe y
+     * ya hay valoradas, se repinta Inicio entero. */
+    _refreshRatedRail() {
+      const home = document.getElementById('homeContent');
+      if (!home) return;
+      const rail = document.getElementById('homeRated');
+      if (!rail) {
+        if (this.getTopRatedTracks && this.getTopRatedTracks().length) this.renderHome();
+        return;
+      }
+      const section = rail.closest('.home-section');
+      const html = this._homeRatedRail();
+      if (!html) { if (section) section.remove(); return; }
+      const tpl = document.createElement('template');
+      tpl.innerHTML = html.trim();
+      const fresh = tpl.content.firstElementChild;
+      if (!fresh || !section) return;
+      section.replaceWith(fresh);
+      this._bindSeeAll(fresh);
+      this._bindHomeCards(fresh);
     },
 
     _homePlaylists(lists) {
@@ -313,17 +339,30 @@ Object.assign(App, {
     },
 
     _bindHomeRails() {
-      // «Ver todo» de cada sección → Biblioteca.
-      document.querySelectorAll('#homeContent [data-see-all]').forEach(btn => {
+      const home = document.getElementById('homeContent');
+      if (!home) return;
+      this._bindSeeAll(home);
+      this._bindHomeCards(home);
+    },
+
+    /* «Ver todo» de cada sección (su destino lo declara data-see-all). */
+    _bindSeeAll(scope) {
+      scope.querySelectorAll('[data-see-all]').forEach(btn => {
         btn.addEventListener('click', () => this.goNav(btn.dataset.seeAll));
       });
-      document.querySelectorAll('#homeContent .home-card').forEach(card => {
+    },
+
+    /* Enlaza las tarjetas de un ámbito (Inicio entero o una sección
+     * reconstruida, como la de valoradas al refrescarla, §63). */
+    _bindHomeCards(scope) {
+      scope.querySelectorAll('.home-card').forEach(card => {
         const kind = card.dataset.kind;
         const id = card.dataset.id;
         if (kind === 'track') {
           const t = this.tracks.find(x => x.id === id);
           const cv = card.querySelector('canvas');
-          if (cv && t) this.drawRowCover(cv, t);
+          // Tarjetas grandes de Inicio: la obra completa, sin recorte (§63)
+          if (cv && t) this.drawRowCover(cv, t, { fit: 'ambient' });
           card.addEventListener('click', () => {
             // Tarjeta del raíl de valoradas: manda el contexto 'rated'
             // (§60). Tarjeta suelta de Inicio: la lista de la canción
@@ -644,6 +683,9 @@ Object.assign(App, {
       if (ratedSheet && ratedSheet.classList.contains('open') && typeof this.renderRated === 'function') {
         this.renderRated();
       }
+      // Y el raíl de Inicio, que es la otra superficie de la nota:
+      // sin esto enseñaba la valoración de cuando se pintó (§63).
+      this._refreshRatedRail();
     },
 
     /* Pinta el estado de las estrellas en los tres sitios vivos: el

@@ -118,10 +118,11 @@ Object.assign(App, {
           const img = new Image();
           img.onload = () => {
             ctx.clearRect(0, 0, w, h);
-            // Modo "cover"
-            const ratio = Math.max(w / img.width, h / img.height);
-            const dw = img.width * ratio, dh = img.height * ratio;
-            ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+            // Modo "cover": misma geometría que las filas (_fitRect, §63)
+            const r = typeof this._fitRect === 'function'
+              ? this._fitRect(img.width, img.height, w, h, 'cover')
+              : { x: 0, y: 0, w, h };
+            ctx.drawImage(img, r.x, r.y, r.w, r.h);
           };
           img.src = src;
           // Fondo provisional mientras carga
