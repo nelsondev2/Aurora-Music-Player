@@ -2095,3 +2095,35 @@ al valorar (§63) se conserva.
 
 Sigue en la rama `arena/9d3a6f0b…`: ni merge ni release hasta que la
 1.2.0 se dé por buena.
+
+## 65. Inicio: Ajustes dentro de Opciones, como en el reproductor
+
+Petición del mantenedor: en el reproductor, Ajustes vive dentro del
+menú ⋮, pero en Inicio la rueda era un botón separado en la cabecera
+— dos criterios para la misma cosa.
+
+La rueda suelta (`#btnHomeSettings`) se añadió en su día con buena
+razón: entonces a Ajustes solo se llegaba desde «Más opciones» del
+reproductor, inalcanzable en una instalación nueva sin pista cargada.
+Pero desde §54 Inicio tiene su propio ⋮ abriendo **`sheetMore`** —el
+mismo menú del reproductor—, y dentro ya vive «Ajustes»
+(`#menuSettings` → `sheetSettings`). El acceso separado quedó
+duplicado: misma hoja, mismo destino, dos puertas.
+
+- **Fuera** el botón `#btnHomeSettings` de la cabecera de Inicio y su
+  enlace en `js/events.js` (sin más referencias en el repo: ni CSS
+  propio tenía). La cabecera queda con ⋮ y con el **+** de añadir
+  música, como pidió el mantenedor.
+- **Ajustes sigue a un toque** en instalación nueva: el ⋮ de Inicio
+  existe desde el minuto 0, sin pista cargada —la preocupación
+  original que motivó la rueda sigue cubierta, ahora por el menú—.
+  El comentario histórico de la cabecera se reescribe contando esto.
+
+### Verificación
+
+- **Check §65** `/tmp/check-ajustes.js`: **9/9** — la rueda ya no
+  está; ⋮ y + permanecen; «Ajustes» vive en `sheetMore`; sin pista
+  cargada, ⋮ → Ajustes abre `sheetSettings` cerrando Opciones; el
+  ⋮ del reproductor abre el mismo menú; 0 errores.
+- `node --check` total; **build .xdc válido**: 27 archivos,
+  335,8 KB comprimidos (963,4 KB sin comprimir).

@@ -251,17 +251,15 @@
             <h1 data-i18n="nav_home">Inicio</h1>
           </div>
           <div class="home-header-actions">
-            <!-- Ajustes siempre a mano. Antes solo se llegaba desde el menú
-                 «Más opciones» del reproductor, inalcanzable sin una pista
-                 cargada (instalación nueva): la app quedaba sin ajustes. -->
-            <!-- Opciones (sheetMore) también desde Inicio: la copia de
-                 seguridad vive ahí y debe poder importarse en una
-                 instalación nueva, sin pista cargada todavía (§54). -->
+            <!-- Opciones (sheetMore) también desde Inicio, y Ajustes
+                 vive DENTRO de ese menú, igual que en el reproductor:
+                 nada de rueda separada en la cabecera (§65). La rueda
+                 suelta existió porque a Ajustes solo se llegaba desde
+                 el reproductor; desde que Inicio tiene su ⋮ (§54),
+                 aquel acceso quedó duplicado. Y sigue alcanzable sin
+                 pista cargada: el ⋮ está en Inicio desde el minuto 0. -->
             <button class="icon-btn" id="btnHomeMore" data-i18n-aria="more_options" aria-label="Más opciones">
               <svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg>
-            </button>
-            <button class="icon-btn" id="btnHomeSettings" data-i18n-aria="settings_title" aria-label="Ajustes">
-              <svg class="ico" aria-hidden="true"><use href="#i-gear"></use></svg>
             </button>
             <button class="icon-btn icon-add" id="btnHomeAdd" data-i18n-aria="load_music" aria-label="Cargar música">
               <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
