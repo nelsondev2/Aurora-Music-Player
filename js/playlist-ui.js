@@ -85,6 +85,14 @@ Object.assign(App, {
 
       if (isImage && (thumb || full)) {
         paintImg(ambient && full ? full : thumb);
+        // §71: en superficies grandes (tarjetas), si la miniatura
+        // guardada es de la generación 256px, se rehace a 384 desde el
+        // original y se repinta este mismo lienzo al terminar.
+        if (Math.max(W, H) >= 160) {
+          this.ensureCoverThumbs(track).then((ok) => {
+            if (ok && canvas.isConnected) this.drawRowCover(canvas, track, opts);
+          });
+        }
         return;
       }
       if (isImage && !thumb && !full) {
@@ -122,17 +130,36 @@ Object.assign(App, {
       ctx.fillText(this.coverInitial(track.title), W/2, H/2 + Math.floor(H*0.02));
     },
 
+    /* Genera las miniaturas si faltan y, desde §71, ACTUALIZA las de
+     * bibliotecas antiguas: la grande nació a 256px cuando las
+     * pantallas objetivo eran DPR 2; con DPR 3 las tarjetas de Inicio
+     * (116px CSS = ~348 reales) estiraban esa miniatura y se veían
+     * blandas. Devuelve true solo si (re)generó, para repintar. */
     async ensureCoverThumbs(track) {
-      if (!track || track.coverThumb) return !!track.coverThumb;
-      if (track._thumbing) return false;
+      if (!track) return false;
       const src = (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:'))) ? track.cover : null;
       if (!src) return false;
+      if (track.coverThumb && track.coverThumbLg) {
+        // Ya hay ambas: comprobar una vez por sesión el ancho real de
+        // la grande (las heredadas miden 256 y hay que rehacerlas).
+        if (track._thumbsHiRes) return false;
+        track._thumbsHiRes = true;
+        const w = await new Promise(resolve => {
+          const im = new Image();
+          im.onload = () => resolve(im.width || 0);
+          im.onerror = () => resolve(0);
+          im.src = track.coverThumbLg;
+        });
+        if (w >= 360) return false;
+      }
+      if (track._thumbing) return false;
       const U = window.AuroraUploader;
       if (!U || typeof U.resizeDataUrl !== 'function') return false;
       track._thumbing = true;
+      track._thumbsHiRes = true;
       try {
-        track.coverThumb = await U.resizeDataUrl(src, 96);
-        track.coverThumbLg = await U.resizeDataUrl(src, 256);
+        track.coverThumb = await U.resizeDataUrl(src, 144);
+        track.coverThumbLg = await U.resizeDataUrl(src, 384);
         track._thumbsDirty = true;
         if (!this._thumbPersistTimer) {
           this._thumbPersistTimer = setTimeout(() => {
@@ -206,8 +233,8 @@ Object.assign(App, {
         });
         const U = window.AuroraUploader;
         if (!U || typeof U.resizeDataUrl !== 'function') throw new Error('sin resizeDataUrl');
-        const lg = await U.resizeDataUrl(dataUrl, 256);
-        const thumb = await U.resizeDataUrl(dataUrl, 96);
+        const lg = await U.resizeDataUrl(dataUrl, 384);
+        const thumb = await U.resizeDataUrl(dataUrl, 144);
         if (!lg && !thumb) throw new Error('imagen ilegible');
         t.customCover = { thumb: thumb || lg, lg: lg || thumb };
         await this.persistTrack(t);
@@ -326,7 +353,7 @@ Object.assign(App, {
         return fallback;
       }
 
-      const hash = (pl.trackIds || []).join('|') + '#' + withImage.map(t => {
+      const hash = 'v384|' + (pl.trackIds || []).join('|') + '#' + withImage.map(t => {
         const src = this._playlistTrackArtSrc(t) || '';
         return t.id + ':' + src.length;
       }).join(',');
@@ -343,7 +370,7 @@ Object.assign(App, {
       pl._coverPending = hash;
 
       // Construir collage: primeras 8 portadas (orden estable, sin random)
-      const SIZE = 256;
+      const SIZE = 384;
       const canvas = document.createElement('canvas');
       canvas.width = SIZE; canvas.height = SIZE;
       const ctx = canvas.getContext('2d');
@@ -621,7 +648,7 @@ Object.assign(App, {
         li.dataset.trackId = id;
         li.innerHTML = `
           <button class="drag-handle" aria-label="${this.esc(this.t('move'))}"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
-          <div class="row-cover"><canvas width="96" height="96"></canvas></div>
+          <div class="row-cover"><canvas width="144" height="144"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>

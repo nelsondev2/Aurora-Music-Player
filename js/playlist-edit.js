@@ -138,7 +138,7 @@ Object.assign(App, {
         li.dataset.trackId = id;
         li.dataset.idx = String(i);
         li.innerHTML = `
-          <div class="row-cover"><canvas width="96" height="96"></canvas></div>
+          <div class="row-cover"><canvas width="144" height="144"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>

@@ -201,7 +201,7 @@ Object.assign(App, {
           : '';
         hero = `
           <button class="home-hero" id="homeHero" type="button" data-track="${this.esc(t.id)}"${this.isPlaying ? ' hidden' : ''}>
-            <div class="home-hero-cover"><canvas id="homeHeroCanvas" width="160" height="160"></canvas></div>
+            <div class="home-hero-cover"><canvas id="homeHeroCanvas" width="216" height="216"></canvas></div>
             <div class="home-hero-text">
               <span class="home-kicker">${this.esc(this.t('home_continue'))}</span>
               <strong>${this.esc(t.title)}</strong>
@@ -252,7 +252,7 @@ Object.assign(App, {
           ? `<span class="eq-badge${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
           : '';
         return `<button class="home-card${isCur ? ' is-current' : ''}" type="button" data-kind="${kind}" data-id="${this.esc(t.id)}">
-          <div class="home-card-cover"><canvas width="240" height="240"></canvas>${nowBadge}</div>
+          <div class="home-card-cover"><canvas width="384" height="384"></canvas>${nowBadge}</div>
           <span class="home-card-title">${this.esc(t.title)}</span>
           <span class="home-card-sub">${this.esc(t.artist || '')}</span>
         </button>`;
@@ -278,7 +278,7 @@ Object.assign(App, {
           ? `<span class="eq-badge${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
           : '';
         return `<button class="home-card${isCur ? ' is-current' : ''}" type="button" data-kind="track" data-id="${this.esc(t.id)}">
-          <div class="home-card-cover"><canvas width="240" height="240"></canvas>${nowBadge}</div>
+          <div class="home-card-cover"><canvas width="384" height="384"></canvas>${nowBadge}</div>
           <span class="home-card-title">${this.esc(t.title)}</span>
           <span class="home-card-sub rated-sub"><span class="sub-stars" aria-hidden="true">${'★'.repeat(this._ratingOf(t))}</span><span class="sub-artist">${this.esc(t.artist || '')}</span></span>
         </button>`;
@@ -448,7 +448,7 @@ Object.assign(App, {
       if (sub) sub.textContent = opts.subtitle || this.fmtTracksCount((opts.tracks || []).length);
       const coverEl = document.getElementById('browseCover');
       if (coverEl) {
-        coverEl.innerHTML = '<canvas width="160" height="160"></canvas>';
+        coverEl.innerHTML = '<canvas width="240" height="240"></canvas>';
         const seed = (opts.tracks || []).find(t => t.coverIsImage) || (opts.tracks || [])[0];
         const cv = coverEl.querySelector('canvas');
         if (cv && seed) this.drawRowCover(cv, seed);
@@ -553,7 +553,7 @@ Object.assign(App, {
         ? `<span class="eq-badge eq-badge-row${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
         : '';
       li.innerHTML = `
-        <div class="row-cover"><canvas width="96" height="96"></canvas>${nowBadge}</div>
+        <div class="row-cover"><canvas width="144" height="144"></canvas>${nowBadge}</div>
         <div class="row-text">
           <div class="row-title">${this.esc(t.title)}</div>
           <div class="row-sub">${this.esc(t.artist)}${showAlbum ? ' · ' + this.esc(t.album) : ''} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>

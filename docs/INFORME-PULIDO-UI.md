@@ -2384,3 +2384,44 @@ puntos ya venían parcialmente hechos. Veredicto y arreglo:
   saneadas («<img» → I, «!!!Hola» → H, «Éxitos» → É); contraste
   calculado superficie a superficie; y arranque sin errores.
 - `node --check` total y **build .xdc válido**: 27 archivos.
+
+## §71. Portadas de Inicio con mala calidad: era el DPR, no el archivo
+
+«Las portadas que salen en inicio salen con mala calidad». En §69
+dimensioné los lienzos y las miniaturas para pantallas de DPR 2,
+pero los teléfonos actuales son DPR 2,5–3: la tarjeta de Inicio
+ocupa 116 px CSS (≈348 píxeles reales a DPR 3) y entre el lienzo de
+240 y la miniatura guardada a 256 px, el navegador estiraba la
+imagen. Blando por aritmética, no por el original (que se conserva
+a 600 px).
+
+- **Generación nueva (DPR 3)**: miniatura de fila 96 → **144**,
+  miniatura grande 256 → **384**, portada personalizada igual y
+  collage de lista 256 → **384** (hash de caché versionado `v384|`
+  para que los collages viejos se rehagan solos).
+- **Lienzos**: tarjetas de Inicio 240 → **384** (1:1 con la fuente),
+  filas 96 → **144**, héroe 160 → **216**, explorar 160 → **240**,
+  mini y menú de canción → **144**. La portada del reproductor no se
+  toca: pinta del original de 600 px y su límite es ese almacenado,
+  no el lienzo.
+- **Bibliotecas ya importadas**: `ensureCoverThumbs` ya no se
+  conforma con que existan miniaturas — decodifica el ancho real de
+  la grande una vez por sesión y, si es de la generación 256, la
+  rehace a 384 desde el original y repinta el lienzo que la pidió
+  (`drawRowCover` lo dispara en superficies ≥160 px). Sin migración
+  masiva ni coste al arrancar: cada portada se actualiza la primera
+  vez que se enseña en grande.
+
+### Verificación
+
+- **Check §71** `/tmp/check-vista71.js`: **18/18** — estático (sin
+  generación a 96/256 en ningún sitio, lienzos nuevos en plantillas
+  e `index.html`, collage y hash nuevos) y runtime (arranque limpio;
+  una pista heredada se regenera a [144, 384] una sola vez; una al
+  día no se toca; una sin miniaturas las crea; la tarjeta de Inicio
+  se renderiza con lienzo de 384).
+- `node --check` total y **build .xdc válido**: 27 archivos.
+
+Nota práctica: las portadas ya importadas se irán afinando solas a
+medida que aparezcan en Inicio/listas (primera vista en grande de
+cada una); no hay que reimportar nada.

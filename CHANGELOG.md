@@ -28,6 +28,10 @@ verificado función a función:
   pantalla (filas ×2, tarjetas y héroe incluidos), pestañas inferiores
   legibles también en oscuro y agarre táctil de la barra de progreso
   ampliado.
+- Portadas de Inicio nítidas en pantallas de alta densidad (§71):
+  miniaturas y lienzos dimensionados para DPR 3 (384/144 px), con
+  actualización automática de las miniaturas guardadas por versiones
+  anteriores la primera vez que cada portada se ve en grande.
 - Respuesta a auditoría externa con navegador (§70): etiqueta de
   artistas en estadísticas, toast honesto al compartir (enviado vs.
   descargado), foco de teclado contenido en las hojas, objetivos

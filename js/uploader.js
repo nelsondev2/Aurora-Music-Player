@@ -185,8 +185,8 @@
           coverThumbLg = coverSet.coverThumbLg;
         } else {
           try {
-            coverThumb = await this.resizeDataUrl(meta.cover, 96);
-            coverThumbLg = await this.resizeDataUrl(meta.cover, 256);
+            coverThumb = await this.resizeDataUrl(meta.cover, 144);
+            coverThumbLg = await this.resizeDataUrl(meta.cover, 384);
           } catch (e) {}
         }
       }
@@ -497,7 +497,8 @@
     },
 
     /* De UNA decodificación salen las tres copias (600 para el
-     * reproductor, 256 y 96 para las listas). Antes cada tamaño
+     * reproductor, 384 y 144 para las listas — §71: pensadas para
+     * pantallas de DPR 3, no 2). Antes cada tamaño
      * decodificaba la imagen entera otra vez: 3 decodificaciones y
      * 3 codificaciones JPEG por canción con portada. Mismos tamaños,
      * calidades y respaldos que limitArtwork/resizeDataUrl. */
@@ -529,8 +530,8 @@
           return c.toDataURL('image/jpeg', 0.72);
         } catch (e) { return null; }
       };
-      out.coverThumbLg = thumb(256);
-      out.coverThumb = thumb(96);
+      out.coverThumbLg = thumb(384);
+      out.coverThumb = thumb(144);
       return out;
     },
 
