@@ -26,6 +26,9 @@ verificado función a función:
   desde…», gapless/crossfade, ecualizador, visualizador y temporizador
   de apagado.
 - Letras sincronizadas LRC (archivo o incrustadas).
+- Biblioteca (§89): la barra de pestañas (Listas, Álbumes,
+  Artistas, Géneros) queda fija bajo la cabecera al desplazar
+  la lista, sin perderse nunca de vista.
 - Duplicados a tu elección (§88): en «Canciones duplicadas» ya
   no manda siempre la copia más antigua — marcas «Conservar
   esta» en la copia que prefieras (cada fila enseña nombre,

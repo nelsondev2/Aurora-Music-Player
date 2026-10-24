@@ -5061,6 +5061,17 @@ html.aurora-wide .toast {
   font-weight: 600; cursor: pointer; min-height: 40px;
 }
 .lib-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* §89: la barra de pestañas vive fuera del cuerpo desplazable
+ * (hermana de la cabecera en el panel flexible): queda fija al
+ * hacer scroll, con el mismo fondo del panel y su filete
+ * inferior, como una segunda cabecera. */
+#sheetLibrary .lib-tabs {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 10px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-2);
+}
 .lib-tools { margin: 14px 0 4px; display: flex; gap: 8px; flex-wrap: wrap; }
 .catalog-grid {
   list-style: none; margin: 0; padding: 0;

@@ -3314,3 +3314,46 @@ ahí no hay «copias» entre las que elegir, es el mismo archivo.
   §80 **21/21**.
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+---
+
+## 89. Biblioteca: la barra de pestañas queda fija al desplazar
+
+Petición: en Biblioteca, la barra con Listas / Álbumes /
+Artistas / Géneros debe quedar fija y no moverse al desplazar
+hacia abajo. La barra vivía dentro de `.sheet-body` (la única
+región que se desplaza en la hoja), así que se iba con el
+contenido en cuanto había suficientes listas o tarjetas.
+
+### Cambio
+
+- `index.html`: `.lib-tabs` sale del cuerpo desplazable y pasa
+  a ser hija directa de `.sheet-panel`, entre la cabecera y el
+  cuerpo — el mismo patrón que ya mantiene fija la cabecera.
+  El panel es columna flexible y el cuerpo sigue siendo el
+  único que se desplaza (`flex: 1; overflow-y: auto`).
+- `css/styles.css`: `#sheetLibrary .lib-tabs` como franja fija:
+  `flex-shrink: 0`, sin margen, con el relleno lateral del
+  cuerpo (20 px) para que las pestañas no salten de sitio, el
+  filete inferior de las cabeceras y el fondo del panel
+  (`var(--bg-2)`), para que se lea como segunda cabecera y no
+  como un parche pegado.
+
+Sin cambios de JS: el cableado de pestañas trabaja por clases
+(`.lib-tab[data-libtab]`) y las secciones siguen dentro del
+cuerpo, que es lo que se desplaza.
+
+### Verificación
+
+- **Check §89** `/tmp/check-vista89.js`: **15/15** — la barra
+  ya no está en el cuerpo desplazable, es hija del panel y va
+  antes que el cuerpo; las cuatro secciones sí permanecen en
+  el cuerpo; la regla CSS fija existe con `flex-shrink: 0` y
+  filete; y el comportamiento no cambia: clics en Álbumes,
+  Géneros y Listas activan la pestaña, marcan la activa y
+  pintan el catálogo (2 álbumes).
+- Regresiones: §88 **21/21**, §87 **17/17**, §86 **28/28**,
+  §85 **21/21**, §84 **15/15**, §83 **22/22**, §82 **17/17**,
+  §81 **41/41**, §80 **21/21**; llaves CSS equilibradas.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
