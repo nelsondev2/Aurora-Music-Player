@@ -503,10 +503,15 @@ Object.assign(App, {
       // «Sleep» del menú Más (y en el sheet si está abierto).
       const btn = document.getElementById('btnSleep') || document.getElementById('menuSleep');
       const menu = document.getElementById('menuSleep');
+      // §97 (idea 6): la fila «Sleep» del menú enseña la cuenta
+      // atrás sin abrir su hoja (este método ya corre cada
+      // segundo mientras el temporizador vive).
+      const menuVal = document.getElementById('sleepMenuValue');
       if (this._sleepEndOfTrack) {
         if (el) el.textContent = this.t('sleep_eot_status');
         if (btn) btn.classList.add('active');
         if (menu) menu.classList.add('active');
+        if (menuVal) menuVal.textContent = this.t('sleep_end_of_track');
         return;
       }
       if (this.sleepEndAt) {
@@ -517,10 +522,12 @@ Object.assign(App, {
         if (el) el.textContent = label;
         if (btn) btn.classList.add('active');
         if (menu) menu.classList.add('active');
+        if (menuVal) menuVal.textContent = m + ':' + String(s).padStart(2, '0');
       } else {
         if (el) el.textContent = '';
         if (btn) btn.classList.remove('active');
         if (menu) menu.classList.remove('active');
+        if (menuVal) menuVal.textContent = '';
       }
     },
 

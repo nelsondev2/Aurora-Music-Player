@@ -64,6 +64,22 @@ Object.assign(App, {
       if (btnDeleteFull) btnDeleteFull.style.display = '';
       this.closeSheet('sheetPlaylists');
       this.openSheet('sheetEditPlaylist');
+      // §97: abrir la lista DONDE suena — si la canción actual
+      // está en ella (su fila ya sale marcada con .current), se
+      // desplaza hasta ella al terminar la animación de apertura.
+      // Solo al abrir: los re-pintados posteriores no secuestran
+      // la posición de quien está mirando otra parte de la lista.
+      if (this.currentTrack) {
+        const curId = this.currentTrack.id;
+        setTimeout(() => {
+          if (this._editingPlaylistId !== playlistId) return;
+          const ul = document.getElementById('editPlaylistTracks');
+          const row = ul && ul.querySelector('li[data-track-id="' + curId + '"]');
+          if (row) {
+            try { row.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+          }
+        }, 380);
+      }
     },
 
     /* §81: rellena el <select> de géneros de la regla inteligente con

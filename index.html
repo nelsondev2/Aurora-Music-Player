@@ -142,6 +142,15 @@
             <section class="visualizer-section" id="visualizerSection">
               <canvas id="visualizerCanvas" width="600" height="120" aria-hidden="true"></canvas>
             </section>
+            <!-- §97 (idea 3): en el modo inmersivo, título y artista
+                 flotan sobre la portada y se desvanecen a los pocos
+                 segundos; reaparecen al cambiar de canción o con el
+                 gesto de volumen. Decorativo: el nombre accesible
+                 sigue vivo en la vista normal. -->
+            <div class="cover-fs-meta" id="coverFsMeta" aria-hidden="true">
+              <div class="cover-fs-title" id="coverFsTitle"></div>
+              <div class="cover-fs-artist" id="coverFsArtist"></div>
+            </div>
             <!-- §95: la pista visual ya no es «play» (tocar ya no
                  pausa): anuncia ampliar y, dentro del modo, salir.
                  El id se conserva por compatibilidad con el CSS. -->
@@ -423,6 +432,8 @@
               <svg class="ico" aria-hidden="true"><use href="#i-clear-list"></use></svg>
               <span data-i18n="clear_btn">Vaciar</span>
             </button>
+            <!-- §97 (idea 10): resumen fijo de lo que queda por sonar -->
+            <div class="queue-summary" id="queueSummary" hidden></div>
             <ul class="queue-list" id="queueList"></ul>
           </div>
         </div>
@@ -756,6 +767,8 @@
             <button class="menu-row" id="menuSleep" type="button">
               <svg class="ico" aria-hidden="true"><use href="#i-moon"></use></svg>
               <span data-i18n="sleep">Sleep</span>
+              <!-- §97 (idea 6): cuenta atrás visible sin abrir la hoja -->
+              <span class="menu-value" id="sleepMenuValue"></span>
             </button>
             <button class="menu-row" id="menuGoToArtist">
               <svg class="ico" aria-hidden="true"><use href="#i-user"></use></svg>

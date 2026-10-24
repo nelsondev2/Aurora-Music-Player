@@ -800,6 +800,26 @@ Object.assign(App, {
           ctxLabel.style.display = 'none';
         }
       }
+      // §97 (idea 10): resumen fijo «A continuación · N · duración»
+      // de lo que queda por sonar tras la pista actual. La fila
+      // queda pegada arriba al desplazar la cola (.queue-summary).
+      const summary = document.getElementById('queueSummary');
+      if (summary) {
+        const byIdQ = typeof this.trackMap === 'function' ? this.trackMap() : null;
+        let nQ = 0, secsQ = 0;
+        for (let i = (this.queueIdx || 0) + 1; i < this.queue.length; i++) {
+          const tq = byIdQ ? byIdQ.get(this.queue[i]) : this.tracks.find(x => x.id === this.queue[i]);
+          if (!tq) continue;
+          nQ++;
+          if (isFinite(tq.duration) && tq.duration > 0) secsQ += tq.duration;
+        }
+        if (nQ > 0) {
+          summary.textContent = this.t('queue_up_next') + ' · ' + nQ + ' · ' + this.fmtDuration(secsQ);
+          summary.hidden = false;
+        } else {
+          summary.hidden = true;
+        }
+      }
       const cleaned = this.queue.filter(id => this.trackMap().has(id));
       if (cleaned.length !== this.queue.length) {
         const curId = this.currentTrack && this.currentTrack.id;

@@ -876,6 +876,61 @@ svg { display: block; }
   height: 20%;
   min-height: 88px;
 }
+/* §97 (idea 3): título flotante del modo inmersivo — aparece y
+ * se desvanece solo; nunca compite con la portada (§96). */
+.cover-fs-meta {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: calc(20% + 14px);
+  z-index: 4;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .45s ease, transform .45s ease;
+}
+.cover-fs-meta.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.cover-fs-title {
+  font-size: var(--fs-h3, 20px);
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cover-fs-artist {
+  margin-top: 2px;
+  font-size: var(--fs-small, 13px);
+  color: rgba(255, 255, 255, 0.82);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* §97 (idea 10): resumen fijo al desplazar la cola. */
+.queue-summary {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: 8px 2px;
+  font-size: var(--fs-small, 13px);
+  font-weight: 600;
+  color: var(--text-2);
+  background: var(--bg-1);
+}
+/* §97 (idea 6): valor a la derecha de las filas del menú (sleep). */
+.menu-value {
+  margin-left: auto;
+  font-size: var(--fs-small, 13px);
+  font-weight: 600;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
 /* Sin barra inferior: la portada manda en toda la pantalla. */
 .device-screen:has(.view-player.cover-fullscreen) .bottom-nav {
   display: none !important;

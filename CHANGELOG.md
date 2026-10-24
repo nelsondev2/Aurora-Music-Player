@@ -32,6 +32,14 @@ verificado función a función:
   sin uso en los 8 idiomas, 6 variables de estilo huérfanas y
   un archivo de iconos que viajaba en la app sin cargarse.
   La app pesa un poco menos y hace exactamente lo mismo.
+- Cinco detalles que se notan (§97): en la portada a pantalla
+  completa, el título flota unos segundos y se desvanece; la
+  onda del visualizador ya no «despierta» de cero en cada
+  canción; la fila Sleep del menú muestra la cuenta atrás; la
+  cola anuncia «A continuación · N · duración» en una cabecera
+  fija; al abrir una lista, la vista va directa a la canción
+  que suena; y la portada siguiente se prepara en silencio
+  para que cambiar de canción no parpadee.
 - Tocar la portada ya no pausa (§95): la abre a pantalla
   completa con el visualizador, y tocarla de nuevo vuelve al
   reproductor (también se sale con Escape o cambiando de

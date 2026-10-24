@@ -2350,6 +2350,12 @@ const I18N = {
     zh: '退出全屏封面', ja: '全画面カバーを終了', fr: 'Quitter la pochette plein écran',
     it: 'Esci dalla copertina a schermo intero', ru: 'Выйти из полноэкранной обложки'
   },
+  /* §97 (idea 10): cabecera fija de la cola — «A continuación · 3 · 12m» */
+  queue_up_next: {
+    es: 'A continuación', en: 'Up next', pt: 'A seguir',
+    zh: '接下来播放', ja: '次に再生', fr: 'À suivre',
+    it: 'A seguire', ru: 'Далее'
+  },
 
   /* Claves que faltaban y se mostraban como texto crudo en la UI
    * (auditoría 2026-10). Todas con los 8 idiomas. */

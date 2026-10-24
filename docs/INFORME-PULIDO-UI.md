@@ -3791,3 +3791,66 @@ puesto justo en el modo en que la carátula debería lucir.
   se afirma re-ejecutado.
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## 97. Cinco ideas de la lluvia, implementadas (3, 4, 6, 10, 17 + extra)
+
+De la lluvia de ideas de la sesión anterior, el usuario eligió por
+números: **3, 4, 6, 10, 17**, con un añadido propio («al abrir lista
+salga donde está la canción que suena») y la nota de que la **9 ya
+estaba implementada** — verificado en el código antes de tocar nada:
+tocar un verso con timestamp ya saltaba a ese instante
+(`js/lyrics.js`, «Tap en una línea con timestamp → saltar a ese
+punto (#11)»); queda cubierta por una aserción para que no
+desaparezca en silencio.
+
+- **3 · Título que respira.** En el modo inmersivo, título y
+  artista flotan sobre la parte baja de la portada
+  (`#coverFsMeta`, sobre la onda, decorativo) y se desvanecen a
+  los 3,6 s (`_pokeCoverFsMeta`). Reaparecen al entrar, al
+  cambiar de canción y con el gesto de volumen. Nunca compiten
+  con la portada: texto con sombra, sin velo (lección §96).
+- **4 · Onda con memoria.** `_visWavePoints` suavizaba con un
+  único tau de 55 ms: en cada silencio y al arrancar cada
+  canción la onda «despertaba» de cero. Ahora el ataque sigue
+  rápido (55 ms) pero la relajación es lenta (260 ms), y los
+  puntos nunca se reinician al cambiar de pista: la onda respira
+  entre frases y entre canciones.
+- **6 · Cuenta atrás del sleep sin abrir la hoja.** `#sleepStatus`
+  ya contaba dentro de la hoja de Sleep, invisible desde fuera;
+  ahora la fila «Sleep» del menú Más enseña el tiempo restante
+  (`#sleepMenuValue`, `m:ss`, o «Fin de la canción») actualizado
+  por el mismo `updateSleepStatus()` que ya corría cada segundo.
+- **10 · Cabecera de la cola.** Fila fija (`position: sticky`)
+  sobre la lista: «A continuación · N · duración» de lo que
+  queda tras la actual (1 clave nueva ×8, 376 en total). En la
+  última canción se esconde — no hay «a continuación» que contar.
+- **Extra · La lista se abre donde suena.** `openEditPlaylist`
+  ya marcaba la fila actual (`.current` + icono); ahora, solo al
+  abrir y tras la animación de la hoja, se desplaza hasta ella
+  (`scrollIntoView`, bloque centrado). Los re-pintados posteriores
+  no secuestran la posición de quien mira otra parte.
+- **17 · Portada siguiente preparada.** Al pintar la pista,
+  `_preloadNextCover()` decodifica en silencio la imagen de la
+  siguiente de la cola («todo» incluida la vuelta); `drawCover`
+  la reutiliza si es la misma fuente y pinta al momento, sin
+  pasar por el fondo gris de carga. Con gradientes generados no
+  hay nada que preparar y la llamada es inocua.
+
+### Verificación
+
+- **Check §97** `/tmp/check-vista97.js`: **19/19** — el título
+  flotante entra/cambia/se esconde; la onda sube en el acto y
+  tras 200 ms de silencio conserva >25 % del pico (y cae, no se
+  congela); la fila Sleep enseña `14:2x`, «Fin de la canción» y
+  se limpia; la cabecera dice «A continuación · 2 · 5m 0s» y se
+  esconde en la última; abrir la lista desplaza hasta `q2`; la
+  precarga deja la siguiente lista sin re-decodificar; la 9
+  sigue en su sitio; i18n 376×8 sin colgadas. (Un fallo inicial
+  fue del check: esperar `14:30` cuando el segundo ya había
+  corrido a `14:29`.)
+- Regresiones: **§95 17/17**, **§96 8/8**, humo §§80–96 **20/20**
+  (arnés y checks recreados una vez más: el entorno volvió a
+  borrar `/tmp` entero entre sesiones; el check §94 no se recreó
+  en esta ronda y no se afirma re-ejecutado).
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

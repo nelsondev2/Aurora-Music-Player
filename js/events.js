@@ -119,6 +119,9 @@ Object.assign(App, {
             const h = Math.max(120, coverArt.getBoundingClientRect().height);
             this.setVolume(cvVol + dy / h);
             this.showNpVolume(true);
+            // §97 (idea 3): en el modo inmersivo, el gesto de
+            // volumen también despierta el título flotante.
+            if (this._coverFs) this._pokeCoverFsMeta();
           }
         });
         coverArt.addEventListener('pointerup', endGesture);

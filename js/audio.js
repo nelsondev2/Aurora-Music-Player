@@ -1459,7 +1459,6 @@ Object.assign(App, {
         this._visWavePts = new Float32Array(count);
       }
       const pts = this._visWavePts;
-      const k = 1 - Math.exp(-dtMs / 55);
       const bucket = timeData.length / count;
       for (let i = 0; i < count; i++) {
         const start = Math.floor(i * bucket);
@@ -1470,6 +1469,14 @@ Object.assign(App, {
           const a = v < 0 ? -v : v;
           if (a > bestAbs) { bestAbs = a; best = v; }
         }
+        // §97 (idea 4): la onda tiene memoria — sube con ataque
+        // rápido (55 ms) pero baja con relajación lenta
+        // (260 ms). Antes un solo tau de 55 ms la dejaba en cero
+        // en cada silencio y al arrancar cada canción «despertaba»
+        // de la nada; ahora respira entre frases y entre pistas
+        // (los puntos nunca se reinician al cambiar de pista).
+        const rising = Math.abs(best) > Math.abs(pts[i]);
+        const k = 1 - Math.exp(-dtMs / (rising ? 55 : 260));
         pts[i] += (best - pts[i]) * k;
       }
       return pts;

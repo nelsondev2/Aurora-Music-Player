@@ -89,6 +89,12 @@ Object.assign(App, {
       this._shownCoverTrackId = t.id;
       this.drawCover('coverCanvas', t);
       this.drawCover('miniCoverCanvas', t, true);
+      // §97 (idea 3): en el modo inmersivo el título flotante
+      // reaparece con cada canción y vuelve a desvanecerse.
+      if (this._coverFs) this._pokeCoverFsMeta();
+      // §97 (idea 17): la portada SIGUIENTE se decodifica ya,
+      // en silencio, para que el cambio no parpadee en blanco.
+      this._preloadNextCover();
 
       // Vinilo en lugar de cover si está reproduciendo
       this.updateCoverA11y();
@@ -99,6 +105,37 @@ Object.assign(App, {
 
       // Render cola
       this.renderQueue();
+    },
+
+    /* §97 (idea 17): decodifica en segundo plano la portada de la
+     * siguiente pista de la cola (la que tocará, con repetición
+     * «todo» incluida). drawCover la reutiliza si ya está lista:
+     * cambiar de canción deja de pasar por el fondo gris de
+     * «cargando». Sin imagen (gradiente generado) no hay nada
+     * que preparar y se sale sin coste. */
+    _preloadNextCover() {
+      if (!Array.isArray(this.queue) || !this.queue.length) return;
+      let idx = (this.queueIdx || 0) + 1;
+      if (idx >= this.queue.length) {
+        if (this.repeat === 'all') idx = 0;
+        else return;
+      }
+      const id = this.queue[idx];
+      if (!id || (this.currentTrack && id === this.currentTrack.id)) return;
+      const byId = typeof this.trackMap === 'function' ? this.trackMap() : null;
+      const t = byId ? byId.get(id) : this.tracks.find(x => x.id === id);
+      if (!t) return;
+      const isImage = t.coverIsImage || (typeof t.cover === 'string' && t.cover.startsWith('data:'));
+      if (!isImage) return;
+      const src = typeof t.cover === 'string' ? t.cover
+        : (this.coverSrcForRow ? this.coverSrcForRow(t, 720) : null)
+          || (t.cover && t.cover.dataURL) || '';
+      if (!src) return;
+      if (this._nextCoverPreload && this._nextCoverPreload.src === src) return;
+      const img = new Image();
+      img.src = src;
+      if (typeof img.decode === 'function') img.decode().catch(() => {});
+      this._nextCoverPreload = { id: t.id, src, img };
     },
 
     drawCover(canvasId, track, mini) {
@@ -125,8 +162,12 @@ Object.assign(App, {
           // §94: el sello de la entrada manda — si el usuario
           // salta de canción mientras esta imagen carga, el
           // onload tardío ya no pinta sobre la portada actual.
-          const img = new Image();
-          img.onload = () => {
+          // §97: si la precarga (idea 17) ya la decodificó, se
+          // pinta al momento, sin fondo gris intermedio.
+          const pre = (this._nextCoverPreload && this._nextCoverPreload.id === track.id
+            && this._nextCoverPreload.src === src) ? this._nextCoverPreload.img : null;
+          const img = pre || new Image();
+          const paint = () => {
             if (c._coverToken !== coverToken) return; // ya hay otra pista
             ctx.clearRect(0, 0, w, h);
             // Modo "cover": misma geometría que las filas (_fitRect, §63)
@@ -135,7 +176,9 @@ Object.assign(App, {
               : { x: 0, y: 0, w, h };
             ctx.drawImage(img, r.x, r.y, r.w, r.h);
           };
-          img.src = src;
+          if (img.complete && img.naturalWidth > 0) { paint(); return; }
+          img.onload = paint;
+          if (!pre) img.src = src;
           // Fondo provisional mientras carga
           ctx.fillStyle = '#222';
           ctx.fillRect(0, 0, w, h);
@@ -254,6 +297,29 @@ Object.assign(App, {
         else if (this.isPlaying) this.startVisualizer(); // reencuadra la onda
         else this.stopVisualizer();
       }
+      if (on) this._pokeCoverFsMeta();
+      else {
+        clearTimeout(this._coverFsMetaTimer);
+        const meta = document.getElementById('coverFsMeta');
+        if (meta) meta.classList.remove('show');
+      }
+    },
+
+    /* §97 (idea 3): título y artista flotando sobre la portada
+     * inmersiva. Se muestran al entrar y al cambiar de canción
+     * (y con el gesto de volumen, desde events.js) y se
+     * desvanecen a los 3,6 s: la portada queda limpia, que es
+     * para lo que existe el modo. */
+    _pokeCoverFsMeta() {
+      const meta = document.getElementById('coverFsMeta');
+      if (!meta || !this._coverFs || !this.currentTrack) return;
+      const titleEl = document.getElementById('coverFsTitle');
+      const artistEl = document.getElementById('coverFsArtist');
+      if (titleEl) titleEl.textContent = this.currentTrack.title || '—';
+      if (artistEl) artistEl.textContent = this.currentTrack.artist || this.t('unknown_artist');
+      meta.classList.add('show');
+      clearTimeout(this._coverFsMetaTimer);
+      this._coverFsMetaTimer = setTimeout(() => meta.classList.remove('show'), 3600);
     },
 
     /* §72: el botón «Letras» de la barra secundaria se veía igual con y
