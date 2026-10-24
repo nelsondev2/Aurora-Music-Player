@@ -37,7 +37,9 @@ verificado función a función:
   reproductor (también se sale con Escape o cambiando de
   vista). La pausa se queda en el botón de play. Deslizar
   sobre la portada sigue cambiando de canción y la pulsación
-  larga sigue marcando favorito.
+  larga sigue marcando favorito. Los iconos de entrar/salir
+  son ahora una insignia pequeña en la esquina, sin velar la
+  carátula (§96).
 - Ronda de correcciones (§94) tras un informe de bugs externo,
   verificado punto a punto: Espacio ya no secuestra los botones
   enfocados y Escape cierra la ventana que abriste la última;

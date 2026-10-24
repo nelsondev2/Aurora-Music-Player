@@ -3755,3 +3755,39 @@ botón de play (y en Espacio con el foco libre).
   y humo consolidado **20/20**.
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## 96. La insignia del modo inmersivo ya no tapa la portada
+
+Petición expresa: los iconos de entrar/salir del modo inmersivo (§95)
+interferían la visibilidad de la portada. Y era cierto por partida
+triple: la pista visual era un velo sobre **toda** la portada
+(`inset: 0` con fondo oscuro y un icono de 42 px en el centro), y en
+táctil el `:hover` se quedaba pegado tras el toque, dejando el velo
+puesto justo en el modo en que la carátula debería lucir.
+
+### Cómo queda
+
+- `.cover-play-hint` pasa de velo completo a **insignia esquinera**:
+  34 px en la esquina superior derecha (lejos del visualizador, que
+  vive al pie), fondo propio semitransparente con desenfoque, icono
+  de 16 px. La imagen queda siempre limpia; la insignia solo aparece
+  al pasar el cursor, al pulsar o dentro del modo al tocar, y sigue
+  sin interceptar toques (`pointer-events: none`), oculta al ajustar
+  volumen o mientras carga, como antes.
+- No cambia nada más: entrar/salir sigue a un toque sobre la
+  portada, con Escape o cambiando de vista, y los gestos de siempre
+  (deslizar, volumen, pulsación larga) intactos.
+
+### Verificación
+
+- **Check §96** `/tmp/check-vista96.js`: **8/8** — cero velo
+  (`inset: 0` fuera), insignia de 34 px en su esquina, icono de
+  16 px, no intercepta toques, oculta por defecto/volumen/carga, y
+  el modo entra y sale igual.
+- **Check §95 recreado** (el reinicio del entorno volvió a borrar
+  `/tmp` entero; arnés y check reescritos): **17/17**. Humo de
+  regresión §§80–95: **20/20**. El check §94 no se recreó en esta
+  ronda (cambio limitado a una regla CSS que §94 no ejercita); no
+  se afirma re-ejecutado.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
