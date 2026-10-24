@@ -2871,3 +2871,51 @@ borran una a una con el borrado con deshacer de siempre.
 - **Build .xdc válido**: 27 archivos.
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## §82. Quitar una canción de la cola la resucitaba al siguiente paso
+
+**El fallo (reportado por el usuario):** reproducías una lista,
+quitabas una canción de la cola con su ✗, y al pasar a la
+siguiente canción la lista completa volvía a estar en la cola.
+
+**Causa:** en `next()` vivía desde §64 una «reconstrucción» que
+comparaba la cola con la lista ordenada y, si diferían en
+longitud u orden, sustituía la cola entera por la lista. Nacida
+para que la cola heredara el orden por estrellas, tenía el
+efecto de deshacer cualquier edición de la cola: la baja de una
+canción, el reorden por arrastre y el «vaciar siguientes» se
+perdían en el primer cambio de pista.
+
+**El arreglo — la cola manda:** al construir una cola desde una
+lista (`playTrack` con contexto, `playPlaylist`) se guarda una
+foto de la lista en `_plSyncIds`. En cada `next()` (manual o
+automático, sin shuffle), `_syncQueueWithPlaylist()` sincroniza
+contra esa foto en vez de reconstruir:
+
+- **Altas de la lista** (en la lista ahora, ni en la foto ni en
+  la cola): entran **al final** de la cola.
+- **Bajas de la lista** (en la foto, ya no en la lista): salen de
+  la cola, salvo la que está sonando, que termina y sale en la
+  siguiente sincronización.
+- Lo quitado **de la cola a mano sigue en la foto**: no es un
+  alta y no vuelve. El orden de la cola no se toca nunca: el
+  reorden por arrastre y §81 (altas al final) sobreviven.
+- Sin foto (sesión restaurada): la primera sincronización adopta
+  la lista como foto sin tocar la cola guardada.
+
+Con shuffle sigue mandando `_originalQueue`, que ya respetaba
+las bajas (§ cola). Contextos que no son lista (Favoritos,
+álbum/artista/género, radio) dejan `_plSyncIds` en `null`.
+
+### Verificación
+
+- **Check §82** `/tmp/check-vista82.js`: **17/17** — el gesto
+  exacto del usuario (✗ en la fila y «siguiente», manual y
+  automático), reorden manual que sobrevive, vaciar sin
+  restaurar, bajas/altas de la lista aplicadas, y sesión
+  restaurada sin foto.
+- Regresiones: §81 **41/41** y §80 **21/21**; `node --check`
+  total OK.
+- **Build .xdc válido**: 27 archivos.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

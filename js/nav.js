@@ -564,6 +564,7 @@ Object.assign(App, {
       const ids = this.browseTracksSorted().map(t => t.id);
       this.queue = ids;
       this.queueIdx = 0;
+      this._plSyncIds = null; // §82: álbum/artista/género no sincronizan
       this.playContext = this._browse.type === 'album'
         ? { type: 'album', name: this._browse.title, artist: this._browse.artist || this._browse.subtitle }
         : this._browse.type === 'genre'

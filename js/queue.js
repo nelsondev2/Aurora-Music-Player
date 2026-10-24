@@ -188,6 +188,7 @@ Object.assign(App, {
       };
       this.queue = [trackId, ...shuffle(sameArtist).map(t => t.id), ...shuffle(sameAlbum).map(t => t.id), ...shuffle(others).map(t => t.id)];
       this.queueIdx = 0;
+      this._plSyncIds = null; // §82: la radio no sincroniza con listas
       this._originalQueue = null;
       this.playContext = { type: 'radio', name: seed.artist || seed.title };
       this.playFromQueue(0);

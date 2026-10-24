@@ -67,6 +67,7 @@
     _trackGainCache: new Map(), // trackId → gain normalizado
     _playHistory: [],         // #11 historial de reproducción
     _originalQueue: null,     // cola sin barajar (para deshacer shuffle)
+    _plSyncIds: null,         // §82: ids de la lista al construir la cola (base de sincronización)
     _normGain: 1,
     _decodeSkipCount: 0,
 

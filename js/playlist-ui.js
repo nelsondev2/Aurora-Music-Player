@@ -1416,6 +1416,7 @@ Object.assign(App, {
       if (ids.length === 0) { this.toast(this.t('toast_playlist_empty')); return; }
       this.queue = ids;
       this.queueIdx = 0;
+      this._plSyncIds = ids.slice(); // §82: foto base de la lista
       // Establecer contexto de reproducción: "Reproduciendo desde <playlist>"
       this.playContext = { type: 'playlist', id: pl.id, name: pl.name };
       // Con Aleatorio activo la cola es nueva: hay que anclar su primera pista
@@ -1452,6 +1453,7 @@ Object.assign(App, {
       }
       this.queue = favTracks.map(t => t.id);
       this.queueIdx = 0;
+      this._plSyncIds = null; // §82: Favoritos no sincroniza con listas
       this.playContext = { type: 'favorites' };
       // Igual que playPlaylist(): anclar la primera favorita, no la pista previa.
       if (this.shuffle) this._applyShuffle(this.queue[0]);

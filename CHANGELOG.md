@@ -28,6 +28,10 @@ verificado función a función:
   pantalla (filas ×2, tarjetas y héroe incluidos), pestañas inferiores
   legibles también en oscuro y agarre táctil de la barra de progreso
   ampliado.
+- Arreglo (§82): quitar una canción de la cola ya no la trae
+  de vuelta al pasar a la siguiente. La cola manda: solo
+  entran las canciones nuevas de la lista (al final) y
+  salen las que se borren de la lista.
 - Lo que le faltaba a un reproductor normal (§81): ordenación
   manual de listas (título, artista, álbum, duración…, además
   del orden por estrellas), catálogo navegable de Álbumes,

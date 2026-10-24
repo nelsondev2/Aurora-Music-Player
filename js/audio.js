@@ -206,6 +206,10 @@ Object.assign(App, {
         if (pl) {
           // La cola hereda el orden por estrellas de la lista (§64)
           this.queue = this.playlistTracksSorted(pl).map(t => t.id);
+          // §82: esta foto de la lista es la base de sincronización:
+          // next() solo aplicará altas/bajas de la lista, jamás
+          // resucitará lo que el usuario quite de la cola.
+          this._plSyncIds = this.queue.slice();
           const qIdx = this.queue.indexOf(trackId);
           // La pista puede no pertenecer ya a la lista (se quitó mientras
           // sonaba otra): insertarla para que next/prev sigan teniendo
@@ -246,6 +250,8 @@ Object.assign(App, {
         this.queueIdx = idx;
       }
 
+      // §82: fuera de contexto de lista no hay sincronización que hacer.
+      if (!(context && context.type === 'playlist' && context.id)) this._plSyncIds = null;
       // Si se pasa contexto, usarlo; si no, mantener el actual
       if (context) this.playContext = context;
       // La pista tocada debe sonar primero aunque Aleatorio esté activo; el
@@ -619,6 +625,51 @@ Object.assign(App, {
       if (typeof this.updateChrome === 'function') this.updateChrome();
     },
 
+    /* §82: sincroniza la cola con la lista de la que nació.
+     *  _plSyncIds es la foto de la lista cuando se construyó la cola
+     *  (o en la primera sincronización). Contra esa foto:
+     *   - altas: ids que están en la lista ahora y no estaban en la
+     *     foto ni en la cola → se añaden AL FINAL de la cola.
+     *   - bajas de la lista: ids de la foto que ya no están en la
+     *     lista → salen de la cola (salvo la que está sonando, que
+     *     termina y saldrá en la siguiente sincronización).
+     *  Lo que el usuario quitó de la cola a mano sigue en la foto,
+     *  así que NO se considera alta y no vuelve. El orden de la cola
+     *  tampoco se toca: el reorden por arrastre sobrevive. */
+    _syncQueueWithPlaylist() {
+      if (!this.playContext || this.playContext.type !== 'playlist' || !this.playContext.id) {
+        this._plSyncIds = null;
+        return;
+      }
+      const pl = this.playlists.find(p => p.id === this.playContext.id);
+      if (!pl) { this._plSyncIds = null; return; }
+      const plIds = this.playlistTracksSorted(pl).map(t => t.id);
+      // Primera vez (sesión restaurada o cola construida por otra
+      // vía): se adopta la lista como foto y la cola queda tal cual.
+      if (!Array.isArray(this._plSyncIds)) this._plSyncIds = plIds;
+      const base = this._plSyncIds;
+      const curId = this.currentTrack && this.currentTrack.id;
+      const gone = new Set(base.filter(id => !plIds.includes(id)));
+      const added = plIds.filter(id => !base.includes(id) && !this.queue.includes(id));
+      let changed = false;
+      if (gone.size) {
+        const beforeLen = this.queue.length;
+        this.queue = this.queue.filter((id, i) => i === this.queueIdx || !gone.has(id));
+        changed = this.queue.length !== beforeLen;
+      }
+      if (added.length) {
+        this.queue.push(...added);
+        changed = true;
+      }
+      if (changed) {
+        const qi = curId ? this.queue.indexOf(curId) : -1;
+        if (qi >= 0) this.queueIdx = qi;
+        else this.queueIdx = Math.min(this.queueIdx, Math.max(0, this.queue.length - 1));
+        if (typeof this.renderQueue === 'function') this.renderQueue();
+      }
+      this._plSyncIds = plIds;
+    },
+
     next(auto) {
       if (auto && this._sleepFading) return;
       // §81: un salto manual a mitad de canción cuenta como «saltada»
@@ -642,21 +693,15 @@ Object.assign(App, {
         this._fireSleep();
         return;
       }
-      // Reconstruir cola de playlist solo si shuffle está off (si no, pisaría la cola barajada).
-      // Ojo: la cola de una lista vive en orden de estrellas (§64), así
-      // que la reconstrucción usa ese mismo orden, no el guardado.
-      if (!this.shuffle && this.playContext && this.playContext.type === 'playlist' && this.playContext.id) {
-        const pl = this.playlists.find(p => p.id === this.playContext.id);
-        if (pl && pl.trackIds.length) {
-          const ids = this.playlistTracksSorted(pl).map(t => t.id);
-          if (ids.length && (this.queue.length !== ids.length || ids.some((id, i) => this.queue[i] !== id))) {
-            const cur = this.currentTrack && this.currentTrack.id;
-            this.queue = ids;
-            const qIdx = ids.indexOf(cur);
-            this.queueIdx = qIdx >= 0 ? qIdx : 0;
-          }
-        }
-      }
+      // §82: sincronizar la cola con su lista SIN resucitar bajas.
+      // Antes aquí se reconstruía la cola entera desde la lista en
+      // cuanto difería: quitar una canción de la cola (o reordenarla
+      // arrastrando, o vaciar las siguientes) se deshacía al pasar a
+      // la siguiente pista, que es el fallo que reportó el usuario.
+      // Ahora la cola manda: solo entran las altas nuevas de la
+      // lista y salen las que ya no están en ella (ver
+      // _syncQueueWithPlaylist). Con shuffle manda _originalQueue.
+      if (!this.shuffle) this._syncQueueWithPlaylist();
       const xfadeOn = this.crossfadeEnabled && this.crossfadeDuration > 0;
       if (auto && !this._xfadeIncoming && !xfadeOn && this._gaplessEnabled && this.gaplessNext()) {
         return;
