@@ -3107,3 +3107,72 @@ siendo el camino de MP3/M4A/WAV; no se ha tocado el motor de
 importación, que ya era correcto.
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+---
+
+## 86. Letras: sin mini reproductor en vacío, sin gesto y con foco en la línea que suena
+
+Petición del usuario, con opinión pedida antes de implementar
+y cuatro decisiones cerradas por él (ocultar mini-cabecera y
+controles sin letra; eliminar el gesto; difuminado fuerte;
+aclarar al desplazar a mano):
+
+1. **Sin letra, fuera el «mini reproductor».** La vista de
+   Letras sin letra ya ocultaba la barra de herramientas (§73),
+   pero quedaba un reproductor en miniatura: mini-cabecera
+   (portada + título/artista), tarjeta de vacío y controles
+   inferiores con progreso y anterior/play/siguiente. Con la
+   clase `.lrc-is-empty` ahora también se ocultan
+   `.lyrics-mini` y `.lyrics-controls`: solo quedan la barra
+   superior y la tarjeta con «Cargar .lrc / Pegar o editar»,
+   que es la única acción útil en esa pantalla. Con letra,
+   mini-cabecera y controles se mantienen: son la identidad de
+   la canción y el transporte dentro de la vista.
+2. **Gesto horizontal para cambiar de canción: eliminado.**
+   Solo vivía en la vista de Letras (`wireGestures` exigía que
+   estuviera activa) y causaba saltos de pista accidentales al
+   desplazar la letra en diagonal. `wireGestures` queda sin
+   listener de deslizamiento; quedan los botones, el toque en
+   una línea para saltar a ese instante y el scroll nativo.
+   Esto **revierte una decisión anterior del usuario**
+   («deslizar sobre la letra sí cambia de canción») por orden
+   expresa suya en esta sección. Fuera de alcance —y NO
+   tocado—: el deslizamiento horizontal sobre la portada del
+   reproductor, que sigue cambiando de canción.
+3. **Foco en la línea que suena.** Nueva clase `.lrc-focus`
+   sobre `#lyricsScroll` (helper `_setLrcFocus`): con letra
+   sincronizada y primera línea ya activa, la línea actual se
+   lee nítida, la vecina (±1, `.near`) queda a opacidad 0,55
+   con blur 0,7 px como contexto, la segunda (`.near-2`) a 0,3
+   con blur 1,3 px, y el resto a opacidad 0,18 con blur 2 px:
+   casi ilegible, como se pidió. Radio de desenfoque pequeño
+   a propósito (blur grande sobre ~100 líneas saldría caro en
+   el WebView) apoyado en la opacidad. Salvaguardas: sin
+   sincronía (`_setLrcFocus(false)` en la salida temprana) y
+   antes de la primera línea —intro— no hay difuminado; al
+   pasar a una canción sin letra el foco se apaga
+   (`_setLyricsEmpty`). Mientras el usuario desplaza la letra
+   a mano, `.lrc-focus.user-scrolling` aclara todas las
+   líneas (opacidad 0,85, sin blur) para poder buscar un
+   verso; al retomar el auto-scroll vuelve el foco. La
+   transición de `.lrc-line` incluye ahora `filter .25s`.
+
+### Verificación
+
+- **Check §86** `/tmp/check-vista86.js`: **28/28** — CSS de
+  vacío (mini-cabecera y controles ocultos, regla §73 intacta),
+  gesto fuera de `events.js`, graduación del difuminado en el
+  CSS y comportamiento: foco encendido con línea activa y
+  clases near/near-2/base correctas, apagado en la intro,
+  jamás presente sin sincronía y apagado al pasar a una
+  canción sin letra.
+- Regresiones: §85 **21/21**, §84 **15/15**, §83 **22/22**,
+  §82 **17/17**, §81 **41/41**, §80 **21/21**; `node --check`
+  OK y llaves CSS equilibradas.
+
+Nota honesta: jsdom no aplica el CSS ni hace layout, así que
+el difuminado se verifica por las reglas y por las clases que
+el JS pone/quita; el efecto visual se confirma en el
+dispositivo, como el resto de la UI.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

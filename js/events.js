@@ -1028,52 +1028,14 @@ Object.assign(App, {
     wireGestures() {
       // Ídem que wireEvents(): los gestos tampoco se cablean dos veces.
       if (this._wired.gestures) return;
-      const screen = document.getElementById('deviceScreen');
-      let sx = 0, sy = 0, st = 0, swiping = false, swipeFromUi = false;
-      // Zonas donde un arrastre NUNCA significa «cambiar de canción» ni
-      // «cerrar Letras»: la barra de herramientas (ahora desplazable en
-      // horizontal: arrastrarla para ver más ajustes saltaba a la
-      // siguiente canción), la cabecera, la mini-cabecera, la barra de
-      // controles y cualquier control interactivo. El gesto se marca al
-      // nacer (touchstart), porque el dedo puede terminar sobre otro
-      // elemento distinto del que lo empezó.
-      const SWIPE_UI = '.lyrics-toolbar, .lyrics-top-bar, .lyrics-mini, .lyrics-controls, .lyrics-loop-indicator, button, input, textarea, select, a, [role="slider"]';
-      screen.addEventListener('touchstart', (e) => {
-        if (e.touches.length !== 1) return;
-        sx = e.touches[0].clientX;
-        sy = e.touches[0].clientY;
-        st = Date.now();
-        swiping = true;
-        swipeFromUi = !!(e.target && e.target.closest && e.target.closest(SWIPE_UI));
-      }, { passive: true });
-
-      screen.addEventListener('touchend', (e) => {
-        if (!swiping) return;
-        swiping = false;
-        if (swipeFromUi) { swipeFromUi = false; return; }
-        const dx = e.changedTouches[0].clientX - sx;
-        const dy = e.changedTouches[0].clientY - sy;
-        const dt = Date.now() - st;
-        const ax = Math.abs(dx), ay = Math.abs(dy);
-        // Swipe horizontal (umbral 60px, rápido <500ms)
-        if (ax > 60 && ax > ay * 1.5 && dt < 600) {
-          const target = e.target;
-          if (target.closest('#progressTrack, .sheet, .bottom-nav, .mini-player, .app-chrome, .view-home, .controls-main, .controls-secondary, #coverArt')) return;
-          const lyrics = document.getElementById('viewLyrics');
-          if (!(lyrics && lyrics.classList.contains('active'))) return;
-          if (dx < 0) this.next();
-          else this.prev();
-          if (navigator.vibrate) navigator.vibrate(10);
-        }
-        // Sin swipe vertical: deslizar hacia abajo ya NO cierra
-        // Letras (a petición del usuario). Era fácil dispararlo sin
-        // querer al hacer scroll por la letra; para salir queda el
-        // botón de volver de la cabecera (y el de pantalla completa).
-        // Doble tap en portada → like
-      });
-
-      // El like está en el botón del título; la portada hace play/pausa.
-
+      // §86: eliminado el gesto horizontal para cambiar de canción.
+      // Solo vivía en la vista de Letras y provocaba saltos de pista
+      // accidentales al desplazar la letra en diagonal; quedan los
+      // botones anterior/siguiente y el toque sobre una línea para
+      // saltar a ese instante. El scroll vertical de la letra es
+      // nativo de su contenedor, no necesita gesto propio. (Antes
+      // también se gestionaba aquí que deslizar hacia abajo NO
+      // cerrara Letras: ya no hay listener alguno que cerrar.)
       this._wired.gestures = true;
     },
 

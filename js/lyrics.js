@@ -179,7 +179,10 @@ Object.assign(App, {
       const emptyEl = document.getElementById('lrcEmpty');
       const scroll = document.getElementById('lyricsScroll');
       if (emptyEl) emptyEl.hidden = !on;
-      if (scroll) scroll.classList.toggle('has-empty', !!on);
+      if (scroll) {
+        scroll.classList.toggle('has-empty', !!on);
+        if (on) this._setLrcFocus(false); // §86: sin letra no hay foco que mostrar
+      }
       // §73: sin letra, la barra de herramientas (tamaño, desfase,
       // velocidad, bucle…) solo hacía ruido sobre el vacío y duplicaba
       // las acciones de la tarjeta: la vista entra en modo limpio y la
@@ -196,6 +199,19 @@ Object.assign(App, {
       const hint = document.getElementById('lrcEmptyHint');
       if (title) title.textContent = noTrack ? this.t('no_track_playing') : this.t('lrc_empty_title');
       if (hint) hint.textContent = noTrack ? this.t('load_track_to_start') : this.t('lrc_empty_hint');
+    },
+
+    /* §86: modo «foco» de la letra sincronizada. Con la clase
+     * .lrc-focus en el contenedor, el CSS difumina todas las líneas
+     * menos la que suena (y sus vecinas, a media opacidad). Solo se
+     * activa con letra CON tiempos y una vez que suena la primera
+     * línea: en la intro —o con letra sin sincronizar— todo se lee
+     * como siempre. */
+    _setLrcFocus(on) {
+      const sc = document.getElementById('lyricsScroll');
+      if (sc && sc.classList.contains('lrc-focus') !== !!on) {
+        sc.classList.toggle('lrc-focus', !!on);
+      }
     },
 
     /* ============================================================
@@ -337,7 +353,10 @@ Object.assign(App, {
      * Usa búsqueda LINEAL (no binaria) porque el array puede tener
      * líneas timed y untimed mezcladas, lo que rompe la búsqueda binaria. */
     updateLyricsHighlight(cur) {
-      if (!this.lrcLines.length || !this.lrcHasTimed) return;
+      if (!this.lrcLines.length || !this.lrcHasTimed) {
+        this._setLrcFocus(false); // §86: sin sincronía no hay difuminado
+        return;
+      }
 
       // === BÚSQUEDA LINEAL del índice activo ===
       // Encontrar la última línea timed con time <= cur.
@@ -364,6 +383,8 @@ Object.assign(App, {
             }
           }
         }
+        // §86: antes de la primera línea (intro) todo visible.
+        this._setLrcFocus(false);
         this._updateKaraokeWords(cur);
         return;
       }
@@ -386,6 +407,7 @@ Object.assign(App, {
 
       // === Solo actualizar DOM si cambió la línea activa ===
       const key = activeIndices[0] + '';  // clave simple: primer índice
+      this._setLrcFocus(true); // §86: ya suena una línea: a difuminar el resto
       if (key !== this._lastActiveKey) {
         this._lastActiveKey = key;
         this.activeLrcIdx = idx;

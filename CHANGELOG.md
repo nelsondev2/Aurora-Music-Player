@@ -26,6 +26,12 @@ verificado función a función:
   desde…», gapless/crossfade, ecualizador, visualizador y temporizador
   de apagado.
 - Letras sincronizadas LRC (archivo o incrustadas).
+- Letras con foco (§86): en la vista de letras solo se lee con
+  claridad la línea que está sonando y el resto queda difuminado
+  (al desplazar a mano la letra se aclara para buscar un verso);
+  sin letra la vista ya no muestra mini reproductor — solo la
+  tarjeta para cargar la letra — y el gesto de deslizar para
+  cambiar de canción dentro de Letras desaparece.
 - Estadísticas (recientes, más reproducidas, historial; solo cuentan las canciones escuchadas enteras) y compartir
   canciones, listas `.m3u8` y letras por `sendToChat`.
 - Interfaz en 8 idiomas, temas y colores de acento.

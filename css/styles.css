@@ -1004,7 +1004,7 @@ svg { display: block; }
   font-weight: 600;
   line-height: 1.4;
   color: var(--text-3);
-  transition: color .15s ease, transform .15s ease, opacity .15s ease;
+  transition: color .15s ease, transform .15s ease, opacity .15s ease, filter .25s ease;
   padding: 2px 8px;
   opacity: 0.9;
   transform: none;
@@ -3582,6 +3582,12 @@ button,
   color: var(--text-2);
 }
 .view-lyrics.lrc-is-empty .lyrics-toolbar { display: none; }
+/* §86: sin letra no queda ni rastro del reproductor en la vista:
+ * fuera también la mini-cabecera (portada/título) y los controles
+ * inferiores (progreso + anterior/play/siguiente). Solo quedan la
+ * barra superior y la tarjeta de vacío con «Cargar .lrc». */
+.view-lyrics.lrc-is-empty .lyrics-mini,
+.view-lyrics.lrc-is-empty .lyrics-controls { display: none; }
 .view-lyrics.lrc-no-track .lrc-empty-actions { display: none; }
 .lrc-empty-icon {
   width: 72px;
@@ -4654,6 +4660,41 @@ html.aurora-wide .toast {
   color: var(--accent);
   background: transparent;
   opacity: 0.8;
+}
+
+/* §86: foco en la línea que suena. La clase .lrc-focus la pone el
+ * JS solo con letra sincronizada y una primera línea ya activa:
+ * la activa se lee nítida, la vecina (±1) queda a media opacidad
+ * como contexto y el resto se difumina casi hasta lo ilegible
+ * (opacidad muy baja + desenfoque leve; el radio es pequeño a
+ * propósito: blur grande sobre ~100 líneas saldría caro en el
+ * WebView). Sin .lrc-focus —intro o letra sin tiempos— no se
+ * aplica nada de esto. Mientras el usuario desplaza la letra a
+ * mano (.user-scrolling), todo se aclara para poder buscar un
+ * verso; al retomar el auto-scroll vuelve el foco. */
+.lyrics-scroll.lrc-focus .lrc-line {
+  opacity: 0.18;
+  filter: blur(2px);
+}
+.lyrics-scroll.lrc-focus .lrc-line.near-2 {
+  opacity: 0.3;
+  filter: blur(1.3px);
+}
+.lyrics-scroll.lrc-focus .lrc-line.near {
+  opacity: 0.55;
+  filter: blur(0.7px);
+}
+.lyrics-scroll.lrc-focus .lrc-line.active {
+  opacity: 1;
+  filter: none;
+}
+.lyrics-scroll.lrc-focus .lrc-line:active {
+  opacity: 1;
+  filter: none;
+}
+.lyrics-scroll.lrc-focus.user-scrolling .lrc-line {
+  opacity: 0.85;
+  filter: none;
 }
 
 /* Controles atracados: ocupan su sitio en la columna, con fondo
