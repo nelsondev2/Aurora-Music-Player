@@ -3357,3 +3357,59 @@ cuerpo, que es lo que se desplaza.
   §81 **41/41**, §80 **21/21**; llaves CSS equilibradas.
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+---
+
+## 90. Visualizador: solo la onda (las barras tapaban el cover)
+
+Petición: «en el visualizador solo deja las ondas, las barras
+tapan mucho el cover». El modo barras se retira por completo;
+el visualizador queda con un único modo, la onda fluida que ya
+vivía sobre la parte baja de la portada (§84).
+
+### Cambios (`js/audio.js`, `js/data.js`)
+
+- **Modos**: el ciclo del botón pasa de barras→onda→apagado a
+  **onda ↔ apagado**. Por defecto (sin preferencia guardada)
+  ahora arranca en onda; con «reduced-motion» sigue arrancando
+  apagado.
+- **Migración**: un `aurora_visualizer_mode` guardado como
+  `bars` se convierte a `wave` al iniciar y se re-persiste;
+  `setVisualizerMode('bars')` también normaliza a onda, por si
+  quedara cualquier llamador heredado.
+- **Código retirado**: la rama de dibujo de barras de
+  `drawVisualizerFrame` (la onda queda en línea, sin if/else),
+  los helpers exclusivos `_visLogBands`, `_visBarTargets` y
+  `_visStepBars`, los resets de su degradado en
+  `_fitVisualizerCanvas` y la clave i18n `visualizer_bars`
+  (8 idiomas; paridad verificada, 383 claves × 8). Los
+  comentarios que citaban las barras se actualizaron.
+- **Reposo también en onda**: `_drawVisualizerIdle` pintaba en
+  pausa una fila de 48 barras bajas; ahora pinta una línea
+  senoidal quieta con los colores de la portada.
+
+Sin cambios de CSS ni HTML: la capa sobre la portada (§84) y
+el botón son los mismos; la onda tapa menos porque es trazo y
+relleno translúcido, no columnas opacas.
+
+### Verificación
+
+- **Check §90** `/tmp/check-vista90.js`: **19/19** — migración
+  `bars`→`wave` con re-persistencia, defecto en onda, `off`
+  respetado, ciclo onda↔apagado mostrando/ocultando la capa,
+  normalización de `setVisualizerMode('bars')`, helpers y rama
+  de frecuencias fuera del código, reposo senoidal, i18n sin
+  la clave muerta y con paridad, y dibujo sin analizador sin
+  errores.
+- **Check §84 actualizado a 14/14**: su segmento de ciclo
+  afirmaba el contrato retirado (bars→wave→off→bars); se
+  reescribió al contrato §90 (onda↔apagado y «bars» heredado
+  migra a onda). El resto de afirmaciones §84 (estructura de
+  la capa sobre la portada) no cambian. Queda una afirmación
+  menos que las 15 originales porque el ciclo de 3 modos ya
+  no existe.
+- Regresiones: §89 **15/15**, §88 **21/21**, §87 **17/17**,
+  §86 **28/28**, §85 **21/21**, §83 **22/22**, §82 **17/17**,
+  §81 **41/41**, §80 **21/21**.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

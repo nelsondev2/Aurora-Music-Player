@@ -37,12 +37,11 @@ Object.assign(App, {
         for (const f of this.eqFilters) { node.connect(f); node = f; }
 
         this.analyser = this.audioCtx.createAnalyser();
-        /* fftSize 2048 (1024 bins): las bandas logarítmicas del espectro
-         * y la onda fluida necesitan resolución de verdad; con 256 la
-         * onda solo tenía 128 muestras y salía dentada. */
+        /* fftSize 2048: la onda fluida necesita resolución temporal
+         * de verdad; con 256 solo tenía 128 muestras y salía dentada. */
         this.analyser.fftSize = 2048;
-        // 0.68 (antes 0.8): con el suavizado propio de las barras
-        // (_visStepBars) encima, 0.8 hacía el espectro perezoso (§68).
+        // 0.68 (antes 0.8): con el suavizado propio de la onda
+        // encima, 0.8 hacía el trazo perezoso (§68).
         this.analyser.smoothingTimeConstant = 0.68;
         this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
         this._visTimeData = new Uint8Array(this.analyser.fftSize);
@@ -1209,17 +1208,24 @@ Object.assign(App, {
           if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) saved = 'off';
         } catch (e) {}
       }
-      this.visualizerMode = saved || 'bars';
+      // §90: solo queda la onda (las barras tapaban el cover). Lo
+      // guardado como «bars» migra a «wave» y se re-persiste para
+      // que el almacenamiento diga la verdad; por defecto, onda.
+      if (saved === 'bars') {
+        saved = 'wave';
+        try { localStorage.setItem('aurora_visualizer_mode', 'wave'); } catch (e) {}
+      }
+      this.visualizerMode = saved || 'wave';
       this.updateVisualizerUI();
       if (this.isPlaying) this.startVisualizer();
     },
 
     setVisualizerMode(mode) {
+      if (mode === 'bars') mode = 'wave'; // §90: modo retirado, migra a onda
       this.visualizerMode = mode;
       try { localStorage.setItem('aurora_visualizer_mode', mode); } catch (e) {}
       this.updateVisualizerUI();
       const labels = {
-        bars: this.t('visualizer_bars'),
         wave: this.t('visualizer_wave'),
         off: this.t('visualizer_off')
       };
@@ -1232,8 +1238,8 @@ Object.assign(App, {
     },
 
     cycleVisualizerMode() {
-      const next = this.visualizerMode === 'bars' ? 'wave' : (this.visualizerMode === 'wave' ? 'off' : 'bars');
-      this.setVisualizerMode(next);
+      // §90: sin barras, el ciclo es onda ↔ apagado.
+      this.setVisualizerMode(this.visualizerMode === 'wave' ? 'off' : 'wave');
     },
 
     updateVisualizerUI() {
@@ -1260,8 +1266,6 @@ Object.assign(App, {
           canvas.height = h;
           this._visGrad = null;
           this._visGradKey = null;
-          this._visBarsGrad = null;
-          this._visBarsKey = null;
           this._visWaveFill = null;
           this._visWaveFillKey = null;
         }
@@ -1339,7 +1343,7 @@ Object.assign(App, {
       if (canvas) {
         const ctx = canvas.getContext('2d');
         // §70 [11]: antes se limpiaba a negro y el área parecía rota en
-        // pausa. Ahora se pinta el estado de reposo (barras bajas).
+        // pausa. Ahora se pinta el estado de reposo (onda quieta, §90).
         if (ctx) this._drawVisualizerIdle(canvas, ctx);
       }
     },
@@ -1355,18 +1359,23 @@ Object.assign(App, {
       grad.addColorStop(0, this._hexA(cols.from, 0.35));
       grad.addColorStop(0.5, this._hexA(cols.to, 0.35));
       grad.addColorStop(1, this._hexA(cols.from, 0.35));
-      ctx.fillStyle = grad;
-      const count = 48, gap = Math.max(2, Math.round(w * 0.004));
-      const bw = (w - gap * (count + 1)) / count;
-      const bh = Math.max(3, Math.round(h * 0.06));
-      for (let i = 0; i < count; i++) {
-        const x = gap + i * (bw + gap);
-        const y = h - bh;
-        ctx.beginPath();
-        if (typeof ctx.roundRect === 'function') ctx.roundRect(x, y, bw, bh, 2);
-        else ctx.rect(x, y, bw, bh);
-        ctx.fill();
+      // §90: también en reposo manda la onda: una línea senoidal
+      // suave y quieta, nada de la fila de barras bajas de antes.
+      const midY = h / 2;
+      const amp = Math.max(2, h * 0.12);
+      ctx.strokeStyle = grad;
+      ctx.lineWidth = Math.max(2, Math.min(3, w / 220));
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      const steps = 64;
+      for (let i = 0; i <= steps; i++) {
+        const x = (i / steps) * w;
+        const y = midY + Math.sin((i / steps) * Math.PI * 4) * amp;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
       }
+      ctx.stroke();
     },
 
     /* ---------- Visualizador: utilidades de dibujo ---------- */
@@ -1401,68 +1410,6 @@ Object.assign(App, {
       if (!m) return hex;
       const n = parseInt(m[1], 16);
       return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + alpha + ')';
-    },
-
-    /* Bandas logarítmicas 35 Hz–16 kHz: la energía musical vive
-     * abajo; con el muestreo lineal anterior los graves se pegaban
-     * al techo y los agudos ni se movían. Pares [binIni, binFin),
-     * cacheados por (nº de barras, bins, sampleRate). */
-    _visLogBands(count, binCount, sampleRate) {
-      const key = count + ':' + binCount + ':' + sampleRate;
-      if (this._visBandsCache && this._visBandsKey === key) return this._visBandsCache;
-      const binHz = sampleRate / (binCount * 2);
-      const fMin = 35;
-      const fMax = Math.min(16000, (sampleRate / 2) * 0.92);
-      const bands = [];
-      for (let i = 0; i < count; i++) {
-        const f0 = fMin * Math.pow(fMax / fMin, i / count);
-        const f1 = fMin * Math.pow(fMax / fMin, (i + 1) / count);
-        const b0 = Math.max(1, Math.floor(f0 / binHz));
-        const b1 = Math.min(binCount - 1, Math.max(b0 + 1, Math.round(f1 / binHz)));
-        bands.push([b0, b1]);
-      }
-      this._visBandsCache = bands;
-      this._visBandsKey = key;
-      return bands;
-    },
-
-    /* Nivel objetivo (0..1) por banda: máximo del rango con gamma
-     * 0.78, que levanta los pasajes flojos sin pegar todo al techo. */
-    _visBarTargets(bands) {
-      if (!this._visTargets || this._visTargets.length !== bands.length) {
-        this._visTargets = new Float32Array(bands.length);
-      }
-      const data = this.freqData;
-      const out = this._visTargets;
-      for (let i = 0; i < bands.length; i++) {
-        const b0 = bands[i][0], b1 = bands[i][1];
-        let m = 0;
-        for (let b = b0; b < b1; b++) { if (data[b] > m) m = data[b]; }
-        out[i] = Math.pow(m / 255, 0.78);
-      }
-      return out;
-    },
-
-    /* Suavizado ataque/caída independiente del frame-rate y picos
-     * que caen despacio: convierte el parpadeo nervioso de antes en
-     * un espectro con peso. Estado persistente entre frames. */
-    _visStepBars(targets, dtMs) {
-      const n = targets.length;
-      if (!this._visBarVals || this._visBarVals.length !== n) {
-        this._visBarVals = new Float32Array(n);
-        this._visBarPeaks = new Float32Array(n);
-      }
-      const vals = this._visBarVals, peaks = this._visBarPeaks;
-      const atk = 1 - Math.exp(-dtMs / 34);
-      const rel = 1 - Math.exp(-dtMs / 160);
-      const peakFall = dtMs * 0.00042;
-      for (let i = 0; i < n; i++) {
-        const t = targets[i];
-        vals[i] += (t - vals[i]) * (t > vals[i] ? atk : rel);
-        if (vals[i] > peaks[i]) peaks[i] = vals[i];
-        else if (peaks[i] > vals[i]) peaks[i] = Math.max(vals[i], peaks[i] - peakFall);
-      }
-      return { vals, peaks };
     },
 
     /* Onda fluida: diezma el dominio temporal quedándose con la
@@ -1501,123 +1448,74 @@ Object.assign(App, {
       const dt = (typeof dtMs === 'number' && dtMs > 0) ? Math.min(100, dtMs) : 33;
       const cols = this._visColors();
 
-      if (this.visualizerMode === 'wave') {
-        // Buffer temporal propio (fftSize muestras; antes se reusaba
-        // el de frecuencias, la mitad de largo: onda pobre y dentada).
-        if (!this._visTimeData || (this.analyser.fftSize && this._visTimeData.length !== this.analyser.fftSize)) {
-          this._visTimeData = new Uint8Array(this.analyser.fftSize || this.freqData.length);
-        }
-        this.analyser.getByteTimeDomainData(this._visTimeData);
-        const cssW = canvas.clientWidth || Math.round(w / 2);
-        const count = Math.max(64, Math.min(140, Math.round(cssW / 4)));
-        const pts = this._visWavePoints(this._visTimeData, count, dt);
-        const midY = h / 2;
-        const amp = h * 0.42;
-
-        const key = 'wave:' + w + ':' + cols.from + '>' + cols.to;
-        if (!this._visGrad || this._visGradKey !== key) {
-          const grad = ctx.createLinearGradient(0, 0, w, 0);
-          grad.addColorStop(0, cols.from);
-          grad.addColorStop(0.5, cols.to);
-          grad.addColorStop(1, cols.from);
-          this._visGrad = grad;
-          this._visGradKey = key;
-        }
-        const fkey = 'wavefill:' + h + ':' + cols.from + '>' + cols.to;
-        if (!this._visWaveFill || this._visWaveFillKey !== fkey) {
-          const fg = ctx.createLinearGradient(0, 0, 0, h);
-          fg.addColorStop(0, this._hexA(cols.to, 0.05));
-          fg.addColorStop(0.5, this._hexA(cols.to, 0.22));
-          fg.addColorStop(1, this._hexA(cols.to, 0.05));
-          this._visWaveFill = fg;
-          this._visWaveFillKey = fkey;
-        }
-
-        // Trazo suavizado con curvas cuadráticas por puntos medios
-        const tracePath = () => {
-          ctx.beginPath();
-          let px = 0, py = midY + pts[0] * amp;
-          ctx.moveTo(px, py);
-          for (let i = 1; i < count; i++) {
-            const x = (i / (count - 1)) * w;
-            const y = midY + pts[i] * amp;
-            ctx.quadraticCurveTo(px, py, (px + x) / 2, (py + y) / 2);
-            px = x; py = y;
-          }
-          ctx.lineTo(px, py);
-        };
-
-        const lineW = Math.max(2, Math.min(3.2, w / 220));
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
-        // Halo ancho y tenue bajo el trazo: la «fluidez» visual
-        ctx.save();
-        ctx.globalAlpha = 0.15;
-        ctx.strokeStyle = this._visGrad;
-        ctx.lineWidth = lineW * 3.4;
-        tracePath();
-        ctx.stroke();
-        ctx.restore();
-        // Relleno suave entre la onda y su línea central
-        tracePath();
-        ctx.lineTo(w, midY);
-        ctx.lineTo(0, midY);
-        ctx.closePath();
-        ctx.fillStyle = this._visWaveFill;
-        ctx.fill();
-        // Trazo principal
-        ctx.strokeStyle = this._visGrad;
-        ctx.lineWidth = lineW;
-        tracePath();
-        ctx.stroke();
-      } else {
-        this.analyser.getByteFrequencyData(this.freqData);
-        const sampleRate = (this.analyser.context && this.analyser.context.sampleRate)
-          || (this.audioCtx && this.audioCtx.sampleRate) || 48000;
-        const cssW = canvas.clientWidth || Math.round(w / 2);
-        // Nº de barras según el ancho real: ni columnas enanas en
-        // pantallas grandes ni láminas de 1 px en las pequeñas.
-        const numBars = Math.max(24, Math.min(56, Math.round(cssW / 11)));
-        const bands = this._visLogBands(numBars, this.freqData.length, sampleRate);
-        const state = this._visStepBars(this._visBarTargets(bands), dt);
-        const vals = state.vals, peaks = state.peaks;
-
-        const bkey = 'bars:' + h + ':' + cols.from + '>' + cols.to;
-        if (!this._visBarsGrad || this._visBarsKey !== bkey) {
-          const bg = ctx.createLinearGradient(0, 0, 0, h);
-          bg.addColorStop(0, this._hexA(cols.to, 0.95));
-          bg.addColorStop(0.62, this._hexA(cols.from, 0.85));
-          bg.addColorStop(1, this._hexA(cols.from, 0.55));
-          this._visBarsGrad = bg;
-          this._visBarsKey = bkey;
-        }
-        const gap = Math.max(2, Math.round(w / 300));
-        const pitch = w / numBars;
-        const barWidth = Math.max(1.5, pitch - gap);
-        const usable = h - Math.max(7, Math.round(h * 0.14)); // aire para el pico
-        const r = Math.min(barWidth / 2, Math.max(1.5, w / 260));
-        ctx.fillStyle = this._visBarsGrad;
-        for (let i = 0; i < numBars; i++) {
-          const barHeight = Math.max(2, vals[i] * usable);
-          const x = i * pitch + gap / 2;
-          const y = h - barHeight;
-          ctx.beginPath();
-          if (typeof ctx.roundRect === 'function') {
-            ctx.roundRect(x, y, barWidth, barHeight, [r, r, 0, 0]);
-          } else {
-            ctx.rect(x, y, barWidth, barHeight);
-          }
-          ctx.fill();
-        }
-        // Marcas de pico en una sola pasada y un solo fillStyle
-        const capH = Math.max(2, Math.round(h * 0.055));
-        ctx.fillStyle = 'rgba(255,255,255,0.78)';
-        for (let i = 0; i < numBars; i++) {
-          if (peaks[i] <= 0.02) continue;
-          const x = i * pitch + gap / 2;
-          const capY = Math.max(0, h - Math.max(2, peaks[i] * usable) - capH - 2);
-          ctx.fillRect(x, capY, barWidth, capH);
-        }
+      // §90: único modo: la onda fluida (las barras tapaban el cover).
+      // Buffer temporal propio (fftSize muestras; antes se reusaba
+      // el de frecuencias, la mitad de largo: onda pobre y dentada).
+      if (!this._visTimeData || (this.analyser.fftSize && this._visTimeData.length !== this.analyser.fftSize)) {
+        this._visTimeData = new Uint8Array(this.analyser.fftSize || this.freqData.length);
       }
+      this.analyser.getByteTimeDomainData(this._visTimeData);
+      const cssW = canvas.clientWidth || Math.round(w / 2);
+      const count = Math.max(64, Math.min(140, Math.round(cssW / 4)));
+      const pts = this._visWavePoints(this._visTimeData, count, dt);
+      const midY = h / 2;
+      const amp = h * 0.42;
+
+      const key = 'wave:' + w + ':' + cols.from + '>' + cols.to;
+      if (!this._visGrad || this._visGradKey !== key) {
+        const grad = ctx.createLinearGradient(0, 0, w, 0);
+        grad.addColorStop(0, cols.from);
+        grad.addColorStop(0.5, cols.to);
+        grad.addColorStop(1, cols.from);
+        this._visGrad = grad;
+        this._visGradKey = key;
+      }
+      const fkey = 'wavefill:' + h + ':' + cols.from + '>' + cols.to;
+      if (!this._visWaveFill || this._visWaveFillKey !== fkey) {
+        const fg = ctx.createLinearGradient(0, 0, 0, h);
+        fg.addColorStop(0, this._hexA(cols.to, 0.05));
+        fg.addColorStop(0.5, this._hexA(cols.to, 0.22));
+        fg.addColorStop(1, this._hexA(cols.to, 0.05));
+        this._visWaveFill = fg;
+        this._visWaveFillKey = fkey;
+      }
+
+      // Trazo suavizado con curvas cuadráticas por puntos medios
+      const tracePath = () => {
+        ctx.beginPath();
+        let px = 0, py = midY + pts[0] * amp;
+        ctx.moveTo(px, py);
+        for (let i = 1; i < count; i++) {
+          const x = (i / (count - 1)) * w;
+          const y = midY + pts[i] * amp;
+          ctx.quadraticCurveTo(px, py, (px + x) / 2, (py + y) / 2);
+          px = x; py = y;
+        }
+        ctx.lineTo(px, py);
+      };
+
+      const lineW = Math.max(2, Math.min(3.2, w / 220));
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      // Halo ancho y tenue bajo el trazo: la «fluidez» visual
+      ctx.save();
+      ctx.globalAlpha = 0.15;
+      ctx.strokeStyle = this._visGrad;
+      ctx.lineWidth = lineW * 3.4;
+      tracePath();
+      ctx.stroke();
+      ctx.restore();
+      // Relleno suave entre la onda y su línea central
+      tracePath();
+      ctx.lineTo(w, midY);
+      ctx.lineTo(0, midY);
+      ctx.closePath();
+      ctx.fillStyle = this._visWaveFill;
+      ctx.fill();
+      // Trazo principal
+      ctx.strokeStyle = this._visGrad;
+      ctx.lineWidth = lineW;
+      tracePath();
+      ctx.stroke();
     }
 });

@@ -2334,11 +2334,6 @@ const I18N = {
     zh: '频谱可视化', ja: 'ビジュアライザー', fr: 'Visualiseur',
     it: 'Visualizzatore', ru: 'Визуализатор'
   },
-  visualizer_bars: {
-    es: 'Barras de espectro', en: 'Spectrum bars', pt: 'Barras de espectro',
-    zh: '频谱柱', ja: 'スペクトラムバー', fr: 'Barres de spectre',
-    it: 'Barre dello spettro', ru: 'Полосы спектра'
-  },
   visualizer_wave: {
     es: 'Onda fluida', en: 'Fluid wave', pt: 'Onda fluida',
     zh: '流动声波', ja: '波形ウェーブ', fr: 'Onde fluide',

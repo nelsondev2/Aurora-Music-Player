@@ -26,6 +26,10 @@ verificado función a función:
   desde…», gapless/crossfade, ecualizador, visualizador y temporizador
   de apagado.
 - Letras sincronizadas LRC (archivo o incrustadas).
+- Visualizador (§90): solo queda la onda fluida sobre la
+  portada; el modo de barras de espectro desaparece (tapaba
+  demasiado el cover). El botón alterna onda/apagado y quien
+  tuviera «barras» guardado pasa a onda automáticamente.
 - Biblioteca (§89): la barra de pestañas (Listas, Álbumes,
   Artistas, Géneros) queda fija bajo la cabecera al desplazar
   la lista, sin perderse nunca de vista.
