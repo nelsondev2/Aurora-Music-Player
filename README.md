@@ -27,6 +27,13 @@ Reproductor de música **offline-first** pensado para **WebXDC**: se comparte co
 - **Estadísticas**: recientes, más reproducidas e historial (las reproducciones solo cuentan cuando la canción suena entera).
 - **Comparte por el chat**: envía canciones, listas (`.m3u8`) y letras
   con `sendToChat`, sin salir de Delta Chat.
+- **Ordena y explora a tu manera**: cada lista se puede ordenar por
+  título, artista, álbum o duración (además del orden por estrellas),
+  y Biblioteca explora tu colección por Álbumes, Artistas y Géneros.
+  Hay **listas inteligentes** que se rellenan solas (4+ estrellas, un
+  género, nunca reproducidas, olvidadas…), la cola se puede guardar
+  como lista, la letra se sincroniza tocando al ritmo de la canción
+  y Estadísticas también cuenta saltadas y olvidadas.
 - **8 idiomas** (es, en, pt, zh, ja, fr, it, ru), temas y colores de
   acento.
 

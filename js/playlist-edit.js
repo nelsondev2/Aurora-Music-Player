@@ -18,6 +18,17 @@ Object.assign(App, {
      * Las pistas son opcionales: se puede crear una lista vacía. */
     openCreatePlaylistSheet() {
       this._addingToPlaylistId = null;
+      // §81: cada apertura empieza en lista normal y sin bandera de
+      // «guardar cola» (openSaveQueueSheet la pone después de llamar).
+      this._queueSaveMode = false;
+      this._plSmartMode = false;
+      const smartFields = document.getElementById('smartRuleFields');
+      if (smartFields) smartFields.hidden = true;
+      const btnN = document.getElementById('plTypeNormal');
+      const btnS = document.getElementById('plTypeSmart');
+      if (btnN) btnN.classList.add('active');
+      if (btnS) btnS.classList.remove('active');
+      if (typeof this._fillSmartGenreSelect === 'function') this._fillSmartGenreSelect();
       // Reset del formulario
       const nameInput = document.getElementById('playlistName');
       const descInput = document.getElementById('playlistDesc');
@@ -44,6 +55,7 @@ Object.assign(App, {
     openAddTracksSheet(playlistId) {
       const pl = this.playlists.find(p => p.id === playlistId);
       if (!pl) return;
+      this._queueSaveMode = false;
       this._addingToPlaylistId = playlistId;
       // Ocultar campos de nombre/descripción
       const fields = document.getElementById('createPlaylistFields');
@@ -83,6 +95,25 @@ Object.assign(App, {
       this.openSheet('sheetEditPlaylist');
     },
 
+    /* §81: rellena el <select> de géneros de la regla inteligente con
+     * los géneros reales de la biblioteca. */
+    _fillSmartGenreSelect() {
+      const sel = document.getElementById('smartRuleGenre');
+      if (!sel) return;
+      const prev = sel.value;
+      sel.innerHTML = '';
+      this.getGenres().forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.name;
+        opt.textContent = g.name + ' (' + g.tracks.length + ')';
+        sel.appendChild(opt);
+      });
+      if (prev) sel.value = prev;
+      const field = document.getElementById('smartGenreField');
+      const kind = document.getElementById('smartRuleKind');
+      if (field && kind) field.hidden = kind.value !== 'genre';
+    },
+
     /* Pinta el contenido del sheet "Editar playlist" */
     renderEditPlaylist() {
       const pl = this.playlists.find(p => p.id === this._editingPlaylistId);
@@ -97,6 +128,18 @@ Object.assign(App, {
         nameEl.onclick = () => this.startRenamePlaylist();
       }
       if (metaEl) metaEl.textContent = this.playlistMetaLabel(pl);
+      // §81: selector de orden sincronizado con la lista, y aviso en
+      // las inteligentes (sin añadir/quitar a mano: manda la regla).
+      const sortSel = document.getElementById('plSortSelect');
+      if (sortSel) sortSel.value = pl.sort || 'stars';
+      const smartHint = document.getElementById('editSmartHint');
+      if (smartHint) smartHint.hidden = !pl.smart;
+      const btnUpload = document.getElementById('btnUploadToPlaylist');
+      if (btnUpload) btnUpload.style.display = pl.smart ? 'none' : '';
+      // Vaciar una inteligente no vaciaría nada (la regla la rellena):
+      // se oculta también; eliminar la lista sí sigue disponible.
+      const btnClear = document.getElementById('btnClearPlaylist');
+      if (btnClear) btnClear.style.display = pl.smart ? 'none' : '';
       // El botón «hero» de reproducir refleja si esta lista es la que
       // suena (anillo de acento), igual que la portada.
       const heroPlay = document.getElementById('btnPlayPlaylistNow');
@@ -121,16 +164,17 @@ Object.assign(App, {
       }
       if (!ul) return;
       ul.innerHTML = '';
-      if (pl.trackIds.length === 0) {
+      const sortedTracks = this.playlistTracksSorted(pl);
+      if (sortedTracks.length === 0) {
         const li = document.createElement('li');
         li.className = 'pl-empty-tracks';
         li.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-cloud-arrow-up"></use></svg><p>' + this.esc(this.t('no_tracks_in_playlist')) + '</p>';
         ul.appendChild(li);
         return;
       }
-      // La lista se VE ordenada por estrellas (§64); el orden guardado
-      // no se toca: es el desempate entre notas iguales.
-      this.playlistTracksSorted(pl).forEach((t, i) => {
+      // La lista se ve en el orden elegido (§81; por defecto el de
+      // estrellas de §64). El orden guardado no se reescribe.
+      sortedTracks.forEach((t, i) => {
         const id = t.id;
         const isCurrent = this.currentTrack && this.currentTrack.id === id;
         const li = document.createElement('li');
@@ -145,7 +189,7 @@ Object.assign(App, {
           </div>
           <div class="row-duration">${isCurrent ? '<svg class="ico now-eq" aria-hidden="true"><use href="#i-volume-high"></use></svg> ' : ''}${this.fmtRowDuration(t)}</div>
           <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>
-          <button class="row-action remove-from-pl" aria-label="${this.esc(this.t('remove_from_playlist'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          ${pl.smart ? '' : `<button class="row-action remove-from-pl" aria-label="${this.esc(this.t('remove_from_playlist'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>`}
         `;
         li.addEventListener('click', (e) => {
           if (e.target.closest('.remove-from-pl, .track-menu-btn')) return;
@@ -161,7 +205,8 @@ Object.assign(App, {
           this.openTrackMenu(t.id);
         });
         if (typeof this.wireTrackLongPress === 'function') this.wireTrackLongPress(li, t.id);
-        li.querySelector('.remove-from-pl').addEventListener('click', (e) => {
+        const removeBtn = li.querySelector('.remove-from-pl');
+        if (removeBtn) removeBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           this.removeFromPlaylist(pl.id, t.id);
         });
@@ -171,37 +216,76 @@ Object.assign(App, {
       });
     },
 
+    /* Renombrar la lista (§81: arreglo del fallo «no hay forma de
+     * confirmar el renombre»).
+     * Antes el <input> reemplazaba al <h4 id="editPlaylistName"> SIN
+     * conservar el id: al confirmar, renderEditPlaylist() ya no
+     * encontraba el título, la vista se quedaba con el campo de texto
+     * para siempre y no existía ningún botón de confirmar.
+     * Ahora el campo nace con botones ✓ (confirmar) y ✗ (cancelar)
+     * bien visibles; Enter confirma, Escape cancela, y al terminar se
+     * restaura el <h4> con su id para que la vista vuelva a pintar el
+     * nombre (y se pueda renombrar otra vez). */
     startRenamePlaylist() {
       const pl = this.playlists.find(p => p.id === this._editingPlaylistId);
       if (!pl) return;
       const nameEl = document.getElementById('editPlaylistName');
-      if (!nameEl || nameEl.tagName === 'INPUT') return;
+      if (!nameEl) return;
+      // Ya hay un renombre en curso (el nombre vive dentro del wrap).
+      if (nameEl.closest && nameEl.closest('.edit-pl-rename')) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'edit-pl-rename';
       const input = document.createElement('input');
       input.type = 'text';
       input.className = 'edit-pl-name-input';
       input.value = pl.name;
       input.maxLength = 80;
-      nameEl.replaceWith(input);
+      input.setAttribute('aria-label', this.t('rename_playlist_btn'));
+      const btnOk = document.createElement('button');
+      btnOk.type = 'button';
+      btnOk.className = 'edit-pl-rename-btn confirm';
+      btnOk.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-check"></use></svg>';
+      btnOk.setAttribute('aria-label', this.t('rename_confirm'));
+      btnOk.title = this.t('rename_confirm');
+      const btnCancel = document.createElement('button');
+      btnCancel.type = 'button';
+      btnCancel.className = 'edit-pl-rename-btn';
+      btnCancel.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg>';
+      btnCancel.setAttribute('aria-label', this.t('cancel'));
+      btnCancel.title = this.t('cancel');
+      wrap.append(input, btnOk, btnCancel);
+      nameEl.replaceWith(wrap);
       input.focus();
       input.select();
       let done = false;
-      const commit = () => {
+      // Sin preventDefault en mousedown, tocar ✓/✗ dispararía el blur
+      // del input y confirmaría antes de saber qué botón se tocó.
+      [btnOk, btnCancel].forEach(b => b.addEventListener('mousedown', (e) => e.preventDefault()));
+      const finish = (save) => {
         if (done) return;
         done = true;
         const v = input.value.trim();
-        if (v && v !== pl.name) {
+        if (save && v && v !== pl.name) {
           pl.name = v;
           this.persistPlaylist(pl);
           this.renderPlaylists();
           if (typeof this.renderHome === 'function') this.renderHome();
           this.toast(this.t('toast_playlist_renamed'));
         }
+        // Restaurar el <h4 id="editPlaylistName"> ANTES de repintar:
+        // es el elemento que renderEditPlaylist() busca por id.
+        const h = document.createElement('h4');
+        h.id = 'editPlaylistName';
+        h.textContent = pl.name;
+        wrap.replaceWith(h);
         this.renderEditPlaylist();
       };
-      input.addEventListener('blur', commit);
+      btnOk.addEventListener('click', () => finish(true));
+      btnCancel.addEventListener('click', () => finish(false));
+      input.addEventListener('blur', () => finish(true));
       input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
-        if (e.key === 'Escape') { input.value = pl.name; input.blur(); }
+        if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+        if (e.key === 'Escape') { e.preventDefault(); finish(false); }
       });
     },
 
@@ -354,7 +438,8 @@ Object.assign(App, {
       if (!id) return;
       const pl = this.playlists.find(p => p.id === id);
       if (!pl) return;
-      const tracks = (pl.trackIds || []).map(tId => this.tracks.find(x => x.id === tId)).filter(Boolean);
+      // §81: las inteligentes exportan sus pistas efectivas (trackIds va vacío).
+      const tracks = this.playlistTracksSorted(pl);
       const safeName = (pl.name || 'playlist').replace(/[\\/:*?"<>|]/g, '_');
 
       // Generar archivo M3U8 estándar con directivas de playlist y tracks

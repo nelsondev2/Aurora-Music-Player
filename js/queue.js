@@ -193,4 +193,29 @@ Object.assign(App, {
       this.playFromQueue(0);
       this.toast(this.t('toast_radio_based') + ' ' + seed.title);
     },
+
+    /* §81: «Guardar cola como lista». Reutiliza la hoja de crear
+     * lista (nombre + descripción) con la bandera _queueSaveMode: al
+     * guardar, la lista nace con las pistas de la cola en su orden
+     * exacto (pl.sort='added' para que el orden por estrellas de §64
+     * no lo reescriba). */
+    openSaveQueueSheet() {
+      if (!this.queue || this.queue.length === 0) {
+        this.toast(this.t('queue_empty'));
+        return;
+      }
+      // La bandera va DESPUÉS de abrir la hoja: openCreatePlaylistSheet
+      // la resetea al empezar (cada apertura nace en modo normal).
+      this.openCreatePlaylistSheet();
+      this._queueSaveMode = true;
+      const titleEl = document.getElementById('createPlaylistTitle');
+      if (titleEl) titleEl.textContent = this.t('save_queue_btn');
+      const btn = document.getElementById('btnSavePlaylist');
+      if (btn) btn.textContent = this.t('save_queue_btn');
+      const nameInput = document.getElementById('playlistName');
+      if (nameInput && !nameInput.value) {
+        const label = (typeof this.getPlayContextLabel === 'function' && this.getPlayContextLabel()) || '';
+        nameInput.value = label || this.t('queue_title');
+      }
+    },
 });

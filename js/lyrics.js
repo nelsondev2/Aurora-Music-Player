@@ -555,6 +555,90 @@ Object.assign(App, {
       if (typeof this._syncLyricsButton === 'function') this._syncLyricsButton();
     },
 
+    /* ============================================================
+     *  §81: sincronizar tocando (tap-to-sync)
+     *  El editor ya existía (pegar/editar con [mm:ss.xx] a mano);
+     *  faltaba marcar los tiempos al ritmo de la canción. Modo:
+     *  escribes las líneas SIN tiempos, abres el panel, reproduces
+     *  y tocas «Marcar línea» al empezar cada una. Al terminar, las
+     *  marcas se escriben en el editor como LRC normal y se guardan
+     *  con el botón Guardar de siempre (saveLrcFromEditor).
+     * ============================================================ */
+    _fmtLrcStamp(sec) {
+      const s = Math.max(0, Number(sec) || 0);
+      const m = Math.floor(s / 60);
+      const r = s - m * 60;
+      return '[' + String(m).padStart(2, '0') + ':' + r.toFixed(2).padStart(5, '0') + ']';
+    },
+
+    toggleLrcTapMode() {
+      const panel = document.getElementById('lrcTapPanel');
+      const ta = document.getElementById('lrcEditorText');
+      if (!panel || !ta) return;
+      if (!panel.hidden) {
+        panel.hidden = true;
+        this._tapSync = null;
+        return;
+      }
+      // Líneas sin marcas de tiempo (las que ya las traen se saltan:
+      // el modo es para letras pegadas en crudo).
+      const stampRe = /\[\d+:\d{1,2}(?:\.\d+)?\]/g;
+      const lines = ta.value.split(/\r?\n/)
+        .map(l => l.replace(stampRe, '').trim())
+        .filter(l => l && !/^\[(ar|ti|al|by|offset|length|re|ve|id):/i.test(l));
+      if (!lines.length) {
+        this.toast(this.t('lrc_tap_no_lines'));
+        return;
+      }
+      this._tapSync = { lines, stamps: [] };
+      panel.hidden = false;
+      this._renderTapSync();
+    },
+
+    _renderTapSync() {
+      const st = this._tapSync;
+      const nextEl = document.getElementById('lrcTapNext');
+      const progEl = document.getElementById('lrcTapProgress');
+      if (!st) return;
+      const idx = st.stamps.length;
+      if (nextEl) nextEl.textContent = idx < st.lines.length ? st.lines[idx] : '✓';
+      if (progEl) progEl.textContent = Math.min(idx, st.lines.length) + ' / ' + st.lines.length;
+    },
+
+    tapSyncMark() {
+      const st = this._tapSync;
+      if (!st || st.stamps.length >= st.lines.length) return;
+      const now = (this.audio && isFinite(this.audio.currentTime)) ? this.audio.currentTime : 0;
+      // Marcas siempre crecientes: si el usuario retrocede, la marca
+      // no puede ir antes que la anterior (el parser ordena, pero la
+      // línea quedaría asociada al tiempo equivocado).
+      const prev = st.stamps.length ? st.stamps[st.stamps.length - 1].time : 0;
+      st.stamps.push({ time: Math.max(now, prev), text: st.lines[st.stamps.length] });
+      this._renderTapSync();
+    },
+
+    tapSyncUndo() {
+      const st = this._tapSync;
+      if (!st || !st.stamps.length) return;
+      st.stamps.pop();
+      this._renderTapSync();
+    },
+
+    tapSyncDone() {
+      const st = this._tapSync;
+      const ta = document.getElementById('lrcEditorText');
+      if (!st || !ta) return;
+      const stamped = st.stamps.map(s => this._fmtLrcStamp(s.time) + s.text);
+      // Las líneas no marcadas se conservan sin tiempo al final:
+      // terminar antes de tiempo no borra letra.
+      const rest = st.lines.slice(st.stamps.length);
+      ta.value = stamped.concat(rest).join('\n');
+      const panel = document.getElementById('lrcTapPanel');
+      if (panel) panel.hidden = true;
+      this._tapSync = null;
+      this.toast(this.t('lrc_saved'));
+    },
+
     /* Exportar / compartir letra LRC activa en Delta Chat o descarga local */
     async exportCurrentLyrics() {
       const t = this.currentTrack;

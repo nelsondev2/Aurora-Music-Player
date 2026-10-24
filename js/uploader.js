@@ -134,9 +134,12 @@
       if (vorbis) {
         if (!tags) tags = vorbis;
         else {
-          for (const k of ['title', 'artist', 'album', 'albumartist', 'lyrics']) {
+          for (const k of ['title', 'artist', 'album', 'albumartist', 'lyrics', 'genre']) {
             if (!this.tagText(tags[k]) && vorbis[k]) tags[k] = vorbis[k];
           }
+          // En Vorbis el año viaja como DATE («2005», «2005-03-01»…).
+          if (!this.tagText(tags.year) && vorbis.date) tags.year = vorbis.date;
+          if (!this.tagText(tags.year) && vorbis.year) tags.year = vorbis.year;
           if (!tags.picture && vorbis.picture) tags.picture = vorbis.picture;
         }
       }
@@ -149,6 +152,10 @@
         if (title) meta.title = title;
         if (artist) meta.artist = artist;
         if (album) meta.album = album;
+        const genre = this.tagText(tags.genre);
+        if (genre) meta.genre = genre.slice(0, 60);
+        const yearMatch = String(tags.year || '').match(/\d{4}/);
+        if (yearMatch) meta.year = parseInt(yearMatch[0], 10);
         if (tags.picture) {
           // Una decodificación para las tres copias (y compartida
           // con las demás canciones del mismo álbum vía caché).
@@ -202,6 +209,8 @@
         coverIsImage,
         coverThumb,
         coverThumbLg,
+        genre: meta.genre || '',
+        year: meta.year || null,
         lrc: meta.lrc,
         fileSize: file.size,
         fileName: file.name,
@@ -681,6 +690,8 @@
         src: URL.createObjectURL(file),
         cover: this.randomCover(),
         coverIsImage: false,
+        genre: '',
+        year: null,
         lrc: null,
         fileSize: file.size,
         fileName: file.name,

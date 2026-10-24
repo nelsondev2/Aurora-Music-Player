@@ -2752,3 +2752,122 @@ está definido (`js/settings.js`).
 
 §§76–79 no reaparecen: cero restos de la pausa al retirar los
 audífonos. La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## §81. Lo que le faltaba a un reproductor «normal» + renombre roto
+
+Tras la auditoría §80 el usuario pidió implementar todo lo viable
+de la lista de carencias comparada con otros reproductores, menos
+lo descartado por orden suya (copia de seguridad §57, importar
+`.m3u` §51, sincronización) y lo imposible en WebXDC (streaming,
+segundo plano al cerrar, pausa al quitar auriculares §§76–79). Y
+arreglar el renombre de listas. Dos «carencias» resultaron no
+serlo al verificar: la cola ya se reordenaba arrastrando
+(`wireDragHandle`) y el tiempo total de escucha ya estaba en
+Estadísticas; de esos puntos solo se implementó lo que faltaba.
+
+### El fallo: renombrar sin confirmar
+
+`startRenamePlaylist()` reemplazaba el `<h4 id="editPlaylistName">`
+por un `<input>` **sin id**: al confirmar, `renderEditPlaylist()`
+ya no encontraba el título, la vista se quedaba con el campo de
+texto para siempre y no había botón de confirmar. Ahora el campo
+nace dentro de `.edit-pl-rename` con botones ✓/✗ visibles; Enter
+confirma, Escape cancela, el blur confirma, y al terminar se
+restaura el `<h4>` con su id (renombrar dos veces seguidas
+funciona; antes la segunda era imposible).
+
+### Ordenación manual (§81.2)
+
+`sortTracksBy(tracks, mode)` en `js/playlist-ui.js`: estrellas
+(§64, sigue siendo la predeterminada), título, artista, álbum,
+orden guardado, recientes y duración. `playlistTracksSorted(pl)`
+la aplica según `pl.sort`, así que listas y colas suenan como se
+ven; el orden guardado no se reescribe. Selector en la hoja de
+editar lista (persiste vía `persistPlaylist`, que ahora guarda
+`sort` y `smart`) y otro en la vista álbum/artista/género
+(`browseTracksSorted()`, también para «Reproducir Todo»).
+
+### Catálogo Álbumes / Artistas / Géneros (§81.3)
+
+Pestañas en Biblioteca sobre la vista de listas de siempre (§47:
+no vuelve «Todas las canciones»; es un índice nuevo pedido
+expresamente). `getAlbums()`/`getArtists()` ya existían;
+`getGenres()` es nuevo porque el importador **pedía género y año
+a jsmediatags y los tiraba**: ahora se guardan en la pista (ID3 y
+Vorbis `GENRE`/`DATE`), el re-etiquetado automático los recupera
+para bibliotecas antiguas, el álbum muestra su año y cada tarjeta
+abre la vista `openBrowse()` existente (tipo `genre` incluido).
+
+### Listas inteligentes (§81.4)
+
+`pl.smart = {kind, genre?}` con reglas: 4+ estrellas, un género,
+nunca reproducidas, añadidas en 30 días, olvidadas (+90 días sin
+escucha completa) y más reproducidas (50). `smartPlaylistTracks()`
+se recalcula en cada lectura: la lista se rellena sola.
+`playlistTracksSorted`, conteo, duración, portada y exportación
+usan las pistas efectivas; en la hoja de edición no se puede
+añadir/quitar/vaciar a mano (la regla manda) y llevan insignia
+«Inteligente». Se crean desde la hoja de crear lista (Normal /
+Inteligente + regla).
+
+### Cola: guardar como lista (§81.5)
+
+Botón en la hoja de cola que reutiliza la hoja de crear con la
+bandera `_queueSaveMode` (puesta DESPUÉS de abrirla:
+`openCreatePlaylistSheet()` resetea las banderas al empezar). La
+lista nace con `sort='added'` para sonar en el orden exacto de la
+cola. Reordenar la cola ya existía; no se ha tocado.
+
+### Editor LRC: sincronizar tocando (§81.6)
+
+El editor de letra existía (pegar/editar a mano); faltaba marcar
+tiempos al ritmo. Panel nuevo en la misma hoja: escribes las
+líneas sin tiempos, reproduces y tocas «Marcar línea»; las marcas
+(monótonas, con deshacer) se escriben como `[mm:ss.xx]` en el
+editor y se guardan con el Guardar de siempre. Terminar antes de
+tiempo conserva el resto de líneas sin marcar.
+
+### Estadísticas: saltadas y olvidadas (§81.7)
+
+`stats.skips` nuevo: `_registerSkip()` cuenta un salto por pase
+cuando el usuario abandona a mitad (next/prev manual o elige otra
+pista), con mínimo oído (5 s o 10 %) y sin contar escuchas
+completas (§67) ni finales buscados a mano. Al completar una
+escucha se guarda `track.lastPlayedAt`; Estadísticas gana las
+secciones «Más saltadas» y «Olvidadas» (con «hace X días»). El
+tiempo total de escucha ya existía como tarjeta.
+
+### Fundido al pausar/reanudar (§81.8)
+
+Sin fundido cruzado activo, pausar baja la ganancia a 0 en 250 ms
+antes de `pause()` (un `play()` intermedio lo invalida por token)
+y reanudar sube de 0 a la ganancia normal en 300 ms, sobre el
+`gainNode` existente. Sin grafo Web Audio, comportamiento de
+siempre.
+
+### Duplicados (§81.9)
+
+«Buscar duplicados» en Biblioteca: grupos por título+artista
+normalizados (la importación ya evitaba el mismo archivo; esto
+caza la misma canción por otro archivo). Se conserva la más
+antigua —la que suele tener estrellas y listas— y las copias se
+borran una a una con el borrado con deshacer de siempre.
+
+### i18n y verificación
+
+44 claves nuevas ×8 (381×8, 0 huecos, 0 referencias rotas por
+`t()` ni `data-i18n*`). `persistPlaylist` guarda `sort`/`smart`.
+
+- **Check §81** `/tmp/check-vista81.js`: **41/41** — renombre
+  (confirmar, cancelar, dos veces), ordenes, las 6 reglas
+  inteligentes, crear inteligente desde la hoja, catálogo
+  (pestañas, tarjetas, abrir álbum), guardar cola en orden,
+  tap-sync completo hasta guardar la letra, salto único por pase,
+  `lastPlayedAt`, secciones de stats y duplicados.
+- Regresión §80 `/tmp/check-audit80.js`: **21/21** (el orden por
+  estrellas de §64 intacto como predeterminado).
+- Batería estática limpia; `node --check js/*.js` OK; llaves CSS
+  990/990.
+- **Build .xdc válido**: 27 archivos.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

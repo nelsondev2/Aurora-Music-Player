@@ -85,6 +85,7 @@
     /* Estadísticas de reproducción */
     stats: {
       plays: {},        // {trackId: count}
+      skips: {},        // {trackId: count} — §81: saltos a mitad de canción
       totalSeconds: 0,
       lastPlayed: null,  // ISO string
       sessionStart: Date.now()
@@ -93,6 +94,7 @@
     _currentPlayStart: null,
     _currentPlayBaseTime: 0,
     _playCounted: false,   // §67: la escucha en curso ya sumó (o no)
+    _skipCounted: false,   // §81: el salto de este pase ya contó (o no)
 
     /* Crossfade opt-in (0 / 3 / 6 / 12 s). 0 = off; no retrasa el next manual. */
     crossfadeEnabled: false,
@@ -124,6 +126,7 @@
 
     /* Biblioteca: orden de la lista de canciones.
      * Ya no hay pestañas: la vista muestra listas + todas las canciones. */
+    _libTab: 'playlists', // §81: pestaña activa de la biblioteca
     _menuTrackId: null,
     _editTrackId: null,
     _browse: null,

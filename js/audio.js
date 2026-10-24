@@ -189,6 +189,13 @@ Object.assign(App, {
     playTrack(trackId, context) {
       const idx = this.tracks.findIndex(t => t.id === trackId);
       if (idx < 0) return;
+      // §81: cambiar a otra canción a mitad de reproducción cuenta
+      // como salto de la saliente (playFromQueue no pasa por aquí,
+      // así que next/prev no lo cuentan dos veces).
+      if (this.currentTrack && this.currentTrack.id !== trackId && this.isPlaying
+          && typeof this._registerSkip === 'function') {
+        this._registerSkip();
+      }
       this.currentTrackIdx = idx;
       this.currentTrack = this.tracks[idx];
 
@@ -459,9 +466,12 @@ Object.assign(App, {
             this.isPlaying = true;
             if (this.gainNode && this.audioCtx && !this._xfadeIncoming && !this._xfadeStarted) {
               try {
+                // §81: fundido de entrada (300 ms). Sin grafo Web
+                // Audio no hay dónde fundir y se entra directo.
                 const now = this.audioCtx.currentTime;
                 this.gainNode.gain.cancelScheduledValues(now);
-                this.gainNode.gain.setValueAtTime(this._normGain || 1, now);
+                this.gainNode.gain.setValueAtTime(0.0001, now);
+                this.gainNode.gain.exponentialRampToValueAtTime(Math.max(0.0002, this._normGain || 1), now + 0.3);
               } catch (e) {}
             }
             this.updatePlayUI();
@@ -495,7 +505,32 @@ Object.assign(App, {
       } else {
         this._playToken = (this._playToken || 0) + 1;
         this._cancelCrossfade();
-        this.audio.pause();
+        // §81: fundido de salida (250 ms) antes de pausar de verdad.
+        // Si llega un play() mientras tanto, el token lo invalida y
+        // la pausa programada no se aplica. Sin grafo, pausa directa.
+        const canFade = this.gainNode && this.audioCtx && !this._xfadeIncoming && !this._xfadeStarted
+          && this.audio && !this.audio.paused;
+        if (canFade) {
+          const fadeToken = this._playToken;
+          try {
+            const now = this.audioCtx.currentTime;
+            this.gainNode.gain.cancelScheduledValues(now);
+            this.gainNode.gain.setValueAtTime(Math.max(0.0002, this.gainNode.gain.value || 1), now);
+            this.gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+          } catch (e) {}
+          setTimeout(() => {
+            if (this._playToken !== fadeToken) return; // se reanudó: no pausar
+            try { this.audio.pause(); } catch (e) {}
+            // Dejar la ganancia en su sitio para el próximo play().
+            try {
+              const now2 = this.audioCtx.currentTime;
+              this.gainNode.gain.cancelScheduledValues(now2);
+              this.gainNode.gain.setValueAtTime(this._normGain || 1, now2);
+            } catch (e) {}
+          }, 270);
+        } else {
+          this.audio.pause();
+        }
         this.isPlaying = false;
         this.updatePlayUI();
         this.releaseWakeLock();
@@ -586,6 +621,11 @@ Object.assign(App, {
 
     next(auto) {
       if (auto && this._sleepFading) return;
+      // §81: un salto manual a mitad de canción cuenta como «saltada»
+      // en estadísticas (el automático al terminar, no).
+      if (!auto && this.isPlaying && typeof this._registerSkip === 'function') {
+        this._registerSkip();
+      }
       // Fin natural o fundido: la pista saliente sonó entera y cuenta
       // en estadísticas (§67). Un next() manual no pasa por aquí
       // (auto=false); un archivo que falla llega con isPlaying=false
@@ -640,6 +680,11 @@ Object.assign(App, {
     prev() {
       this._cancelCrossfade();
       this._gaplessArmed = false;
+      // §81: ir a la anterior a mitad de canción también es un salto
+      // (reiniciar la misma con >3 s no: eso lo gestiona el if).
+      if (this.audio.currentTime <= 3 && this.isPlaying && typeof this._registerSkip === 'function') {
+        this._registerSkip();
+      }
       if (this.audio.currentTime > 3) {
         this.audio.currentTime = 0;
         this.updateMediaPosition(true);

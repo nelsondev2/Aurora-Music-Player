@@ -361,7 +361,11 @@ Object.assign(App, {
           trackIds: Array.isArray(pl.trackIds) ? pl.trackIds.slice() : [],
           cover: pl.cover || null,
           coverArt: pl.coverArt || pl._coverCache || null,
-          coverArtHash: pl.coverArtHash || pl._coverCacheHash || null
+          coverArtHash: pl.coverArtHash || pl._coverCacheHash || null,
+          // §81: sin estos dos, la ordenación elegida y las listas
+          // inteligentes se perdían al cerrar la app.
+          sort: pl.sort || null,
+          smart: pl.smart || null
         };
         await window.AuroraStorage.putPlaylist(toSave);
       } catch (e) {

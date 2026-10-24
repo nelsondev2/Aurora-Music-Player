@@ -408,6 +408,10 @@
           </header>
           <div class="sheet-body">
             <p class="sheet-subtitle" id="queueContextLabel"></p>
+            <button class="primary-btn ghost compact" id="btnSaveQueueAsPlaylist" type="button">
+              <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
+              <span data-i18n="save_queue_btn">Guardar cola como lista</span>
+            </button>
             <button class="primary-btn ghost compact" id="btnClearQueue" type="button">
               <svg class="ico" aria-hidden="true"><use href="#i-clear-list"></use></svg>
               <span data-i18n="clear_btn">Vaciar</span>
@@ -446,6 +450,32 @@
           </header>
           <div class="sheet-body">
             <div id="createPlaylistFields">
+              <!-- §81: listas inteligentes (se rellenan solas por regla) -->
+              <div class="pl-type-row">
+                <span class="pl-type-label" data-i18n="pl_type_label">Tipo de lista</span>
+                <div class="pl-type-toggle" role="group">
+                  <button type="button" class="pl-type-btn active" id="plTypeNormal" data-i18n="pl_type_normal">Normal</button>
+                  <button type="button" class="pl-type-btn" id="plTypeSmart" data-i18n="pl_type_smart">Inteligente</button>
+                </div>
+              </div>
+              <div id="smartRuleFields" hidden>
+                <label class="field">
+                  <span data-i18n="smart_rule_label">Regla</span>
+                  <select id="smartRuleKind" class="aurora-select">
+                    <option value="rating" data-i18n="smart_rule_rating">4 estrellas o más</option>
+                    <option value="genre" data-i18n="smart_rule_genre">Un género</option>
+                    <option value="never" data-i18n="smart_rule_never">Nunca reproducidas</option>
+                    <option value="recent" data-i18n="smart_rule_recent">Añadidas en 30 días</option>
+                    <option value="forgotten" data-i18n="smart_rule_forgotten">Olvidadas (+90 días)</option>
+                    <option value="top" data-i18n="smart_rule_top">Más reproducidas</option>
+                  </select>
+                </label>
+                <label class="field" id="smartGenreField" hidden>
+                  <span data-i18n="tab_genres">Géneros</span>
+                  <select id="smartRuleGenre" class="aurora-select"></select>
+                </label>
+                <p class="settings-hint" data-i18n="smart_playlist_hint">Esta lista se rellena sola según su regla.</p>
+              </div>
               <label class="field">
                 <span data-i18n="name_label">Nombre</span>
                 <input type="text" id="playlistName" data-i18n-ph="my_new_playlist" placeholder="Mi nueva lista" maxlength="40" />
@@ -517,6 +547,21 @@
                 <span data-i18n="delete_playlist_btn">Eliminar lista</span>
               </button>
             </div>
+            <!-- §81: ordenación manual de la lista (la de siempre,
+                 por estrellas, sigue siendo la predeterminada §64) -->
+            <div class="pl-sort-row">
+              <span class="pl-sort-label" data-i18n="sort_label">Orden</span>
+              <select id="plSortSelect" class="aurora-select">
+                <option value="stars" data-i18n="sort_stars">Estrellas</option>
+                <option value="title" data-i18n="sort_title">Título A–Z</option>
+                <option value="artist" data-i18n="sort_artist">Artista</option>
+                <option value="album" data-i18n="sort_album">Álbum</option>
+                <option value="added" data-i18n="sort_list_order">Orden de la lista</option>
+                <option value="recent" data-i18n="sort_recent">Añadidas hace poco</option>
+                <option value="duration" data-i18n="sort_duration">Duración</option>
+              </select>
+            </div>
+            <p class="settings-hint" id="editSmartHint" data-i18n="smart_playlist_hint" hidden>Esta lista se rellena sola según su regla.</p>
             <h4 class="section-title" data-i18n="all_tracks_section">Pistas</h4>
             <ul class="track-list" id="editPlaylistTracks"></ul>
           </div>
@@ -610,6 +655,16 @@
             <span class="sheet-header-spacer" aria-hidden="true"></span>
           </header>
           <div class="sheet-body">
+            <!-- §81: pestañas de la biblioteca. «Listas» es la vista de
+                 siempre (§47); Álbumes/Artistas/Géneros son el catálogo
+                 navegable que se pidió después: índice con portadas
+                 que abre la vista de álbum/artista ya existente. -->
+            <div class="lib-tabs" role="tablist">
+              <button class="lib-tab active" type="button" data-libtab="playlists" data-i18n="library_playlists_section">Listas</button>
+              <button class="lib-tab" type="button" data-libtab="albums" data-i18n="tab_albums">Álbumes</button>
+              <button class="lib-tab" type="button" data-libtab="artists" data-i18n="tab_artists">Artistas</button>
+              <button class="lib-tab" type="button" data-libtab="genres" data-i18n="tab_genres">Géneros</button>
+            </div>
             <!-- Sección 1: listas de reproducción -->
             <section class="lib-section" id="libSectionPlaylists">
               <div class="lib-section-head">
@@ -622,6 +677,22 @@
               </div>
               <ul class="playlist-rail" id="libraryPlaylists" tabindex="0" data-i18n-aria="library_playlists_section" aria-label="Listas de reproducción"></ul>
             </section>
+            <!-- §81: catálogo navegable (solo visible en su pestaña) -->
+            <section class="lib-section" id="libSectionAlbums" hidden>
+              <ul class="catalog-grid" id="libraryAlbums"></ul>
+            </section>
+            <section class="lib-section" id="libSectionArtists" hidden>
+              <ul class="catalog-grid" id="libraryArtists"></ul>
+            </section>
+            <section class="lib-section" id="libSectionGenres" hidden>
+              <ul class="catalog-grid" id="libraryGenres"></ul>
+            </section>
+            <div class="lib-tools">
+              <button class="primary-btn ghost compact" id="btnFindDuplicates" type="button">
+                <svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg>
+                <span data-i18n="find_duplicates">Buscar duplicados</span>
+              </button>
+            </div>
 
           </div>
         </div>
@@ -957,6 +1028,36 @@
           <div class="sheet-body">
             <p class="sheet-subtitle" data-i18n="lrc_edit_hint">Pega o edita la letra aquí. Usa [mm:ss.xx] para timestamps.</p>
             <textarea id="lrcEditorText" class="lrc-editor-textarea" rows="20" placeholder="[00:12.50]Primera línea&#10;[00:15.30]Segunda línea"></textarea>
+            <!-- §81: sincronizar tocando, línea a línea al ritmo -->
+            <div class="lrc-tap-box">
+              <button class="primary-btn ghost compact" id="btnLrcTapMode" type="button" data-i18n="lrc_tap_mode">Sincronizar tocando</button>
+              <div id="lrcTapPanel" hidden>
+                <p class="sheet-subtitle" data-i18n="lrc_tap_hint">Reproduce la canción y toca el botón grande al empezar cada línea.</p>
+                <p class="lrc-tap-next" id="lrcTapNext">—</p>
+                <button class="primary-btn lrc-tap-btn" id="btnLrcTap" type="button" data-i18n="lrc_tap_button">Marcar línea</button>
+                <div class="lrc-tap-actions">
+                  <button class="primary-btn ghost compact" id="btnLrcTapUndo" type="button" data-i18n="lrc_tap_undo">Deshacer marca</button>
+                  <button class="primary-btn ghost compact" id="btnLrcTapDone" type="button" data-i18n="lrc_tap_done">Terminar y escribir marcas</button>
+                </div>
+                <p class="sheet-subtitle" id="lrcTapProgress"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- §81: Canciones duplicadas (mismo título y artista) -->
+      <div class="sheet" id="sheetDuplicates">
+        <div class="sheet-backdrop" data-close-sheet="sheetDuplicates"></div>
+        <div class="sheet-panel">
+          <div class="sheet-handle"></div>
+          <header class="sheet-header" role="presentation">
+            <button class="icon-btn-sm" data-close-sheet="sheetDuplicates" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+            <h3 data-i18n="duplicates_title">Canciones duplicadas</h3>
+            <span class="sheet-header-spacer"></span>
+          </header>
+          <div class="sheet-body">
+            <div id="duplicatesContent"></div>
           </div>
         </div>
       </div>
@@ -995,6 +1096,18 @@
                 <h4 id="browseTitleDup" style="display:none">—</h4>
                 <p id="browseSubtitle">—</p>
               </div>
+            </div>
+            <div class="pl-sort-row">
+              <span class="pl-sort-label" data-i18n="sort_label">Orden</span>
+              <select id="browseSortSelect" class="aurora-select">
+                <option value="added" data-i18n="sort_list_order">Orden de la lista</option>
+                <option value="stars" data-i18n="sort_stars">Estrellas</option>
+                <option value="title" data-i18n="sort_title">Título A–Z</option>
+                <option value="artist" data-i18n="sort_artist">Artista</option>
+                <option value="album" data-i18n="sort_album">Álbum</option>
+                <option value="recent" data-i18n="sort_recent">Añadidas hace poco</option>
+                <option value="duration" data-i18n="sort_duration">Duración</option>
+              </select>
             </div>
             <ul class="track-list" id="browseTracks"></ul>
           </div>

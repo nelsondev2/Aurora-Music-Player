@@ -402,6 +402,78 @@ Object.assign(App, {
      * ============================================================ */
     renderLibrarySections() {
       this.renderPlaylists();
+      this.renderLibraryCatalog();
+    },
+
+    /* §81: pestañas de la biblioteca. 'playlists' es la vista de
+     * siempre (§47: solo listas; NO vuelve «Todas las canciones»).
+     * Álbumes/Artistas/Géneros son un índice navegable nuevo que el
+     * usuario pidió expresamente tras la auditoría: tarjetas con
+     * portada que abren la vista de álbum/artista ya existente. */
+    setLibTab(tab) {
+      this._libTab = tab || 'playlists';
+      document.querySelectorAll('.lib-tab').forEach(b => {
+        b.classList.toggle('active', b.dataset.libtab === this._libTab);
+      });
+      const show = (id, on) => {
+        const el = document.getElementById(id);
+        if (el) el.hidden = !on;
+      };
+      show('libSectionPlaylists', this._libTab === 'playlists');
+      show('libSectionAlbums', this._libTab === 'albums');
+      show('libSectionArtists', this._libTab === 'artists');
+      show('libSectionGenres', this._libTab === 'genres');
+      if (this._libTab !== 'playlists') this.renderLibraryCatalog();
+    },
+
+    /* §81: pinta el índice de Álbumes / Artistas / Géneros según la
+     * pestaña activa. Cada tarjeta abre openBrowse() con sus pistas. */
+    renderLibraryCatalog() {
+      const tab = this._libTab || 'playlists';
+      const gridId = tab === 'albums' ? 'libraryAlbums'
+        : tab === 'artists' ? 'libraryArtists'
+        : tab === 'genres' ? 'libraryGenres' : null;
+      if (!gridId) return;
+      const grid = document.getElementById(gridId);
+      if (!grid) return;
+      grid.innerHTML = '';
+      const card = (name, sub, seedTrack, onOpen) => {
+        const li = document.createElement('li');
+        li.className = 'catalog-card';
+        li.innerHTML = '<div class="cat-cover"><canvas width="240" height="240"></canvas></div>' +
+          '<div class="cat-name">' + this.esc(name) + '</div>' +
+          '<div class="cat-sub">' + this.esc(sub) + '</div>';
+        li.addEventListener('click', onOpen);
+        const cv = li.querySelector('canvas');
+        if (cv && seedTrack) this.drawRowCover(cv, seedTrack);
+        else if (cv) {
+          const ctx = cv.getContext('2d');
+          if (ctx) { ctx.fillStyle = (this.coverFallback && this.coverFallback().from) || '#6E5CFF'; ctx.fillRect(0, 0, 240, 240); }
+        }
+        return li;
+      };
+      if (tab === 'albums') {
+        this.getAlbums().forEach(al => {
+          const years = [...new Set(al.tracks.map(t => t.year).filter(Boolean))];
+          const sub = al.artist + ' · ' + this.fmtTracksCount(al.tracks.length) + (years.length === 1 ? ' · ' + years[0] : '');
+          const seed = al.tracks.find(t => t.coverIsImage) || al.tracks[0];
+          grid.appendChild(card(al.name, sub, seed, () => this.goToAlbum(al.name, al.artist)));
+        });
+      } else if (tab === 'artists') {
+        this.getArtists().forEach(ar => {
+          const albums = new Set(ar.tracks.map(t => this.albumKey(t))).size;
+          const sub = this.fmtTracksCount(ar.tracks.length) + ' · ' + albums + ' ' + this.t('tab_albums').toLowerCase();
+          const seed = ar.tracks.find(t => t.coverIsImage) || ar.tracks[0];
+          grid.appendChild(card(ar.name, sub, seed, () => this.goToArtist(ar.name)));
+        });
+      } else if (tab === 'genres') {
+        this.getGenres().forEach(g => {
+          const seed = g.tracks.find(t => t.coverIsImage) || g.tracks[0];
+          grid.appendChild(card(g.name, this.fmtTracksCount(g.tracks.length), seed, () => {
+            this.openBrowse({ type: 'genre', title: g.name, tracks: g.tracks.slice() });
+          }));
+        });
+      }
     },
 
     albumKey(t) {
@@ -442,6 +514,9 @@ Object.assign(App, {
      * ============================================================ */
     openBrowse(opts) {
       this._browse = opts;
+      // §81: cada vista nueva empieza en su orden natural.
+      const sortSel = document.getElementById('browseSortSelect');
+      if (sortSel) { this._browse.sort = 'added'; sortSel.value = 'added'; }
       const title = document.getElementById('browseTitle');
       const sub = document.getElementById('browseSubtitle');
       if (title) title.textContent = opts.title || '';
@@ -457,14 +532,25 @@ Object.assign(App, {
       this.openSheet('sheetBrowse');
     },
 
+    /* §81: las pistas de la vista actual en el orden elegido en su
+     * selector (por defecto, el orden en que llegaron: 'added'). */
+    browseTracksSorted() {
+      if (!this._browse) return [];
+      const sel = document.getElementById('browseSortSelect');
+      const mode = this._browse.sort || (sel && sel.value) || 'added';
+      return this.sortTracksBy(this._browse.tracks || [], mode);
+    },
+
     renderBrowseTracks() {
       const ul = document.getElementById('browseTracks');
       if (!ul || !this._browse) return;
       ul.innerHTML = '';
-      const tracks = this._browse.tracks || [];
+      const tracks = this.browseTracksSorted();
       const ctx = this._browse.type === 'album'
         ? { type: 'album', name: this._browse.title, artist: this._browse.artist || this._browse.subtitle }
-        : { type: 'artist', name: this._browse.title };
+        : this._browse.type === 'genre'
+          ? { type: 'genre', name: this._browse.title }
+          : { type: 'artist', name: this._browse.title };
       tracks.forEach(t => ul.appendChild(this.makeTrackRow(t, { playContext: ctx })));
     },
 
@@ -473,12 +559,16 @@ Object.assign(App, {
         this.toast(this.t('toast_playlist_empty'));
         return;
       }
-      const ids = this._browse.tracks.map(t => t.id);
+      // §81: «Reproducir Todo» suena en el orden que se ve (el del
+      // selector), no en el orden interno de _browse.tracks.
+      const ids = this.browseTracksSorted().map(t => t.id);
       this.queue = ids;
       this.queueIdx = 0;
       this.playContext = this._browse.type === 'album'
         ? { type: 'album', name: this._browse.title, artist: this._browse.artist || this._browse.subtitle }
-        : { type: 'artist', name: this._browse.title };
+        : this._browse.type === 'genre'
+          ? { type: 'genre', name: this._browse.title }
+          : { type: 'artist', name: this._browse.title };
       // Igual que playPlaylist(): si shuffle está activo, barajar la cola nueva
       // anclando su primera pista (no la que sonaba antes); si no, limpiar la
       // cola original para no restaurar una lista ajena.

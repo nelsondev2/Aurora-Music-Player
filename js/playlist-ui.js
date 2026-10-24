@@ -517,9 +517,9 @@ Object.assign(App, {
       this._hydratePlaylistCover(pl);
       // Con el índice id->pista: buscar cada id con find() sobre miles
       // de pistas hacía renderPlaylists cuadrático (medido en el estrés).
-      const tracks = (pl.trackIds || [])
-        .map(id => this.getTrackById(id))
-        .filter(Boolean);
+      const tracks = pl.smart
+        ? this.playlistTracksSorted(pl)
+        : (pl.trackIds || []).map(id => this.getTrackById(id)).filter(Boolean);
       const withImage = tracks.filter(t => this._playlistTrackArtSrc(t));
 
       if (withImage.length === 0) {
@@ -532,7 +532,7 @@ Object.assign(App, {
         return fallback;
       }
 
-      const hash = 'v384|' + (pl.trackIds || []).join('|') + '#' + withImage.map(t => {
+      const hash = 'v384|' + tracks.map(t => t.id).join('|') + '#' + withImage.map(t => {
         const src = this._playlistTrackArtSrc(t) || '';
         return t.id + ':' + src.length;
       }).join(',');
@@ -1045,10 +1045,11 @@ Object.assign(App, {
     },
 
     playlistDuration(pl) {
-      if (!pl || !pl.trackIds) return 0;
+      if (!pl) return 0;
+      // §81: las inteligentes no guardan trackIds: se suman sus pistas
+      // efectivas (las que la regla elige ahora mismo).
       let sum = 0;
-      for (const id of pl.trackIds) {
-        const t = this.getTrackById ? this.getTrackById(id) : this.tracks.find(x => x.id === id);
+      for (const t of this.playlistTracksSorted(pl)) {
         if (t && t.duration) sum += t.duration;
       }
       return sum;
@@ -1075,7 +1076,9 @@ Object.assign(App, {
     },
 
     playlistMetaLabel(pl) {
-      const n = (pl.trackIds || []).length;
+      // §81: en listas inteligentes el conteo es el de la regla, no el
+      // de trackIds (que va vacío).
+      const n = pl.smart ? this.playlistTracksSorted(pl).length : (pl.trackIds || []).length;
       const dur = this.fmtDurationLabel(this.playlistDuration(pl));
       let s = this.fmtTracksCount(n);
       if (dur) s += ' · ' + dur;
@@ -1166,10 +1169,11 @@ Object.assign(App, {
               ${fabHtml}
             </div>
           `;
+          const smartBadge = pl.smart ? `<span class="smart-badge">${this.esc(this.t('smart_badge'))}</span>` : '';
           if (target === grid) {
-            li.innerHTML = coverHtml + `<div class="pl-card-info"><h4>${this.esc(pl.name)}</h4><p>${this.esc(tracksLabel)}</p>${badge}</div>`;
+            li.innerHTML = coverHtml + `<div class="pl-card-info"><h4>${this.esc(pl.name)}${smartBadge}</h4><p>${this.esc(tracksLabel)}</p>${badge}</div>`;
           } else {
-            li.innerHTML = coverHtml + `<div class="pl-info"><h4>${this.esc(pl.name)}</h4><p>${this.esc(tracksLabel)}</p></div>`;
+            li.innerHTML = coverHtml + `<div class="pl-info"><h4>${this.esc(pl.name)}${smartBadge}</h4><p>${this.esc(tracksLabel)}</p></div>`;
             const actions = document.createElement('div');
             actions.className = 'pl-row-actions';
             const playBtn = document.createElement('button');
@@ -1314,10 +1318,95 @@ Object.assign(App, {
       return (tracks || []).slice().sort((a, b) => this._ratingOf(b) - this._ratingOf(a));
     },
 
+    /* §81: ordenación elegible por el usuario. 'stars' es la de
+     * siempre (§64) y sigue siendo la predeterminada; el resto son
+     * alternativas manuales que se guardan en pl.sort. El sort de JS
+     * es estable: los empates conservan el orden de entrada. */
+    sortTracksBy(tracks, mode) {
+      const arr = (tracks || []).slice();
+      const txt = (v) => String(v == null ? '' : v).toLocaleLowerCase();
+      switch (mode) {
+        case 'title':
+          return arr.sort((a, b) => txt(a.title).localeCompare(txt(b.title)));
+        case 'artist':
+          return arr.sort((a, b) => txt(a.artist).localeCompare(txt(b.artist)) || txt(a.title).localeCompare(txt(b.title)));
+        case 'album':
+          return arr.sort((a, b) => txt(a.album).localeCompare(txt(b.album)) || txt(a.title).localeCompare(txt(b.title)));
+        case 'recent':
+          return arr.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+        case 'duration':
+          return arr.sort((a, b) => (a.duration || 0) - (b.duration || 0));
+        case 'added':
+          return arr; // orden guardado, tal cual
+        case 'stars':
+        default:
+          return this.sortByRating(arr);
+      }
+    },
+
+    /* §81: géneros presentes en la biblioteca (el importador ya leía
+     * el género; hasta ahora ninguna vista lo usaba). */
+    getGenres() {
+      const map = new Map();
+      this.tracks.forEach(t => {
+        const g = String((t && t.genre) || '').trim();
+        const name = g || this.t('genre_unknown');
+        if (!map.has(name)) map.set(name, { name, tracks: [] });
+        map.get(name).tracks.push(t);
+      });
+      return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    },
+
+    /* §81: las pistas que una lista inteligente elige AHORA según su
+     * regla. Se recalcula en cada lectura: la lista «se rellena sola»
+     * cuando importas, valoras o reproduces. */
+    smartPlaylistTracks(pl) {
+      if (!pl || !pl.smart) return [];
+      const rule = pl.smart;
+      const plays = (this.stats && this.stats.plays) || {};
+      switch (rule.kind) {
+        case 'rating':
+          return this.tracks.filter(t => this._ratingOf(t) >= 4);
+        case 'genre': {
+          const g = String(rule.genre || '').trim().toLocaleLowerCase();
+          return this.tracks.filter(t => String(t.genre || '').trim().toLocaleLowerCase() === g);
+        }
+        case 'never':
+          return this.tracks.filter(t => !(plays[t.id] > 0));
+        case 'recent': {
+          const since = Date.now() - 30 * 24 * 3600 * 1000;
+          return this.tracks.filter(t => (t.addedAt || 0) >= since);
+        }
+        case 'forgotten': {
+          // Reproducida alguna vez y no en los últimos 90 días. Sin
+          // fecha de última escucha (bibliotecas anteriores a §81 con
+          // reproducciones), cuenta como olvidada: hace mucho que no
+          // suena, que es justo lo que la regla busca.
+          const since = Date.now() - 90 * 24 * 3600 * 1000;
+          return this.tracks.filter(t => (plays[t.id] > 0) && !(t.lastPlayedAt > since));
+        }
+        case 'top':
+          return this.getTopTracks(50).map(x => x.track);
+        default:
+          return [];
+      }
+    },
+
     /* Las pistas de una lista, en el orden en que se ven y suenan. */
     playlistTracksSorted(pl) {
+      if (!pl) return [];
+      // §81: inteligentes primero (su regla elige las pistas) y orden
+      // manual después. La regla 'top' ya trae su orden (más
+      // reproducidas): con el orden por defecto no se reordena.
+      if (pl.smart) {
+        const base = this.smartPlaylistTracks(pl);
+        const mode = pl.sort || 'stars';
+        if (pl.smart.kind === 'top' && (mode === 'stars' || mode === 'added')) return base;
+        return this.sortTracksBy(base, mode);
+      }
       const byId = this.trackMap();
-      return this.sortByRating(((pl && pl.trackIds) || []).map(id => byId.get(id)).filter(Boolean));
+      const stored = ((pl && pl.trackIds) || []).map(id => byId.get(id)).filter(Boolean);
+      return this.sortTracksBy(stored, (pl && pl.sort) || 'stars');
     },
 
     playPlaylist(playlistId) {

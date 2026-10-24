@@ -174,6 +174,7 @@ Object.assign(App, {
           if (raw) this.stats = JSON.parse(raw);
         }
         if (!this.stats.plays) this.stats.plays = {};
+        if (!this.stats.skips) this.stats.skips = {}; // §81
         if (typeof this.stats.totalSeconds !== 'number') this.stats.totalSeconds = 0;
       } catch (e) {
         try {
@@ -195,6 +196,7 @@ Object.assign(App, {
     async resetStats() {
       this.stats = {
         plays: {},
+        skips: {},
         totalSeconds: 0,
         lastPlayed: null,
         sessionStart: Date.now()
@@ -220,6 +222,7 @@ Object.assign(App, {
       // una canción solo cuenta cuando suena entera. Aquí empieza
       // su «pase» de conteo; lo cierra trackPlayCompleted().
       this._playCounted = false;
+      this._skipCounted = false; // §81: un salto por pase, como el conteo
       // Iniciar flush periódico de tiempo escuchado
       if (this._statsFlushTimer) clearInterval(this._statsFlushTimer);
       this._statsFlushTimer = setInterval(() => {
@@ -247,6 +250,33 @@ Object.assign(App, {
       this._playCounted = true;
       const id = this.currentTrack.id;
       this.stats.plays[id] = (this.stats.plays[id] || 0) + 1;
+      // §81: fecha de última escucha completa en la propia pista:
+      // alimenta «Olvidadas» y la lista inteligente homónima.
+      this.currentTrack.lastPlayedAt = Date.now();
+      if (typeof this.persistTrack === 'function') {
+        try { this.persistTrack(this.currentTrack); } catch (e) {}
+      }
+      this.saveStats();
+    },
+
+    /* §81: registrar un salto: el usuario abandona la pista a mitad
+     * (next/prev manual o elige otra). No cuenta si ya sonó entera
+     * (eso es una reproducción, §67), si se buscaron los últimos
+     * segundos a mano, ni dos veces en el mismo pase. Hace falta
+     * haber oído un mínimo (5 s o el 10 %): cambiar de opinión al
+     * instante no es «saltarla», es no haberla empezado. */
+    _registerSkip() {
+      if (!this.currentTrack || !this.isPlaying || this._skipCounted || this._playCounted) return;
+      if (typeof this._heardWholeTrack === 'function' && this._heardWholeTrack()) return;
+      const a = this.audio;
+      const pos = a ? (a.currentTime || 0) : 0;
+      const dur = a ? a.duration : 0;
+      const minimo = Math.max(5, (isFinite(dur) && dur > 0) ? dur * 0.1 : 5);
+      if (pos < minimo) return;
+      this._skipCounted = true;
+      if (!this.stats.skips) this.stats.skips = {};
+      const id = this.currentTrack.id;
+      this.stats.skips[id] = (this.stats.skips[id] || 0) + 1;
       this.saveStats();
     },
 

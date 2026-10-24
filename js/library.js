@@ -604,6 +604,11 @@ Object.assign(App, {
             t.coverIsImage = true;
             changed = true;
           }
+          // §81: género y año también se recuperan al re-etiquetar:
+          // las bibliotecas anteriores no los guardaban y el
+          // catálogo por géneros nacería vacío para ellas.
+          if (fresh.genre && fresh.genre !== t.genre) { t.genre = fresh.genre; changed = true; }
+          if (fresh.year && fresh.year !== t.year) { t.year = fresh.year; changed = true; }
           if (fresh.lrc && (!t.lrc || (Array.isArray(t.lrc) && !t.lrc.length))) {
             t.lrc = fresh.lrc;
             t._lrcCache = null;
@@ -1112,4 +1117,87 @@ Object.assign(App, {
           .forEach(sel => { const e = v.querySelector(sel); if (e) e.style.display = ''; });
       }
     },
+    /* ============================================================
+     *  §81: canciones duplicadas (mismo título y artista)
+     *  La importación ya omite el mismo archivo dos veces; lo que
+     *  aquí se busca es la misma canción llegada por caminos
+     *  distintos (otro archivo, otra copia). En cada grupo se
+     *  conserva la más antigua (la «original»: es la que suele
+     *  tener estrellas, listas y reproducciones) y las demás se
+     *  pueden borrar una a una con el flujo de borrado de siempre.
+     * ============================================================ */
+    findDuplicateGroups() {
+      const norm = (v) => (typeof this.cleanSearchStr === 'function')
+        ? this.cleanSearchStr(v || '')
+        : String(v || '').trim().toLowerCase();
+      const map = new Map();
+      this.tracks.forEach(t => {
+        const key = norm(t.title) + '\u0000' + norm(t.artist);
+        if (!key.trim()) return;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(t);
+      });
+      const groups = [];
+      map.forEach(list => {
+        if (list.length < 2) return;
+        const sorted = list.slice().sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
+        groups.push({ keep: sorted[0], dups: sorted.slice(1) });
+      });
+      return groups.sort((a, b) => String(a.keep.title || '').localeCompare(String(b.keep.title || '')));
+    },
+
+    renderDuplicates() {
+      const cont = document.getElementById('duplicatesContent');
+      if (!cont) return;
+      const groups = this.findDuplicateGroups();
+      cont.innerHTML = '';
+      if (!groups.length) {
+        const div = document.createElement('div');
+        div.className = 'empty-state compact';
+        div.innerHTML = this.emptyStateHtml({ icon: 'check', title: this.t('duplicates_none') });
+        cont.appendChild(div);
+        return;
+      }
+      groups.forEach(g => {
+        const box = document.createElement('div');
+        box.className = 'dup-group';
+        const title = document.createElement('p');
+        title.className = 'dup-group-title';
+        title.textContent = g.keep.title + ' · ' + g.keep.artist;
+        box.appendChild(title);
+        const row = (t, isKeep) => {
+          const div = document.createElement('div');
+          div.className = 'dup-row';
+          div.innerHTML = '<div class="row-cover"><canvas width="144" height="144"></canvas></div>' +
+            '<div class="row-text"><div class="row-title">' + this.esc(t.title) + '</div>' +
+            '<div class="row-sub">' + this.esc(t.fileName || '') + (t.duration ? ' · ' + this.fmtTime(t.duration) : '') + '</div></div>' +
+            (isKeep ? '<span class="dup-keep">' + this.esc(this.t('duplicates_keep')) + '</span>' : '');
+          if (!isKeep) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'row-action';
+            btn.setAttribute('aria-label', this.t('confirm_delete'));
+            btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>';
+            btn.addEventListener('click', async () => {
+              await this.deleteTrack(t.id);
+              this.renderDuplicates();
+              if (typeof this.renderLibrarySections === 'function') this.renderLibrarySections();
+            });
+            div.appendChild(btn);
+          }
+          const cv = div.querySelector('canvas');
+          if (cv) this.drawRowCover(cv, t);
+          return div;
+        };
+        box.appendChild(row(g.keep, true));
+        g.dups.forEach(t => box.appendChild(row(t, false)));
+        cont.appendChild(box);
+      });
+    },
+
+    openDuplicates() {
+      this.renderDuplicates();
+      this.openSheet('sheetDuplicates');
+    },
+
 });

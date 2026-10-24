@@ -28,6 +28,17 @@ verificado función a función:
   pantalla (filas ×2, tarjetas y héroe incluidos), pestañas inferiores
   legibles también en oscuro y agarre táctil de la barra de progreso
   ampliado.
+- Lo que le faltaba a un reproductor normal (§81): ordenación
+  manual de listas (título, artista, álbum, duración…, además
+  del orden por estrellas), catálogo navegable de Álbumes,
+  Artistas y Géneros en Biblioteca, listas inteligentes que
+  se rellenan solas (4+ estrellas, un género, nunca
+  reproducidas, olvidadas…), guardar la cola como lista,
+  sincronizar la letra tocando al ritmo de la canción,
+  estadísticas de canciones saltadas y olvidadas, buscador
+  de duplicados y fundido suave al pausar/reanudar. Y el
+  renombre de listas ahora se puede confirmar (✓/✗, Enter
+  o Escape), como debe ser.
 - Auditoría general (§80): poda verificada de código muerto
   (37 claves de idioma sin uso en los 8 idiomas, 11 clases CSS
   y 1 enlace JS), con regresión completa de las funciones

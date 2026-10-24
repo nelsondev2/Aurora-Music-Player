@@ -189,6 +189,15 @@ Object.assign(App, {
       // Editor de letras (#2)
       $('btnLrcEdit').addEventListener('click', () => this.openLrcEditor());
       $('btnLrcSave').addEventListener('click', () => this.saveLrcFromEditor());
+      // §81: sincronizar letra tocando
+      const btnTapMode = document.getElementById('btnLrcTapMode');
+      if (btnTapMode) btnTapMode.addEventListener('click', () => this.toggleLrcTapMode());
+      const btnTap = document.getElementById('btnLrcTap');
+      if (btnTap) btnTap.addEventListener('click', () => this.tapSyncMark());
+      const btnTapUndo = document.getElementById('btnLrcTapUndo');
+      if (btnTapUndo) btnTapUndo.addEventListener('click', () => this.tapSyncUndo());
+      const btnTapDone = document.getElementById('btnLrcTapDone');
+      if (btnTapDone) btnTapDone.addEventListener('click', () => this.tapSyncDone());
       const btnLrcExp = document.getElementById('btnLrcExport');
       if (btnLrcExp) btnLrcExp.addEventListener('click', () => this.exportCurrentLyrics());
       const btnLrcSh = document.getElementById('btnLrcShare');
@@ -358,6 +367,8 @@ Object.assign(App, {
       });
       const btnClearQueue = document.getElementById('btnClearQueue');
       if (btnClearQueue) btnClearQueue.addEventListener('click', () => this.clearUpcomingQueue());
+      const btnSaveQueue = document.getElementById('btnSaveQueueAsPlaylist');
+      if (btnSaveQueue) btnSaveQueue.addEventListener('click', () => this.openSaveQueueSheet());
 
       // Volumen: tap / long-press abre slider compacto; el sheet queda como respaldo
       const btnVol = document.getElementById('btnVolume');
@@ -432,6 +443,25 @@ Object.assign(App, {
         const ids = Array.from(document.querySelectorAll('.pick-row.checked'))
           .map(r => r.dataset.trackId);
 
+        // §81 modo «guardar cola como lista»: la lista nace con la
+        // cola entera en su orden exacto (sort='added').
+        if (this._queueSaveMode) {
+          const qName = $('playlistName').value.trim();
+          const qDesc = $('playlistDesc').value.trim();
+          if (!qName) { this.toast(this.t('toast_name_required')); return; }
+          const qCreated = this.createPlaylist(qName, qDesc, (this.queue || []).slice());
+          if (!qCreated) return; // nombre duplicado: ya avisó
+          qCreated.sort = 'added';
+          this.persistPlaylist(qCreated);
+          this._queueSaveMode = false;
+          $('playlistName').value = '';
+          $('playlistDesc').value = '';
+          this.closeSheet('sheetCreatePlaylist');
+          this.closeSheet('sheetQueue');
+          this.toast(this.t('toast_queue_saved') + ': ' + qName);
+          return;
+        }
+
         // Modo "añadir a playlist existente"
         if (this._addingToPlaylistId) {
           if (ids.length === 0) {
@@ -467,6 +497,27 @@ Object.assign(App, {
         const name = $('playlistName').value.trim();
         const desc = $('playlistDesc').value.trim();
         if (!name) { this.toast(this.t('toast_name_required')); return; }
+        // §81: lista inteligente: nace sin pistas; la regla las elige.
+        if (this._plSmartMode) {
+          const kindSel = document.getElementById('smartRuleKind');
+          const genreSel = document.getElementById('smartRuleGenre');
+          const kind = kindSel ? kindSel.value : 'rating';
+          const smart = { kind };
+          if (kind === 'genre') {
+            smart.genre = genreSel ? genreSel.value : '';
+            if (!smart.genre) { this.toast(this.t('no_results')); return; }
+          }
+          const sCreated = this.createPlaylist(name, desc, []);
+          if (!sCreated) return;
+          sCreated.smart = smart;
+          this.persistPlaylist(sCreated);
+          this.renderPlaylists();
+          $('playlistName').value = '';
+          $('playlistDesc').value = '';
+          this.closeSheet('sheetCreatePlaylist');
+          this.toast(this.t('toast_smart_created') + ': ' + name);
+          return;
+        }
         const created = this.createPlaylist(name, desc, ids);
         if (!created) return; // nombre duplicado: createPlaylist ya avisó
         $('playlistName').value = '';
@@ -572,6 +623,48 @@ Object.assign(App, {
           if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
         }
       });
+      // §81: pestañas de la biblioteca y buscador de duplicados
+      document.querySelectorAll('.lib-tab').forEach(b => {
+        b.addEventListener('click', () => this.setLibTab(b.dataset.libtab));
+      });
+      const btnDup = document.getElementById('btnFindDuplicates');
+      if (btnDup) btnDup.addEventListener('click', () => this.openDuplicates());
+      // §81: orden de la lista en edición
+      const plSortSel = document.getElementById('plSortSelect');
+      if (plSortSel) plSortSel.addEventListener('change', () => {
+        const pl = this.playlists.find(p => p.id === this._editingPlaylistId);
+        if (!pl) return;
+        pl.sort = plSortSel.value;
+        this.persistPlaylist(pl);
+        this.renderEditPlaylist();
+        this.toast(this.t('toast_sort_saved'));
+      });
+      // §81: orden de la vista álbum/artista/género
+      const browseSortSel = document.getElementById('browseSortSelect');
+      if (browseSortSel) browseSortSel.addEventListener('change', () => {
+        if (this._browse) this._browse.sort = browseSortSel.value;
+        this.renderBrowseTracks();
+      });
+      // §81: tipo de lista al crear (normal / inteligente)
+      const btnTypeN = document.getElementById('plTypeNormal');
+      const btnTypeS = document.getElementById('plTypeSmart');
+      const smartFieldsEl = document.getElementById('smartRuleFields');
+      const setSmartMode = (on) => {
+        this._plSmartMode = !!on;
+        if (btnTypeN) btnTypeN.classList.toggle('active', !on);
+        if (btnTypeS) btnTypeS.classList.toggle('active', !!on);
+        if (smartFieldsEl) smartFieldsEl.hidden = !on;
+        if (on && typeof this._fillSmartGenreSelect === 'function') this._fillSmartGenreSelect();
+      };
+      if (btnTypeN) btnTypeN.addEventListener('click', () => setSmartMode(false));
+      if (btnTypeS) btnTypeS.addEventListener('click', () => setSmartMode(true));
+      const kindSelEl = document.getElementById('smartRuleKind');
+      if (kindSelEl) kindSelEl.addEventListener('change', () => {
+        const gf = document.getElementById('smartGenreField');
+        if (gf) gf.hidden = kindSelEl.value !== 'genre';
+        if (kindSelEl.value === 'genre' && typeof this._fillSmartGenreSelect === 'function') this._fillSmartGenreSelect();
+      });
+
       const btnRenamePl = document.getElementById('btnRenamePlaylist');
       if (btnRenamePl) btnRenamePl.addEventListener('click', () => this.startRenamePlaylist());
       const btnExpPl = document.getElementById('btnExportPlaylist');
