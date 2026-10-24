@@ -837,6 +837,9 @@ Object.assign(App, {
       t.title = title.trim() || t.title;
       t.artist = artist.trim() || this.t('unknown_artist');
       t.album = album.trim() || this.t('no_album');
+      // §94: marca de «editado a mano» — releer etiquetas ya no
+      // pisa este texto con el del archivo (ver retagExistingTracks).
+      t._userEdited = true;
       await this.persistTrack(t);
       this.closeSheet('sheetEditTrack');
       this.closeSheet('sheetTrackMenu');

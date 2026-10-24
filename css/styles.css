@@ -63,6 +63,10 @@
   /* Espaciado / forma / motion */
   --pad: 20px;
   --radius-sm: 12px;
+  /* §94: --radius-md se usaba (portadas del catálogo) sin estar
+   * definido en ninguna parte: el var() inválido dejaba las
+   * esquinas cuadradas. */
+  --radius-md: 16px;
   --radius-cover: 24px;
   --radius-pill: 999px;
   --shadow-cover: 0 24px 48px rgba(0,0,0,.45);
@@ -142,7 +146,9 @@ html, body {
 button, input { font-family: inherit; color: inherit; }
 button { background: none; border: none; cursor: pointer; }
 ul { list-style: none; }
-input { -webkit-user-select: text; user-select: text; }
+/* §94: textarea también — el editor LRC heredaba el
+ * user-select:none global y no dejaba seleccionar su texto. */
+input, textarea { -webkit-user-select: text; user-select: text; }
 
 svg { display: block; }
 
@@ -1051,7 +1057,10 @@ svg { display: block; }
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--accent);
+  /* §94: blanco sobre --accent (lavanda) daba ~2,7:1; sobre el
+   * relleno de acción (--accent-fill) da ~7:1. Vale para este y
+   * los otros cuatro selectores marcados abajo. */
+  background: var(--accent-fill);
   color: #fff;
   padding: 6px 14px;
   border-radius: 999px;
@@ -1440,7 +1449,9 @@ svg { display: block; }
 .playlist-list .pl-row:active { background: var(--surface-2); transform: scale(0.99); }
 .playlist-list .pl-row.is-playing {
   border-color: rgba(var(--accent-rgb), 0.45);
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.14), rgba(236,72,153,0.08));
+  /* §94: el segundo tono era rosa cableado (#EC4899) aunque el
+   * usuario hubiera elegido otro acento; ahora es el suyo. */
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.14), color-mix(in srgb, var(--accent-2) 8%, transparent));
 }
 .pl-cover {
   width: 58px; height: 58px;
@@ -1961,7 +1972,9 @@ svg { display: block; }
 }
 .empty-hint {
   font-size: var(--fs-micro) !important;
-  color: var(--text-4) !important;
+  /* §94: --text-4 (30 %) dejaba la pista en ~3,2:1; con
+   * --text-3 (58 %) supera 5:1 como el resto del texto tenue. */
+  color: var(--text-3) !important;
   margin: 0 !important;
   letter-spacing: 0.03em;
 }
@@ -2300,7 +2313,7 @@ svg { display: block; }
 }
 .lang-row:active { background: var(--surface); }
 .lang-row.active {
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), rgba(236,72,153,0.10));
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), color-mix(in srgb, var(--accent-2) 10%, transparent));
   outline: 1px solid var(--accent);
 }
 .lang-flag {
@@ -2324,7 +2337,8 @@ svg { display: block; }
 
 /* Soporte tema claro para listas nuevas */
 :root[data-theme="light"] .lang-row.active {
-  background: linear-gradient(135deg, rgba(124,58,237,0.10), rgba(236,72,153,0.06));
+  /* §94: ídem — morado y rosa cableados fuera; manda el acento. */
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.10), color-mix(in srgb, var(--accent-2) 6%, transparent));
 }
 
 /* =====================================================================
@@ -2710,6 +2724,13 @@ button:focus-visible,
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+/* §94: los sliders (volumen, EQ) no tenían anillo de foco:
+ * navegarlos con teclado era ir a ciegas. */
+input[type="range"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: var(--radius-pill);
+}
 
 /* Accesibilidad: sin doble-tap zoom en controles (el pinch-zoom sigue
  * disponible — el viewport ya no bloquea el escalado). */
@@ -2952,7 +2973,7 @@ button,
   padding: 12px;
   margin-bottom: 18px;
   border-radius: 18px;
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), rgba(236,72,153,0.10));
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), color-mix(in srgb, var(--accent-2) 10%, transparent));
   border: 1px solid var(--border);
 }
 .home-hero:active { transform: scale(0.98); }
@@ -5046,7 +5067,7 @@ html.aurora-wide .toast {
   background: var(--surface); color: var(--text-2); font: inherit; font-size: var(--fs-sm);
   font-weight: 600; cursor: pointer; min-height: 40px;
 }
-.lib-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.lib-tab.active { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; } /* §94: contraste */
 /* §89: la barra de pestañas vive fuera del cuerpo desplazable
  * (hermana de la cabecera en el panel flexible): queda fija al
  * hacer scroll, con el mismo fondo del panel y su filete
@@ -5094,10 +5115,10 @@ html.aurora-wide .toast {
   background: var(--surface); color: var(--text-2); font: inherit; font-size: var(--fs-sm);
   font-weight: 600; cursor: pointer; min-height: 40px;
 }
-.pl-type-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pl-type-btn.active { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; } /* §94: contraste */
 .smart-badge {
   display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px;
-  background: var(--accent); color: #fff; font-size: var(--fs-micro); font-weight: 700;
+  background: var(--accent-fill); color: #fff; font-size: var(--fs-micro); font-weight: 700; /* §94: contraste */
   vertical-align: middle; letter-spacing: .02em;
 }
 /* Renombrar con confirmar (§81): input + ✓/✗ en línea */
@@ -5108,7 +5129,7 @@ html.aurora-wide .toast {
   background: var(--surface); color: var(--text-1); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-.edit-pl-rename-btn.confirm { background: var(--accent); border-color: var(--accent); color: #fff; }
+.edit-pl-rename-btn.confirm { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; } /* §94: contraste */
 /* Editor LRC por toques */
 .lrc-tap-box { margin-top: 14px; }
 .lrc-tap-next {

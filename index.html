@@ -131,7 +131,7 @@
           <div class="cover-glow" id="coverGlow" aria-hidden="true"></div>
           <div class="cover-art" id="coverArt" role="button" tabindex="0" data-i18n-aria="cover_art_aria" aria-label="Portada del álbum">
             <canvas id="coverCanvasBack" class="cover-canvas-back" width="600" height="600" aria-hidden="true"></canvas>
-            <canvas id="coverCanvas" width="720" height="720"></canvas>
+            <canvas id="coverCanvas" width="720" height="720" aria-hidden="true"></canvas>
             <div class="cover-vinyl" id="coverVinyl">
               <div class="vinyl-inner"></div>
             </div>
@@ -145,7 +145,8 @@
             <div class="cover-play-hint" id="coverPlayHint" aria-hidden="true">
               <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
             </div>
-            <div class="cover-buffering" id="coverBuffering" hidden>
+            <!-- §94: role="status" para que el «Cargando…» se anuncie -->
+            <div class="cover-buffering" id="coverBuffering" role="status" hidden>
               <div class="spin-loader" aria-hidden="true"></div>
               <span data-i18n="np_loading">Cargando…</span>
             </div>
@@ -337,7 +338,7 @@
         <!-- Mini portada + info -->
         <section class="lyrics-mini" id="lyricsMini">
           <div class="mini-cover" id="miniCover">
-            <canvas id="miniCoverCanvas" width="120" height="120"></canvas>
+            <canvas id="miniCoverCanvas" width="120" height="120" aria-hidden="true"></canvas>
           </div>
           <div class="mini-info">
             <h2 id="miniTitle">—</h2>
@@ -1028,7 +1029,7 @@
           </header>
           <div class="sheet-body">
             <p class="sheet-subtitle" data-i18n="lrc_edit_hint">Pega o edita la letra aquí. Usa [mm:ss.xx] para timestamps.</p>
-            <textarea id="lrcEditorText" class="lrc-editor-textarea" rows="20" placeholder="[00:12.50]Primera línea&#10;[00:15.30]Segunda línea"></textarea>
+            <textarea id="lrcEditorText" class="lrc-editor-textarea" rows="20" data-i18n-aria="lrc_edit" aria-label="Editar letra" placeholder="[00:12.50]Primera línea&#10;[00:15.30]Segunda línea"></textarea>
             <!-- §81: sincronizar tocando, línea a línea al ritmo -->
             <div class="lrc-tap-box">
               <button class="primary-btn ghost compact" id="btnLrcTapMode" type="button" data-i18n="lrc_tap_mode">Sincronizar tocando</button>
@@ -1092,7 +1093,7 @@
           </header>
           <div class="sheet-body">
             <div class="edit-pl-header">
-              <div class="edit-pl-cover" id="browseCover"><canvas width="240" height="240"></canvas></div>
+              <div class="edit-pl-cover" id="browseCover"><canvas width="240" height="240" aria-hidden="true"></canvas></div>
               <div class="edit-pl-info">
                 <h4 id="browseTitleDup" style="display:none">—</h4>
                 <p id="browseSubtitle">—</p>
@@ -1127,7 +1128,7 @@
           </header>
           <div class="sheet-body">
             <div class="track-menu-head">
-              <div class="row-cover"><canvas id="trackMenuCover" width="144" height="144"></canvas></div>
+              <div class="row-cover"><canvas id="trackMenuCover" width="144" height="144" aria-hidden="true"></canvas></div>
               <div class="row-text">
                 <div class="row-title" id="trackMenuTitle">—</div>
                 <div class="row-sub" id="trackMenuSub"></div>
@@ -1228,7 +1229,7 @@
         <div class="mini-player" id="miniPlayer" role="group" data-i18n-aria="now_playing_label" aria-label="Reproduciendo ahora">
           <button class="mini-open" id="miniOpen" type="button" data-i18n-aria="now_playing_label" aria-label="Reproduciendo ahora"></button>
           <div class="mini-progress" id="miniProgress"></div>
-          <div class="mini-cover"><canvas id="miniPlayerCover" width="144" height="144"></canvas></div>
+          <div class="mini-cover"><canvas id="miniPlayerCover" width="144" height="144" aria-hidden="true"></canvas></div>
           <div class="mini-text">
             <div class="mini-title" id="miniPlayerTitle">—</div>
             <div class="mini-artist" id="miniPlayerArtist"></div>

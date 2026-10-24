@@ -106,7 +106,7 @@ Object.assign(App, {
               <div class="row-cover"><canvas width="144" height="144"></canvas></div>
               <div class="stats-info">
                 <div class="stats-name">${this.esc(t.title)}</div>
-                <div class="stats-sub">${this.esc(t.artist)} · ${t.lastPlayedAt ? this.t('stats_days_ago').replace('X', Math.floor((Date.now() - t.lastPlayedAt) / 86400000)) : ((playsObj[t.id] || 0) + ' ' + this.t('stats_plays').toLowerCase())}</div>
+                <div class="stats-sub">${this.esc(t.artist)} · ${t.lastPlayedAt ? this.t('stats_days_ago').replace('X', Math.max(0, Math.floor((Date.now() - t.lastPlayedAt) / 86400000))) : ((playsObj[t.id] || 0) + ' ' + this.t('stats_plays').toLowerCase())}</div>
               </div>
             </li>
           `).join('')}

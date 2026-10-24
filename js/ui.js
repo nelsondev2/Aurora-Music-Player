@@ -466,6 +466,9 @@ Object.assign(App, {
               await new Promise(r => setTimeout(r, fadeSec * 1000 / steps));
             }
           }
+          // §94: ¿cancelado durante el fundido? cancelSleep ya
+          // restauró ganancia y volumen: no pausar ni seguir.
+          if (!this._sleepFading) return;
           this.togglePlay(false);
           try { this.audio.volume = this.volume; } catch (e) {}
           this._setPlaybackGain(this._normGain || 1, true);

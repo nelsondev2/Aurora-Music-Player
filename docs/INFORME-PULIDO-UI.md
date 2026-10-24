@@ -3601,3 +3601,105 @@ sus vías de uso dinámico antes de podar.
   §81 **41/41**, §80 **21/21**.
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## 94. Informe de bugs externo sobre la 1.2.0: verificado punto a punto
+
+Llegó un «Resumen de Bugs — Aurora Music Player v1.2.0» externo. Siguiendo
+la regla de la casa, **ninguna afirmación se dio por buena**: cada punto se
+contrastó con el código de `814e383` antes de tocar nada. El informe es una
+foto anterior: cita como deuda viva cosas ya cerradas en §§92-93
+(`openAddTracksSheet`, `findDuplicateTrack`, `assets/icons.svg`, las «3
+claves i18n», `--gap`) y sus números de línea no coinciden con el árbol
+actual. Resultado del contraste: 33 correcciones reales aplicadas, 1 falso
+positivo confirmado por la especificación y los «documentados sin corregir»
+fuera de alcance (límites de plataforma). Detalle por grupos, con la clave
+del informe:
+
+- **Interacción (C1–C5):** Espacio ya no secuestra botones/enlaces/
+  `[role=button]`/`select` enfocados (solo actúa con el foco libre); Escape
+  cierra la **cima de la pila** de hojas (`_sheetStack`), no la última del
+  DOM; el parser LRC ya no crea entradas con texto en blanco ni rompe con
+  sellos múltiples; el contador de escucha tiene techo de reloj de pared
+  (ver A5) para que un `pagehide` tras horas no regale minutos fantasma
+  (C5/S3 compartían raíz).
+- **Audio (A1–A5):** un archivo corrupto provoca **un** salto, no dos
+  (candado `_decodeSkipTimer` antes de contar); la ventana del gapless
+  deja 0.35 s reales de margen; `loadTrackPaused` limpia A-B y restaura
+  las preferencias de letra (A3) y **retira el `src`** cuando la pista no
+  tiene fuente, sin arrastrar el audio anterior (A4); las bases del
+  contador de escucha se reasientan en `seekTo`/`seekToTime` (A5) y el
+  flush vive en `js/settings.js`.
+- **Eventos (E3–E5):** las teclas sobre los botones del mini-player ya no
+  abren el reproductor por accidente; un volumen guardado de 0 se restaura
+  como 0 (`>= 0`); `chkPreservePitch` tiene un solo listener `change`.
+- **Letras (Y2–Y6):** las líneas sin sello (créditos) se anclan a la
+  temporizada anterior en vez de amontonarse en t=0; los sellos se
+  escriben sin `[00:60.00]` (las centésimas redondean el total, no el
+  resto); el parser acepta `[h:mm:ss.xx]` y coma decimal; la
+  sincronización RAF se duerme a 250 ms con la pestaña oculta y se
+  despierta al volver; el arranque de la RAF es único.
+- **Reproductor/interfaz (U1, P1–P3):** cancelar el temporizador de sueño
+  ya no pausa la música (el fade comprueba su propio candado); cada
+  lienzo de portada lleva sello (`_coverToken`) que invalida las cargas
+  tardías; el buffer nunca enseña ∞ ni `NaN%`; la insignia de repetición
+  es decorativa para el lector de pantalla.
+- **Ajustes/datos (S2–S5, I1–I4):** las estadísticas se validan siempre
+  tras cargar (ya no solo al importar); el crossfade se acota a [0,12] s;
+  `text3` del tema oscuro sube a 0.58 (y el tema que lo bajaba, a la par);
+  las listas avisan si IndexedDB se queda sin cuota; se registra el tiempo
+  escuchado antes de salvar la sesión en `pagehide`; los borrados de
+  IndexedDB ya no tragan errores en silencio; y **ningún** camino de
+  persistencia guarda campos transitorios (`_lrcCache`, `_lrcCacheKey`,
+  `_thumbsHiRes`…) — conservando `_tagsChecked`, como manda §85.
+- **Biblioteca (L1–L9):** borrar una pista (confirmado o sin deshacer)
+  purga sus estadísticas y su historial; deshacer la devuelve a la cola
+  **en su posición** (y al orden original); editar una pista a mano la
+  marca `_userEdited` y el re-etiquetado ya no la pisa; el retag converge
+  (`!_tagsChecked`); `persistPlaylist` solo corre si la lista contenía la
+  pista; el historial se refresca al borrar/deshacer, usa `trackMap()` y
+  escapa su texto vacío; el toast «Procesando X archivos» sustituye la X.
+- **Cola/stats (Q1, Q2, R1, D1):** las filas de la cola resuelven pistas
+  con un solo `trackMap()`; la rama vacía desvincula la lista virtual;
+  `playNext` acota también por arriba la posición calculada; «hace X días»
+  nunca es negativo.
+- **Tema/accesibilidad (T1–T6, H1–H3):** `--radius-md: 16px` deja de ser
+  un hueco silencioso; los cinco blancos-sobre-acento usan
+  `--accent-fill`; `.empty-hint` pasa a `--text-3`; los sliders tienen
+  foco visible; los `textarea` son seleccionables; los **cuatro**
+  degradados con el rosa cableado (el informe contaba dos; el grep tras
+  la corrección halló otros dos) usan variables de acento; el indicador
+  de buffer anuncia con `role="status"`, el editor LRC tiene nombre
+  accesible y cinco lienzos puramente decorativos llevan `aria-hidden`
+  (el del visualizador ya lo tenía).
+
+**Falso positivo, no tocado:** `sendToChat({file, text})` es correcto
+según la especificación webxdc (API de GitHub, `src/spec/sendToChat.md`).
+
+**Nota de verificación:** el reinicio del entorno borró `/tmp` entero
+(arnés y checks §§80–93 incluidos). Se reconstruyó el arnés
+(jsdom 24 + fake-indexeddb 6, con tapón de canvas) y se escribió el check
+§94 desde cero; las regresiones antiguas no pudieron re-ejecutarse tal
+cual y se sustituyeron por un humo consolidado de los invariantes
+durables documentados — sin afirmar como re-ejecutados los conteos
+17/17…21/21 históricos.
+
+### Verificación
+
+- **Check §94** `/tmp/check-vista94.js`: **58/58** — runtime real para
+  C1/C2/E3 (teclado y pila de hojas con DOM adverso), C3/Y2/Y4 (parser),
+  Y3 (sellos), C5 (techo de pared), A1 (doble aviso = un salto),
+  A3/A4 (higiene de `loadTrackPaused`), S2, L1/L2/L3/L4/L5 (borrar,
+  deshacer en posición, purga, marcas), y aserciones de fuente/CSS/HTML
+  para el resto (A2/A5/U1/P1/P2/P3/E4/E5/S4/S5/I1/I2/I4/L7/Q2/R1/D1,
+  T1–T6, H1–H3), más i18n 373×8 sin colgadas y §92/§93 vivos.
+  Cuatro fallos iniciales fueron del propio check (aritmética 1:00:02,
+  `cover: null` imposible en pistas reales, el tapón de canvas del
+  arnés, y contar como listener la sincronización de UI del checkbox).
+- **Humo de regresión** `/tmp/check-regresion.js`: **20/20** —
+  invariantes §§79–93 que siguen en pie (sin `#togglePauseUnplug`,
+  `_tagsChecked` persistido, dedupe `_dupKey`, cola de IDs solo-onda,
+  `--fs-micro`, `webxdc.js` referenciado y no empaquetado, sin sistema
+  de backup de §57, sin objectURL persistidos).
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+

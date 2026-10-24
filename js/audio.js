@@ -353,8 +353,22 @@ Object.assign(App, {
         this.audio.load();
         this.setBuffering(this.audio.readyState < 3);
       } else {
+        // §94: sin URL no basta con «no cargar»: el elemento
+        // conservaba el src de la pista anterior (la borrada) y
+        // un Play la resucitaba sonando otra canción que la que
+        // enseñaba la pantalla.
+        if (this.audio) {
+          try { this.audio.pause(); } catch (e) {}
+          this.audio.removeAttribute('src');
+          try { this.audio.load(); } catch (e) {}
+        }
         this.setBuffering(false);
       }
+      // §94: misma higiene que loadAndPlay al cambiar de pista:
+      // fuera el bucle A-B de la anterior y dentro las prefs de
+      // letra (offset/velocidad) de ESTA pista, no de la borrada.
+      if (this.clearABRepeat) this.clearABRepeat();
+      if (typeof this.restoreLyricsPrefs === 'function') this.restoreLyricsPrefs();
       this.isPlaying = false;
       this.renderCurrentTrack();
       this.renderLyrics();
@@ -373,6 +387,10 @@ Object.assign(App, {
       if (typeof this.setBuffering === 'function') this.setBuffering(false);
       this.isPlaying = false;
       if (typeof this.updatePlayUI === 'function') this.updatePlayUI();
+      // §94: si ya hay un salto programado para ESTE fallo, el
+      // segundo aviso (evento 'error' tras el rechazo de play())
+      // no cuenta ni salta otra vez.
+      if (this._decodeSkipTimer) return true;
       this._decodeSkipCount = (this._decodeSkipCount || 0) + 1;
       const limit = Math.max(1, Array.isArray(this.queue) && this.queue.length ? this.queue.length : 1);
       if (this._decodeSkipCount >= limit) {
@@ -383,7 +401,12 @@ Object.assign(App, {
         return true;
       }
       if (this._decodeSkipCount === 1) this.toast(this.t('toast_audio_error'));
-      setTimeout(() => this.next(true), 0);
+      // §94: programar el salto (el candado de arriba coalesce
+      // los dos avisos del mismo archivo corrupto en uno solo).
+      this._decodeSkipTimer = setTimeout(() => {
+        this._decodeSkipTimer = null;
+        this.next(true);
+      }, 0);
       return true;
     },
 
@@ -939,7 +962,11 @@ Object.assign(App, {
         }
         return;
       }
-      if (this._gaplessEnabled && remain <= 0.08 && remain > 0 && !this._gaplessArmed) {
+      // §94: la ventana era de 80 ms, pero 'timeupdate' llega
+      // cada ~250 ms: casi ningún evento caía dentro y el gapless
+      // era inerte (se oía el corte del 'ended' normal). Con
+      // 0,35 s el intercambio entra en la ventana de un evento.
+      if (this._gaplessEnabled && remain <= 0.35 && remain > 0 && !this._gaplessArmed) {
         this._gaplessArmed = true;
         if (!this.gaplessNext()) this._gaplessArmed = false;
       }
@@ -976,6 +1003,9 @@ Object.assign(App, {
       if (isFinite(dur) && dur > 0) t = Math.max(0, Math.min(dur - 0.05, t));
       else t = Math.max(0, t);
       try { this.audio.currentTime = t; } catch (e) {}
+      // §94: ídem seekTo — la base de escucha salta con el seek.
+      this._currentPlayBaseTime = this.audio.currentTime;
+      this._statsWallBase = Date.now();
       this.updateProgress();
       this.updateMediaPosition(true);
     },
@@ -992,6 +1022,10 @@ Object.assign(App, {
       } catch (e) {
         return;
       }
+      // §94: la base de «tiempo escuchado» salta con el seek; si
+      // no, el flush contaba el tramo saltado como escuchado.
+      this._currentPlayBaseTime = this.audio.currentTime;
+      this._statsWallBase = Date.now();
       this.updateProgress();
       this.updateMediaPosition(true);
     },

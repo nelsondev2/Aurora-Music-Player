@@ -171,6 +171,9 @@ Object.assign(App, {
         ? this.queueIdx
         : (curId ? this.queue.indexOf(curId) : this.queueIdx);
       if (curPos < 0 || curPos == null) curPos = Math.min(this.queueIdx || 0, this.queue.length - 1);
+      // §94: y techo también — un queueIdx heredado mayor que la
+      // cola dejaba «la actual» fuera de rango al insertar.
+      if (curPos > this.queue.length - 1) curPos = this.queue.length - 1;
       for (let i = this.queue.length - 1; i >= 0; i--) {
         if (i !== curPos && this.queue[i] === trackId) {
           this.queue.splice(i, 1);

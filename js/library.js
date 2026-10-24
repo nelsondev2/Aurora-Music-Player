@@ -67,7 +67,8 @@ Object.assign(App, {
       // Dos importaciones simultáneas (arrastrar + selector, o doble toque)
       // mutaban `tracks` a la vez y duplicaban pistas. Una sola a la vez.
       if (this._importing) {
-        this.toast(this.t('toast_processing_files'));
+        // §94: la clave lleva una X por sustituir (nº de archivos).
+        this.toast(this.t('toast_processing_files').replace('X', String(fileList.length)));
         return;
       }
       this._importing = true;
@@ -541,12 +542,15 @@ Object.assign(App, {
       if (!cont) return;
       const history = this._playHistory.slice().reverse(); // más reciente primero
       if (history.length === 0) {
-        cont.innerHTML = '<p class="stats-empty">' + this.t('history_empty') + '</p>';
+        // §94: escapado como el resto de textos de la vista.
+        cont.innerHTML = '<p class="stats-empty">' + this.esc(this.t('history_empty')) + '</p>';
         return;
       }
+      // §94: índice por id (antes: find() por fila → O(n·m)).
+      const byId = typeof this.trackMap === 'function' ? this.trackMap() : null;
       let html = '<ul class="track-list">';
       history.forEach(id => {
-        const t = this.tracks.find(x => x.id === id);
+        const t = byId ? byId.get(id) : this.tracks.find(x => x.id === id);
         if (!t) return;
         html += `<li class="track-row" data-track="${t.id}">
           <div class="row-cover"><canvas width="144" height="144"></canvas></div>
@@ -603,17 +607,20 @@ Object.assign(App, {
      * su archivo? La marca _tagsChecked la pone el importador (y
      * este propio retag) cuando la pista ya pasó por el lector
      * actual, género y año incluidos. Sin marca (bibliotecas
-     * anteriores) hay que leerla UNA vez; con marca y portada y
-     * artista, releerla en cada arranque era el cuello de botella:
-     * miles de lecturas completas + sondeos + reescrituras de
-     * IndexedDB para no cambiar nada. Ojo: que no tenga letra NO
-     * es motivo (la mayoría de canciones no traen). */
+     * anteriores) hay que leerla UNA vez; con marca, releerla en
+     * cada arranque era el cuello de botella: miles de lecturas
+     * completas + sondeos + reescrituras de IndexedDB para no
+     * cambiar nada. Ojo: que no tenga letra NO es motivo (la
+     * mayoría de canciones no traen). §94: tampoco lo son la
+     * falta de portada ni el artista placeholder — el archivo no
+     * los trae y la condición nunca convergía. */
     _trackNeedsRetag(t) {
       if (!t || !(t._file || t.fileBlob)) return false;
-      if (!t._tagsChecked) return true;
-      if (!t.coverIsImage) return true;
-      if (this.isPlaceholderArtist(t.artist)) return true;
-      return false;
+      // §94: la marca es la única condición. Antes, una pista sin
+      // portada en el archivo (o con el artista «desconocido» de
+      // verdad) «necesitaba» retag en CADA arranque para siempre:
+      // la relectura no puede inventar lo que el archivo no trae.
+      return !t._tagsChecked;
     },
 
     /* Relee tags de pistas ya guardadas (portada, artista, letras).
@@ -636,11 +643,16 @@ Object.assign(App, {
           try {
             const fresh = await U.processOne(file, null);
             let changed = false;
-            if (fresh.title && fresh.title !== t.title) { t.title = fresh.title; changed = true; }
-            if (fresh.artist && !this.isPlaceholderArtist(fresh.artist)) {
+            // §94: el texto que el usuario editó a mano (la hoja
+            // de edición marca _userEdited) manda sobre el
+            // archivo: releer etiquetas no debe deshacer su
+            // corrección en el siguiente arranque.
+            const userText = !!t._userEdited;
+            if (!userText && fresh.title && fresh.title !== t.title) { t.title = fresh.title; changed = true; }
+            if (!userText && fresh.artist && !this.isPlaceholderArtist(fresh.artist)) {
               if (t.artist !== fresh.artist) { t.artist = fresh.artist; changed = true; }
             }
-            if (fresh.album && !this.isPlaceholderAlbum(fresh.album)) {
+            if (!userText && fresh.album && !this.isPlaceholderAlbum(fresh.album)) {
               if (t.album !== fresh.album) { t.album = fresh.album; changed = true; }
             }
             // La portada solo se toca si es otra de verdad: antes
@@ -860,6 +872,13 @@ Object.assign(App, {
           // reabrir es una URL muerta y el reproductor salta de
           // canción en canción sin poder reproducir ninguna.
           delete toSave.src;
+          // §94: campos de trabajo de sesión fuera (ver
+          // persistTrack): _lrcCache duplicaba la letra guardada.
+          delete toSave._lrcCache;
+          delete toSave._lrcCacheKey;
+          delete toSave._thumbsHiRes;
+          delete toSave._thumbing;
+          delete toSave._thumbsDirty;
           if (track._file) {
             toSave.fileBlob = track._file;
             delete toSave._file;
@@ -925,6 +944,10 @@ Object.assign(App, {
           cachedUrl,
           favorite: this.favorites.has(trackId),
           playlistIds: this.playlists.filter(pl => pl.trackIds.indexOf(trackId) >= 0).map(pl => pl.id),
+          // §94: posición en la cola (y en la original si hay
+          // aleatorio) para que «Deshacer» la devuelva también ahí.
+          queuePos: this.queue ? this.queue.indexOf(trackId) : -1,
+          origPos: Array.isArray(this._originalQueue) ? this._originalQueue.indexOf(trackId) : -1,
           timer: null
         };
       } else {
@@ -937,6 +960,7 @@ Object.assign(App, {
           try { URL.revokeObjectURL(t.src); } catch (e) {}
         }
         this.deleteTrackFromStorage(trackId);
+        this._purgeTrackTraces(trackId); // §94: borrado sin deshacer
       }
       // Limpiar también la cache de ganancia normalizada (#6)
       this._trackGainCache.delete(trackId);
@@ -952,14 +976,16 @@ Object.assign(App, {
         else if (qIdx === this.queueIdx) this.queueIdx = Math.min(this.queueIdx, this.queue.length - 1);
       }
       if (typeof this._removeFromOriginalQueue === 'function') this._removeFromOriginalQueue(trackId);
-      // Quitar de playlists
+      // Quitar de playlists. §94: persistPlaylist va DENTRO del
+      // if — antes se guardaban en IndexedDB todas las listas de
+      // la app por cada pista borrada, contuviera o no la pista.
       this.playlists.forEach(pl => {
         const i = pl.trackIds.indexOf(trackId);
         if (i >= 0) {
           pl.trackIds.splice(i, 1);
           if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
+          this.persistPlaylist(pl);
         }
-        this.persistPlaylist(pl);
       });
       // Quitar de favoritos
       this.favorites.delete(trackId);
@@ -974,6 +1000,8 @@ Object.assign(App, {
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();
+      // §94: el historial, si está a la vista, también se entera.
+      if (typeof this.renderHistory === 'function') this.renderHistory();
       if (typeof this.renderHome === 'function') this.renderHome();
       if (typeof this.updateChrome === 'function') this.updateChrome();
       if (canUndo) {
@@ -986,6 +1014,24 @@ Object.assign(App, {
         });
       } else {
         this.toast(this.t('toast_track_deleted'), 'danger');
+      }
+    },
+
+    /* §94: al confirmar un borrado se purgan también sus
+     * huellas: contadores de estadísticas e historial quedaban
+     * huérfanos para siempre (y «las más escuchadas» sumaban
+     * fantasmas). Con «Deshacer» aún posible NO se toca nada. */
+    _purgeTrackTraces(trackId) {
+      if (this.stats) {
+        let dirty = false;
+        if (this.stats.plays && trackId in this.stats.plays) { delete this.stats.plays[trackId]; dirty = true; }
+        if (this.stats.skips && trackId in this.stats.skips) { delete this.stats.skips[trackId]; dirty = true; }
+        if (dirty && typeof this.saveStats === 'function') this.saveStats();
+      }
+      if (Array.isArray(this._playHistory) && this._playHistory.indexOf(trackId) >= 0) {
+        this._playHistory = this._playHistory.filter(id => id !== trackId);
+        try { window.AuroraStorage.setSetting('history', this._playHistory); } catch (e) {}
+        if (typeof this.renderHistory === 'function') this.renderHistory();
       }
     },
 
@@ -1006,6 +1052,7 @@ Object.assign(App, {
       } catch (e) {}
       this._urlCache.delete(p.track.id);
       this.deleteTrackFromStorage(p.track.id);
+      this._purgeTrackTraces(p.track.id); // §94
     },
 
     /* Deshace el borrado: devuelve la pista a la biblioteca, a sus listas
@@ -1034,10 +1081,22 @@ Object.assign(App, {
         this.favorites.add(t.id);
         this.saveFavorites();
       }
+      // §94: …y a la cola, en su posición: antes el «Deshacer»
+      // devolvía la canción a la biblioteca y a sus listas,
+      // pero la cola la perdía para siempre.
+      if (p.queuePos >= 0 && Array.isArray(this.queue) && this.queue.indexOf(t.id) < 0) {
+        const atQ = Math.min(p.queuePos, this.queue.length);
+        this.queue.splice(atQ, 0, t.id);
+        if (atQ <= this.queueIdx) this.queueIdx++;
+      }
+      if (p.origPos >= 0 && Array.isArray(this._originalQueue) && this._originalQueue.indexOf(t.id) < 0) {
+        this._originalQueue.splice(Math.min(p.origPos, this._originalQueue.length), 0, t.id);
+      }
       if (this.currentTrack && this.currentTrack.id === t.id) this.updateFavoriteUI();
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();
+      if (typeof this.renderHistory === 'function') this.renderHistory(); // §94
       if (typeof this.renderHome === 'function') this.renderHome();
       if (typeof this.updateChrome === 'function') this.updateChrome();
       this.toast(this.t('toast_restored'));

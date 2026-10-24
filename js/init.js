@@ -94,6 +94,9 @@ Object.assign(App, {
         // reaparezca al volver a abrirla.
         try { if (this._pendingTrackDelete) this._commitPendingTrackDelete(); } catch (err) {}
         try { if (this._pendingPlaylistDelete) this._commitPendingPlaylistDelete(); } catch (err) {}
+        // §94: vaciar los segundos escuchados aún no guardados
+        // (el flush es cada 10 s: cerrar perdía el último tramo).
+        try { if (this._currentPlayStart && typeof this._flushListening === 'function') this._flushListening(); } catch (err) {}
         try { this.saveSession(); } catch (err) {}
         try { this.releaseAllUrls(); } catch (err) {}
       };
@@ -344,6 +347,16 @@ Object.assign(App, {
         // reabrir la app sería una URL muerta (fallo de «no se
         // puede reproducir» en cadena tras §85).
         delete toSave.src;
+        // §94: tampoco los campos de trabajo de la sesión —
+        // _lrcCache guarda la letra YA parseada (la letra quedaba
+        // dos veces en IndexedDB) y las banderas de miniatura,
+        // al volver marcadas, bloqueaban regenerarlas. Ojo:
+        // _tagsChecked (§85) SÍ persiste a propósito.
+        delete toSave._lrcCache;
+        delete toSave._lrcCacheKey;
+        delete toSave._thumbsHiRes;
+        delete toSave._thumbing;
+        delete toSave._thumbsDirty;
         if (track._file) {
           toSave.fileBlob = track._file;  // IndexedDB guarda Blobs directamente
           delete toSave._file;
@@ -366,7 +379,9 @@ Object.assign(App, {
     },
 
     async deleteTrackFromStorage(trackId) {
-      try { await window.AuroraStorage.deleteTrack(trackId); } catch (e) {}
+      // §94: el fallo no se traga en silencio (borrado fantasma).
+      try { await window.AuroraStorage.deleteTrack(trackId); }
+      catch (e) { console.warn('[Aurora] No se pudo borrar la pista de IndexedDB:', e); }
     },
 
     async persistPlaylist(pl) {
@@ -387,11 +402,19 @@ Object.assign(App, {
         await window.AuroraStorage.putPlaylist(toSave);
       } catch (e) {
         console.warn('[Aurora] No se pudo guardar playlist:', e);
+        // §94: mismo aviso de cuota que persistTrack — antes la
+        // lista se perdía en silencio al cerrar la app.
+        if (this._isQuotaError(e)) {
+          this.toast(this.t('toast_storage_full'));
+          if (typeof this.offerFreeStorage === 'function') this.offerFreeStorage();
+        }
       }
     },
 
     async deletePlaylistFromStorage(id) {
-      try { await window.AuroraStorage.deletePlaylist(id); } catch (e) {}
+      // §94: ídem deleteTrackFromStorage — con diagnóstico.
+      try { await window.AuroraStorage.deletePlaylist(id); }
+      catch (e) { console.warn('[Aurora] No se pudo borrar la lista de IndexedDB:', e); }
     },
 
     /* ===== Compat: loadPlaylists/savePlaylists ahora usan IndexedDB ===== */

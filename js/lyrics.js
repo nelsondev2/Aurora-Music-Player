@@ -53,24 +53,27 @@ Object.assign(App, {
       for (const line of arr) {
         if (typeof line !== 'string') continue;
         const trimmed = line.trim();
-        if (!trimmed) {
-          if (hasTimed) {
-            result.push({ time: -1, text: '', timed: false });
-          }
-          continue;
-        }
+        // §94: las líneas vacías del archivo ya no crean una
+        // entrada fantasma (texto '', sin tiempo) que luego se
+        // pintaba como una línea en blanco moviéndose por la
+        // letra. Vacío = nada que mostrar: se salta y punto.
+        if (!trimmed) continue;
 
         // Saltar metadata LRC pura
         if (/^\[(ar|ti|al|by|offset|length|re|ve|id):/i.test(trimmed)) continue;
 
         // Buscar TODOS los timestamps en la línea.
-        // Soporta: [mm:ss.xx], [mm:ss], [m:ss.xx], [m:ss], [h:mm:ss.xx]
-        const timestampRegex = /\[(\d+):(\d{1,2}(?:\.\d+)?)\]/g;
+        // §94: el comentario prometía [h:mm:ss.xx] desde siempre,
+        // pero el regex solo aceptaba mm:ss — y tampoco la coma
+        // decimal ([00:12,50], habitual en LRC europeos). Ahora:
+        // [mm:ss.xx], [mm:ss], [m:ss.xx], [h:mm:ss.xx], coma o punto.
+        const timestampRegex = /\[(?:(\d+):)?(\d{1,2}):(\d{1,2}(?:[.,]\d+)?)\]/g;
         const stamps = [];
         let m;
         while ((m = timestampRegex.exec(trimmed)) !== null) {
           stamps.push({
-            time: parseInt(m[1]) * 60 + parseFloat(m[2]) + globalOffset,
+            time: (parseInt(m[1] || '0', 10) * 3600) + (parseInt(m[2], 10) * 60)
+              + parseFloat(m[3].replace(',', '.')) + globalOffset,
             match: m[0]
           });
         }
@@ -102,11 +105,17 @@ Object.assign(App, {
 
       // Si hay timestamps, ordenar por tiempo
       if (hasTimed) {
-        result.sort((a, b) => {
-          const ta = a.timed ? a.time : 0;
-          const tb = b.timed ? b.time : 0;
-          return ta - tb;
-        });
+        // §94: las líneas sin timestamp (créditos sueltos entre
+        // estrofas) se anclan al tiempo de la línea temporizada
+        // ANTERIOR en el archivo, no a 0: antes la ordenación las
+        // teletransportaba todas al principio de la letra.
+        let anchor = 0;
+        for (const line of result) {
+          if (line.timed) anchor = line.time;
+          line._sk = line.timed ? line.time : anchor;
+        }
+        result.sort((a, b) => a._sk - b._sk);
+        for (const line of result) delete line._sk;
 
         // Fusionar líneas con el MISMO timestamp: la primera es el texto
         // principal y la siguiente es su traducción (formato LRC bilingüe,
@@ -295,11 +304,12 @@ Object.assign(App, {
       this.activeLrcIdx = -1;
       this._lastActiveKey = '';
       this._lrcLineEls = null;  // invalidar caché de elementos DOM
-      // Iniciar sincronización con RAF (#22)
-      this.startLrcRafSync();
       // Detectar scroll manual del usuario (#13)
       this.wireLyricsUserScroll();
-      // El RAF solo debe correr con la vista de letras activa.
+      // Iniciar sincronización con RAF (#22), solo con la vista
+      // de letras activa. §94: antes había DOS llamadas seguidas
+      // (una incondicional y otra con guardia) — la segunda
+      // cancelaba y rearrancaba la primera en el mismo pintado.
       const lv = document.getElementById('viewLyrics');
       if (lv && lv.classList.contains('active')) this.startLrcRafSync();
     },
@@ -307,6 +317,9 @@ Object.assign(App, {
     /* Sincronización precisa con requestAnimationFrame (#22) */
     startLrcRafSync() {
       if (this.lrcRafId) cancelAnimationFrame(this.lrcRafId);
+      // §94: también se cancela el respiro en pausa pendiente,
+      // para que nunca convivan dos cadenas de sincronización.
+      if (this._lrcRafTimer) { clearTimeout(this._lrcRafTimer); this._lrcRafTimer = null; }
       if (!this.lrcHasTimed) return;
       const tick = () => {
         const lyricsView = document.getElementById('viewLyrics');
@@ -324,6 +337,16 @@ Object.assign(App, {
           // La repetición de sección se aplica en updateProgress(): así sigue
           // activa aunque el usuario vuelva al reproductor (el RAF solo corre
           // con la vista de letras abierta).
+        }
+        // §94: en pausa, pintar a 60 fps es batería tirada (la
+        // línea no se mueve): se respira a 4 fps, suficiente para
+        // seguir un seek con la reproducción detenida.
+        if (this.audio && this.audio.paused) {
+          this._lrcRafTimer = setTimeout(() => {
+            this._lrcRafTimer = null;
+            this.lrcRafId = requestAnimationFrame(tick);
+          }, 250);
+          return;
         }
         this.lrcRafId = requestAnimationFrame(tick);
       };
@@ -587,9 +610,12 @@ Object.assign(App, {
      *  con el botón Guardar de siempre (saveLrcFromEditor).
      * ============================================================ */
     _fmtLrcStamp(sec) {
-      const s = Math.max(0, Number(sec) || 0);
-      const m = Math.floor(s / 60);
-      const r = s - m * 60;
+      // §94: redondear primero en centésimas — antes 59.999 s
+      // salía como [00:60.00], un sello inválido que el propio
+      // parser luego no sabía leer bien.
+      const cs = Math.round(Math.max(0, Number(sec) || 0) * 100);
+      const m = Math.floor(cs / 6000);
+      const r = (cs % 6000) / 100;
       return '[' + String(m).padStart(2, '0') + ':' + r.toFixed(2).padStart(5, '0') + ']';
     },
 

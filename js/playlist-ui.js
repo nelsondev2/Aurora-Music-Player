@@ -808,6 +808,10 @@ Object.assign(App, {
         this.queueIdx = nq >= 0 ? nq : Math.min(this.queueIdx, Math.max(0, this.queue.length - 1));
       }
       if (this.queue.length === 0) {
+        // §94: desvincular la lista virtual anterior — su listener
+        // de scroll seguía vivo y repintaba filas fantasma sobre
+        // el estado vacío al desplazar la hoja.
+        this.unbindVirtualList(ul);
         ul.innerHTML = '';
         const emptyLi = document.createElement('li');
         emptyLi.className = 'empty-state compact';
@@ -818,8 +822,11 @@ Object.assign(App, {
         ul.appendChild(emptyLi);
         return;
       }
+      // §94: índice por id una sola vez — antes cada fila hacía
+      // tracks.find() y pintar la cola entera era O(filas × pistas).
+      const queueById = typeof this.trackMap === 'function' ? this.trackMap() : null;
       const makeQueueRow = (id, i) => {
-        const t = this.tracks.find(x => x.id === id);
+        const t = queueById ? queueById.get(id) : this.tracks.find(x => x.id === id);
         if (!t) return null;
         const li = document.createElement('li');
         li.className = 'queue-item' + (i === this.queueIdx ? ' current' : '');

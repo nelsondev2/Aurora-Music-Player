@@ -173,15 +173,26 @@ Object.assign(App, {
           const raw = localStorage.getItem('aurora_stats');
           if (raw) this.stats = JSON.parse(raw);
         }
-        if (!this.stats.plays) this.stats.plays = {};
-        if (!this.stats.skips) this.stats.skips = {}; // §81
-        if (typeof this.stats.totalSeconds !== 'number') this.stats.totalSeconds = 0;
       } catch (e) {
         try {
           const raw = localStorage.getItem('aurora_stats');
           if (raw) this.stats = JSON.parse(raw);
         } catch (e2) {}
       }
+      this._normalizeStats();
+    },
+
+    /* §94: validar la FORMA de las estadísticas vengan de donde
+     * vengan (IndexedDB o fallback): corruptas (un número, una
+     * lista, plays que no es objeto) se colaban tal cual y luego
+     * cada conteo sumaba NaN o lanzaba hasta parar la música. */
+    _normalizeStats() {
+      if (!this.stats || typeof this.stats !== 'object' || Array.isArray(this.stats)) {
+        this.stats = { plays: {}, skips: {}, totalSeconds: 0 };
+      }
+      if (!this.stats.plays || typeof this.stats.plays !== 'object' || Array.isArray(this.stats.plays)) this.stats.plays = {};
+      if (!this.stats.skips || typeof this.stats.skips !== 'object' || Array.isArray(this.stats.skips)) this.stats.skips = {}; // §81
+      if (typeof this.stats.totalSeconds !== 'number' || !isFinite(this.stats.totalSeconds) || this.stats.totalSeconds < 0) this.stats.totalSeconds = 0;
     },
     async saveStats() {
       try {
@@ -225,16 +236,30 @@ Object.assign(App, {
       this._skipCounted = false; // §81: un salto por pase, como el conteo
       // Iniciar flush periódico de tiempo escuchado
       if (this._statsFlushTimer) clearInterval(this._statsFlushTimer);
+      this._statsWallBase = Date.now(); // §94: reloj de pared del flush
       this._statsFlushTimer = setInterval(() => {
-        if (this.isPlaying && this.audio) {
-          const elapsed = (this.audio.currentTime - this._currentPlayBaseTime);
-          if (elapsed > 0) {
-            this.stats.totalSeconds += elapsed;
-            this._currentPlayBaseTime = this.audio.currentTime;
-            this.saveStats();
-          }
-        }
+        if (this.isPlaying && this.audio) this._flushListening();
       }, 10000);  // cada 10s
+    },
+
+    /* §94: vacía los segundos escuchados desde la última base.
+     * Techo de cordura: nunca contar más que el tiempo real
+     * transcurrido (× velocidad de reproducción + margen). Sin
+     * él, un salto de currentTime (seek no interceptado, pestaña
+     * congelada que despierta) inflaba el «tiempo escuchado». */
+    _flushListening() {
+      if (!this._currentPlayStart || !this.audio) return;
+      const now = Date.now();
+      const heard = (this.audio.currentTime || 0) - (this._currentPlayBaseTime || 0);
+      const wall = this._statsWallBase ? (now - this._statsWallBase) / 1000 : 0;
+      const cap = wall > 0 ? wall * (this.audio.playbackRate || 1) + 2 : heard;
+      const add = Math.max(0, Math.min(heard, cap));
+      this._currentPlayBaseTime = this.audio.currentTime || 0;
+      this._statsWallBase = now;
+      if (add > 0) {
+        this.stats.totalSeconds += add;
+        this.saveStats();
+      }
     },
 
     /* Registrar que la pista sonó ENTERA (§67): el único sitio donde
@@ -313,15 +338,8 @@ Object.assign(App, {
         clearInterval(this._statsFlushTimer);
         this._statsFlushTimer = null;
       }
-      // Última actualización
-      if (this._currentPlayStart && this.audio) {
-        const elapsed = (this.audio.currentTime - this._currentPlayBaseTime);
-        if (elapsed > 0) {
-          this.stats.totalSeconds += elapsed;
-          this._currentPlayBaseTime = this.audio.currentTime;
-          this.saveStats();
-        }
-      }
+      // Última actualización (§94: con el mismo techo que el flush)
+      this._flushListening();
       this._currentPlayStart = null;
     },
 
@@ -373,7 +391,10 @@ Object.assign(App, {
         bg0: '#050509', bg1: '#0a0a12', bg2: '#14141f', bg3: '#1d1d2b',
         text1: '#ffffff',
         text2: 'rgba(255,255,255,0.72)',
-        text3: 'rgba(255,255,255,0.48)',
+        /* §94: 0.58 como en el CSS (§70) — applyTheme pisa la
+         * variable con este valor, así que el 0,48 de aquí dejaba
+         * el ajuste de contraste del CSS en papel mojado. */
+        text3: 'rgba(255,255,255,0.58)',
         text4: 'rgba(255,255,255,0.36)',
         surface: 'rgba(255,255,255,0.05)',
         surface2: 'rgba(255,255,255,0.08)',
@@ -403,7 +424,7 @@ Object.assign(App, {
         bg0: '#000000', bg1: '#000000', bg2: '#0a0a0a', bg3: '#141414',
         text1: '#ffffff',
         text2: 'rgba(255,255,255,0.72)',
-        text3: 'rgba(255,255,255,0.50)',
+        text3: 'rgba(255,255,255,0.58)', /* §94: en línea con dark */
         text4: 'rgba(255,255,255,0.40)',
         surface: 'rgba(255,255,255,0.06)',
         surface2: 'rgba(255,255,255,0.09)',
@@ -721,8 +742,11 @@ Object.assign(App, {
           if (typeof s.gapless === 'boolean') this._gaplessEnabled = s.gapless;
           if (typeof s.normalize === 'boolean') this._normalizeVolume = s.normalize;
           if (typeof s.crossfade === 'number') {
-            this.crossfadeDuration = s.crossfade;
-            this.crossfadeEnabled = s.crossfade > 0;
+            // §94: acotado al rango que ofrece la UI (0–12 s): un
+            // valor corrupto o heredado (p. ej. 999) arrancaba el
+            // fundido casi al empezar cada canción.
+            this.crossfadeDuration = Math.max(0, Math.min(12, s.crossfade));
+            this.crossfadeEnabled = this.crossfadeDuration > 0;
           }
           if (typeof s.marquee === 'boolean') this._marqueeEnabled = s.marquee;
           if (typeof s.vinyl === 'boolean') this._vinylEnabled = s.vinyl;

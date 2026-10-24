@@ -32,6 +32,16 @@ verificado función a función:
   sin uso en los 8 idiomas, 6 variables de estilo huérfanas y
   un archivo de iconos que viajaba en la app sin cargarse.
   La app pesa un poco menos y hace exactamente lo mismo.
+- Ronda de correcciones (§94) tras un informe de bugs externo,
+  verificado punto a punto: Espacio ya no secuestra los botones
+  enfocados y Escape cierra la ventana que abriste la última;
+  un archivo corrupto salta una vez, no dos; cancelar el
+  temporizador de sueño ya no pausa la música; las líneas de
+  crédito de las letras ya no saltan al principio y se aceptan
+  sellos con horas y coma decimal; al borrar una pista el
+  historial y las estadísticas quedan limpios, y deshacer la
+  devuelve a la cola en el mismo sitio; editar una canción a
+  mano ya no lo deshace el re-etiquetado automático.
 - Micro-detalles (§92): las insignias (estrellas, «Inteligente»,
   «Se conserva») dejan los 10 px y entran en la escala
   tipográfica; los títulos largos de las hojas se recortan con

@@ -104,6 +104,9 @@ Object.assign(App, {
     drawCover(canvasId, track, mini) {
       const c = document.getElementById(canvasId);
       if (!c) return;
+      // §94: cada pintado invalida los onload de imagen pendientes
+      // de ESTE lienzo (ver el uso del sello en la rama de imagen).
+      const coverToken = (c._coverToken = (c._coverToken || 0) + 1);
       const ctx = c.getContext('2d');
       const w = c.width, h = c.height;
 
@@ -119,8 +122,12 @@ Object.assign(App, {
           : (this.coverSrcForRow ? this.coverSrcForRow(track, Math.max(w, h)) : null)
             || (track.cover && track.cover.dataURL) || '';
         if (src) {
+          // §94: el sello de la entrada manda — si el usuario
+          // salta de canción mientras esta imagen carga, el
+          // onload tardío ya no pinta sobre la portada actual.
           const img = new Image();
           img.onload = () => {
+            if (c._coverToken !== coverToken) return; // ya hay otra pista
             ctx.clearRect(0, 0, w, h);
             // Modo "cover": misma geometría que las filas (_fitRect, §63)
             const r = typeof this._fitRect === 'function'
@@ -189,6 +196,9 @@ Object.assign(App, {
           badge = document.createElement('span');
           badge.className = 'repeat-badge';
           badge.textContent = '1';
+          // §94: el «1» es decoración — el aria-label del botón
+          // ya dice «Repetir: una»; sin esto el lector lo sumaba.
+          badge.setAttribute('aria-hidden', 'true');
           btn.appendChild(badge);
         }
       } else if (badge) {
@@ -359,12 +369,12 @@ Object.assign(App, {
         track.setAttribute('aria-valuetext', this.fmtTime(cur) + ' / ' + this.fmtTime(dur));
       }
 
-      // Buffer
+      // Buffer (§94: con duración 0/desconocida salía Infinity%)
       const buf = document.getElementById('progressBuffer');
-      if (buf && a.buffered && a.buffered.length > 0) {
+      if (buf && a.buffered && a.buffered.length > 0 && isFinite(dur) && dur > 0) {
         try {
           const end = a.buffered.end(a.buffered.length - 1);
-          buf.style.width = ((end / dur) * 100) + '%';
+          buf.style.width = Math.min(100, (end / dur) * 100) + '%';
         } catch (e) {}
       }
 

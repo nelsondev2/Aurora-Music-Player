@@ -45,6 +45,10 @@ Object.assign(App, {
           this.openNowPlaying();
         });
         mini.addEventListener('keydown', (e) => {
+          // §94: misma guardia que el clic — si la tecla nace en
+          // un botón del mini (play/siguiente), es para ese botón,
+          // no para abrir el reproductor a pantalla completa.
+          if (e.target.closest && e.target.closest('.mini-btn')) return;
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             this.openNowPlaying();
@@ -357,8 +361,9 @@ Object.assign(App, {
       if (cvVis) cvVis.addEventListener('click', () => this.cycleVisualizerMode());
       const btnAB = document.getElementById('btnABRepeat');
       if (btnAB) btnAB.addEventListener('click', () => this.toggleABRepeat());
-      const chkPitch = document.getElementById('chkPreservePitch');
-      if (chkPitch) chkPitch.addEventListener('change', (e) => this.setPreservesPitch(e.target.checked));
+      /* §94: chkPreservePitch ya tiene su listener 'change' en el
+       * bloque de ajustes de reproducción; aquí había un segundo
+       * idéntico y cada cambio se aplicaba (y guardaba) dos veces. */
 
       // Cola
       $('btnQueue').addEventListener('click', () => {
@@ -801,8 +806,10 @@ Object.assign(App, {
       // Restore volume
       const savedVol = localStorage.getItem('aurora_volume');
       const savedN = savedVol != null ? parseFloat(savedVol) : NaN;
-      // 0.8 era el default antiguo; al subirlo a 1 no pisar un volumen elegido a propósito
-      if (isFinite(savedN) && savedN > 0 && Math.abs(savedN - 0.8) > 0.001) this.setVolume(savedN);
+      // 0.8 era el default antiguo; al subirlo a 1 no pisar un volumen elegido a propósito.
+      // §94: el 0 también es un volumen elegido (silencio): antes
+      // no pasaba el `> 0` y la app amanecía a todo volumen.
+      if (isFinite(savedN) && savedN >= 0 && Math.abs(savedN - 0.8) > 0.001) this.setVolume(savedN);
       else this.setVolume(1);
 
       // Botón estadísticas (si existe)
@@ -865,10 +872,16 @@ Object.assign(App, {
       // Atajos de teclado (desktop)
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-          const open = document.querySelectorAll('.sheet.open');
-          if (open.length) {
+          // §94: cerrar la hoja de ENCIMA de la pila (la última
+          // abierta), no la última en orden del DOM: con dos hojas
+          // abiertas cuyo orden en el HTML difiere del de apertura,
+          // Escape cerraba la de abajo y dejaba la visible abierta.
+          const stack = this._sheetStack || [];
+          const topId = stack.length ? stack[stack.length - 1] : null;
+          const top = topId ? document.getElementById(topId) : null;
+          if (top && top.classList.contains('open')) {
             e.preventDefault();
-            this.closeSheet(open[open.length - 1].id);
+            this.closeSheet(topId);
           }
           return;
         }
@@ -881,6 +894,12 @@ Object.assign(App, {
         // manejo de flechas (±5 s): si el evento también llega aquí, el
         // salto se duplica (hallazgo A2 de la revisión externa).
         if (e.target.closest && e.target.closest('[role="slider"]')) return;
+        // §94: si el foco está sobre un botón/enlace/control, la
+        // tecla Espacio es suya (el navegador lo activa con ella):
+        // secuestrarla para play/pausa dejaba el botón enfocado
+        // sin responder. Los atajos solo mandan con el foco libre.
+        if (e.key === ' ' && e.target && e.target.closest &&
+            e.target.closest('button, a[href], [role="button"], select')) return;
         if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
           e.preventDefault();
           const sh = document.getElementById('sheetShortcuts');
