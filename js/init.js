@@ -192,6 +192,11 @@ Object.assign(App, {
         // (miles de URLs vivas antes de escuchar nada): getTrackUrl
         // lo crea perezosamente al reproducir/compartir y lo cachea.
         this.tracks = stored.map(t => {
+          // §87: los registros guardados antes de esta corrección
+          // pueden traer el objectURL de la sesión en que se
+          // guardaron: está muerto, fuera (getTrackUrl acuñará uno
+          // nuevo desde el blob al reproducir).
+          if (t && typeof t.src === 'string' && t.src.indexOf('blob:') === 0) delete t.src;
           if (!t.addedAt) t.addedAt = 0;
           return t;
         });
@@ -261,6 +266,15 @@ Object.assign(App, {
       let removed = false;
       try { removed = localStorage.getItem('aurora_mimusica_removed') === '1'; } catch (e) {}
       if (removed) return;
+      // §87: si ya hay listas del usuario, no sembrar en frío al
+      // arrancar: las «sueltas» suelen serlo por haber vaciado o
+      // borrado una lista, y ver nacer una lista nueva al abrir la
+      // app se vivía como «la app creó una lista sola al quitar
+      // una canción». Sin ninguna otra lista (biblioteca nueva o
+      // migrada), todo es suelto y la siembra es la esperada; con
+      // listas, «Mi Música» nace en contexto, al importar sin
+      // lista destino (_ensureMiMusica), no por sorpresa.
+      if (this.playlists.some(p => p && p.id !== ID)) return;
       // Canciones «sueltas»: en la biblioteca pero en ninguna lista
       // del usuario. Las de otras listas NO entran (§46).
       const enListas = new Set();
@@ -325,6 +339,10 @@ Object.assign(App, {
       try {
         // Guardamos el File en el track para poder reconstruir el objectURL después
         const toSave = Object.assign({}, track);
+        // §87: nunca persistir el objectURL: es de sesión y al
+        // reabrir la app sería una URL muerta (fallo de «no se
+        // puede reproducir» en cadena tras §85).
+        delete toSave.src;
         if (track._file) {
           toSave.fileBlob = track._file;  // IndexedDB guarda Blobs directamente
           delete toSave._file;

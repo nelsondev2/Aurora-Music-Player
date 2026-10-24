@@ -26,6 +26,12 @@ verificado función a función:
   desde…», gapless/crossfade, ecualizador, visualizador y temporizador
   de apagado.
 - Letras sincronizadas LRC (archivo o incrustadas).
+- Corrección grave (§87): al cerrar y reabrir la app, el
+  reproductor ya no salta de canción en canción diciendo que no
+  se puede reproducir — las direcciones temporales de cada
+  archivo ya no se guardan y se recrean al momento de sonar —,
+  y «Mi Música» ya no aparece de sorpresa al arrancar cuando ya
+  tienes tus listas: nace al importar canciones sin lista.
 - Letras con foco (§86): en la vista de letras solo se lee con
   claridad la línea que está sonando y el resto queda difuminado
   (al desplazar a mano la letra se aclara para buscar un verso);

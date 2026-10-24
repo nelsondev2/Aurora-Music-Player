@@ -3176,3 +3176,84 @@ el JS pone/quita; el efecto visual se confirma en el
 dispositivo, como el resto de la UI.
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+---
+
+## 87. Fallos graves al reabrir: «no se puede reproducir» en cadena (y la lista fantasma)
+
+Dos fallos reportados tras cerrar y reabrir la miniapp: (1) el
+reproductor saltaba de canción en canción avisando de que no se
+podía reproducir ninguna, y (2) al quitar una canción de la cola
+«se creó una lista con esa canción». Ambos considerables; el
+primero, regresión directa de §85.
+
+### Fallo 1 — la URL guardada estaba muerta (regresión §85)
+
+Cadena confirmada en código y reproducida con sonda
+(`/tmp/probe87.js`): `processOne` devuelve la pista con
+`src: URL.createObjectURL(file)` y `persistTrack` /
+`persistTracksBatch` guardaban ese objeto tal cual en
+IndexedDB. Un objectURL muere con su sesión: al reabrir, cada
+registro traía un `blob:` cadáver. Antes de §85 el arranque
+recreaba las URLs de todas las pistas y eso enmascaraba la
+contaminación; §85 dejó de crearlas (bien) pero `getTrackUrl`
+seguía confiando en el `src` persistido: devolvía la URL
+muerta, el `<audio>` disparaba el error de decodificación y la
+política de saltos recorría la cola entera avisando «no se
+puede reproducir» canción tras canción — exactamente lo
+reportado.
+
+Corrección en tres capas, para que no vuelva por ningún camino:
+
+- **`getTrackUrl` ya no confía en ningún `blob:` que no haya
+  acuñado esta sesión**: si la pista trae un `src` blob: ajeno,
+  se revoca/descarta y la URL se crea siempre desde `_file` /
+  `fileBlob`. Solo se respeta un `src` no-blob (http(s)). Sin
+  blob y con URL muerta devuelve `null`, sin inventar.
+- **No se vuelve a escribir**: `persistTrack` (init.js) y
+  `persistTracksBatch` (library.js) eliminan `src` del registro
+  a guardar.
+- **Saneamiento de bibliotecas ya contaminadas**: al cargar
+  (`loadAllFromStorage`) se elimina todo `src` blob: de los
+  registros leídos; a partir de ahí los registros se reescriben
+  limpios en cuanto algo los persiste. Ningún usuario tiene que
+  reimportar su biblioteca.
+
+### Fallo 2 — quitar de la cola es inocente; la lista era «Mi Música»
+
+Forense con sonda de clic real: pulsar el × de una fila de la
+cola quita la canción y **no toca `this.playlists` ni llama a
+`persistPlaylist` una sola vez**; «Vaciar» tampoco. El único
+creador automático de listas de la app es «Mi Música»: al
+arrancar, si no existía, se sembraba con **todas** las canciones
+que no estuvieran en ninguna lista. Si una canción queda fuera
+de cualquier lista (al vaciar o borrar la suya, por ejemplo),
+al siguiente arranque nacía «Mi Música» con ella y se vivía
+como «la app creó una lista sola al quitar una canción».
+
+Ajuste (§87, sin tocar la función pedida en §46): la siembra
+en frío al arrancar **solo ocurre si no hay ninguna otra
+lista** (biblioteca nueva o migrada: todo es suelto por
+definición). Con listas del usuario, «Mi Música» ya no aparece
+por sorpresa: nace en contexto cuando se importa sin lista
+destino (`_ensureMiMusica`, intacto, solo con lo importado) y
+la marca `aurora_mimusica_removed` sigue impidiendo que
+resucite si se borró a propósito. Decisión documentada ante la
+ambigüedad: se prefiere que una lista visible la cree una
+acción del usuario en contexto, no el arranque.
+
+### Verificación
+
+- **Check §87** `/tmp/check-vista87.js`: **17/17** — URL
+  muerta jamás devuelta (nueva acuñada y cacheada), sin blob
+  → `null`, http(s) respetado, `persistTrack` y
+  `persistTracksBatch` sin `src` en el registro, reapertura
+  con registros contaminados: `src` saneado y el `<audio>`
+  recibe URL viva; clic real en el × de la cola con las
+  listas intactas y cero escrituras; «Mi Música»: siembra sin
+  listas, no-siembra con listas, nacimiento por importación
+  solo con lo importado y no-resurrección tras borrado.
+- Regresiones: §86 **28/28**, §85 **21/21**, §84 **15/15**,
+  §83 **22/22**, §82 **17/17**, §81 **41/41**, §80 **21/21**.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

@@ -348,13 +348,27 @@ Object.assign(App, {
       if (this._urlCache.has(track.id)) {
         return this._urlCache.get(track.id);
       }
-      let url = track.src;
-      if (!url && track._file) {
+      // §87: un objectURL vive solo en su sesión. Los registros de
+      // IndexedDB traían guardado el src de la sesión en que se
+      // importaron/editaron, y al reabrir es una URL muerta: el
+      // <audio> fallaba y el reproductor saltaba de canción en
+      // canción avisando de que no se podía reproducir. Antes de
+      // §85 el arranque recreaba todas las URLs y lo enmascaraba;
+      // ahora la URL se acuña aquí, siempre desde el blob. Solo se
+      // respeta un src que NO sea blob: (p. ej. fuente http(s)).
+      if (track.src && typeof track.src === 'string' && track.src.startsWith('blob:')) {
+        try { URL.revokeObjectURL(track.src); } catch (e) {}
+        track.src = null; // muerta: se reconstruye desde el blob
+      }
+      let url = null;
+      if (track._file) {
         url = URL.createObjectURL(track._file);
         track.src = url;
-      } else if (!url && track.fileBlob) {
+      } else if (track.fileBlob) {
         url = URL.createObjectURL(track.fileBlob);
         track.src = url;
+      } else if (track.src) {
+        url = track.src;
       }
       if (url) this._urlCache.set(track.id, url);
       return url;
@@ -843,6 +857,10 @@ Object.assign(App, {
         const promises = [];
         for (const track of tracks) {
           const toSave = Object.assign({}, track);
+          // §87: el objectURL es de sesión; si se persiste, al
+          // reabrir es una URL muerta y el reproductor salta de
+          // canción en canción sin poder reproducir ninguna.
+          delete toSave.src;
           if (track._file) {
             toSave.fileBlob = track._file;
             delete toSave._file;
