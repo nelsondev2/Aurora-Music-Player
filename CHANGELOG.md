@@ -28,6 +28,11 @@ verificado función a función:
   pantalla (filas ×2, tarjetas y héroe incluidos), pestañas inferiores
   legibles también en oscuro y agarre táctil de la barra de progreso
   ampliado.
+- Arreglo (§84): con el visualizador activo la portada ya
+  no encoge. El visualizador se dibuja ahora sobre la
+  parte baja de la propia carátula y no le quita espacio:
+  la portada se ve igual de grande con él encendido o
+  apagado.
 - Auditoría de la cola por valoradas (§83): «Reproducir
   siguiente» ahora se llama «Reproducir después de la
   canción actual» y MUEVE la canción en vez de duplicarla

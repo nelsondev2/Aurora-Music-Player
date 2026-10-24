@@ -135,6 +135,13 @@
             <div class="cover-vinyl" id="coverVinyl">
               <div class="vinyl-inner"></div>
             </div>
+            <!-- §84: el visualizador vive SUPERPUESTO sobre la
+                 parte baja de la portada, fuera del flujo. Antes
+                 ocupaba 64 px de la columna y la portada, único
+                 elemento flexible, encogía al activarlo. -->
+            <section class="visualizer-section" id="visualizerSection">
+              <canvas id="visualizerCanvas" width="600" height="120" aria-hidden="true"></canvas>
+            </section>
             <div class="cover-play-hint" id="coverPlayHint" aria-hidden="true">
               <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
             </div>
@@ -177,11 +184,6 @@
             <span class="time-current" id="timeCurrent">0:00</span>
             <span class="time-total" id="timeTotal">0:00</span>
           </div>
-        </section>
-
-        <!-- Visualizador de frecuencias (se oculta en modo off) -->
-        <section class="visualizer-section" id="visualizerSection">
-          <canvas id="visualizerCanvas" width="600" height="120" aria-hidden="true"></canvas>
         </section>
 
         <!-- Volumen compacto (gesto / long-press) -->

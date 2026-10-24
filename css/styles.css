@@ -747,14 +747,24 @@ svg { display: block; }
 .sec-btn.active .ico { background: rgba(var(--accent-rgb), 0.18); }
 
 /* ---------- Visualizador de frecuencias ---------- */
+/* §84: superpuesto sobre la parte baja de la portada (dentro de
+ * #coverArt), no en el flujo de la columna. Activarlo ya no roba
+ * 64 px a la portada: su tamaño es idéntico con y sin
+ * visualizador, en cualquier altura de pantalla. El degradado
+ * oscurece el pie de la carátula para que las barras (colores de
+ * la propia portada, §75) se lean sobre cualquier imagen. */
 .visualizer-section {
-  flex: 0 0 auto;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   height: 62px;
-  margin: 2px 18px 0;
-  border-radius: 14px;
+  margin: 0;
   overflow: hidden;
-  background: var(--surface);
-  opacity: .92;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.38));
+  opacity: .95;
+  pointer-events: none;
+  z-index: 2;
 }
 .visualizer-section canvas {
   display: block;

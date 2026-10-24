@@ -2991,3 +2991,49 @@ igual que `next()` (idempotente si `next()` ya lo hizo).
 - **Build .xdc válido**: 27 archivos.
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## §84. Con el visualizador activo, la portada se veía muy pequeña
+
+**El problema (reportado por el usuario):** al activar el
+visualizador, la portada encogía. Causa de layout, no de dibujo:
+la columna del reproductor tiene una sola pieza flexible, la
+sección de la portada (`flex: 1 1 0; min-height: 0`), y el
+visualizador vivía en el flujo entre el progreso y los
+controles con sus 62 px + margen. Todo lo demás (barra
+superior, info, progreso, controles) es fijo, así que esos
+~64 px salían íntegros de la portada en cuanto se encendía el
+visualizador — y en pantallas bajas, donde ya mandan los topes
+`30dvh`/`36dvh`, el tijeretazo se notaba el doble.
+
+**El arreglo:** el visualizador sale del flujo y pasa a vivir
+**superpuesto sobre la parte baja de la propia portada**
+(dentro de `#coverArt`, bajo la pista de «tocar para
+reproducir»): franja de 62 px a todo el ancho de la carátula,
+con un degradado oscuro al pie para que las barras y la onda
+—colores de la propia portada desde §75— se lean sobre
+cualquier imagen. `pointer-events: none` para que los gestos
+de la portada (tocar, arrastrar para volumen) funcionen igual
+encima de la franja. Resultado: el tamaño de la portada es
+**idéntico con y sin visualizador** en cualquier pantalla, y
+la regla de tamaño de la portada no se ha tocado. El canvas ya
+se ajustaba a su tamaño CSS (`_fitVisualizerCanvas`), así que
+el motor de dibujo no cambia; mostrar/ocultar sigue siendo el
+mismo `display` de siempre.
+
+### Verificación
+
+- **Check §84** `/tmp/check-vista84.js`: **15/15** — la capa
+  vive dentro de `#coverArt`, posición absoluta sin presencia
+  en el flujo, regla de tamaño de la portada intacta, ciclo
+  bars→wave→off→bars mostrando/ocultando, y arranque/parada
+  del dibujo sin errores.
+- Regresiones: §83 **22/22**, §82 **17/17**, §81 **41/41**,
+  §80 **21/21**; `node --check` total OK; llaves CSS 991/991.
+- **Build .xdc válido**: 27 archivos.
+
+Nota honesta: jsdom no hace layout, así que la igualdad de
+tamaño se verifica por construcción (la capa ya no consume
+alto de la columna) y no por píxeles; el arreglo se confirma
+visual en el dispositivo, como el resto de la UI.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
