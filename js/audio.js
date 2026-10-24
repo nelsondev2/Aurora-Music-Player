@@ -660,6 +660,12 @@ Object.assign(App, {
       if (added.length) {
         this.queue.push(...added);
         changed = true;
+        // §83: si la lista manda por estrellas, las altas no van al
+        // final «porque sí»: cada una entra en su puesto por nota
+        // dentro de lo que queda por sonar.
+        if ((pl.sort || 'stars') === 'stars' && typeof this.resortUpcomingQueue === 'function') {
+          this.resortUpcomingQueue(false);
+        }
       }
       if (changed) {
         const qi = curId ? this.queue.indexOf(curId) : -1;
@@ -668,6 +674,44 @@ Object.assign(App, {
         if (typeof this.renderQueue === 'function') this.renderQueue();
       }
       this._plSyncIds = plIds;
+    },
+
+    /* §83: reordena SOLO lo que queda por sonar de la cola (la
+     * actual y lo ya sonado no se tocan), que es donde la promesa
+     * «la cola va por más valoradas» tiene que cumplirse en vivo:
+     * hasta ahora valorar una canción reordenaba la lista pero la
+     * cola se quedaba como nació, y vista y cola divergían.
+     *  - byPlaylist=true: manda el orden vigente de la lista
+     *    (playlistTracksSorted con su criterio §81); las pistas
+     *    ajenas a la lista conservan su orden relativo al final.
+     *  - byPlaylist=false: manda la nota (más valoradas primero).
+     * El sort es estable: a igualdad, cada pista conserva el puesto
+     * que ya tenía en la cola (el arrastre manual sobrevive entre
+     * iguales). Con aleatorio no se toca nada. */
+    resortUpcomingQueue(byPlaylist) {
+      if (this.shuffle || !Array.isArray(this.queue)) return;
+      if (this.queueIdx >= this.queue.length - 1) return;
+      const head = this.queue.slice(0, this.queueIdx + 1);
+      const tail = this.queue.slice(this.queueIdx + 1);
+      if (!tail.length) return;
+      let sorted;
+      if (byPlaylist) {
+        if (!this.playContext || this.playContext.type !== 'playlist') return;
+        const pl = this.playlists.find(p => p.id === this.playContext.id);
+        if (!pl) return;
+        const rank = new Map(this.playlistTracksSorted(pl).map((t, i) => [t.id, i]));
+        sorted = tail.slice().sort((a, b) =>
+          (rank.has(a) ? rank.get(a) : Number.MAX_SAFE_INTEGER) -
+          (rank.has(b) ? rank.get(b) : Number.MAX_SAFE_INTEGER));
+      } else {
+        const byId = this.trackMap();
+        sorted = tail.slice().sort((a, b) =>
+          this._ratingOf(byId.get(b)) - this._ratingOf(byId.get(a)));
+      }
+      if (sorted.every((id, i) => id === tail[i])) return;
+      this.queue = head.concat(sorted);
+      if (typeof this.saveSession === 'function') this.saveSession();
+      if (typeof this.renderQueue === 'function') this.renderQueue();
     },
 
     next(auto) {

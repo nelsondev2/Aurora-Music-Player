@@ -833,11 +833,12 @@ Object.assign(App, {
             <div class="row-sub">${this.esc(t.artist)} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>
           </div>
           <div class="row-duration">${this.fmtRowDuration(t)}</div>
+          <button class="row-action queue-menu" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>
           <button class="row-action queue-remove" aria-label="${this.esc(this.t('remove'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
         `;
         // Click normal → reproducir
         li.addEventListener('click', (e) => {
-          if (e.target.closest('.drag-handle, .queue-remove')) return;
+          if (e.target.closest('.drag-handle, .queue-remove, .queue-menu')) return;
           this.playFromQueue(i);
           if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
         });
@@ -863,6 +864,17 @@ Object.assign(App, {
           }
           this.renderQueue();
         });
+
+        // §83: el menú «Más opciones» de la canción también vive en
+        // la cola (antes solo estaba en las filas de las listas):
+        // mismo menú, con su «Reproducir después de la actual» ya
+        // capaz de MOVER la pista dentro de esta misma cola.
+        const menuBtn = li.querySelector('.queue-menu');
+        if (menuBtn) menuBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.openTrackMenu(id);
+        });
+        if (typeof this.wireTrackLongPress === 'function') this.wireTrackLongPress(li, id);
 
         // Drag handle → reordenar (touch + mouse)
         this.wireDragHandle(li, i, ul, '.queue-item');

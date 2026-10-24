@@ -152,17 +152,43 @@ Object.assign(App, {
       this.toast(this.t('toast_added_to_queue'));
     },
 
-    /* "Reproducir siguiente": inserta en la posición inmediatamente
-     * después de la pista actual, desplazando el resto */
+    /* «Reproducir después de la canción actual» (antes «Reproducir
+     * siguiente»): la pista suena justo al terminar la actual.
+     * §83: antes insertaba sin más, y si la canción YA estaba en la
+     * cola (el caso típico: la eliges desde la misma lista que está
+     * sonando) quedaba DUPLICADA y sonaba dos veces — el «no
+     * funciona» que reportó el usuario. Ahora se MUEVE: se quitan
+     * sus demás apariciones (salvo la que está sonando, si es ella)
+     * y entra tras la actual. Con aleatorio, el mismo movimiento se
+     * refleja en la cola original. */
     playNext(trackId) {
       if (!this.queue.length && this.currentTrack) this.queue = [this.currentTrack.id];
-      const insertAt = Math.min(this.queue.length, (this.queueIdx || 0) + 1);
-      this.queue.splice(insertAt, 0, trackId);
-      if (this.shuffle && this._originalQueue) {
-        const origIdx = this.currentTrack ? this._originalQueue.indexOf(this.currentTrack.id) : -1;
-        const at = origIdx >= 0 ? origIdx + 1 : this._originalQueue.length;
-        this._originalQueue.splice(at, 0, trackId);
+      if (!this.queue.length) return;
+      const curId = this.currentTrack && this.currentTrack.id;
+      // Posición REAL de la actual (queueIdx puede apuntar a otra
+      // copia si hay duplicados heredados de «Añadir a la cola»).
+      let curPos = (curId && this.queue[this.queueIdx] === curId)
+        ? this.queueIdx
+        : (curId ? this.queue.indexOf(curId) : this.queueIdx);
+      if (curPos < 0 || curPos == null) curPos = Math.min(this.queueIdx || 0, this.queue.length - 1);
+      for (let i = this.queue.length - 1; i >= 0; i--) {
+        if (i !== curPos && this.queue[i] === trackId) {
+          this.queue.splice(i, 1);
+          if (i < curPos) curPos--;
+        }
       }
+      this.queueIdx = curPos;
+      const insertAt = Math.min(this.queue.length, curPos + 1);
+      this.queue.splice(insertAt, 0, trackId);
+      if (this.shuffle && this._originalQueue && curId) {
+        const oq = this._originalQueue;
+        for (let i = oq.length - 1; i >= 0; i--) {
+          if (oq[i] === trackId && i !== oq.indexOf(curId)) oq.splice(i, 1);
+        }
+        const oCur = oq.indexOf(curId);
+        oq.splice(Math.min(oq.length, (oCur >= 0 ? oCur : oq.length - 1) + 1), 0, trackId);
+      }
+      if (typeof this.saveSession === 'function') this.saveSession();
       this.renderQueue();
       this.preloadNextTrack();
       this.toast(this.t('toast_play_next'));

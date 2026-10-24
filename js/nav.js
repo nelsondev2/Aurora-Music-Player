@@ -761,6 +761,18 @@ Object.assign(App, {
       t.rating = this._ratingOf(t) === v ? 0 : v;
       this.persistTrack(t);
       this._syncRatingUI(t);
+      // §83: si lo que suena manda por más valoradas (lista con el
+      // orden de estrellas o Favoritos), la cola viva se reordena
+      // detrás de la actual: valorar y que no pase nada era la
+      // mitad de la queja de «la cola por valoradas no funciona».
+      if (!this.shuffle && typeof this.resortUpcomingQueue === 'function' && this.playContext) {
+        if (this.playContext.type === 'favorites') {
+          this.resortUpcomingQueue(false);
+        } else if (this.playContext.type === 'playlist') {
+          const plNow = this.playlists.find(p => p.id === this.playContext.id);
+          if (plNow && (plNow.sort || 'stars') === 'stars') this.resortUpcomingQueue(false);
+        }
+      }
       // La hoja de «Más valoradas», si está abierta, se rinde otra vez:
       // la canción puede entrar, salir o cambiar de puesto (§60).
       // Y el raíl de Inicio, que es la otra superficie de la nota:

@@ -1816,9 +1816,9 @@ const I18N = {
     it: 'Riproduci ora', ru: 'Играть сейчас'
   },
   ctx_play_next: {
-    es: 'Reproducir siguiente', en: 'Play next', pt: 'Reproduzir a seguir',
-    zh: '下一首播放', ja: '次に再生', fr: 'Lire ensuite',
-    it: 'Riproduci dopo', ru: 'Играть следующей'
+    es: 'Reproducir después de la canción actual', en: 'Play after current song', pt: 'Tocar depois da música atual',
+    zh: '在当前歌曲之后播放', ja: '現在の曲の後に再生', fr: 'Lire après le titre en cours',
+    it: 'Riproduci dopo il brano attuale', ru: 'Играть после текущей песни'
   },
   ctx_add_queue: {
     es: 'Añadir a la cola', en: 'Add to queue', pt: 'Adicionar à fila',

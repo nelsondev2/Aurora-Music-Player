@@ -390,6 +390,12 @@ Object.assign(App, {
       if (this._sleepEndOfTrack || this._sleepFading) return false;
       if (this.crossfadeEnabled && this.crossfadeDuration > 0) return false;
       if (this.repeat === 'one') return false;
+      // §83: el avance gapless también pasa por la sincronización
+      // con la lista (antes solo la hacía next()): si no, una baja
+      // de la lista se colaba cuando el cambio era sin pausa.
+      if (!this.shuffle && typeof this._syncQueueWithPlaylist === 'function') {
+        this._syncQueueWithPlaylist();
+      }
       const nextIdx = this._nextQueueIndex(true);
       if (nextIdx == null) return false;
       const nextTrackId = this.queue[nextIdx];

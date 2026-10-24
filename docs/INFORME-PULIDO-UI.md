@@ -2919,3 +2919,75 @@ las bajas (§ cola). Contextos que no son lista (Favoritos,
 - **Build .xdc válido**: 27 archivos.
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## §83. Auditoría profunda de la cola por más valoradas
+
+El usuario reportó tres cosas en la misma zona: la reordenación
+de la cola por más valoradas «tiene serios problemas», el menú
+«Más opciones» de cada canción debía estar también en la cola, y
+«Reproducir siguiente» no funcionaba (y debía llamarse
+«Reproducir después de la canción actual»). Auditoría con sonda
+empírica (`/tmp/probe83.js`) antes de tocar nada; lo sano se
+documenta como tal y lo roto se arregla.
+
+### Lo que estaba bien (verificado, sin tocar)
+
+- La cola nace ordenada por estrellas al reproducir una lista
+  (§64), con el desempate del orden guardado; el avance gapless
+  calcula la siguiente en el momento del corte, así que una
+  inserción previa se respeta; activar/desactivar el aleatorio
+  ancla la actual y restaura sin perderla; elegir «siguiente»
+  sin nada sonando reproduce la elegida.
+
+### Fallo 1: «Reproducir siguiente» duplicaba
+
+`playNext()` insertaba tras la actual sin quitar la aparición
+que la canción ya tenía en la cola — el caso típico, porque se
+elige desde la misma lista que suena. La canción sonaba dos
+veces: el «no funciona». Ahora **mueve**: quita sus demás
+apariciones (salvo la que suena, si es ella), entra tras la
+actual y el mismo movimiento se refleja en `_originalQueue`
+con aleatorio. Y se llama **«Reproducir después de la canción
+actual»** en los 8 idiomas.
+
+### Fallo 2: la cola por valoradas no seguía las notas
+
+Valorar reordenaba la lista (vista) al instante pero la cola
+jamás: divergían hasta volver a reproducir la lista. Y las
+altas nuevas entraban al final de la cola aunque fueran de 5★
+(§82). Arreglo: `resortUpcomingQueue()` reordena **solo lo que
+queda por sonar** (la actual y lo ya sonado no se tocan; sort
+estable: a igualdad manda el puesto que ya traía cada pista, así
+el arrastre manual sobrevive entre iguales). Se llama al
+valorar (si lo que suena manda por estrellas o es Favoritos),
+cuando la sincronización de §82 trae altas (entran por nota) y
+al cambiar el criterio de orden de la lista que está sonando.
+Con aleatorio no se toca nada.
+
+### Fallo 3: la cola no tenía menú de canción
+
+Cada fila de la cola lleva ahora el botón ⋯ (y pulsación larga)
+que abre el mismo `openTrackMenu` de las listas — con su
+«Reproducir después de la actual» ya capaz de mover la pista
+dentro de la propia cola.
+
+### Fallo 4 (de la auditoría): el gapless no sincronizaba
+
+El avance sin pausa de §67 (`gaplessNext`) no pasaba por la
+sincronización con la lista de §82: una baja de la lista se
+colaba si el cambio de pista era gapless. Ahora sincroniza
+igual que `next()` (idempotente si `next()` ya lo hizo).
+
+### Verificación
+
+- **Check §83** `/tmp/check-vista83.js`: **22/22** — menú en la
+  cola y su apertura, mover sin duplicar (desde la cola, desde
+  una lista y con aleatorio, en cola y en `_originalQueue`),
+  valorar/quitar nota reordenando lo que queda sin mover la
+  actual, alta 5★ entrando por nota, cambio de criterio en vivo
+  y sincronización gapless.
+- Regresiones: §82 **17/17**, §81 **41/41**, §80 **21/21**;
+  `node --check` total OK; llaves CSS 991/991.
+- **Build .xdc válido**: 27 archivos.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

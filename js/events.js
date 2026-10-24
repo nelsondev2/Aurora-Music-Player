@@ -637,6 +637,14 @@ Object.assign(App, {
         pl.sort = plSortSel.value;
         this.persistPlaylist(pl);
         this.renderEditPlaylist();
+        // §83: si es la lista que está sonando, lo que queda por
+        // sonar adopta el nuevo criterio al momento (si no, la
+        // vista enseñaba un orden y la cola sonaba otro).
+        if (this.playContext && this.playContext.type === 'playlist'
+            && this.playContext.id === pl.id
+            && typeof this.resortUpcomingQueue === 'function') {
+          this.resortUpcomingQueue(true);
+        }
         this.toast(this.t('toast_sort_saved'));
       });
       // §81: orden de la vista álbum/artista/género

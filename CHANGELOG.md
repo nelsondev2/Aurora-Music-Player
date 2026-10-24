@@ -28,6 +28,15 @@ verificado función a función:
   pantalla (filas ×2, tarjetas y héroe incluidos), pestañas inferiores
   legibles también en oscuro y agarre táctil de la barra de progreso
   ampliado.
+- Auditoría de la cola por valoradas (§83): «Reproducir
+  siguiente» ahora se llama «Reproducir después de la
+  canción actual» y MUEVE la canción en vez de duplicarla
+  (antes sonaba dos veces); valorar canciones reordena al
+  momento lo que queda por sonar; las canciones nuevas de
+  la lista entran en la cola por su nota, no al final; el
+  avance sin pausa también respeta los cambios de la
+  lista; y cada canción de la cola tiene por fin su menú
+  «Más opciones» (⋯).
 - Arreglo (§82): quitar una canción de la cola ya no la trae
   de vuelta al pasar a la siguiente. La cola manda: solo
   entran las canciones nuevas de la lista (al final) y
