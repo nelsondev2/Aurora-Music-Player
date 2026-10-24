@@ -165,10 +165,8 @@ Object.assign(App, {
       if (id === 'sheetConfirm' && this._confirmResolver) {
         this._confirmResolver(false);
       }
-      // Si se cierra el sheet de creación, limpiar modo "add"
-      if (id === 'sheetCreatePlaylist') {
-        this._addingToPlaylistId = null;
-      }
+      // (§93: al cerrar la hoja de creación ya no hay «modo add»
+      // que limpiar: _addingToPlaylistId fue extirpado.)
       // Si se cierra el sheet de edición, limpiar editing
       if (id === 'sheetEditPlaylist') {
         this._editingPlaylistId = null;

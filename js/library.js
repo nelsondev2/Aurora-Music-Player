@@ -338,9 +338,8 @@ Object.assign(App, {
       } else if (skelList) skelList.remove();
     },
 
-    findDuplicateTrack(fileName, fileSize) {
-      return this.tracks.find(ex => ex.fileName === fileName && ex.fileSize === fileSize) || null;
-    },
+    /* §93: findDuplicateTrack() extirpado — sin llamadores; la
+     * deduplicación al importar usa su propio índice (§85). */
 
     /* #15 #16 Obtener objectURL con cache para reutilizar */
     getTrackUrl(track) {

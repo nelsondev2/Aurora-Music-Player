@@ -200,8 +200,8 @@ Object.assign(App, {
       return { type: 'all' };
     },
 
-    /* Nombre histórico del resolvedor de contexto. */
-    searchPlayContextFor(t) { return this.trackPlayContextFor(t); },
+    /* §93: searchPlayContextFor() extirpado — alias histórico
+     * sin llamadores; todos usan trackPlayContextFor() directo. */
 
     runSearch(q, filter) {
       const ul = document.getElementById('searchResults');

@@ -487,11 +487,8 @@
                 <input type="text" id="playlistDesc" data-i18n-ph="optional" placeholder="Opcional" maxlength="80" />
               </label>
             </div>
-            <div id="pickTracksSection" style="display:none">
-              <h4 class="pick-tracks-title" id="pickTracksTitle" data-i18n="pick_tracks">Selecciona pistas</h4>
-              <p class="sheet-subtitle" id="pickTracksHint"></p>
-              <ul class="pick-tracks-list" id="pickTracksList"></ul>
-            </div>
+            <!-- §93: sin selector de pistas al crear — la lista
+                 nace vacía y se rellena desde su vista de edición. -->
             <button class="primary-btn" id="btnSavePlaylist" data-i18n="save_playlist">Guardar lista</button>
           </div>
         </div>

@@ -3526,3 +3526,78 @@ orden de cascada y la temprana solo invitaba a «corregirla».
   §80 **21/21** (`/tmp/check-audit80.js`).
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## 93. Auditoría de código muerto: todos los cadáveres fuera
+
+El usuario pidió una auditoría de código muerto y eliminar
+«todos los cadáveres». Batería estática propia (`/tmp/audit93*.js`)
+por categorías — claves i18n, clases y variables CSS, selectores
+`#id`, iconos, IDs, funciones/métodos, locales y archivos —, con la
+regla de las §80/§92: cada candidato se verifica a mano por todas
+sus vías de uso dinámico antes de podar.
+
+### Cadáveres extirpados
+
+- **El clúster del selector de pistas** (el cadáver grande): el
+  modo «añadir a lista existente» de la hoja de crear quedó
+  inalcanzable en la §81 (las pistas se añaden desde la vista de
+  edición), pero sobrevivía entero: `openAddTracksSheet()`, el
+  campo `_addingToPlaylistId` con sus resets en tres archivos,
+  la rama «añadir» del botón Guardar, `renderPickTracks()` (se
+  seguía llamando al arrancar para pintar filas invisibles), el
+  DOM `#pickTracksSection`, las CSS `.pick-row`/`.pick-tracks-*`/
+  `.in-pl-*`/`.row-check` (su única creadora era el selector) y
+  8 claves i18n que solo ese modo usaba. La creación sigue
+  naciendo vacía y el toast «creada con pistas», inalcanzable,
+  también se fue.
+- **2 claves i18n ya muertas**: `playlist_title` y
+  `stats_never_played`. Total: 383 → **373 claves × 8 idiomas**,
+  sin huecos y con cero referencias colgadas.
+- **6 variables CSS sin un solo consumo**: `--accent-3`,
+  `--success`, `--warning`, `--gap`, `--radius-xs`, `--radius`
+  (quedan 56, todas usadas; la familia `--radius-sm/-cover/-pill`
+  sigue viva).
+- **3 métodos sin llamadores**: `findDuplicateTrack()` (la
+  deduplicación viva es el índice `_dupKey` O(1) de importar),
+  `_addTrackIdToPlaylist()` (su comentario decía «la usan el
+  flujo individual y el lote»: mentía) y el alias histórico
+  `searchPlayContextFor()`.
+- **2 variables locales muertas** en el parser ID3
+  (`js/uploader.js`): `unsync` y `frameFlags` se calculaban y
+  nadie las leía.
+- **2 archivos**: `assets/icons.svg` (el sprite vive inline en
+  `index.html`; el .svg viajaba **dentro del .xdc instalado**
+  sin que nada lo cargue) y `docs/AUDITORIA.md` (informe del
+  árbol de la 1.1.1, ya retirado; el informe vivo es este).
+
+### Sospechosos absueltos (no tocar)
+
+- **`i-volume-xmark`**: parece sin uso, pero `audio.js` lo pide
+  por nombre construido (`#i-' + name`). Vivo.
+- **29 clases CSS** que el escaneo «preciso» marcó: todas se
+  aplican vía `className`/`classList` en JS (verificadas una a
+  una). **0 IDs muertos**, 0 selectores `#id` huérfanos (los
+  «huérfanos» eran colores hex `#dc2626`…), y `.gitignore` no es
+  un cadáver, es configuración.
+- La primera versión de la batería mintió dos veces (corpus de
+  variables sin el propio CSS; extracción i18n con la estructura
+  al revés): se corrigió la batería, no la app.
+
+### Verificación
+
+- **Check §93** `/tmp/check-vista93.js`: **28/28** — los métodos
+  y el estado ya no existen en el objeto App, el selector no está
+  en el DOM, 373×8 sin referencias colgadas, iconos íntegros, y
+  los flujos vivos tras la cirugía: crear lista (nace vacía),
+  guardar cola como lista, editar lista, `_dupKey`. (Tres fallos
+  iniciales fueron del check: comentarios de documentación con
+  ejemplos `t('key')` y la cola montada con objetos en vez de
+  IDs.)
+- Re-auditoría tras la poda: 0 candidatas i18n, 0 variables,
+  0 funciones huérfanas.
+- Regresiones: §92 **17/17**, §91 **17/17**, §90 **19/19**,
+  §89 **15/15**, §88 **21/21**, §87 **17/17**, §86 **28/28**,
+  §85 **21/21**, §84 **14/14**, §83 **22/22**, §82 **17/17**,
+  §81 **41/41**, §80 **21/21**.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

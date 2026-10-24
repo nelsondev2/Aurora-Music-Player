@@ -26,6 +26,12 @@ verificado función a función:
   desde…», gapless/crossfade, ecualizador, visualizador y temporizador
   de apagado.
 - Letras sincronizadas LRC (archivo o incrustadas).
+- Limpieza interna (§93): auditoría de código muerto — fuera el
+  selector de pistas de la hoja de crear (inalcanzable desde
+  que las pistas se añaden en la vista de edición), 10 textos
+  sin uso en los 8 idiomas, 6 variables de estilo huérfanas y
+  un archivo de iconos que viajaba en la app sin cargarse.
+  La app pesa un poco menos y hace exactamente lo mismo.
 - Micro-detalles (§92): las insignias (estrellas, «Inteligente»,
   «Se conserva») dejan los 10 px y entran en la escala
   tipográfica; los títulos largos de las hojas se recortan con

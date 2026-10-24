@@ -873,7 +873,8 @@
       const tagSize = (u8[6] << 21) | (u8[7] << 14) | (u8[8] << 7) | u8[9];
       const headerSize = 10;
       const flags = u8[5];
-      const unsync = (flags & 0x80) !== 0;
+      /* §93: el bit de unsync (0x80) se calculaba y nunca se
+       * leía: fuera la variable muerta; flags sí se usa (0x40). */
 
       let offset = headerSize;
       const end = Math.min(headerSize + tagSize, u8.length);
@@ -905,7 +906,8 @@
           // v2.3: tamaño normal de 4 bytes big-endian
           frameSize = (u8[offset+4] << 24) | (u8[offset+5] << 16) | (u8[offset+6] << 8) | u8[offset+7];
         }
-        const frameFlags = (u8[offset+8] << 8) | u8[offset+9];
+        /* §93: los flags del frame se leían en una variable que
+         * nadie consultaba; el avance es fijo (10 bytes). */
         offset += 10;  // header del frame
 
         if (frameSize <= 0 || offset + frameSize > end) {

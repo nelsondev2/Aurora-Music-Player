@@ -29,7 +29,8 @@ Object.assign(App, {
       this.audio.volume = this.volume;
 
       this.buildEqualizer();
-      this.renderPickTracks();
+      /* §93: fuera la llamada a renderPickTracks() — el selector
+       * de pistas que pintaba ya no existe (modo «añadir» §81→§93). */
 
       // Cargar tema guardado antes que nada
       this.loadTheme();

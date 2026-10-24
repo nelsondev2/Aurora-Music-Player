@@ -17,7 +17,6 @@ Object.assign(App, {
     /* Abre el sheet "Crear playlist" en modo creación (vacío).
      * Las pistas son opcionales: se puede crear una lista vacía. */
     openCreatePlaylistSheet() {
-      this._addingToPlaylistId = null;
       // §81: cada apertura empieza en lista normal y sin bandera de
       // «guardar cola» (openSaveQueueSheet la pone después de llamar).
       this._queueSaveMode = false;
@@ -34,13 +33,9 @@ Object.assign(App, {
       const descInput = document.getElementById('playlistDesc');
       if (nameInput) nameInput.value = '';
       if (descInput) descInput.value = '';
-      // Mostrar campos de nombre/descripción (en modo "add" se ocultan)
-      const fields = document.getElementById('createPlaylistFields');
-      if (fields) fields.style.display = '';
-      // OCULTAR la sección "Selecciona pistas" — al crear una lista nueva
-      // no se eligen pistas; se añaden después desde la vista de edición.
-      const pickSection = document.getElementById('pickTracksSection');
-      if (pickSection) pickSection.style.display = 'none';
+      // §93: al crear no se eligen pistas (se añaden después desde
+      // la vista de edición); el selector que aquí se ocultaba era
+      // del modo «añadir» retirado y ya no existe en la hoja.
       // Título
       const titleEl = document.getElementById('createPlaylistTitle');
       if (titleEl) titleEl.textContent = this.t('create_playlist_title');
@@ -50,35 +45,11 @@ Object.assign(App, {
       this.openSheet('sheetCreatePlaylist');
     },
 
-    /* Abre el sheet "Crear playlist" en modo "añadir a existente".
-     * Oculta los campos de nombre/descripción y muestra el selector de pistas. */
-    openAddTracksSheet(playlistId) {
-      const pl = this.playlists.find(p => p.id === playlistId);
-      if (!pl) return;
-      this._queueSaveMode = false;
-      this._addingToPlaylistId = playlistId;
-      // Ocultar campos de nombre/descripción
-      const fields = document.getElementById('createPlaylistFields');
-      if (fields) fields.style.display = 'none';
-      // MOSTRAR la sección "Selecciona pistas" en modo "add"
-      const pickSection = document.getElementById('pickTracksSection');
-      if (pickSection) pickSection.style.display = '';
-      // Título dinámico: "Añadir a <nombre>"
-      const titleEl = document.getElementById('createPlaylistTitle');
-      if (titleEl) titleEl.textContent = this.t('add_tracks_btn') + ' · ' + pl.name;
-      const pickTitle = document.getElementById('pickTracksTitle');
-      if (pickTitle) pickTitle.textContent = this.t('pick_tracks_for_playlist');
-      const pickHint = document.getElementById('pickTracksHint');
-      if (pickHint) pickHint.textContent = this.t('add_tracks_btn') + ' → ' + pl.name;
-      // Botón primario: "Añadir"
-      const btn = document.getElementById('btnSavePlaylist');
-      if (btn) btn.textContent = this.t('add_to_existing_btn');
-      // Limpiar selección previa
-      document.querySelectorAll('.pick-row').forEach(r => r.classList.remove('checked'));
-      // Render del picker
-      this.renderPickTracks();
-      this.openSheet('sheetCreatePlaylist');
-    },
+    /* §93: aquí vivía openAddTracksSheet() — el modo «añadir a
+     * existente» de esta hoja, inalcanzable desde la §81 (las
+     * pistas se añaden desde la vista de edición). Cadáver
+     * extirpado con todo su clúster: _addingToPlaylistId,
+     * renderPickTracks y el selector de pistas de la hoja. */
 
     /* Abre el sheet "Editar playlist" con el detalle de una playlist */
     openEditPlaylist(playlistId) {

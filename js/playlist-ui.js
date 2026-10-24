@@ -1292,34 +1292,8 @@ Object.assign(App, {
       this.toast(this.t('toast_restored'));
     },
 
-    renderPickTracks() {
-      const ul = document.getElementById('pickTracksList');
-      if (!ul) return;
-      ul.innerHTML = '';
-      // En modo "añadir a playlist existente" sabemos qué pistas ya están dentro
-      const targetPl = this._addingToPlaylistId
-        ? this.playlists.find(p => p.id === this._addingToPlaylistId)
-        : null;
-      this.tracks.forEach(t => {
-        const inPl = !!(targetPl && targetPl.trackIds.includes(t.id));
-        const li = document.createElement('li');
-        li.className = 'pick-row' + (inPl ? ' in-pl' : '');
-        li.dataset.trackId = t.id;
-        if (inPl) li.setAttribute('aria-disabled', 'true');
-        li.innerHTML = `
-          <div class="row-check"><svg class="ico" aria-hidden="true"><use href="#i-check"></use></svg></div>
-          <div class="row-text">
-            <div class="row-title">${this.esc(t.title)}</div>
-            <div class="row-sub">${this.esc(t.artist)}${inPl ? ' · <span class="in-pl-tag">' + this.esc(this.t('picker_already_in')) + '</span>' : ''}</div>
-          </div>
-        `;
-        li.addEventListener('click', () => {
-          if (li.classList.contains('in-pl')) return; // ya está en la lista
-          li.classList.toggle('checked');
-        });
-        ul.appendChild(li);
-      });
-    },
+    /* §93: renderPickTracks() extirpado — pintaba el selector de
+     * pistas del modo «añadir» retirado; ya nadie lo mostraba. */
 
     /* Orden por estrellas (§64): de más a menos nota; las sin nota
      * (0) caen al final solas. El empate conserva el orden que traía
@@ -1509,17 +1483,8 @@ Object.assign(App, {
       return null;
     },
 
-    /* Primitiva sin toasts: añade si no está. Devuelve true si cambió.
-     * La usan tanto el flujo individual como la selección por lote. */
-    _addTrackIdToPlaylist(trackId, playlistId) {
-      const pl = this.playlists.find(p => p.id === playlistId);
-      if (!pl || !Array.isArray(pl.trackIds)) return false;
-      const t = this.getTrackById ? this.getTrackById(trackId) : this.tracks.find(x => x.id === trackId);
-      if (!t) return false;
-      if (pl.trackIds.includes(trackId)) return false;
-      pl.trackIds.push(trackId);
-      if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
-      return true;
-    },
+    /* §93: _addTrackIdToPlaylist() extirpado — su comentario
+     * decía «la usan el flujo individual y el lote», pero no
+     * tenía ni una llamada: los flujos vivos añaden por su cuenta. */
 
 });

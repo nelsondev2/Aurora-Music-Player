@@ -110,10 +110,9 @@
 
     /* Edición de playlist:
      *   _editingPlaylistId = ID de playlist que se está editando (en sheetEditPlaylist)
-     *   _addingToPlaylistId = ID de playlist a la que se van a añadir pistas (modo "add" en sheetCreatePlaylist)
-     * Todos null/false cuando no hay edición en curso. */
+     * Null cuando no hay edición en curso.
+     * (§93: _addingToPlaylistId extirpado con el modo «añadir».) */
     _editingPlaylistId: null,
-    _addingToPlaylistId: null,
 
     /* Contexto de reproducción actual: indica desde qué lista se está
      * reproduciendo. Puede ser:

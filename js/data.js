@@ -518,16 +518,6 @@ const I18N = {
     it: 'La mia nuova lista',
     ru: 'Мой новый список'
   },
-  pick_tracks: {
-    es: 'Selecciona pistas',
-    en: 'Select tracks',
-    pt: 'Selecionar faixas',
-    zh: '选择音轨',
-    ja: 'トラックを選択',
-    fr: 'Sélectionner des pistes',
-    it: 'Seleziona tracce',
-    ru: 'Выберите треки'
-  },
   save_playlist: {
     es: 'Guardar lista',
     en: 'Save playlist',
@@ -738,16 +728,6 @@ const I18N = {
     fr: 'Piste supprimée',
     it: 'Traccia eliminata',
     ru: 'Трек удалён'
-  },
-  toast_playlist_created: {
-    es: 'Lista creada:',
-    en: 'Playlist created:',
-    pt: 'Lista criada:',
-    zh: '歌单已创建：',
-    ja: 'プレイリストを作成:',
-    fr: 'Liste créée :',
-    it: 'Lista creata:',
-    ru: 'Список создан:'
   },
   toast_accent: { es: 'Acento:', en: 'Accent:', pt: 'Acento:', zh: '强调色：', ja: 'アクセント:', fr: 'Accent :', it: 'Accento:', ru: 'Акцент:' },
   toast_lang_applied: {
@@ -1215,16 +1195,6 @@ const I18N = {
     it: 'Inserisci un nome',
     ru: 'Введите название'
   },
-  toast_pick_at_least_one: {
-    es: 'Selecciona al menos una pista',
-    en: 'Select at least one track',
-    pt: 'Selecione ao menos uma faixa',
-    zh: '至少选择一首音轨',
-    ja: '少なくとも1曲選択してください',
-    fr: 'Sélectionnez au moins une piste',
-    it: 'Seleziona almeno una traccia',
-    ru: 'Выберите хотя бы один трек'
-  },
   toast_shuffle_on: {
     es: 'Aleatorio activado',
     en: 'Shuffle on',
@@ -1285,16 +1255,6 @@ const I18N = {
     it: 'Modifica lista',
     ru: 'Изменить список'
   },
-  add_tracks_btn: {
-    es: 'Añadir pistas',
-    en: 'Add tracks',
-    pt: 'Adicionar faixas',
-    zh: '添加音轨',
-    ja: 'トラックを追加',
-    fr: 'Ajouter des pistes',
-    it: 'Aggiungi tracce',
-    ru: 'Добавить треки'
-  },
   no_tracks_in_playlist: {
     es: 'Esta lista está vacía. Pulsa "Subir canciones" para agregar canciones.',
     en: 'This playlist is empty. Tap "Upload songs" to add songs.',
@@ -1315,16 +1275,6 @@ const I18N = {
     it: 'Rimuovi dalla lista',
     ru: 'Убрать из списка'
   },
-  toast_tracks_added_to_playlist: {
-    es: 'pista(s) añadida(s) a la lista',
-    en: 'track(s) added to playlist',
-    pt: 'faixa(s) adicionada(s) à lista',
-    zh: '首音轨已添加到歌单',
-    ja: '曲をプレイリストに追加しました',
-    fr: 'piste(s) ajoutée(s) à la liste',
-    it: 'traccia/e aggiunta/e alla lista',
-    ru: 'трек(ов) добавлено в список'
-  },
   toast_removed_from_playlist: {
     es: 'Pista quitada de la lista',
     en: 'Track removed from playlist',
@@ -1334,26 +1284,6 @@ const I18N = {
     fr: 'Piste retirée de la liste',
     it: 'Traccia rimossa dalla lista',
     ru: 'Трек убран из списка'
-  },
-  pick_tracks_for_playlist: {
-    es: 'Selecciona pistas para añadir',
-    en: 'Select tracks to add',
-    pt: 'Selecione faixas para adicionar',
-    zh: '选择要添加的音轨',
-    ja: '追加するトラックを選択',
-    fr: 'Sélectionner des pistes à ajouter',
-    it: 'Seleziona tracce da aggiungere',
-    ru: 'Выберите треки для добавления'
-  },
-  add_to_existing_btn: {
-    es: 'Añadir',
-    en: 'Add',
-    pt: 'Adicionar',
-    zh: '添加',
-    ja: '追加',
-    fr: 'Ajouter',
-    it: 'Aggiungi',
-    ru: 'Добавить'
   },
   toast_playlist_empty_created: {
     es: 'Lista vacía creada',
@@ -1686,16 +1616,6 @@ const I18N = {
     fr: 'Décalage : X',
     it: 'Scostamento: X',
     ru: 'Смещение: X'
-  },
-  picker_already_in: {
-    es: 'en la lista',
-    en: 'in this list',
-    pt: 'na lista',
-    zh: '已在列表中',
-    ja: 'リスト内',
-    fr: 'dans la liste',
-    it: 'nella lista',
-    ru: 'в списке'
   },
   cancel: {
     es: 'Cancelar',
@@ -2399,10 +2319,6 @@ const I18N = {
     ja: '同じ名前のプレイリストが既にあります。', fr: 'Une liste portant ce nom existe déjà.',
     it: 'Esiste già una playlist con questo nome.', ru: 'Плейлист с таким названием уже существует.'
   },
-  playlist_title: {
-    es: 'Lista', en: 'Playlist', pt: 'Lista', zh: '播放列表',
-    ja: 'プレイリスト', fr: 'Liste', it: 'Playlist', ru: 'Плейлист'
-  },
   eq_band_label: {
     es: 'Banda de ecualización X', en: 'Equalizer band X', pt: 'Banda de equalizador X',
     zh: 'X 均衡器频段', ja: 'イコライザーバンド X', fr: 'Bande d’égalisation X',
@@ -2636,11 +2552,6 @@ const I18N = {
     es: 'hace X días', en: 'X days ago', pt: 'há X dias',
     zh: 'X 天前', ja: 'X日前', fr: 'il y a X jours',
     it: 'X giorni fa', ru: 'X дн. назад'
-  },
-  stats_never_played: {
-    es: 'nunca reproducida', en: 'never played', pt: 'nunca tocada',
-    zh: '从未播放', ja: '未再生', fr: 'jamais écoutée',
-    it: 'mai riprodotta', ru: 'никогда не играла'
   },
   find_duplicates: {
     es: 'Buscar duplicados', en: 'Find duplicates', pt: 'Buscar duplicadas',

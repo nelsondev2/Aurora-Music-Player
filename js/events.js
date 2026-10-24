@@ -438,10 +438,11 @@ Object.assign(App, {
         this.openCreatePlaylistSheet();
       });
 
-      // Guardar playlist: crea una nueva (vacía o con pistas) O añade pistas a una existente
+      // Guardar playlist: crea una nueva (vacía; las pistas se
+      // añaden luego desde la vista de edición) o guarda la cola.
+      // (§93: el modo «añadir a existente» desde esta hoja y su
+      // selector de pistas eran inalcanzables desde la §81.)
       $('btnSavePlaylist').addEventListener('click', () => {
-        const ids = Array.from(document.querySelectorAll('.pick-row.checked'))
-          .map(r => r.dataset.trackId);
 
         // §81 modo «guardar cola como lista»: la lista nace con la
         // cola entera en su orden exacto (sort='added').
@@ -459,37 +460,6 @@ Object.assign(App, {
           this.closeSheet('sheetCreatePlaylist');
           this.closeSheet('sheetQueue');
           this.toast(this.t('toast_queue_saved') + ': ' + qName);
-          return;
-        }
-
-        // Modo "añadir a playlist existente"
-        if (this._addingToPlaylistId) {
-          if (ids.length === 0) {
-            this.toast(this.t('toast_pick_at_least_one'));
-            return;
-          }
-          const pl = this.playlists.find(p => p.id === this._addingToPlaylistId);
-          if (!pl) {
-            this._addingToPlaylistId = null;
-            this.closeSheet('sheetCreatePlaylist');
-            return;
-          }
-          // Añadir solo IDs que no estén ya
-          let added = 0;
-          ids.forEach(id => {
-            if (!pl.trackIds.includes(id)) { pl.trackIds.push(id); added++; }
-          });
-          this.persistPlaylist(pl);
-          this.renderPlaylists();
-          // Limpiar selección
-          document.querySelectorAll('.pick-row').forEach(r => r.classList.remove('checked'));
-          this.closeSheet('sheetCreatePlaylist');
-          this._addingToPlaylistId = null;
-          // Re-abrir el sheet de edición si estábamos editando esa playlist
-          if (this._editingPlaylistId === pl.id) {
-            this.renderEditPlaylist();
-          }
-          this.toast(added + ' ' + this.t('toast_tracks_added_to_playlist'));
           return;
         }
 
@@ -518,17 +488,15 @@ Object.assign(App, {
           this.toast(this.t('toast_smart_created') + ': ' + name);
           return;
         }
-        const created = this.createPlaylist(name, desc, ids);
+        const created = this.createPlaylist(name, desc, []);
         if (!created) return; // nombre duplicado: createPlaylist ya avisó
         $('playlistName').value = '';
         $('playlistDesc').value = '';
-        document.querySelectorAll('.pick-row').forEach(r => r.classList.remove('checked'));
         this.closeSheet('sheetCreatePlaylist');
-        if (ids.length === 0) {
-          this.toast(this.t('toast_playlist_empty_created') + ': ' + name);
-        } else {
-          this.toast(this.t('toast_playlist_created') + ' ' + name);
-        }
+        // §93: desde esta hoja la lista siempre nace vacía (sin
+        // selector de pistas); antes había un toast alternativo
+        // para «creada con pistas» que ya nunca podía sonar.
+        this.toast(this.t('toast_playlist_empty_created') + ': ' + name);
       });
 
       // Botones del sheet "Editar playlist"
