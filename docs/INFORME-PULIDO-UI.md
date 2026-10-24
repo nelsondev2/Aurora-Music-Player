@@ -3037,3 +3037,73 @@ alto de la columna) y no por píxeles; el arreglo se confirma
 visual en el dispositivo, como el resto de la UI.
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+---
+
+## 85. Carga rápida de bibliotecas grandes (auditoría §85)
+
+Auditoría pedida: «auditar carga de grandes volúmenes de
+canciones y cómo hacer que carguen rápido». La importación ya
+escalaba bien —pool de 3–6 trabajadores en `processFiles`,
+portada compartida por álbum, deduplicación O(1) por `Map` y
+guardado en una sola transacción (`persistTracksBatch`)—; los
+cuellos reales estaban en el **arranque** y en una **doble
+lectura** de los archivos más grandes:
+
+1. **Retag de arranque desbocado (el grave).** La puerta de
+   `js/init.js` consideraba «incompleta» a toda pista sin letra
+   (`!t.lrc`); como casi ninguna canción trae letra, en **cada**
+   arranque `retagExistingTracks` releía **toda** la biblioteca
+   secuencialmente y, al «mejorar» la portada, reescribía **cada
+   registro de IndexedDB con su blob** una y otra vez.
+2. **Un `objectURL` por canción** al arrancar, aunque
+   `getTrackUrl` ya crea y cachea la URL bajo demanda.
+3. **FLAC/OGG/Opus leídos dos veces:** `jsmediatags` leía el
+   archivo entero aun cuando el lector Vorbis propio ya había
+   sacado los tags del primer MB — y los FLAC son justo los
+   archivos más pesados.
+
+### Correcciones
+
+- **Retag selectivo con marca.** Nuevo `_trackNeedsRetag(t)`:
+  sin archivo no se toca; sin marca `_tagsChecked`, sin portada
+  imagen o con artista placeholder sí; **sin letra nunca** es
+  motivo. El arranque llama a `retagExistingTracks({silent,
+  onlyIncomplete: true})` y el releído usa un pool de 3 en vez
+  de secuencial; la pista queda marcada `_tagsChecked` y la
+  marca se persiste aunque nada más cambie, para que el
+  siguiente arranque la salte. La portada solo se reemplaza si
+  el dataURL difiere: **ningún registro se reescribe sin cambio
+  real**. El «Releer etiquetas» manual del menú sigue siendo
+  completo, como hasta ahora.
+- **Arranque perezoso.** `js/init.js` ya no crea `src` por
+  pista: la URL nace en `getTrackUrl` al reproducir, compartir
+  o pre-cargar la siguiente, y queda cacheada.
+- **Vorbis completo = sin `jsmediatags`.** Si el lector propio
+  trae título, `processOne` se salta `readTags` (el archivo
+  entero) y la pista nace con `_tagsChecked`.
+- **Fallo real destapado por el check:** el lector Vorbis no
+  copiaba `genre`/`date` del comentario (venían de
+  `jsmediatags`) y el mapeo `date → year` solo existía en la
+  rama con tags. Con el salto, FLAC/OGG habrían perdido género
+  y año: el lector ahora los extrae y el año se normaliza en
+  ambos caminos.
+
+### Verificación
+
+- **Check §85** `/tmp/check-vista85.js`: **21/21** — predicado
+  de retag, solo la incompleta se relee y queda marcada,
+  segundo arranque con cero relecturas, manual completo sin
+  reescrituras inútiles, FLAC sin llamar a `jsmediatags` con
+  título/género/año intactos, lector Vorbis real sobre un
+  comentario construido a mano, MP3 por `jsmediatags`, URL
+  perezosa y pool con orden conservado.
+- Regresiones: §84 **15/15**, §83 **22/22**, §82 **17/17**,
+  §81 **41/41**, §80 **21/21**.
+
+Nota de alcance: el sondeo de duración por archivo en MP3 se
+mantiene (es la única fuente fiable) y `jsmediatags` sigue
+siendo el camino de MP3/M4A/WAV; no se ha tocado el motor de
+importación, que ya era correcto.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

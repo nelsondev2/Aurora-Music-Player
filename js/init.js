@@ -129,13 +129,14 @@ Object.assign(App, {
 
       document.querySelectorAll('.sheet').forEach(s => s.setAttribute('aria-hidden', 'true'));
 
-      // Releer tags de pistas antiguas (sin portada / artista / letras)
+      // §85: releer SOLO las pistas a las que les falta algo. La
+      // condición anterior incluía «sin letra»: como casi ninguna
+      // canción trae letra, el retag corría en cada arranque y
+      // releía la biblioteca entera para no cambiar nada.
       const needsRetag = this.tracks.some(t =>
-        (t._file || t.fileBlob) &&
-        (!t.coverIsImage || this.isPlaceholderArtist(t.artist) || !t.lrc)
-      );
+        typeof this._trackNeedsRetag === 'function' && this._trackNeedsRetag(t));
       if (needsRetag) {
-        this.retagExistingTracks({ silent: true }).catch(() => {});
+        this.retagExistingTracks({ silent: true, onlyIncomplete: true }).catch(() => {});
       }
 
       if (typeof this.maybeShowBackgroundNotice === 'function') this.maybeShowBackgroundNotice();
@@ -187,13 +188,10 @@ Object.assign(App, {
         // Tracks
         if (!window.AuroraStorage) throw new Error('IndexedDB no disponible');
         const stored = await window.AuroraStorage.getAllTracks();
-        // Reconstruir objectURLs (no se pueden guardar en IDB)
+        // §85: nada de crear un objectURL por pista al arrancar
+        // (miles de URLs vivas antes de escuchar nada): getTrackUrl
+        // lo crea perezosamente al reproducir/compartir y lo cachea.
         this.tracks = stored.map(t => {
-          if (t._file) {
-            t.src = URL.createObjectURL(t._file);
-          } else if (t.fileBlob) {
-            t.src = URL.createObjectURL(t.fileBlob);
-          }
           if (!t.addedAt) t.addedAt = 0;
           return t;
         });

@@ -586,49 +586,85 @@ Object.assign(App, {
       return set.has(a);
     },
 
-    /* Relee tags de pistas ya guardadas (portada, artista, letras). */
+    /* §85: ¿le falta algo a esta pista que solo se sepa releyendo
+     * su archivo? La marca _tagsChecked la pone el importador (y
+     * este propio retag) cuando la pista ya pasó por el lector
+     * actual, género y año incluidos. Sin marca (bibliotecas
+     * anteriores) hay que leerla UNA vez; con marca y portada y
+     * artista, releerla en cada arranque era el cuello de botella:
+     * miles de lecturas completas + sondeos + reescrituras de
+     * IndexedDB para no cambiar nada. Ojo: que no tenga letra NO
+     * es motivo (la mayoría de canciones no traen). */
+    _trackNeedsRetag(t) {
+      if (!t || !(t._file || t.fileBlob)) return false;
+      if (!t._tagsChecked) return true;
+      if (!t.coverIsImage) return true;
+      if (this.isPlaceholderArtist(t.artist)) return true;
+      return false;
+    },
+
+    /* Relee tags de pistas ya guardadas (portada, artista, letras).
+     * opts.onlyIncomplete (arranque): solo las que lo necesitan
+     * (§85); el menú «Releer etiquetas» sigue siendo completo.
+     * Con tres trabajadores en paralelo, como la importación. */
     async retagExistingTracks(opts) {
       const silent = !!(opts && opts.silent);
+      const onlyIncomplete = !!(opts && opts.onlyIncomplete);
       const U = window.AuroraUploader;
       if (!U || typeof U.processOne !== 'function') return 0;
+      const targets = this.tracks.filter(t =>
+        (t._file || t.fileBlob) && (!onlyIncomplete || this._trackNeedsRetag(t)));
       let updated = 0;
-      for (const t of this.tracks) {
-        const file = t._file || t.fileBlob;
-        if (!file) continue;
-        try {
-          const fresh = await U.processOne(file, null);
-          let changed = false;
-          if (fresh.title && fresh.title !== t.title) { t.title = fresh.title; changed = true; }
-          if (fresh.artist && !this.isPlaceholderArtist(fresh.artist)) {
-            if (t.artist !== fresh.artist) { t.artist = fresh.artist; changed = true; }
-          }
-          if (fresh.album && !this.isPlaceholderAlbum(fresh.album)) {
-            if (t.album !== fresh.album) { t.album = fresh.album; changed = true; }
-          }
-          if (fresh.coverIsImage && fresh.cover) {
-            t.cover = fresh.cover;
-            t.coverIsImage = true;
-            changed = true;
-          }
-          // §81: género y año también se recuperan al re-etiquetar:
-          // las bibliotecas anteriores no los guardaban y el
-          // catálogo por géneros nacería vacío para ellas.
-          if (fresh.genre && fresh.genre !== t.genre) { t.genre = fresh.genre; changed = true; }
-          if (fresh.year && fresh.year !== t.year) { t.year = fresh.year; changed = true; }
-          if (fresh.lrc && (!t.lrc || (Array.isArray(t.lrc) && !t.lrc.length))) {
-            t.lrc = fresh.lrc;
-            t._lrcCache = null;
-            changed = true;
-          }
-          if (fresh.src && fresh.src.startsWith('blob:')) {
-            try { URL.revokeObjectURL(fresh.src); } catch (e) {}
-          }
-          if (changed) {
-            updated++;
-            await this.persistTrack(t);
-          }
-        } catch (e) {}
-      }
+      let idx = 0;
+      const worker = async () => {
+        while (idx < targets.length) {
+          const t = targets[idx++];
+          const file = t._file || t.fileBlob;
+          try {
+            const fresh = await U.processOne(file, null);
+            let changed = false;
+            if (fresh.title && fresh.title !== t.title) { t.title = fresh.title; changed = true; }
+            if (fresh.artist && !this.isPlaceholderArtist(fresh.artist)) {
+              if (t.artist !== fresh.artist) { t.artist = fresh.artist; changed = true; }
+            }
+            if (fresh.album && !this.isPlaceholderAlbum(fresh.album)) {
+              if (t.album !== fresh.album) { t.album = fresh.album; changed = true; }
+            }
+            // La portada solo se toca si es otra de verdad: antes
+            // se reemplazaba siempre y cada arranque reescribía
+            // cada registro de IndexedDB con su blob (§85).
+            if (fresh.coverIsImage && fresh.cover && fresh.cover !== t.cover) {
+              t.cover = fresh.cover;
+              t.coverIsImage = true;
+              changed = true;
+            }
+            // §81: género y año también se recuperan al re-etiquetar:
+            // las bibliotecas anteriores no los guardaban y el
+            // catálogo por géneros nacería vacío para ellas.
+            if (fresh.genre && fresh.genre !== t.genre) { t.genre = fresh.genre; changed = true; }
+            if (fresh.year && fresh.year !== t.year) { t.year = fresh.year; changed = true; }
+            if (fresh.lrc && (!t.lrc || (Array.isArray(t.lrc) && !t.lrc.length))) {
+              t.lrc = fresh.lrc;
+              t._lrcCache = null;
+              changed = true;
+            }
+            if (fresh.src && fresh.src.startsWith('blob:')) {
+              try { URL.revokeObjectURL(fresh.src); } catch (e) {}
+            }
+            // Marcar revisada y guardar la marca aunque nada más
+            // cambie: es lo que hace que el próximo arranque la salte.
+            const hadFlag = !!t._tagsChecked;
+            t._tagsChecked = true;
+            if (changed) updated++;
+            if (changed || !hadFlag) {
+              try { await this.persistTrack(t); } catch (e) {}
+            }
+          } catch (e) {}
+        }
+      };
+      const workers = [];
+      for (let i = 0; i < Math.min(3, targets.length); i++) workers.push(worker());
+      await Promise.all(workers);
       if (updated) {
         this.renderPlaylists();
         this.renderQueue();
@@ -736,11 +772,15 @@ Object.assign(App, {
           } catch (e) {}
         }
 
-        if (!blob && t.src && t.src.startsWith('blob:')) {
-          try {
-            const res = await fetch(t.src);
-            blob = await res.blob();
-          } catch (e) {}
+        if (!blob) {
+          // §85: t.src ya no nace al arrancar; se crea bajo demanda.
+          const lazyUrl = typeof this.getTrackUrl === 'function' ? this.getTrackUrl(t) : t.src;
+          if (lazyUrl && lazyUrl.startsWith('blob:')) {
+            try {
+              const res = await fetch(lazyUrl);
+              blob = await res.blob();
+            } catch (e) {}
+          }
         }
 
         const safeTitle = (t.title || 'cancion').replace(/[\\/:*?"<>|]/g, '_');

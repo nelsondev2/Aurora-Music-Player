@@ -123,8 +123,13 @@
        * en paralelo con las etiquetas; probeDuration() tiene timeout y
        * ante un archivo corrupto devuelve 0 sin bloquear la importación.
        * Si el lector Vorbis ya la trajo (FLAC), ni se sondea. */
+      // §85: si el lector Vorbis propio ya sacó los tags del primer
+      // MB (FLAC/OGG/Opus), jsmediatags sobra: leería el archivo
+      // ENTERO (los FLAC son los más grandes) para llegar a los
+      // mismos datos. Solo se le llama si falta el título Vorbis.
+      const vorbisComplete = !!(vorbis && this.tagText(vorbis.title));
       let [tags, lrcText, duration] = await Promise.all([
-        this.readTags(file).catch(() => null),
+        vorbisComplete ? Promise.resolve(null) : this.readTags(file).catch(() => null),
         lrcFile ? this.readTextFile(lrcFile).catch(() => null) : Promise.resolve(null),
         (vorbis && vorbis.duration) ? Promise.resolve(vorbis.duration) : this.probeDuration(file).catch(() => 0)
       ]);
@@ -132,16 +137,18 @@
       /* El lector propio rellena lo que falte sin pisar nunca un
        * dato ID3/MP4 válido. */
       if (vorbis) {
-        if (!tags) tags = vorbis;
+        if (!tags) tags = Object.assign({}, vorbis); // copia: no mutar el objeto del lector
         else {
           for (const k of ['title', 'artist', 'album', 'albumartist', 'lyrics', 'genre']) {
             if (!this.tagText(tags[k]) && vorbis[k]) tags[k] = vorbis[k];
           }
-          // En Vorbis el año viaja como DATE («2005», «2005-03-01»…).
-          if (!this.tagText(tags.year) && vorbis.date) tags.year = vorbis.date;
-          if (!this.tagText(tags.year) && vorbis.year) tags.year = vorbis.year;
           if (!tags.picture && vorbis.picture) tags.picture = vorbis.picture;
         }
+        // En Vorbis el año viaja como DATE («2005», «2005-03-01»…);
+        // se normaliza en ambos caminos (§85: también cuando
+        // jsmediatags se saltó y «tags» ES el objeto Vorbis).
+        if (!this.tagText(tags.year) && vorbis.date) tags.year = vorbis.date;
+        if (!this.tagText(tags.year) && vorbis.year) tags.year = vorbis.year;
       }
 
       let coverSet = null;
@@ -211,6 +218,9 @@
         coverThumbLg,
         genre: meta.genre || '',
         year: meta.year || null,
+        // §85: esta pista ya pasó por el lector de tags actual
+        // (con género/año): el arranque no tiene que releerla.
+        _tagsChecked: true,
         lrc: meta.lrc,
         fileSize: file.size,
         fileName: file.name,
@@ -356,7 +366,10 @@
           if (!(key in fields)) fields[key] = entry.slice(eq + 1).trim();
         }
         const out = {};
-        for (const k of ['title', 'artist', 'album', 'albumartist', 'lyrics', 'unsyncedlyrics']) {
+        /* §85: género y fecha también se copian del comentario:
+         * al saltarnos jsmediatags en FLAC/OGG/Opus (§85) estos
+         * campos ya solo pueden venir de aquí. */
+        for (const k of ['title', 'artist', 'album', 'albumartist', 'genre', 'date', 'lyrics', 'unsyncedlyrics']) {
           if (fields[k]) out[k === 'unsyncedlyrics' ? 'lyrics' : k] = fields[k];
         }
         if (fields.metadata_block_picture) {

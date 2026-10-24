@@ -11,6 +11,11 @@ verificado función a función:
 
 - Importación de MP3, M4A, FLAC, WAV, OGG y Opus con metadatos,
   portadas, duración real y deduplicación al reimportar.
+- Carga rápida con bibliotecas grandes (§85): el arranque ya no
+  relee ni reescribe la biblioteca entera — solo se re-revisan las
+  canciones incompletas y quedan marcadas —, las direcciones de
+  cada canción se crean al reproducirlas y los FLAC/OGG/Opus ya
+  no se leen dos veces al importar.
 - Biblioteca con listas editables, Favoritos y «Mi Música»
   automática. Las listas y la cola se ordenan automáticamente por
   estrellas (mejor nota primero, sin nota al final), y el escaparate
