@@ -1182,13 +1182,15 @@ Object.assign(App, {
       }
     },
     /* ============================================================
-     *  §81: canciones duplicadas (mismo título y artista)
+     *  §81/§88: canciones duplicadas (mismo título y artista)
      *  La importación ya omite el mismo archivo dos veces; lo que
      *  aquí se busca es la misma canción llegada por caminos
-     *  distintos (otro archivo, otra copia). En cada grupo se
-     *  conserva la más antigua (la «original»: es la que suele
-     *  tener estrellas, listas y reproducciones) y las demás se
-     *  pueden borrar una a una con el flujo de borrado de siempre.
+     *  distintos (otro archivo, otra copia). Qué copia se conserva
+     *  lo elige el usuario en la hoja (§88): por defecto se propone
+     *  la más antigua (la «original»: es la que suele tener
+     *  estrellas, listas y reproducciones), pero puede marcarse
+     *  cualquier otra como «la que se conserva» y borrar el resto
+     *  una a una o todas de una vez.
      * ============================================================ */
     findDuplicateGroups() {
       const norm = (v) => (typeof this.cleanSearchStr === 'function')
@@ -1202,10 +1204,12 @@ Object.assign(App, {
         map.get(key).push(t);
       });
       const groups = [];
-      map.forEach(list => {
+      map.forEach((list, key) => {
         if (list.length < 2) return;
         const sorted = list.slice().sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
-        groups.push({ keep: sorted[0], dups: sorted.slice(1) });
+        // §88: «keep» es solo el valor por defecto (la más antigua);
+        // la copia que se conserva la elige el usuario en la hoja.
+        groups.push({ key, keep: sorted[0], dups: sorted.slice(1) });
       });
       return groups.sort((a, b) => String(a.keep.title || '').localeCompare(String(b.keep.title || '')));
     },
@@ -1222,21 +1226,55 @@ Object.assign(App, {
         cont.appendChild(div);
         return;
       }
+      // §88: qué copia se conserva lo elige el usuario, no la
+      // antigüedad. La elección vive por grupo (clave título+artista)
+      // y sobrevive a los repintados de la hoja; si la elegida ya no
+      // está en el grupo, se vuelve al valor por defecto (la más
+      // antigua, g.keep). Antes la «original» era intocable y solo
+      // se podían borrar las demás: imposible quedarse con una
+      // copia mejor (p. ej. un FLAC en vez del MP3 viejo).
+      if (!(this._dupKeepSel instanceof Map)) this._dupKeepSel = new Map();
+      const sel = this._dupKeepSel;
+      const refresh = () => {
+        this.renderDuplicates();
+        if (typeof this.renderLibrarySections === 'function') this.renderLibrarySections();
+      };
       groups.forEach(g => {
+        const all = [g.keep].concat(g.dups);
+        const chosenId = sel.get(g.key);
+        const keeper = all.find(t => t.id === chosenId) || g.keep;
+        const others = all.filter(t => t.id !== keeper.id);
         const box = document.createElement('div');
         box.className = 'dup-group';
         const title = document.createElement('p');
         title.className = 'dup-group-title';
-        title.textContent = g.keep.title + ' · ' + g.keep.artist;
+        title.textContent = keeper.title + ' · ' + keeper.artist;
         box.appendChild(title);
         const row = (t, isKeep) => {
           const div = document.createElement('div');
-          div.className = 'dup-row';
+          div.className = 'dup-row' + (isKeep ? ' is-keep' : '');
+          div.dataset.trackId = t.id;
+          // Nombre + duración + tamaño: lo que se necesita para
+          // decidir qué copia vale más (calidad ≈ tamaño).
           div.innerHTML = '<div class="row-cover"><canvas width="144" height="144"></canvas></div>' +
             '<div class="row-text"><div class="row-title">' + this.esc(t.title) + '</div>' +
-            '<div class="row-sub">' + this.esc(t.fileName || '') + (t.duration ? ' · ' + this.fmtTime(t.duration) : '') + '</div></div>' +
+            '<div class="row-sub">' + this.esc(t.fileName || '') +
+            (t.duration ? ' · ' + this.fmtTime(t.duration) : '') +
+            (t.fileSize && typeof this.fmtBytes === 'function' ? ' · ' + this.fmtBytes(t.fileSize) : '') +
+            '</div></div>' +
             (isKeep ? '<span class="dup-keep">' + this.esc(this.t('duplicates_keep')) + '</span>' : '');
           if (!isKeep) {
+            // «Conservar esta»: la insignia (y la protección) se
+            // mueve a esta copia; la anterior pasa a ser borrable.
+            const keepBtn = document.createElement('button');
+            keepBtn.type = 'button';
+            keepBtn.className = 'dup-keep-btn';
+            keepBtn.textContent = this.t('duplicates_keep_this');
+            keepBtn.addEventListener('click', () => {
+              sel.set(g.key, t.id);
+              this.renderDuplicates();
+            });
+            div.appendChild(keepBtn);
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'row-action';
@@ -1244,8 +1282,7 @@ Object.assign(App, {
             btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>';
             btn.addEventListener('click', async () => {
               await this.deleteTrack(t.id);
-              this.renderDuplicates();
-              if (typeof this.renderLibrarySections === 'function') this.renderLibrarySections();
+              refresh();
             });
             div.appendChild(btn);
           }
@@ -1253,8 +1290,28 @@ Object.assign(App, {
           if (cv) this.drawRowCover(cv, t);
           return div;
         };
-        box.appendChild(row(g.keep, true));
-        g.dups.forEach(t => box.appendChild(row(t, false)));
+        box.appendChild(row(keeper, true));
+        others.forEach(t => box.appendChild(row(t, false)));
+        // Borrado del grupo de una vez: se conserva la elegida y
+        // caen las demás. Con confirmación y sin «Deshacer»
+        // individual (es un lote deliberado, como «borrar todo»).
+        if (others.length) {
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'dup-del-others';
+          delBtn.textContent = this.t('duplicates_delete_others') + ' (' + others.length + ')';
+          delBtn.addEventListener('click', async () => {
+            const ok = await this.showConfirm({
+              message: this.t('duplicates_confirm').replace('X', String(others.length)),
+              okLabel: this.t('confirm_delete'),
+              danger: true
+            });
+            if (!ok) return;
+            for (const t of others) await this.deleteTrack(t.id, { undo: false });
+            refresh();
+          });
+          box.appendChild(delBtn);
+        }
         cont.appendChild(box);
       });
     },

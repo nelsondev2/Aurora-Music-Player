@@ -5128,5 +5128,22 @@ html.aurora-wide .toast {
   font-size: 10px; font-weight: 700; color: var(--accent);
   border: 1px solid var(--accent); border-radius: 999px; padding: 1px 7px; white-space: nowrap;
 }
+/* §88: elección manual de la copia a conservar. La elegida se
+ * distingue con un fondo de acento suave; «Conservar esta» es un
+ * botón discreto (dirección de diseño del proyecto) y «Borrar las
+ * demás» cierra el grupo como acción de peligro templada. */
+.dup-row.is-keep { background: rgba(var(--accent-rgb), 0.08); border-radius: 12px; padding: 6px 8px; margin: 0 -8px; }
+.dup-keep-btn {
+  flex: 0 0 auto; min-height: 32px; padding: 4px 10px;
+  font-size: var(--fs-caption); font-weight: 600; color: var(--accent);
+  background: transparent; border: 1px solid var(--accent); border-radius: 999px;
+  cursor: pointer; white-space: nowrap;
+}
+.dup-del-others {
+  display: block; margin: 8px 0 2px auto; min-height: 32px; padding: 4px 12px;
+  font-size: var(--fs-caption); font-weight: 600; color: var(--danger, #e5484d);
+  background: transparent; border: 1px solid var(--border); border-radius: 999px;
+  cursor: pointer;
+}
 /* §83: botón «Más opciones» en las filas de la cola */
 .queue-item .queue-menu { flex: 0 0 auto; }

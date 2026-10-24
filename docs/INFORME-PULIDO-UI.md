@@ -3257,3 +3257,60 @@ acción del usuario en contexto, no el arranque.
   §83 **22/22**, §82 **17/17**, §81 **41/41**, §80 **21/21**.
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+---
+
+## 88. Duplicados: qué copia se conserva lo elige el usuario
+
+Petición: «en duplicado el usuario elija manualmente qué copia
+dejar». Hasta §87 la hoja de duplicados protegía siempre la
+copia más antigua (la «original»: suele tener estrellas, listas
+y reproducciones) y solo dejaba borrar las demás una a una: era
+imposible quedarse con una copia mejor llegada después (p. ej.
+un FLAC en lugar del MP3 viejo).
+
+### Cambios
+
+- **`findDuplicateGroups()`** ahora expone la `key` del grupo
+  (título+artista normalizados); su `keep` queda como **valor
+  por defecto** (la más antigua), sin cambiar su contrato (§81).
+- **`renderDuplicates()`** resuelve la copia conservada con la
+  elección del usuario (`this._dupKeepSel`, un `Map` por clave
+  de grupo que sobrevive a los repintados de la hoja; si la
+  elegida ya no está en el grupo, se vuelve al defecto):
+  - La conservada lleva la insignia y **no tiene papelera**:
+    está protegida.
+  - Cada otra copia ofrece **«Conservar esta»** — la insignia
+    y la protección se mueven a esa copia — además de su
+    papelera individual de siempre (borrable con «Deshacer»).
+  - La fila enseña ahora también el **tamaño** del archivo
+    (nombre · duración · tamaño): es el dato que permite
+    decidir por calidad.
+  - Nuevo botón por grupo **«Borrar las demás (n)»**: pide
+    confirmación (`duplicates_confirm`, peligro) y borra el
+    resto en lote con `{undo:false}`, conservando la elegida.
+- **i18n**: la insignia `duplicates_keep` ya no dice
+  «Original» (la conservada puede no serlo) y se añaden
+  `duplicates_keep_this`, `duplicates_delete_others` y
+  `duplicates_confirm` en los **8 idiomas** (paridad verificada
+  por el check: 384 claves × 8).
+- CSS: `.dup-row.is-keep` con fondo de acento suave,
+  `.dup-keep-btn` discreto con borde de acento y
+  `.dup-del-others` templado en peligro, ambos ≥32 px táctiles.
+
+El detector de la importación (mismo nombre+tamaño) no se toca:
+ahí no hay «copias» entre las que elegir, es el mismo archivo.
+
+### Verificación
+
+- **Check §88** `/tmp/check-vista88.js`: **21/21** — grupo de
+  3 con defecto en la antigua (§81 intacto), insignia y
+  protecciones correctas, tamaño visible, «Conservar esta»
+  mueve la protección y persiste al repintar, cancelar el
+  lote no borra nada, «Borrar las demás» deja solo la elegida,
+  papelera individual operativa y paridad i18n 8 idiomas.
+- Regresiones: §87 **17/17**, §86 **28/28**, §85 **21/21**,
+  §84 **15/15**, §83 **22/22**, §82 **17/17**, §81 **41/41**,
+  §80 **21/21**.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

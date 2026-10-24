@@ -26,6 +26,11 @@ verificado función a función:
   desde…», gapless/crossfade, ecualizador, visualizador y temporizador
   de apagado.
 - Letras sincronizadas LRC (archivo o incrustadas).
+- Duplicados a tu elección (§88): en «Canciones duplicadas» ya
+  no manda siempre la copia más antigua — marcas «Conservar
+  esta» en la copia que prefieras (cada fila enseña nombre,
+  duración y tamaño para decidir por calidad) y puedes borrar
+  las demás una a una o todas de una vez.
 - Corrección grave (§87): al cerrar y reabrir la app, el
   reproductor ya no salta de canción en canción diciendo que no
   se puede reproducir — las direcciones temporales de cada

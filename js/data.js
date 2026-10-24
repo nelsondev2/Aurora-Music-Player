@@ -2663,9 +2663,29 @@ const I18N = {
     it: 'Nessun duplicato.', ru: 'Дублей нет.'
   },
   duplicates_keep: {
-    es: 'Original (se conserva)', en: 'Original (kept)', pt: 'Original (mantida)',
-    zh: '原版（保留）', ja: 'オリジナル（保持）', fr: 'Original (conservé)',
-    it: 'Originale (conservata)', ru: 'Оригинал (остаётся)'
+    es: 'Se conserva', en: 'Kept', pt: 'Mantida',
+    zh: '保留', ja: '保持', fr: 'Conservé',
+    it: 'Conservata', ru: 'Остаётся'
+  },
+  duplicates_keep_this: {
+    es: 'Conservar esta', en: 'Keep this one', pt: 'Manter esta',
+    zh: '保留这一份', ja: 'これを保持', fr: 'Garder celle-ci',
+    it: 'Tieni questa', ru: 'Оставить эту'
+  },
+  duplicates_delete_others: {
+    es: 'Borrar las demás', en: 'Delete the others', pt: 'Excluir as outras',
+    zh: '删除其余', ja: '他を削除', fr: 'Supprimer les autres',
+    it: 'Elimina le altre', ru: 'Удалить остальные'
+  },
+  duplicates_confirm: {
+    es: 'Se borrarán X copia(s) duplicada(s) y se conservará la elegida. ¿Seguir?',
+    en: 'X duplicate copy(ies) will be deleted and the chosen one kept. Continue?',
+    pt: 'X cópia(s) duplicada(s) serão excluídas e a escolhida será mantida. Continuar?',
+    zh: '将删除 X 个重复副本，只保留所选的一个。继续吗？',
+    ja: '重複コピーX件を削除し、選んだ1件を残します。続けますか？',
+    fr: 'X copie(s) en double seront supprimées et celle choisie sera gardée. Continuer ?',
+    it: 'Verranno eliminate X copie duplicate e verrà tenuta quella scelta. Continuare?',
+    ru: 'Будет удалено X дублирующихся копий, выбранная останется. Продолжить?'
   },
   toast_sort_saved: {
     es: 'Orden guardado', en: 'Sort order saved', pt: 'Ordem salva',
