@@ -3413,3 +3413,57 @@ relleno translúcido, no columnas opacas.
   §81 **41/41**, §80 **21/21**.
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+---
+
+## 91. El «icono horrible» de los estados vacíos, domado
+
+El usuario señaló con captura el icono de «Sin búsquedas
+recientes» en Buscar: un mosaico morado sólido de 72 px con
+sombra dura, glifo blanco y un halo borroso morado detrás —
+pesaba más que el propio mensaje. Ese mosaico es `.empty-icon`,
+el componente compartido por TODOS los estados vacíos
+(bienvenida, cola, listas, duplicados, buscar…), así que el
+arreglo es global, no un parche en una pantalla.
+
+### Cambios (solo `css/styles.css`)
+
+- **`.empty-icon`**: de degradado sólido de acento
+  (`--accent-fill`) a **cristal tintado**: lavado de acento al
+  20 %/7 % sobre `--surface` con `color-mix` (con repliegue a
+  `--surface` si el WebView no lo soporta), filete de 1 px
+  teñido, glifo en `--accent` (ya no blanco sobre morado),
+  68 px y sombra neutra suave en lugar de la sombra de acento
+  `0 16px 36px`. La dirección discreta del resto de la
+  interfaz.
+- **Halo** `.empty-state::before`: opacidad 0,38 → 0,15 y
+  180 → 160 px: un respiro, no una nube morada.
+- **`.lrc-empty-icon`** (el gemelo en Letras «sin letra»):
+  mismo trato de cristal, pero el lavado lleva un susurro de
+  los colores de la portada que suena (`--cover-from/--cover-to`,
+  §75) y el glifo pasa de blanco a acento.
+- **Sin tocar**: el degradado sólido se queda donde es acción
+  — botón play, botones primarios —: ahí manda; en un estado
+  vacío, sobra.
+
+Sin cambios de HTML ni JS: el marcado (`emptyStateHtml`) y los
+glifos (el reloj de historial en Buscar) son los mismos.
+
+### Verificación
+
+- **Check §91** `/tmp/check-vista91.js`: **17/17** — mosaico
+  sin degradado sólido, cristal con `color-mix`, filete, glifo
+  en acento, halo domado, gemelo de Letras tintado con la
+  portada, play intacto, y los estados vacíos (Buscar sin
+  recientes, Duplicados vacío) pintándose igual que antes.
+  (Dos fallos iniciales fueron del propio check: hay varias
+  reglas con el mismo selector y hay que afirmar sobre la
+  cascada completa, no sobre la primera.)
+- Regresiones: §90 **19/19**, §89 **15/15**, §88 **21/21**,
+  §87 **17/17**, §86 **28/28**, §85 **21/21**, §84 **14/14**,
+  §83 **22/22**, §82 **17/17**, §81 **41/41**, §80 **21/21**.
+
+Nota honesta: jsdom no pinta CSS, así que el resultado visual
+se confirma en el dispositivo, como el resto de la UI.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

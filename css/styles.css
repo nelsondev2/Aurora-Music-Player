@@ -1248,33 +1248,44 @@ svg { display: block; }
 .empty-state::before {
   content: '';
   position: absolute;
-  width: 180px;
-  height: 180px;
+  width: 160px;
+  height: 160px;
   top: 4%;
   left: 50%;
   transform: translateX(-50%);
   border-radius: 50%;
   background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
   filter: blur(36px);
-  opacity: 0.38;
+  opacity: 0.15;
   pointer-events: none;
   z-index: 0;
 }
 .empty-state > * { position: relative; z-index: 1; }
+/* §91: antes un mosaico morado sólido de 72 px con sombra dura y
+ * glifo blanco: pesaba más que el propio mensaje («el icono
+ * horrible» de Buscar). Ahora es cristal tintado con el acento:
+ * superficie con un lavado de color, filete fino, glifo en
+ * acento y sombra neutra suave — la dirección discreta del resto
+ * de la interfaz. El degradado sólido se queda para los botones
+ * de acción (play, primarios), donde sí manda. */
 .empty-icon {
-  width: 72px;
-  height: 72px;
-  border-radius: 22px;
+  width: 68px;
+  height: 68px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent-on-fill);
-  background: linear-gradient(145deg, var(--accent-fill), var(--accent-fill-2));
-  border: 0;
+  color: var(--accent);
+  background: var(--surface);
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--accent) 20%, var(--surface)),
+    color-mix(in srgb, var(--accent) 7%, var(--surface)));
+  border: 1px solid var(--border);
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
   margin-bottom: 6px;
-  box-shadow: 0 16px 36px rgba(var(--accent-rgb), 0.32);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
-.empty-icon .ico { width: 28px; height: 28px; color: var(--accent-on-fill); }
+.empty-icon .ico { width: 28px; height: 28px; color: var(--accent); }
 .empty-state h4 {
   font-family: var(--font-display);
   font-size: var(--fs-title);
@@ -3589,18 +3600,26 @@ button,
 .view-lyrics.lrc-is-empty .lyrics-mini,
 .view-lyrics.lrc-is-empty .lyrics-controls { display: none; }
 .view-lyrics.lrc-no-track .lrc-empty-actions { display: none; }
+/* §91: mismo trato de cristal que .empty-icon, pero el lavado
+ * lleva un susurro de los colores de la portada que suena (§75)
+ * en vez del acento a secas. */
 .lrc-empty-icon {
-  width: 72px;
-  height: 72px;
-  border-radius: 22px;
+  width: 68px;
+  height: 68px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, var(--cover-from, var(--accent-fill)), var(--cover-to, var(--accent-fill-2)));
-  color: #fff;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  background: var(--surface);
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--cover-from, var(--accent)) 22%, var(--surface)),
+    color-mix(in srgb, var(--cover-to, var(--accent)) 9%, var(--surface)));
+  border: 1px solid var(--border);
+  border-color: color-mix(in srgb, var(--cover-from, var(--accent)) 38%, var(--border));
+  color: var(--accent);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
-.lrc-empty-icon .ico { width: 28px; height: 28px; color: #fff; }
+.lrc-empty-icon .ico { width: 28px; height: 28px; color: var(--accent); }
 .lrc-empty h4 {
   font-family: var(--font-display);
   font-size: 1.125rem;

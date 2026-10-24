@@ -26,6 +26,10 @@ verificado función a función:
   desde…», gapless/crossfade, ecualizador, visualizador y temporizador
   de apagado.
 - Letras sincronizadas LRC (archivo o incrustadas).
+- Estados vacíos (§91): el icono deja de ser un mosaico morado
+  sólido con halo — ahora es un cristal suave tintado con el
+  color de acento (y con los colores de la portada en Letras),
+  a juego con el resto de la interfaz.
 - Visualizador (§90): solo queda la onda fluida sobre la
   portada; el modo de barras de espectro desaparece (tapaba
   demasiado el cover). El botón alterna onda/apagado y quien
