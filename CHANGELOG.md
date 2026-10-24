@@ -28,6 +28,10 @@ verificado función a función:
   pantalla (filas ×2, tarjetas y héroe incluidos), pestañas inferiores
   legibles también en oscuro y agarre táctil de la barra de progreso
   ampliado.
+- Auditoría general (§80): poda verificada de código muerto
+  (37 claves de idioma sin uso en los 8 idiomas, 11 clases CSS
+  y 1 enlace JS), con regresión completa de las funciones
+  recientes en verde. Sin cambios visibles.
 - Fondo del reproductor según la portada (§75): los colores se
   extraen de la carátula (con normalización para no ensuciar ni
   romper el contraste) y tiñen fondo, resplandor y visualizador;

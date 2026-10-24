@@ -117,7 +117,6 @@
   vertical-align: -0.125em;
 }
 .icon-btn .ico { width: 18px; height: 18px; }
-.icon-btn-large .ico { width: 22px; height: 22px; }
 .ctrl-shuffle .ico, .ctrl-repeat .ico { width: 18px; height: 18px; }
 .ctrl-prev .ico, .ctrl-next .ico { width: 26px; height: 26px; }
 .ctrl-play .ico { width: 26px; height: 26px; }
@@ -233,7 +232,7 @@ svg { display: block; }
   .lt-group-label { font-size: 0.5rem; letter-spacing: 0.04em; }
   .lt-group .lt-btn { min-width: 40px; padding: 0 4px; }
   .lt-offset-value { min-width: 32px; font-size: var(--fs-2xs); }
-  .lt-sep { display: none; }  /* ocultar separadores para ahorrar espacio */
+    /* ocultar separadores para ahorrar espacio */
 }
 
 /* Pantallas muy bajas (landscape o móviles pequeños en altura) */
@@ -303,7 +302,6 @@ svg { display: block; }
   z-index: 2;
 }
 
-.view.exit-left { transform: translateX(-40px); }
 
 /* ---------- Fondo dinámico ---------- */
 .bg-blur {
@@ -497,30 +495,7 @@ svg { display: block; }
 }
 @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
 
-.cover-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  padding: 12px;
-  background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.4));
-}
-.icon-btn-large {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-1);
-  transition: transform .15s, background .2s;
-}
-.icon-btn-large:active { transform: scale(0.9); }
-.icon-btn-large.liked, .sec-btn.liked svg {
+.sec-btn.liked svg {
   /* --accent (no --accent-2) para que el corazón conserve ≥4.5:1 también
      en tema claro; --accent-2 es un tono brillante decorativo. */
   color: var(--accent);
@@ -938,13 +913,6 @@ svg { display: block; }
 }
 .lt-offset-value.is-zero { color: var(--text-3); }
 .lt-reset { color: var(--text-3); }
-.lt-sep {
-  width: 1px;
-  height: 18px;
-  background: var(--border);
-  margin: 0 2px;
-  flex-shrink: 0;
-}
 
 .lyrics-mini {
   position: relative;
@@ -1363,7 +1331,7 @@ svg { display: block; }
 }
 
 /* ---------- Listas ---------- */
-.queue-list, .track-list, .pick-tracks-list, .playlist-list, .library-playlists {
+.queue-list, .track-list, .pick-tracks-list, .playlist-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -2079,8 +2047,6 @@ svg { display: block; }
 .icon-add:active { transform: scale(0.92); }
 
 /* Eliminar pista hover */
-.delete-track { color: var(--text-3); }
-.delete-track:active { color: var(--danger); background: rgba(239, 68, 68, 0.12); }
 
 /* Placeholder cuando biblioteca vacía */
 .track-row.empty-placeholder {
@@ -2303,17 +2269,6 @@ svg { display: block; }
 /* =====================================================================
  *  Lista de Favoritos
  * ===================================================================== */
-#favoritesList .track-row .unfav-track {
-  color: var(--accent);
-}
-#favoritesList .track-row .unfav-track:active {
-  background: rgba(239, 68, 68, 0.12);
-  color: var(--danger);
-}
-#favoritesList .track-row .unfav-track .ico {
-  width: 14px;
-  height: 14px;
-}
 
 /* =====================================================================
  *  Lista de Idiomas
@@ -2623,12 +2578,6 @@ svg { display: block; }
 .search-filter:active { transform: scale(0.95); }
 
 /* #5 EQ manual: botones */
-.eq-manual-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-  justify-content: center;
-}
 
 /* #17 Panel de ajustes */
 .settings-row {
@@ -2759,8 +2708,6 @@ svg { display: block; }
 }
 
 /* Botón "añadir a lista" por fila: mismo tratamiento que el de borrar */
-.add-to-pl { color: var(--text-3); }
-.add-to-pl:active { color: var(--accent); background: rgba(var(--accent-rgb), 0.12); }
 
 /* =====================================================================
  *  Pulido: accesibilidad de teclado y movimiento reducido
@@ -3008,15 +2955,6 @@ button,
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 8px;
-}
-.home-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 48px 16px 24px;
-  min-height: 70%;
 }
 .home-hero[hidden] { display: none; }
 .home-hero {
@@ -3282,15 +3220,6 @@ button,
   border-radius: var(--radius-sm);
 }
 .artist-row:active { background: var(--surface); }
-.artist-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: var(--surface);
-}
-.artist-avatar canvas { width: 100%; height: 100%; display: block; }
 .row-chevron { color: var(--text-4); font-size: var(--fs-caption); }
 
 .track-menu-head {
@@ -4072,17 +4001,12 @@ button,
   .theme-opt:hover { background: var(--surface-2); }
   .primary-btn:hover { filter: brightness(1.06); }
   .text-btn:hover { opacity: 0.85; }
-  .delete-track:hover,
   .remove-from-pl:hover,
   #editPlaylistTracks .remove-from-pl:hover {
     color: var(--danger);
     background: rgba(239, 68, 68, 0.12);
   }
-  .add-to-pl:hover {
-    color: var(--accent);
-    background: rgba(var(--accent-rgb), 0.12);
-  }
-  .eq-band input[type="range"]::-webkit-slider-thumb:hover,
+    .eq-band input[type="range"]::-webkit-slider-thumb:hover,
   .slider::-webkit-slider-thumb:hover { transform: scale(1.12); }
   .progress-track:hover { cursor: pointer; }
 }

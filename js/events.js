@@ -245,12 +245,6 @@ Object.assign(App, {
         this.toast(this.t('toast_retag_start'));
         this.retagExistingTracks().catch(() => {});
       });
-      const btnRelink = document.getElementById('menuRelinkAudio');
-      if (btnRelink) btnRelink.addEventListener('click', () => {
-        // Reimportar los mismos archivos cura las pistas pendientes
-        // (la curación vive en handleFileInput).
-        this.openFilePicker(false);
-      });
       const btnFree = document.getElementById('menuFreeStorage');
       if (btnFree) btnFree.addEventListener('click', () => {
         if (typeof this.offerFreeStorage === 'function') this.offerFreeStorage();

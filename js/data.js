@@ -127,16 +127,6 @@ const I18N = {
   },
 
   /* ---------- Track info / empty state ---------- */
-  track_title_placeholder: {
-    es: '—',
-    en: '—',
-    pt: '—',
-    zh: '—',
-    ja: '—',
-    fr: '—',
-    it: '—',
-    ru: '—'
-  },
   load_track_to_start: {
     es: 'Carga una pista para empezar',
     en: 'Load a track to start',
@@ -560,16 +550,6 @@ const I18N = {
     it: 'Normale',
     ru: 'Обычный'
   },
-  eq_flat: {
-    es: 'Plano',
-    en: 'Flat',
-    pt: 'Plano',
-    zh: '平直',
-    ja: 'フラット',
-    fr: 'Plat',
-    it: 'Piatto',
-    ru: 'Плоский'
-  },
   eq_bass: {
     es: 'Graves',
     en: 'Bass',
@@ -724,36 +704,6 @@ const I18N = {
     it: 'Lingua app',
     ru: 'Язык приложения'
   },
-  menu_share: {
-    es: 'Compartir',
-    en: 'Share',
-    pt: 'Compartilhar',
-    zh: '分享',
-    ja: '共有',
-    fr: 'Partager',
-    it: 'Condividi',
-    ru: 'Поделиться'
-  },
-  menu_info: {
-    es: 'Información de la pista',
-    en: 'Track info',
-    pt: 'Informações da faixa',
-    zh: '音轨信息',
-    ja: 'トラック情報',
-    fr: 'Infos de la piste',
-    it: 'Info traccia',
-    ru: 'Информация о треке'
-  },
-  menu_favorites: {
-    es: 'Ver favoritos',
-    en: 'View favorites',
-    pt: 'Ver favoritos',
-    zh: '查看收藏',
-    ja: 'お気に入りを表示',
-    fr: 'Voir les favoris',
-    it: 'Vedi preferiti',
-    ru: 'Посмотреть избранное'
-  },
 
   /* ---------- Toast messages ---------- */
   toast_added_fav: {
@@ -799,7 +749,6 @@ const I18N = {
     it: 'Lista creata:',
     ru: 'Список создан:'
   },
-  toast_theme: { es: 'Tema:', en: 'Theme:', pt: 'Tema:', zh: '主题：', ja: 'テーマ:', fr: 'Thème :', it: 'Tema:', ru: 'Тема:' },
   toast_accent: { es: 'Acento:', en: 'Accent:', pt: 'Acento:', zh: '强调色：', ja: 'アクセント:', fr: 'Accent :', it: 'Accento:', ru: 'Акцент:' },
   toast_lang_applied: {
     es: 'Idioma aplicado',
@@ -810,26 +759,6 @@ const I18N = {
     fr: 'Langue appliquée',
     it: 'Lingua applicata',
     ru: 'Язык применён'
-  },
-  toast_share_unavailable: {
-    es: 'Compartir no disponible',
-    en: 'Share unavailable',
-    pt: 'Compartilhamento indisponível',
-    zh: '分享不可用',
-    ja: '共有は利用できません',
-    fr: 'Partage non disponible',
-    it: 'Condivisione non disponibile',
-    ru: 'Передача недоступна'
-  },
-  toast_diagnostic_done: {
-    es: 'Diagnóstico completado ✓',
-    en: 'Diagnostic completed ✓',
-    pt: 'Diagnóstico concluído ✓',
-    zh: '诊断完成 ✓',
-    ja: '診断完了 ✓',
-    fr: 'Diagnostic terminé ✓',
-    it: 'Diagnostica completata ✓',
-    ru: 'Диагностика завершена ✓'
   },
   toast_no_favorites_yet: {
     es: 'Aún no tienes favoritos',
@@ -852,16 +781,6 @@ const I18N = {
     fr: 'Aucune piste chargée',
     it: 'Nessuna traccia caricata',
     ru: 'Треки ещё не загружены'
-  },
-  playlists_section: {
-    es: 'Listas de reproducción',
-    en: 'Playlists',
-    pt: 'Listas de reprodução',
-    zh: '歌单',
-    ja: 'プレイリスト',
-    fr: 'Listes de lecture',
-    it: 'Liste di riproduzione',
-    ru: 'Списки воспроизведения'
   },
   all_tracks_section: {
     es: 'Todas las pistas',
@@ -1059,7 +978,6 @@ const I18N = {
     ru: 'Поддерживает MP3, M4A, FLAC, WAV, OGG · опционально .lrc'
   },
   min_short: { es: 'min', en: 'min', pt: 'min', zh: '分钟', ja: '分', fr: 'min', it: 'min', ru: 'мин' },
-  hour_short: { es: 'h', en: 'h', pt: 'h', zh: '时', ja: '時間', fr: 'h', it: 'h', ru: 'ч' },
   track_count_one: {
     es: '1 pista', en: '1 track', pt: '1 faixa',
     zh: '1 首音轨', ja: '1 トラック', fr: '1 piste', it: '1 brano', ru: '1 трек'
@@ -1143,16 +1061,6 @@ const I18N = {
     fr: 'Aucun résultat',
     it: 'Nessun risultato',
     ru: 'Нет результатов'
-  },
-  search_results: {
-    es: 'Resultados',
-    en: 'Results',
-    pt: 'Resultados',
-    zh: '结果',
-    ja: '結果',
-    fr: 'Résultats',
-    it: 'Risultati',
-    ru: 'Результаты'
   },
   sleep_active_prefix: {
     es: 'Activo ·',
@@ -1387,16 +1295,6 @@ const I18N = {
     it: 'Aggiungi tracce',
     ru: 'Добавить треки'
   },
-  play_playlist_btn: {
-    es: 'Reproducir',
-    en: 'Play',
-    pt: 'Reproduzir',
-    zh: '播放',
-    ja: '再生',
-    fr: 'Lire',
-    it: 'Riproduci',
-    ru: 'Играть'
-  },
   no_tracks_in_playlist: {
     es: 'Esta lista está vacía. Pulsa "Subir canciones" para agregar canciones.',
     en: 'This playlist is empty. Tap "Upload songs" to add songs.',
@@ -1472,18 +1370,9 @@ const I18N = {
     es: 'Reproducir Todo', en: 'Play All', pt: 'Reproduzir Tudo', zh: '播放全部',
     ja: 'すべて再生', fr: 'Tout lire', it: 'Riproduci tutto', ru: 'Играть все'
   },
-  clear_playlist_btn: {
-    es: 'Borrar todo', en: 'Clear all', pt: 'Limpar tudo', zh: '清空',
-    ja: 'すべて削除', fr: 'Tout vider', it: 'Svuota tutto', ru: 'Очистить всё'
-  },
   upload_to_playlist_btn: {
     es: 'Subir canciones', en: 'Upload songs', pt: 'Enviar músicas', zh: '上传歌曲',
     ja: '曲をアップロード', fr: 'Importer des chansons', it: 'Carica canzoni', ru: 'Загрузить песни'
-  },
-  add_existing_tracks_btn: {
-    es: 'Añadir de la biblioteca', en: 'Add from library', pt: 'Adicionar da biblioteca',
-    zh: '从媒体库添加', ja: 'ライブラリから追加', fr: 'Ajouter depuis la bibliothèque',
-    it: 'Aggiungi dalla libreria', ru: 'Добавить из библиотеки'
   },
   confirm_clear_playlist: {
     es: '¿Vaciar esta lista? Las canciones no se borrarán de la biblioteca.',
@@ -1532,23 +1421,7 @@ const I18N = {
     ja: 'プレイリストを削除', fr: 'Supprimer la liste', it: 'Elimina lista', ru: 'Удалить список'
   }
 ,
-  welcome_choose_lang: {
-    es: 'Elige tu idioma',
-    en: 'Choose your language',
-    pt: 'Escolha seu idioma',
-    zh: '选择你的语言',
-    ja: '言語を選択してください',
-    fr: 'Choisissez votre langue',
-    it: 'Scegli la tua lingua',
-    ru: 'Выберите ваш язык'
-  }
-,
   /* ---------- Letras LRC ---------- */
-  lrc_no_lyrics: {
-    es: 'No hay letra disponible', en: 'No lyrics available', pt: 'Sem letra disponível',
-    zh: '无可用歌词', ja: '歌詞がありません', fr: 'Aucune parole disponible',
-    it: 'Nessun testo disponibile', ru: 'Текст недоступен'
-  },
   lrc_not_synced: {
     es: 'Letra no sincronizada', en: 'Lyrics not synced', pt: 'Letra não sincronizada',
     zh: '歌词未同步', ja: '歌詞は同期されていません', fr: 'Paroles non synchronisées',
@@ -1573,11 +1446,6 @@ const I18N = {
     es: 'Pantalla completa', en: 'Fullscreen', pt: 'Tela cheia',
     zh: '全屏', ja: 'フルスクリーン', fr: 'Plein écran',
     it: 'Schermo intero', ru: 'Полный экран'
-  },
-  lrc_offset: {
-    es: 'Ajustar desfase', en: 'Adjust offset', pt: 'Ajustar desfio',
-    zh: '调整偏移', ja: 'オフセット調整', fr: 'Ajuster le décalage',
-    it: 'Regola offset', ru: 'Настроить смещение'
   },
   lrc_font_dec: {
     es: 'Reducir letra', en: 'Smaller lyrics', pt: 'Diminuir letra',
@@ -1609,12 +1477,6 @@ const I18N = {
     zh: '歌词提前 0.5 秒', ja: '歌詞を0.5秒進める', fr: 'Avancer les paroles de 0,5 s',
     it: 'Anticipa il testo di 0,5 s', ru: 'Ускорить текст на 0,5 с'
   },
-  lrc_offset_minus: { es: '−0.5s', en: '−0.5s', pt: '−0.5s', zh: '−0.5秒', ja: '−0.5秒', fr: '−0.5s', it: '−0.5s', ru: '−0.5с' },
-  lrc_offset_plus: { es: '+0.5s', en: '+0.5s', pt: '+0.5s', zh: '+0.5秒', ja: '+0.5秒', fr: '+0.5s', it: '+0.5s', ru: '+0.5с' },
-  lrc_offset_reset: {
-    es: 'Resetear', en: 'Reset', pt: 'Redefinir', zh: '重置', ja: 'リセット',
-    fr: 'Réinitialiser', it: 'Reimposta', ru: 'Сбросить'
-  },
   lrc_reset_all: {
     es: 'Restablecer letra (desfase, tamaño y velocidad)', en: 'Reset lyrics (offset, size and speed)',
     pt: 'Redefinir letra (desvio, tamanho e velocidade)', zh: '重置歌词（偏移、字号和速度）',
@@ -1629,10 +1491,6 @@ const I18N = {
   lrc_save: {
     es: 'Guardar', en: 'Save', pt: 'Salvar', zh: '保存', ja: '保存',
     fr: 'Enregistrer', it: 'Salva', ru: 'Сохранить'
-  },
-  lrc_cancel: {
-    es: 'Cancelar', en: 'Cancel', pt: 'Cancelar', zh: '取消', ja: 'キャンセル',
-    fr: 'Annuler', it: 'Annulla', ru: 'Отмена'
   },
   lrc_edit_hint: {
     es: 'Pega o edita la letra aquí. Usa [mm:ss.xx] para timestamps.',
@@ -1663,16 +1521,6 @@ const I18N = {
     zh: '循环段落', ja: '区間リピート', fr: 'Boucler la section',
     it: 'Ripeti sezione', ru: 'Повторить отрывок'
   },
-  lrc_loop_start: {
-    es: 'Inicio del loop', en: 'Loop start', pt: 'Início do loop',
-    zh: '循环起点', ja: 'ループ開始', fr: 'Début de boucle',
-    it: 'Inizio loop', ru: 'Начало повтора'
-  },
-  lrc_loop_end: {
-    es: 'Fin del loop', en: 'Loop end', pt: 'Fim do loop',
-    zh: '循环终点', ja: 'ループ終了', fr: 'Fin de boucle',
-    it: 'Fine loop', ru: 'Конец повтора'
-  },
   lrc_loop_clear: {
     es: 'Quitar loop', en: 'Clear loop', pt: 'Limpar loop',
     zh: '清除循环', ja: 'ループ解除', fr: 'Effacer la boucle',
@@ -1698,13 +1546,6 @@ const I18N = {
     zh: '区间循环已关闭', ja: '区間リピートを解除しました', fr: 'Boucle de section désactivée',
     it: 'Ripetizione di sezione disattivata', ru: 'Повтор фрагмента выключен'
   },
-  lrc_tap_to_seek: {
-    es: 'Toca una línea para saltar a ese punto', en: 'Tap a line to jump to that point',
-    pt: 'Toque numa linha para pular para esse ponto', zh: '点击一行跳转到该时间点',
-    ja: '行をタップしてその時点にジャンプ', fr: 'Touchez une ligne pour sauter à ce point',
-    it: 'Tocca una riga per saltare a quel punto', ru: 'Нажмите на строку для перехода'
-  }
-,
   /* ---------- Mejoras de prioridad alta ---------- */
   settings_title: {
     es: 'Ajustes', en: 'Settings', pt: 'Ajustes', zh: '设置', ja: '設定',
@@ -1713,10 +1554,6 @@ const I18N = {
   settings_playback: {
     es: 'Reproducción', en: 'Playback', pt: 'Reprodução', zh: '播放', ja: '再生',
     fr: 'Lecture', it: 'Riproduzione', ru: 'Воспроизведение'
-  },
-  settings_lyrics: {
-    es: 'Letras', en: 'Lyrics', pt: 'Letras', zh: '歌词', ja: '歌詞',
-    fr: 'Paroles', it: 'Testi', ru: 'Тексты'
   },
   settings_interface: {
     es: 'Interfaz', en: 'Interface', pt: 'Interface', zh: '界面', ja: 'インターフェース',
@@ -1733,14 +1570,6 @@ const I18N = {
   settings_norm_volume: {
     es: 'Normalizar volumen', en: 'Normalize volume', pt: 'Normalizar volume', zh: '音量标准化', ja: '音量の正規化',
     fr: 'Normaliser le volume', it: 'Normalizza volume', ru: 'Нормализация громкости'
-  },
-  settings_eq_manual: {
-    es: 'Ecualizador manual', en: 'Manual equalizer', pt: 'Equalizador manual', zh: '手动均衡器', ja: '手動イコライザー',
-    fr: 'Égaliseur manuel', it: 'Equalizzatore manuale', ru: 'Ручной эквалайзер'
-  },
-  settings_save_eq: {
-    es: 'Guardar EQ', en: 'Save EQ', pt: 'Salvar EQ', zh: '保存EQ', ja: 'EQを保存',
-    fr: 'Enregistrer EQ', it: 'Salva EQ', ru: 'Сохранить EQ'
   },
   settings_reset_eq: {
     es: 'Resetear EQ', en: 'Reset EQ', pt: 'Redefinir EQ', zh: '重置EQ', ja: 'EQをリセット',
@@ -1786,10 +1615,6 @@ const I18N = {
     es: 'pista(s) duplicada(s) omitida(s)', en: 'duplicate track(s) skipped', pt: 'faixa(s) duplicada(s) ignorada(s)',
     zh: '首重复音轨已跳过', ja: '重複トラックをスキップしました', fr: 'piste(s) en double ignorée(s)',
     it: 'traccia(e) duplicata/e saltata/e', ru: 'дубликат(ов) пропущено'
-  },
-  toast_imported: {
-    es: 'Biblioteca importada', en: 'Library imported', pt: 'Biblioteca importada', zh: '媒体库已导入', ja: 'ライブラリをインポートしました',
-    fr: 'Bibliothèque importée', it: 'Libreria importata', ru: 'Библиотека импортирована'
   },
   history_title: {
     es: 'Historial de reproducción', en: 'Playback history', pt: 'Histórico de reprodução', zh: '播放历史', ja: '再生履歴',
@@ -1852,16 +1677,6 @@ const I18N = {
     ru: 'Сбросить историю?'
   },
 
-  error_toast: {
-    es: 'Error: X',
-    en: 'Error: X',
-    pt: 'Erro: X',
-    zh: '错误：X',
-    ja: 'エラー: X',
-    fr: 'Erreur : X',
-    it: 'Errore: X',
-    ru: 'Ошибка: X'
-  },
   lrc_offset_toast: {
     es: 'Desfase: X',
     en: 'Offset: X',
@@ -2050,16 +1865,6 @@ const I18N = {
     zh: '标签已保存', ja: 'タグを保存しました', fr: 'Tags enregistrés',
     it: 'Tag salvati', ru: 'Теги сохранены'
   },
-  albums_empty: {
-    es: 'Sin álbumes', en: 'No albums', pt: 'Sem álbuns',
-    zh: '暂无专辑', ja: 'アルバムはありません', fr: 'Aucun album',
-    it: 'Nessun album', ru: 'Нет альбомов'
-  },
-  artists_empty: {
-    es: 'Sin artistas', en: 'No artists', pt: 'Sem artistas',
-    zh: '暂无艺术家', ja: 'アーティストはいません', fr: 'Aucun artiste',
-    it: 'Nessun artista', ru: 'Нет исполнителей'
-  },
   field_title: {
     es: 'Título', en: 'Title', pt: 'Título',
     zh: '标题', ja: 'タイトル', fr: 'Titre',
@@ -2243,36 +2048,6 @@ const I18N = {
     es: 'Liberar espacio', en: 'Free up space', pt: 'Libertar espaço',
     zh: '释放空间', ja: '容量を空ける', fr: 'Libérer de l\'espace',
     it: 'Libera spazio', ru: 'Освободить место'
-  },
-  storage_free_confirm: {
-    es: 'Almacenamiento lleno. ¿Borrar X pistas nunca reproducidas (fuera de cola y favoritos)?',
-    en: 'Storage is full. Delete X never-played tracks (not in queue or favorites)?',
-    pt: 'Armazenamento cheio. Apagar X faixas nunca reproduzidas (fora da fila e favoritos)?',
-    zh: '存储已满。删除 X 首从未播放、且不在队列或收藏中的歌曲？',
-    ja: '容量不足です。未再生の X 曲（キュー・お気に入り以外）を削除しますか？',
-    fr: 'Stockage plein. Supprimer X pistes jamais écoutées (hors file et favoris) ?',
-    it: 'Memoria piena. Eliminare X brani mai ascoltati (non in coda o preferiti)?',
-    ru: 'Память заполнена. Удалить X неигранных треков (не в очереди и не в избранном)?'
-  },
-  storage_free_btn: {
-    es: 'Borrar no usadas', en: 'Delete unused', pt: 'Apagar não usadas',
-    zh: '删除未使用', ja: '未使用を削除', fr: 'Supprimer les inutilisées',
-    it: 'Elimina non usate', ru: 'Удалить неиспользуемые'
-  },
-  storage_freed: {
-    es: 'Se eliminaron X pistas', en: 'Deleted X tracks', pt: 'Apagadas X faixas',
-    zh: '已删除 X 首', ja: 'X 曲を削除しました', fr: 'X pistes supprimées',
-    it: 'Eliminati X brani', ru: 'Удалено треков: X'
-  },
-  storage_nothing_to_free: {
-    es: 'No hay pistas sin usar. Quita canciones de la biblioteca o de favoritos.',
-    en: 'No unused tracks. Remove songs from the library or favorites.',
-    pt: 'Não há faixas por usar. Remova músicas da biblioteca ou dos favoritos.',
-    zh: '没有可删的未使用曲目。请从媒体库或收藏中移除。',
-    ja: '削除できる未使用の曲はありません。ライブラリかお気に入りから削除してください。',
-    fr: 'Aucune piste inutilisée. Retirez des titres de la bibliothèque ou des favoris.',
-    it: 'Nessun brano inutilizzato. Rimuovi brani dalla libreria o dai preferiti.',
-    ru: 'Нет неиспользуемых треков. Удалите песни из библиотеки или избранного.'
   },
   storage_usage: {
     es: 'X pistas · Y', en: 'X tracks · Y', pt: 'X faixas · Y',
@@ -2655,11 +2430,6 @@ const I18N = {
 
   /* Claves que faltaban y se mostraban como texto crudo en la UI
    * (auditoría 2026-10). Todas con los 8 idiomas. */
-  delete_multiple_confirm: {
-    es: '¿Eliminar X pistas seleccionadas de la biblioteca?', en: 'Delete X selected tracks from the library?', pt: 'Excluir X faixas selecionadas da biblioteca?',
-    zh: '确定从曲库中删除选中的 X 首歌曲吗？', ja: '選択した X 曲をライブラリから削除しますか？', fr: 'Supprimer les X pistes sélectionnées de la bibliothèque ?',
-    it: 'Eliminare le X tracce selezionate dalla libreria?', ru: 'Удалить выбранные треки (X) из библиотеки?'
-  },
   unknown_track: {
     es: 'Pista desconocida', en: 'Unknown track', pt: 'Faixa desconhecida',
     zh: '未知曲目', ja: '不明な曲', fr: 'Morceau inconnu', it: 'Brano sconosciuto', ru: 'Неизвестный трек'
@@ -2684,16 +2454,6 @@ const I18N = {
   toast_playlist_deleted: {
     es: 'Lista eliminada', en: 'Playlist deleted', pt: 'Lista excluída',
     zh: '歌单已删除', ja: 'プレイリストを削除しました', fr: 'Liste supprimée', it: 'Playlist eliminata', ru: 'Плейлист удалён'
-  },
-  storage_unavailable: {
-    es: 'El almacenamiento no está disponible; los cambios no se guardarán.',
-    en: 'Storage is unavailable; changes will not be saved.',
-    pt: 'O armazenamento não está disponível; as alterações não serão salvas.',
-    zh: '存储不可用，更改将不会保存。',
-    ja: 'ストレージが利用できないため、変更は保存されません。',
-    fr: 'Le stockage est indisponible ; les modifications ne seront pas enregistrées.',
-    it: 'L’archiviazione non è disponibile; le modifiche non verranno salvate.',
-    ru: 'Хранилище недоступно; изменения не будут сохранены.'
   },
 
 };

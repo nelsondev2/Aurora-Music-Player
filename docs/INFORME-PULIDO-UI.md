@@ -2691,3 +2691,64 @@ aquí, no desde el código retirado.
   fila vecina (vinilo) y el guardado de ajustes intactos, y
   play/pausa funcionando tras la retirada.
 - `node --check` total y **build .xdc válido**: 27 archivos.
+
+## §80. Auditoría general: poda verificada de código muerto
+
+Nueva auditoría completa (estática + runtime) sobre lo acumulado
+§§63–79. Batería: sintaxis de todo el JS, catálogo i18n (claves ×8
+y referencias vivas por todas las vías: `t('…')`, `data-i18n*`
+incluido `-ph`, `addTitle('…')` y familias dinámicas
+`theme_`/`accent_`), iconos definidos/usados con escaneo exacto
+`#i-…`, variables CSS, IDs duplicados y referencias, restos de
+funciones eliminadas (§§51–57, §68, §76–79) y regresión runtime
+consolidada de los grandes flujos.
+
+### Hallazgos reales, corregidos en la misma pasada
+
+- **37 claves i18n muertas fuera** (374 → **337×8**, sin huecos y
+  con 0 referencias rotas): restos de funciones retiradas
+  (almacenamiento, Letras, búsqueda…) que solo quedaban definidas.
+  Cada candidata se verificó una a una por palabra exacta en JS,
+  HTML y CSS, descartando usos dinámicos antes de podar. La poda se
+  hizo por conteo de llaves, no por regex de líneas: el catálogo
+  conserva cierres `}\n,` de podas antiguas que tragaban claves
+  vecinas (dos intentos por regex abortaron por aserción sin tocar
+  el archivo; a la tercera, con conteo de llaves, limpio).
+- **11 clases CSS sin uso real eliminadas** de `css/styles.css`
+  (`icon-btn-large`, `lt-sep`, `exit-left`, `cover-overlay`,
+  `library-playlists`, `delete-track`, `unfav-track`,
+  `eq-manual-actions`, `add-to-pl`, `home-empty`,
+  `artist-avatar`), preservando los selectores vivos compartidos
+  (`.playlist-list`, `.sec-btn.liked svg`, `.remove-from-pl:hover`).
+  Balance de llaves tras la poda: 957/957.
+- **1 enlace JS muerto fuera** en `js/events.js`: el binding
+  guardado de `#menuRelinkAudio`, elemento que ya no existe en
+  `index.html`. `#menuFreeStorage` sí existe y su binding queda.
+
+### Falsos positivos descartados (no «corregidos»)
+
+Escaneo exacto: todos los `#i-…` usados están definidos y los
+cuatro «sin uso» de la primera pasada (`i-check`,
+`i-chevron-right`, `i-grip-vertical`, `i-lock`) sí se usan. Las
+claves «quizá sin uso» restantes viven por `data-i18n-ph`
+(`optional`, `my_new_playlist`, `search_placeholder`), por
+`addTitle()` en estadísticas (`search_section_*`) o por familias
+dinámicas. Los IDs «ausentes» nacen de plantillas JS o son el
+fallback `btnSleep` → `menuSleep`; los «TODO» eran «TODOS»; los
+objetivos <40 px son glifos `.ico`, no botones; `offerFreeStorage`
+está definido (`js/settings.js`).
+
+### Verificación
+
+- **Check §80** `/tmp/check-audit80.js`: **21/21** — arranque,
+  orden por estrellas (§64) sin tocar el guardado, Inicio a 384
+  (§71), estadísticas solo de escuchas completas (§67), seis
+  acentos (§66), restante/duración (§72), Letras sin letra y con
+  letra (§73), línea centrada (§74), paleta de portada (§75),
+  trampa de foco (§70) y play/pausa, sin errores.
+- Batería estática `/tmp/audit80.js` limpia tras la poda;
+  `node --check js/*.js` OK.
+- **Build .xdc válido**: 27 archivos.
+
+§§76–79 no reaparecen: cero restos de la pausa al retirar los
+audífonos. La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
