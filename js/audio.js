@@ -1284,7 +1284,9 @@ Object.assign(App, {
         btn.setAttribute('aria-pressed', this.visualizerMode !== 'off' ? 'true' : 'false');
       }
       if (sec) {
-        sec.style.display = this.visualizerMode === 'off' ? 'none' : 'block';
+        // §95: visible también con el ajuste en «off» mientras dure
+        // el modo inmersivo de portada; al salir, vuelve el ajuste.
+        sec.style.display = (this.visualizerMode === 'off' && !this._coverFs) ? 'none' : 'block';
       }
     },
 
@@ -1307,7 +1309,9 @@ Object.assign(App, {
     },
 
     startVisualizer() {
-      if (this.visualizerMode === 'off') return;
+      // §95: en portada a pantalla completa la onda se muestra
+      // aunque el ajuste sea «apagado» (sin cambiar la preferencia).
+      if (this.visualizerMode === 'off' && !this._coverFs) return;
       if (this._visRafId || this._visTimer) return;
       const canvas = document.getElementById('visualizerCanvas');
       if (!canvas) return;
@@ -1331,7 +1335,7 @@ Object.assign(App, {
 
       let last = 0;
       const render = (now) => {
-        if (!this.isPlaying || this.visualizerMode === 'off') {
+        if (!this.isPlaying || (this.visualizerMode === 'off' && !this._coverFs)) {
           this._visRafId = null;
           this._visTimer = null;
           ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1342,7 +1346,7 @@ Object.assign(App, {
           this._visRafId = null;
           this._visTimer = setTimeout(() => {
             this._visTimer = null;
-            if (this.isPlaying && this.visualizerMode !== 'off' && !this._visRafId) {
+            if (this.isPlaying && (this.visualizerMode !== 'off' || this._coverFs) && !this._visRafId) {
               this._visRafId = requestAnimationFrame(render);
             }
           }, 500);

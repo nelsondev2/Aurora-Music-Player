@@ -227,6 +227,11 @@ Object.assign(App, {
      *  Cambio de vista (player ↔ lyrics)
      * ============================================================ */
     showView(name) {
+      // §95: el modo inmersivo de portada pertenece al reproductor;
+      // al ir a otra vista se abandona (y al volver no resucita).
+      if (name !== 'player' && this._coverFs && typeof this.setCoverFullscreen === 'function') {
+        this.setCoverFullscreen(false);
+      }
       const views = document.querySelectorAll('.view');
       const wide = document.documentElement.classList.contains('aurora-wide');
       views.forEach(v => {

@@ -2338,6 +2338,18 @@ const I18N = {
     es: 'Portada de X', en: 'Cover art for X', pt: 'Capa de X',
     zh: 'X 的封面', ja: 'X のカバー', fr: 'Pochette de X', it: 'Copertina di X', ru: 'Обложка X'
   },
+  /* §95: tocar la portada abre/cierra el modo inmersivo; el nombre
+   * accesible de la portada anuncia esa acción (antes: reproducir). */
+  cover_fullscreen: {
+    es: 'Ver portada a pantalla completa', en: 'View cover fullscreen', pt: 'Ver capa em tela cheia',
+    zh: '全屏查看封面', ja: 'カバーを全画面で表示', fr: 'Voir la pochette en plein écran',
+    it: 'Vedi copertina a schermo intero', ru: 'Смотреть обложку во весь экран'
+  },
+  cover_exit_fullscreen: {
+    es: 'Salir de la portada a pantalla completa', en: 'Exit fullscreen cover', pt: 'Sair da capa em tela cheia',
+    zh: '退出全屏封面', ja: '全画面カバーを終了', fr: 'Quitter la pochette plein écran',
+    it: 'Esci dalla copertina a schermo intero', ru: 'Выйти из полноэкранной обложки'
+  },
 
   /* Claves que faltaban y se mostraban como texto crudo en la UI
    * (auditoría 2026-10). Todas con los 8 idiomas. */

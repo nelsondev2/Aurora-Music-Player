@@ -3703,3 +3703,55 @@ durables documentados — sin afirmar como re-ejecutados los conteos
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
 
+
+## 95. Tocar la portada: pantalla completa con visualizador
+
+Petición expresa: que tocar la portada **no pause** la canción, sino que
+la ponga a pantalla completa con el visualizador, y que tocarla de nuevo
+vuelva al reproductor. La pausa queda donde siempre debió estar: en el
+botón de play (y en Espacio con el foco libre).
+
+### Cómo queda
+
+- **Nuevo modo inmersivo** `cover-fullscreen` (clase en `#viewPlayer`,
+  métodos `toggleCoverFullscreen`/`setCoverFullscreen` en
+  `js/player-ui.js`, estado `_coverFs` en `js/state.js`, no persistido:
+  es un estado de vista). Solo se oculta la interfaz que rodea a la
+  portada (barra superior, título, progreso, volumen, controles) y la
+  barra inferior de navegación; la portada crece a `min(94vw, 82dvh,
+  640px)` y el visualizador pasa del 62 px fijo a un 20 % de su altura.
+  Ni el lienzo ni la onda se mueven del DOM: cero repintados, cero
+  saltos. En modo ancho (escritorio) la portada inmersiva también
+  crece (override con la especificidad necesaria).
+- **El visualizador acompaña siempre**: aunque el ajuste guardado sea
+  «apagado», dentro del modo la onda se ve (`startVisualizer`,
+  `updateVisualizerUI` y el bucle RAF respetan `_coverFs` sin tocar la
+  preferencia; al salir, manda otra vez el ajuste). Al entrar en pausa
+  se pinta la onda en reposo al nuevo tamaño; al entrar se pide wake
+  lock, como en Letras a pantalla completa.
+- **Salidas**: tocar la portada otra vez, Escape (con prioridad para
+  las hojas abiertas: primero cierran ellas) o cambiar de vista
+  (`showView` abandona el modo; al volver al reproductor no resucita).
+- **Lo que no cambia** (verificado): deslizar sobre la portada sigue
+  cambiando de canción y su clic residual no abre el modo; arrastrar
+  en vertical sigue siendo volumen; la pulsación larga, favorito; el
+  botón de play sigue pausando. El cambio de pista dentro del modo lo
+  mantiene (la portada nueva entra ya en grande).
+- **Accesibilidad**: la portada anunciaba «Pausar/Reproducir» y ya no
+  hace eso — ahora su nombre es «Ver portada a pantalla completa» /
+  «Salir de la portada a pantalla completa» (2 claves nuevas ×8
+  idiomas, 375 en total) y `aria-pressed` refleja el modo, no la
+  reproducción. La pista visual sobre la portada deja el ▶ engañoso
+  y muestra ampliar (⤢) o salir (✕) según el estado.
+
+### Verificación
+
+- **Check §95** `/tmp/check-vista95.js`: **17/17** — tocar no pausa y
+  entra; tocar sale; `btnPlay` intacto; Enter entra; Escape respeta
+  hojas y luego sale; `showView` abandona; visualizador forzado con
+  el ajuste en «off» y restaurado al salir; deslizar = siguiente sin
+  abrir el modo; i18n 375×8 sin colgadas.
+- Regresiones: §94 **58/58** (con el conteo i18n actualizado a 375)
+  y humo consolidado **20/20**.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

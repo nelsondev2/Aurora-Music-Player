@@ -32,6 +32,12 @@ verificado función a función:
   sin uso en los 8 idiomas, 6 variables de estilo huérfanas y
   un archivo de iconos que viajaba en la app sin cargarse.
   La app pesa un poco menos y hace exactamente lo mismo.
+- Tocar la portada ya no pausa (§95): la abre a pantalla
+  completa con el visualizador, y tocarla de nuevo vuelve al
+  reproductor (también se sale con Escape o cambiando de
+  vista). La pausa se queda en el botón de play. Deslizar
+  sobre la portada sigue cambiando de canción y la pulsación
+  larga sigue marcando favorito.
 - Ronda de correcciones (§94) tras un informe de bugs externo,
   verificado punto a punto: Espacio ya no secuestra los botones
   enfocados y Escape cierra la ventana que abriste la última;

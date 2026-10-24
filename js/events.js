@@ -130,12 +130,16 @@ Object.assign(App, {
             e.preventDefault();
             return;
           }
-          if (this.currentTrack) this.togglePlay();
+          // §95: tocar la portada ya no pausa — abre/cierra la
+          // portada a pantalla completa con el visualizador. Los
+          // gestos (deslizar, volumen, pulsación larga) siguen
+          // anulando este clic vía _coverSkipClick.
+          if (this.currentTrack) this.toggleCoverFullscreen();
         });
         coverArt.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            if (this.currentTrack) this.togglePlay();
+            if (this.currentTrack) this.toggleCoverFullscreen();
           }
         });
       }
@@ -882,6 +886,11 @@ Object.assign(App, {
           if (top && top.classList.contains('open')) {
             e.preventDefault();
             this.closeSheet(topId);
+          } else if (this._coverFs) {
+            // §95: sin hojas abiertas, Escape sale de la portada
+            // a pantalla completa (las hojas tienen prioridad).
+            e.preventDefault();
+            this.setCoverFullscreen(false);
           }
           return;
         }

@@ -835,6 +835,47 @@ svg { display: block; }
 .view-lyrics.lyrics-fullscreen .lyrics-scroll {
   padding: 20px 16px;
 }
+
+/* ============== PORTADA A PANTALLA COMPLETA (§95) ==============
+ * Tocar la portada la agranda a toda la vista con el visualizador
+ * encima; tocar otra vez vuelve al reproductor. Solo se oculta la
+ * interfaz que rodea a la portada: el lienzo y la onda no se mueven
+ * del DOM, así que no hay repintados ni saltos de tamaño. */
+.view-player.cover-fullscreen .top-bar,
+.view-player.cover-fullscreen .track-info,
+.view-player.cover-fullscreen .progress-section,
+.view-player.cover-fullscreen .np-volume,
+.view-player.cover-fullscreen .controls-main,
+.view-player.cover-fullscreen .controls-secondary {
+  display: none !important;
+}
+.view-player.cover-fullscreen {
+  padding: calc(var(--safe-top) + 10px) 12px calc(var(--safe-bottom) + 10px);
+}
+.view-player.cover-fullscreen .cover-section {
+  flex: 1 1 auto;
+  padding: 0;
+}
+.view-player.cover-fullscreen .cover-art,
+.view-player.cover-fullscreen .cover-glow {
+  width: min(94vw, 82dvh, 640px);
+}
+.view-player.cover-fullscreen .visualizer-section {
+  height: 20%;
+  min-height: 88px;
+}
+/* Sin barra inferior: la portada manda en toda la pantalla. */
+.device-screen:has(.view-player.cover-fullscreen) .bottom-nav {
+  display: none !important;
+}
+/* La pista visual anuncia ampliar; dentro del modo, salir. */
+.cover-play-hint .icon-fs-exit { display: none; }
+.view-player.cover-fullscreen .cover-play-hint .icon-fs-enter { display: none; }
+.view-player.cover-fullscreen .cover-play-hint .icon-fs-exit { display: block; }
+.cover-art:hover .cover-play-hint,
+.view-player.cover-fullscreen .cover-art:active .cover-play-hint {
+  opacity: 1;
+}
 .lyrics-exit-fs {
   position: absolute;
   top: calc(var(--safe-top) + 8px);
@@ -4087,6 +4128,11 @@ html.aurora-wide .view-player {
 html.aurora-wide .view-player .cover-art,
 html.aurora-wide .view-player .cover-glow {
   width: min(100%, 36dvh, 340px);
+}
+/* §95: también en la columna ancha la portada inmersiva crece. */
+html.aurora-wide .view-player.cover-fullscreen .cover-art,
+html.aurora-wide .view-player.cover-fullscreen .cover-glow {
+  width: min(100%, 82dvh, 640px);
 }
 html.aurora-wide .view-home {
   position: absolute;

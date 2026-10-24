@@ -129,7 +129,7 @@
         <!-- Portada del álbum -->
         <section class="cover-section">
           <div class="cover-glow" id="coverGlow" aria-hidden="true"></div>
-          <div class="cover-art" id="coverArt" role="button" tabindex="0" data-i18n-aria="cover_art_aria" aria-label="Portada del álbum">
+          <div class="cover-art" id="coverArt" role="button" tabindex="0" aria-pressed="false" data-i18n-aria="cover_fullscreen" aria-label="Ver portada a pantalla completa">
             <canvas id="coverCanvasBack" class="cover-canvas-back" width="600" height="600" aria-hidden="true"></canvas>
             <canvas id="coverCanvas" width="720" height="720" aria-hidden="true"></canvas>
             <div class="cover-vinyl" id="coverVinyl">
@@ -142,8 +142,12 @@
             <section class="visualizer-section" id="visualizerSection">
               <canvas id="visualizerCanvas" width="600" height="120" aria-hidden="true"></canvas>
             </section>
+            <!-- §95: la pista visual ya no es «play» (tocar ya no
+                 pausa): anuncia ampliar y, dentro del modo, salir.
+                 El id se conserva por compatibilidad con el CSS. -->
             <div class="cover-play-hint" id="coverPlayHint" aria-hidden="true">
-              <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
+              <svg class="ico icon-fs-enter" aria-hidden="true"><use href="#i-expand"></use></svg>
+              <svg class="ico icon-fs-exit" aria-hidden="true"><use href="#i-xmark"></use></svg>
             </div>
             <!-- §94: role="status" para que el «Cargando…» se anuncie -->
             <div class="cover-buffering" id="coverBuffering" role="status" hidden>

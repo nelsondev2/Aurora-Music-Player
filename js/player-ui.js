@@ -213,10 +213,47 @@ Object.assign(App, {
       const ca = document.getElementById('coverArt');
       if (!ca) return;
       ca.classList.toggle('playing', this.isPlaying);
-      const label = this.isPlaying ? this.t('pause') : this.t('play');
+      // §95: la portada ya no reproduce/pausa al tocarla — abre y
+      // cierra el modo inmersivo. El nombre accesible anuncia ESA
+      // acción y aria-pressed refleja el modo, no la reproducción
+      // (antes anunciaba «Pausar», que ya no es lo que hace).
+      const label = this.t(this._coverFs ? 'cover_exit_fullscreen' : 'cover_fullscreen');
       const title = this.currentTrack ? ' · ' + this.currentTrack.title : '';
       ca.setAttribute('aria-label', label + title);
-      ca.setAttribute('aria-pressed', this.isPlaying ? 'true' : 'false');
+      ca.setAttribute('aria-pressed', this._coverFs ? 'true' : 'false');
+    },
+
+    /* §95 — Portada a pantalla completa (modo inmersivo).
+     * Tocar la portada la agranda a toda la vista con el
+     * visualizador encima; tocarla otra vez (o Escape, o cambiar
+     * de vista) vuelve al reproductor normal. Solo cambia una
+     * clase en la vista: el lienzo y el visualizador no se mueven
+     * del DOM, así que nada se repinta ni se pierde. */
+    toggleCoverFullscreen() {
+      this.setCoverFullscreen(!this._coverFs);
+    },
+
+    setCoverFullscreen(on) {
+      const view = document.getElementById('viewPlayer');
+      if (!view) return;
+      on = !!on;
+      const was = !!this._coverFs;
+      this._coverFs = on;
+      view.classList.toggle('cover-fullscreen', on);
+      this.updateCoverA11y();
+      // El visualizador acompaña siempre al modo inmersivo, aunque
+      // el ajuste guardado sea «apagado»: updateVisualizerUI y
+      // startVisualizer respetan _coverFs sin tocar la preferencia.
+      this.updateVisualizerUI();
+      if (on) {
+        this.requestWakeLock();
+        if (this.isPlaying) this.startVisualizer();
+        else this.stopVisualizer(); // pinta la onda en reposo al nuevo tamaño
+      } else if (was) {
+        if (this.visualizerMode === 'off') this.stopVisualizer();
+        else if (this.isPlaying) this.startVisualizer(); // reencuadra la onda
+        else this.stopVisualizer();
+      }
     },
 
     /* §72: el botón «Letras» de la barra secundaria se veía igual con y

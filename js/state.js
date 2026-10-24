@@ -40,8 +40,11 @@
     preservesPitch: true,
 
     /* Visualizador de frecuencias y repetición A-B */
-    visualizerMode: 'bars', // 'bars' | 'wave' | 'off'
+    visualizerMode: 'wave', // §90: solo onda — 'wave' | 'off'
     _visRafId: null,
+    /* §95: portada a pantalla completa (modo inmersivo al tocarla).
+     * No se persiste: es un estado de vista, no una preferencia. */
+    _coverFs: false,
     abRepeat: { active: false, a: null, b: null },
 
     /* Selección múltiple / lote */
