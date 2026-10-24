@@ -26,6 +26,12 @@ verificado función a función:
   desde…», gapless/crossfade, ecualizador, visualizador y temporizador
   de apagado.
 - Letras sincronizadas LRC (archivo o incrustadas).
+- Micro-detalles (§92): las insignias (estrellas, «Inteligente»,
+  «Se conserva») dejan los 10 px y entran en la escala
+  tipográfica; los títulos largos de las hojas se recortan con
+  elipsis en vez de empujar el botón de cerrar; y las pestañas
+  de Biblioteca (Listas/Álbumes/Artistas/Géneros) ya anuncian
+  su estado a los lectores de pantalla.
 - Estados vacíos (§91): el icono deja de ser un mosaico morado
   sólido con halo — ahora es un cristal suave tintado con el
   color de acento (y con los colores de la portada en Letras),

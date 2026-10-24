@@ -124,7 +124,10 @@
 .nav-btn .ico { width: 20px; height: 20px; display: block; }
 .menu-row .ico { width: 16px; height: 16px; flex-shrink: 0; }
 .volume-row .ico { width: 18px; height: 18px; }
-.empty-icon .ico { width: 32px; height: 32px; }
+/* §92: aquí vivía una regla muerta `.empty-icon .ico {32px}` —
+ * la de 28 px de la sección de estados vacíos mandaba por orden
+ * de cascada; se retira para que nadie la "corrija" creyendo que
+ * es la vigente. */
 .sec-btn { flex-direction: column; }
 .controls-secondary .sec-btn .ico { margin-bottom: 2px; }
 
@@ -1169,6 +1172,12 @@ svg { display: block; }
 }
 .sheet-header h3 {
   flex: 1;
+  /* §92: un nombre de lista largo desbordaba la cabecera y
+   * empujaba la X; con elipsis queda en una línea. */
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: var(--fs-subtitle);
   font-weight: 700;
   font-family: var(--font-display);
@@ -1985,8 +1994,11 @@ svg { display: block; }
  *  Drag-and-drop en la cola
  * ===================================================================== */
 .drag-handle {
-  width: 28px;
-  height: 28px;
+  /* §92: la base decía 28 px, pero el bloque táctil posterior
+   * (40×44 px) ya fijaba el tamaño real; se alinea la base para
+   * que el primer valor que se lea no parezca un asa diminuta. */
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -3294,7 +3306,7 @@ button,
 /* Insignia en las filas: cuántas estrellas, en dorado discreto. */
 .row-rating {
   color: #FFB84D;
-  font-size: 10px;
+  font-size: var(--fs-micro); /* §92: 10px quedaba fuera de la escala */
   letter-spacing: 1px;
   white-space: nowrap;
 }
@@ -4622,9 +4634,14 @@ html.aurora-wide .toast {
   padding: 3px 5px 3px 10px;
   flex-shrink: 0;
 }
-.lyrics-toolbar .lt-group .lt-btn { min-width: 28px; height: 30px; }
+/* §92 (auditoría con la cascada completa): estas reglas
+ * intermedias decían 28–30 px, pero el bloque final de la barra
+ * (36 px, 34 px en pantallas ≤360) ya mandaba por especificidad
+ * y orden. Se alinean a 32 px para que ningún valor suelto
+ * parezca —ni vuelva a ser— un botón bajo el suelo táctil. */
+.lyrics-toolbar .lt-group .lt-btn { min-width: 32px; height: 32px; }
 .lyrics-speed { gap: 2px; }
-.lyrics-speed .lt-btn { min-width: 30px; height: 30px; }
+.lyrics-speed .lt-btn { min-width: 32px; height: 32px; }
 
 /* Mini-cabecera: solo identidad (la velocidad ya vive en la barra). */
 .lyrics-mini {
@@ -5130,7 +5147,7 @@ html.aurora-wide .toast {
 .pl-type-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .smart-badge {
   display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px;
-  background: var(--accent); color: #fff; font-size: 10px; font-weight: 700;
+  background: var(--accent); color: #fff; font-size: var(--fs-micro); font-weight: 700;
   vertical-align: middle; letter-spacing: .02em;
 }
 /* Renombrar con confirmar (§81): input + ✓/✗ en línea */
@@ -5155,7 +5172,7 @@ html.aurora-wide .toast {
 .dup-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
 .dup-row .row-text { flex: 1; min-width: 0; }
 .dup-keep {
-  font-size: 10px; font-weight: 700; color: var(--accent);
+  font-size: var(--fs-micro); font-weight: 700; color: var(--accent);
   border: 1px solid var(--accent); border-radius: 999px; padding: 1px 7px; white-space: nowrap;
 }
 /* §88: elección manual de la copia a conservar. La elegida se

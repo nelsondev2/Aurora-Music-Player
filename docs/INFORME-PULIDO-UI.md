@@ -3467,3 +3467,62 @@ Nota honesta: jsdom no pinta CSS, así que el resultado visual
 se confirma en el dispositivo, como el resto de la UI.
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## 92. Más pequeños detalles que dañaban la app (y dos que solo lo parecían)
+
+Tras §91 el usuario pidió buscar más detalles pequeños del mismo
+tipo. Auditoría dirigida: iconos usados frente a definidos
+(53 referencias, todas definidas — sin iconos invisibles),
+sombras y degradados, textos bajo la escala tipográfica, objetivos
+táctiles, cabeceras de hoja y atributos ARIA. Los degradados
+sólidos de play y botones primarios son acción deliberada y no se
+tocan; los desenfoques ambientales (resplandor de portada, fondo
+difuminado) son diseño, no defecto.
+
+### Arreglos reales
+
+- **Insignias a 10 px, fuera de la escala**: las estrellas de las
+  filas (`.row-rating`), la insignia «Inteligente» (`.smart-badge`)
+  y «Se conserva» de duplicados (`.dup-keep`) pasan a
+  `var(--fs-micro)` (11 px), la talla menor del sistema. No queda
+  ningún `font-size: 10px` en el CSS.
+- **Títulos de hoja sin elipsis**: `.sheet-header h3` podía
+  desbordar con un nombre de lista largo y empujaba el botón de
+  cerrar; ahora queda en una línea con elipsis (`nowrap` +
+  `overflow: hidden` + `text-overflow: ellipsis` + `min-width: 0`,
+  imprescindible en un hijo flex).
+- **Pestañas de Biblioteca mudas para lectores de pantalla**: el
+  contenedor ya era `role="tablist"`, pero los botones no eran
+  `role="tab"` ni anunciaban su estado. Añadidos `role="tab"` y
+  `aria-selected` inicial en `index.html`, y `setLibTab()`
+  (`js/nav.js`) sincroniza `aria-selected` con la clase `active`
+  en cada cambio.
+
+### Saneos: valores muertos que parecían botones diminutos
+
+La primera pasada de la auditoría «vio» botones de 28–30 px en la
+barra de Letras y un asa de arrastre de 28 px. La cascada completa
+demostró que el render ya era correcto: el bloque final de la
+barra impone 36 px (34 px en pantallas ≤360) y el bloque táctil
+del asa impone 40×44. Eran **valores muertos engañosos** en reglas
+intermedias — la misma trampa que sesgó el primer check de §91.
+Se alinean a 32 px para que ningún valor suelto parezca (ni
+vuelva a ser) un botón bajo el suelo táctil, y se retira la regla
+muerta `.empty-icon .ico {32px}`: la de 28 px de §91 mandaba por
+orden de cascada y la temprana solo invitaba a «corregirla».
+
+### Verificación
+
+- **Check §92** `/tmp/check-vista92.js`: **17/17** — insignias en
+  escala, elipsis, pestañas con rol y estado sincronizado vía
+  clics reales, bloque final de Letras intacto (36/32 px), asa en
+  40×44, regla muerta fuera, y las pestañas fijas de §89 en su
+  sitio. (Dos rondas de corrección fueron del propio check:
+  aserciones sobre reglas intermedias en vez de la cascada final,
+  e IDs de botones supuestos en lugar de los reales.)
+- Regresiones: §91 **17/17**, §90 **19/19**, §89 **15/15**,
+  §88 **21/21**, §87 **17/17**, §86 **28/28**, §85 **21/21**,
+  §84 **14/14**, §83 **22/22**, §82 **17/17**, §81 **41/41**,
+  §80 **21/21** (`/tmp/check-audit80.js`).
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

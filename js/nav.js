@@ -413,7 +413,11 @@ Object.assign(App, {
     setLibTab(tab) {
       this._libTab = tab || 'playlists';
       document.querySelectorAll('.lib-tab').forEach(b => {
-        b.classList.toggle('active', b.dataset.libtab === this._libTab);
+        const on = b.dataset.libtab === this._libTab;
+        b.classList.toggle('active', on);
+        // §92: el estado visual debe reflejarse en ARIA — los
+        // lectores de pantalla anuncian qué pestaña está activa.
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
       });
       const show = (id, on) => {
         const el = document.getElementById(id);

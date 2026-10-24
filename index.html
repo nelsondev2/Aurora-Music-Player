@@ -663,10 +663,10 @@
                el catálogo navegable: índice con portadas que abre
                la vista de álbum/artista ya existente. -->
           <div class="lib-tabs" role="tablist">
-            <button class="lib-tab active" type="button" data-libtab="playlists" data-i18n="library_playlists_section">Listas</button>
-            <button class="lib-tab" type="button" data-libtab="albums" data-i18n="tab_albums">Álbumes</button>
-            <button class="lib-tab" type="button" data-libtab="artists" data-i18n="tab_artists">Artistas</button>
-            <button class="lib-tab" type="button" data-libtab="genres" data-i18n="tab_genres">Géneros</button>
+            <button class="lib-tab active" type="button" role="tab" aria-selected="true" data-libtab="playlists" data-i18n="library_playlists_section">Listas</button>
+            <button class="lib-tab" type="button" role="tab" aria-selected="false" data-libtab="albums" data-i18n="tab_albums">Álbumes</button>
+            <button class="lib-tab" type="button" role="tab" aria-selected="false" data-libtab="artists" data-i18n="tab_artists">Artistas</button>
+            <button class="lib-tab" type="button" role="tab" aria-selected="false" data-libtab="genres" data-i18n="tab_genres">Géneros</button>
           </div>
           <div class="sheet-body">
             <!-- Sección 1: listas de reproducción -->
