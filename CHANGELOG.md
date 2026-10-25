@@ -1,13 +1,10 @@
 # Changelog
 
-Historial de versiones **publicadas** de Aurora Music Player. El
-diario detallado de desarrollo y verificación de cada cambio está en
-`docs/INFORME-PULIDO-UI.md` (§§1–105).
+Historial de versiones **publicadas** de Aurora Music Player.
 
 ## Sin publicar
 
-- Restauraciones a petición del usuario (§107, tras caer
-  el release 1.2.5): vuelve el **bucle A-B del reproductor**
+- Restauraciones a petición del usuario: vuelve el **bucle A-B del reproductor**
   tal cual era en la 1.2.0 (botón en la fila de controles,
   rango marcado en la barra, se limpia al cambiar de
   canción) y el **menú de Letras muestra otra vez todas

@@ -29,8 +29,8 @@ Object.assign(App, {
       this.audio.volume = this.volume;
 
       this.buildEqualizer();
-      /* §93: fuera la llamada a renderPickTracks() — el selector
-       * de pistas que pintaba ya no existe (modo «añadir» §81→§93). */
+      /* Sin llamada a renderPickTracks: el selector de pistas
+     * que pintaba aquí ya no existe. */
 
       // Cargar tema guardado antes que nada
       this.loadTheme();
@@ -94,7 +94,7 @@ Object.assign(App, {
         // reaparezca al volver a abrirla.
         try { if (this._pendingTrackDelete) this._commitPendingTrackDelete(); } catch (err) {}
         try { if (this._pendingPlaylistDelete) this._commitPendingPlaylistDelete(); } catch (err) {}
-        // §94: vaciar los segundos escuchados aún no guardados
+        //  vaciar los segundos escuchados aún no guardados
         // (el flush es cada 10 s: cerrar perdía el último tramo).
         try { if (this._currentPlayStart && typeof this._flushListening === 'function') this._flushListening(); } catch (err) {}
         try { this.saveSession(); } catch (err) {}
@@ -126,13 +126,13 @@ Object.assign(App, {
       }
       this.setPreservesPitch(this.preservesPitch);
       if (typeof this.initVisualizer === 'function') this.initVisualizer();
-      // §104: el historial de reproducción se fue (hoja y registro);
+      // Ya no hay historial de reproducción (ni hoja ni registro):
       // el de búsquedas es otra cosa y se queda.
       this.loadSearchHistory();
 
       document.querySelectorAll('.sheet').forEach(s => s.setAttribute('aria-hidden', 'true'));
 
-      // §85: releer SOLO las pistas a las que les falta algo. La
+      //  releer SOLO las pistas a las que les falta algo. La
       // condición anterior incluía «sin letra»: como casi ninguna
       // canción trae letra, el retag corría en cada arranque y
       // releía la biblioteca entera para no cambiar nada.
@@ -191,11 +191,11 @@ Object.assign(App, {
         // Tracks
         if (!window.AuroraStorage) throw new Error('IndexedDB no disponible');
         const stored = await window.AuroraStorage.getAllTracks();
-        // §85: nada de crear un objectURL por pista al arrancar
+        //  nada de crear un objectURL por pista al arrancar
         // (miles de URLs vivas antes de escuchar nada): getTrackUrl
         // lo crea perezosamente al reproducir/compartir y lo cachea.
         this.tracks = stored.map(t => {
-          // §87: los registros guardados antes de esta corrección
+          //  los registros guardados antes de esta corrección
           // pueden traer el objectURL de la sesión en que se
           // guardaron: está muerto, fuera (getTrackUrl acuñará uno
           // nuevo desde el blob al reproducir).
@@ -240,23 +240,23 @@ Object.assign(App, {
     },
 
     /* «Mi Música» (id fijo 'mi-musica') es la lista automática de la
-     * casa: recoge las canciones que se agregan fuera de cualquier
-     * lista concreta. Modelo (decisión del usuario, que revierte la
-     * retirada anterior de esta lista):
-     *   - Al importar sin lista destino, las canciones entran en
-     *     ella; si no existe, se crea SOLO con las de esa importación
-     *     (antes se sembraba con toda la biblioteca y se colaban las
-     *     canciones de las demás listas: fallo reportado, §46).
-     *   - Al arrancar se reconstruye solo si falta, y se siembra con
-     *     las canciones que no viven en ninguna otra lista — es lo
-     *     que «agregadas fuera de una lista» puede saberse sin
-     *     guardar la procedencia de cada pista. Si no hay ninguna,
-     *     no nace vacía: aparecerá con la primera importación suelta.
-     *   - Si el usuario la borra a propósito, NO se resucita al
-     *     arrancar: queda la marca 'aurora_mimusica_removed' y solo
-     *     vuelve cuando agregue otra canción fuera de una lista.
-     * La lista solo agrupa: quitar una canción de ella no la borra de
-     * la biblioteca, como en cualquier otra lista. */
+ * casa: recoge las canciones que se agregan fuera de cualquier
+ * lista concreta. Modelo (decisión del usuario, que revierte la
+ * retirada anterior de esta lista):
+ * - Al importar sin lista destino, las canciones entran en
+ * ella; si no existe, se crea SOLO con las de esa importación
+ * (antes se sembraba con toda la biblioteca y se colaban las
+ * canciones de las demás listas: fallo reportado,).
+ * - Al arrancar se reconstruye solo si falta, y se siembra con
+ * las canciones que no viven en ninguna otra lista — es lo
+ * que «agregadas fuera de una lista» puede saberse sin
+ * guardar la procedencia de cada pista. Si no hay ninguna,
+ * no nace vacía: aparecerá con la primera importación suelta.
+ * - Si el usuario la borra a propósito, NO se resucita al
+ * arrancar: queda la marca 'aurora_mimusica_removed' y solo
+ * vuelve cuando agregue otra canción fuera de una lista.
+ * La lista solo agrupa: quitar una canción de ella no la borra de
+ * la biblioteca, como en cualquier otra lista. */
     migrateMiMusica() {
       const ID = 'mi-musica';
       this.playlists.forEach(p => {
@@ -270,7 +270,7 @@ Object.assign(App, {
       let removed = false;
       try { removed = localStorage.getItem('aurora_mimusica_removed') === '1'; } catch (e) {}
       if (removed) return;
-      // §87: si ya hay listas del usuario, no sembrar en frío al
+      //  si ya hay listas del usuario, no sembrar en frío al
       // arrancar: las «sueltas» suelen serlo por haber vaciado o
       // borrado una lista, y ver nacer una lista nueva al abrir la
       // app se vivía como «la app creó una lista sola al quitar
@@ -280,7 +280,7 @@ Object.assign(App, {
       // lista destino (_ensureMiMusica), no por sorpresa.
       if (this.playlists.some(p => p && p.id !== ID)) return;
       // Canciones «sueltas»: en la biblioteca pero en ninguna lista
-      // del usuario. Las de otras listas NO entran (§46).
+      // del usuario. Las de otras listas NO entran.
       const enListas = new Set();
       this.playlists.forEach(p => {
         if (p && p.id !== ID && Array.isArray(p.trackIds)) {
@@ -305,10 +305,10 @@ Object.assign(App, {
     },
 
     /* Garantiza que «Mi Música» existe y contiene los ids dados.
-     * Al crearla entran SOLO esos ids (los de la importación que la
-     * provoca): sembrarla con toda la biblioteca colaba las
-     * canciones de las demás listas (§46). Y sin ids no se
-     * materializa una lista vacía por una importación fallida. */
+ * Al crearla entran SOLO esos ids (los de la importación que la
+ * provoca): sembrarla con toda la biblioteca colaba las
+ * canciones de las demás listas. Y sin ids no se
+ * materializa una lista vacía por una importación fallida. */
     _ensureMiMusica(extraIds) {
       const pl = this.playlists.find(p => p && p.id === 'mi-musica');
       if (!pl) {
@@ -343,15 +343,15 @@ Object.assign(App, {
       try {
         // Guardamos el File en el track para poder reconstruir el objectURL después
         const toSave = Object.assign({}, track);
-        // §87: nunca persistir el objectURL: es de sesión y al
+        //  nunca persistir el objectURL: es de sesión y al
         // reabrir la app sería una URL muerta (fallo de «no se
-        // puede reproducir» en cadena tras §85).
+        // puede reproducir» en cadena tras).
         delete toSave.src;
-        // §94: tampoco los campos de trabajo de la sesión —
+        //  tampoco los campos de trabajo de la sesión —
         // _lrcCache guarda la letra YA parseada (la letra quedaba
         // dos veces en IndexedDB) y las banderas de miniatura,
         // al volver marcadas, bloqueaban regenerarlas. Ojo:
-        // _tagsChecked (§85) SÍ persiste a propósito.
+        // _tagsChecked SÍ persiste a propósito.
         delete toSave._lrcCache;
         delete toSave._lrcCacheKey;
         delete toSave._thumbsHiRes;
@@ -379,7 +379,7 @@ Object.assign(App, {
     },
 
     async deleteTrackFromStorage(trackId) {
-      // §94: el fallo no se traga en silencio (borrado fantasma).
+      //  el fallo no se traga en silencio (borrado fantasma).
       try { await window.AuroraStorage.deleteTrack(trackId); }
       catch (e) { console.warn('[Aurora] No se pudo borrar la pista de IndexedDB:', e); }
     },
@@ -394,13 +394,13 @@ Object.assign(App, {
           cover: pl.cover || null,
           coverArt: pl.coverArt || pl._coverCache || null,
           coverArtHash: pl.coverArtHash || pl._coverCacheHash || null,
-          // §81: sin esto, la ordenación elegida se perdía al cerrar.
+          //  sin esto, la ordenación elegida se perdía al cerrar.
           sort: pl.sort || null
         };
         await window.AuroraStorage.putPlaylist(toSave);
       } catch (e) {
         console.warn('[Aurora] No se pudo guardar playlist:', e);
-        // §94: mismo aviso de cuota que persistTrack — antes la
+        //  mismo aviso de cuota que persistTrack — antes la
         // lista se perdía en silencio al cerrar la app.
         if (this._isQuotaError(e)) {
           this.toast(this.t('toast_storage_full'));
@@ -410,7 +410,7 @@ Object.assign(App, {
     },
 
     async deletePlaylistFromStorage(id) {
-      // §94: ídem deleteTrackFromStorage — con diagnóstico.
+      //  ídem deleteTrackFromStorage — con diagnóstico.
       try { await window.AuroraStorage.deletePlaylist(id); }
       catch (e) { console.warn('[Aurora] No se pudo borrar la lista de IndexedDB:', e); }
     },
@@ -434,19 +434,19 @@ Object.assign(App, {
       }
     },
 
-    /* §104: saneamiento de las listas al cargarlas.
-     * - La lista heredada con id «favoritos» desaparece de Listas
-     *   (también del almacenamiento): los favoritos viven solo en
-     *   su vista y los corazones no se tocan.
-     * - Las listas inteligentes se materializan: la regla se
-     *   convierte en trackIds con las canciones que elige HOY y
-     *   la lista queda normal para siempre. */
-    /* §105 (endurecimiento): esta normalización corre sobre datos
-     * guardados por versiones anteriores, que no controlamos. Cada
-     * lista se trata AISLADA: si su conversión o su guardado
-     * fallan, esa lista queda intacta tal como venía y el
-     * arranque sigue con las demás — un dato raro heredado jamás
-     * debe poder interrumpir la carga de la biblioteca. */
+    /*  saneamiento de las listas al cargarlas.
+ * - La lista heredada con id «favoritos» desaparece de Listas
+ * (también del almacenamiento): los favoritos viven solo en
+ * su vista y los corazones no se tocan.
+ * - Las listas inteligentes se materializan: la regla se
+ * convierte en trackIds con las canciones que elige HOY y
+ * la lista queda normal para siempre. */
+    /* (endurecimiento): esta normalización corre sobre datos
+ * guardados por versiones anteriores, que no controlamos. Cada
+ * lista se trata AISLADA: si su conversión o su guardado
+ * fallan, esa lista queda intacta tal como venía y el
+ * arranque sigue con las demás — un dato raro heredado jamás
+ * debe poder interrumpir la carga de la biblioteca. */
     _settlePlaylists() {
       if (!Array.isArray(this.playlists)) return;
       try {
@@ -478,11 +478,11 @@ Object.assign(App, {
       }
     },
 
-    /* §104: qué canciones elige HOY la regla de una lista
-     * inteligente heredada. Es el antiguo motor de reglas,
-     * reducido a esta migración: se ejecuta solo para listas
-     * guardadas por versiones anteriores y, una vez
-     * materializadas, nunca más. */
+    /*  qué canciones elige HOY la regla de una lista
+ * inteligente heredada. Es el antiguo motor de reglas,
+ * reducido a esta migración: se ejecuta solo para listas
+ * guardadas por versiones anteriores y, una vez
+ * materializadas, nunca más. */
     _legacySmartTracks(pl) {
       const rule = pl.smart || {};
       const plays = (this.stats && this.stats.plays) || {};

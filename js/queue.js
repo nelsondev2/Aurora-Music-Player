@@ -47,7 +47,7 @@ Object.assign(App, {
       if (useDirectory && !this.supportsFolderPicker()) useDirectory = false;
 
       // En Delta Chat nativo manda su selector integrado
-      // (webxdc.importFiles, §42). El modo carpeta no existe allí y ya
+      // (webxdc.importFiles,). El modo carpeta no existe allí y ya
       // viene degradado a archivos por supportsFolderPicker(). Si el
       // usuario cancela, devuelve []: no se reintenta con el <input>.
       if (!useDirectory) {
@@ -153,14 +153,14 @@ Object.assign(App, {
     },
 
     /* «Reproducir después de la canción actual» (antes «Reproducir
-     * siguiente»): la pista suena justo al terminar la actual.
-     * §83: antes insertaba sin más, y si la canción YA estaba en la
-     * cola (el caso típico: la eliges desde la misma lista que está
-     * sonando) quedaba DUPLICADA y sonaba dos veces — el «no
-     * funciona» que reportó el usuario. Ahora se MUEVE: se quitan
-     * sus demás apariciones (salvo la que está sonando, si es ella)
-     * y entra tras la actual. Con aleatorio, el mismo movimiento se
-     * refleja en la cola original. */
+ * siguiente»): la pista suena justo al terminar la actual.
+ *antes insertaba sin más, y si la canción YA estaba en la
+ * cola (el caso típico: la eliges desde la misma lista que está
+ * sonando) quedaba DUPLICADA y sonaba dos veces — el «no
+ * funciona» que reportó el usuario. Ahora se MUEVE: se quitan
+ * sus demás apariciones (salvo la que está sonando, si es ella)
+ * y entra tras la actual. Con aleatorio, el mismo movimiento se
+ * refleja en la cola original. */
     playNext(trackId) {
       if (!this.queue.length && this.currentTrack) this.queue = [this.currentTrack.id];
       if (!this.queue.length) return;
@@ -171,7 +171,7 @@ Object.assign(App, {
         ? this.queueIdx
         : (curId ? this.queue.indexOf(curId) : this.queueIdx);
       if (curPos < 0 || curPos == null) curPos = Math.min(this.queueIdx || 0, this.queue.length - 1);
-      // §94: y techo también — un queueIdx heredado mayor que la
+      //  y techo también — un queueIdx heredado mayor que la
       // cola dejaba «la actual» fuera de rango al insertar.
       if (curPos > this.queue.length - 1) curPos = this.queue.length - 1;
       for (let i = this.queue.length - 1; i >= 0; i--) {
@@ -197,14 +197,14 @@ Object.assign(App, {
       this.toast(this.t('toast_play_next'));
     },
 
-    /* §100: startRadio retirado (solapaba con aleatorio y
-     * listas inteligentes; vivía escondido en el menú de pista). */
+    /*  startRadio retirado (solapaba con aleatorio y
+ * listas inteligentes; vivía escondido en el menú de pista). */
 
-    /* §81: «Guardar cola como lista». Reutiliza la hoja de crear
-     * lista (nombre + descripción) con la bandera _queueSaveMode: al
-     * guardar, la lista nace con las pistas de la cola en su orden
-     * exacto (pl.sort='added' para que el orden por estrellas de §64
-     * no lo reescriba). */
+    /*  «Guardar cola como lista». Reutiliza la hoja de crear
+ * lista (nombre + descripción) con la bandera _queueSaveMode: al
+ * guardar, la lista nace con las pistas de la cola en su orden
+ * exacto (pl.sort='added' para que el orden por estrellas de
+ * no lo reescriba). */
     openSaveQueueSheet() {
       if (!this.queue || this.queue.length === 0) {
         this.toast(this.t('queue_empty'));

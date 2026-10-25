@@ -19,7 +19,7 @@ Object.assign(App, {
       const playsObj = (this.stats && this.stats.plays) || {};
       const topTracks = this.getTopTracks(10);
       const topArtists = this.getTopArtists(5);
-      // §104: «Más saltadas» y «Olvidadas» se retiraron de
+      //  «Más saltadas» y «Olvidadas» se retiraron de
       // Estadísticas; quedan reproducciones, tops y tiempo.
       const totalPlays = Object.values(playsObj).reduce((a, b) => a + (Number(b) || 0), 0);
       const totalSec = (this.stats && this.stats.totalSeconds) || 0;
@@ -105,7 +105,7 @@ Object.assign(App, {
         row.addEventListener('click', () => {
           // Sin contexto, playTrack dejaba el anterior con la cola de
           // toda la biblioteca: etiqueta y cola divorciadas. Manda la
-          // lista de la canción, como en Buscar (§38/§39).
+          // lista de la canción, como en Buscar (/).
           if (tid && track) this.playTrack(tid, typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(track) : undefined);
         });
       });
@@ -162,8 +162,8 @@ Object.assign(App, {
       return { type: 'all' };
     },
 
-    /* §93: searchPlayContextFor() extirpado — alias histórico
-     * sin llamadores; todos usan trackPlayContextFor() directo. */
+    /*  searchPlayContextFor extirpado — alias histórico
+ * sin llamadores; todos usan trackPlayContextFor directo. */
 
     runSearch(q, filter) {
       const ul = document.getElementById('searchResults');
@@ -328,7 +328,7 @@ Object.assign(App, {
       if (!ul) return;
       const countEl = document.getElementById('favoritesCount');
       ul.innerHTML = '';
-      // Favoritos también se ve y suena en orden de estrellas (§64)
+      // Favoritos también se ve y suena en orden de estrellas
       const favTracks = this.sortByRating(this.tracks.filter(t => this.favorites.has(t.id)));
       // «Reproducir Todo» sin favoritos no pinta nada: se oculta (el
       // estado vacío ya lo explica). Y si Favoritos es la lista que
@@ -351,7 +351,7 @@ Object.assign(App, {
       if (favTracks.length === 0) {
         // Estado vacío sin botón de «ir a Biblioteca»: Favoritos ya es
         // una pestaña junto a Biblioteca en la barra inferior, así que
-        // el CTA era un rodeo innecesario (petición expresa del usuario).
+        // el CTA era un rodeo innecesario.
         ul.innerHTML = '';
         const li = document.createElement('li');
         li.className = 'empty-state fav-empty';
@@ -374,5 +374,5 @@ Object.assign(App, {
       }
     },
 
-    /* §100: compartir estadísticas retirado; la hoja se queda. */
+    /*  compartir estadísticas retirado; la hoja se queda. */
 });

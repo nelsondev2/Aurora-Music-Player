@@ -3715,10 +3715,8 @@ const I18N = {
     id: 'Nonaktif',
     'zh-TW': '已關閉'
   },
-  /* §107: textos del bucle A-B RESTAURADO (retirado en §100).
-   * es/en/pt/zh/ja/fr/it/ru se recuperan literales de v1.2.0;
-   * de/uk/pl/tr/id/zh-TW se traducen ahora (§102 no las llegó
-   * a tener), pendientes de revisión nativa como el resto. */
+  /* Textos del bucle A-B. Como el resto del diccionario, las
+   * traducciones automáticas agradecen revisión nativa. */
   ab_repeat: {
     es: 'Bucle A-B', en: 'A-B Loop', pt: 'Loop A-B',
     zh: 'A-B 循环', ja: 'A-B ループ', fr: 'Boucle A-B',
@@ -3867,8 +3865,8 @@ const I18N = {
     id: 'Naikkan kecepatan',
     'zh-TW': '提高速度'
   },
-  /* §100: transición única, mantenimiento con textos claros y
-   * el despliegue del ajuste fino de Letras. */
+  /*  transición única, mantenimiento con textos claros y
+ * el despliegue del ajuste fino de Letras. */
   settings_transition: {
     es: 'Transición entre canciones', en: 'Transition between tracks', pt: 'Transição entre faixas',
     zh: '曲目过渡', ja: '曲間のトランジション', fr: 'Transition entre les titres',
@@ -3972,8 +3970,8 @@ const I18N = {
     id: 'Menghapus SEMUA lagu dan daftar putar aplikasi. Berkas di perangkat Anda tidak tersentuh, tetapi ini tidak dapat dibatalkan.',
     'zh-TW': '刪除應用中的所有歌曲和播放列表。設備上的文件不受影響，但此操作無法撤銷。'
   },
-  /* §95: tocar la portada abre/cierra el modo inmersivo; el nombre
-   * accesible de la portada anuncia esa acción (antes: reproducir). */
+  /*  tocar la portada abre/cierra el modo inmersivo; el nombre
+ * accesible de la portada anuncia esa acción (antes: reproducir). */
   cover_fullscreen: {
     es: 'Ver portada a pantalla completa', en: 'View cover fullscreen', pt: 'Ver capa em tela cheia',
     zh: '全屏查看封面', ja: 'カバーを全画面で表示', fr: 'Voir la pochette en plein écran',
@@ -3996,8 +3994,8 @@ const I18N = {
     id: 'Keluar dari sampul layar penuh',
     'zh-TW': '退出全屏封面'
   },
-  /* §98: la clave de la cabecera de cola (idea 10 de la §97)
-   * se retiró con ella; ninguna clave sin uso se queda aquí. */
+  /*  la clave de la cabecera de cola (idea 10 de la)
+ * se retiró con ella; ninguna clave sin uso se queda aquí. */
 
   /* Claves que faltaban y se mostraban como texto crudo en la UI
    * (auditoría 2026-10). Todas con los 8 idiomas. */
@@ -4053,7 +4051,7 @@ const I18N = {
     'zh-TW': '歌單已刪除'
   },
 
-  /* ---------- §81: ordenar, catálogo, inteligentes, editor ---------- */
+  /* ----------: ordenar, catálogo, inteligentes, editor ---------- */
   sort_label: {
     es: 'Orden', en: 'Sort', pt: 'Ordem',
     zh: '排序', ja: '並び替え', fr: 'Trier',
@@ -4312,7 +4310,6 @@ const I18N = {
     id: 'Konfirmasi',
     'zh-TW': '確認'
   },
-
 
 };
 

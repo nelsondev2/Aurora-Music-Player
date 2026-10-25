@@ -18,10 +18,9 @@
   <link rel="apple-touch-icon" href="icon.png" />
   <link rel="stylesheet" href="css/styles.css" />
   <!-- La API webxdc la PROPORCIONA el mensajero (Delta Chat) para la
-       ruta exacta «webxdc.js»: no debe incluirse ningún webxdc.js en el
-       .xdc (spec webxdc). Antes se referenciaba js/webxdc.js, un stub
-       propio que Delta nunca reemplaza: sus envíos «descargaban» en un
-       WebView que lo ignora y nada llegaba jamás a ningún chat (§53). -->
+ ruta exacta «webxdc.js»: no debe incluirse ningún webxdc.js en el.xdc (spec webxdc). Antes se referenciaba js/webxdc.js, un stub
+ propio que Delta nunca reemplaza: sus envíos «descargaban» en un
+ WebView que lo ignora y nada llegaba jamás a ningún chat. -->
   <script src="webxdc.js"></script>
 </head>
 <body>
@@ -93,7 +92,7 @@
     <symbol id="i-lock" viewBox="0 0 24 24"><path fill="currentColor" d="M8 10V7a4 4 0 1 1 8 0v3h1.5A1.5 1.5 0 0 1 19 11.5v8A1.5 1.5 0 0 1 17.5 21h-11A1.5 1.5 0 0 1 5 19.5v-8A1.5 1.5 0 0 1 6.5 10H8zm2 0h4V7a2 2 0 1 0-4 0v3z"/></symbol>
     <symbol id="i-triangle-exclamation" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3 1.8 21h20.4L12 3zm0 6.5 1 6h-2l1-6zm0 9.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4z"/></symbol>
   </svg>
-  
+
   <!-- Contenedor tipo marco de móvil para mostrar en escritorio -->
   <div class="device-frame">
     <div class="device-screen" id="deviceScreen" role="main" aria-label="Aurora Music Player">
@@ -131,28 +130,28 @@
           <div class="cover-art" id="coverArt" role="button" tabindex="0" aria-pressed="false" data-i18n-aria="cover_fullscreen" aria-label="Ver portada a pantalla completa">
             <canvas id="coverCanvasBack" class="cover-canvas-back" width="600" height="600" aria-hidden="true"></canvas>
             <canvas id="coverCanvas" width="720" height="720" aria-hidden="true"></canvas>
-            <!-- §100: retirado el modo vinilo (disco decorativo tras
-                 la portada) con su ajuste; la portada, limpia. -->
-            <!-- §84: el visualizador vive SUPERPUESTO sobre la
-                 parte baja de la portada, fuera del flujo. Antes
-                 ocupaba 64 px de la columna y la portada, único
-                 elemento flexible, encogía al activarlo. -->
+            <!-- Sin modo vinilo (disco decorativo tras
+ la portada) con su ajuste; la portada, limpia. -->
+            <!--  el visualizador vive SUPERPUESTO sobre la
+ parte baja de la portada, fuera del flujo. Antes
+ ocupaba 64 px de la columna y la portada, único
+ elemento flexible, encogía al activarlo. -->
             <section class="visualizer-section" id="visualizerSection">
               <canvas id="visualizerCanvas" width="600" height="120" aria-hidden="true"></canvas>
             </section>
-            <!-- §97 (idea 3): en el modo inmersivo, título y artista
-                 flotan sobre la portada y se desvanecen a los pocos
-                 segundos; reaparecen al cambiar de canción o con el
-                 gesto de volumen. Decorativo: el nombre accesible
-                 sigue vivo en la vista normal. -->
+            <!-- (idea 3): en el modo inmersivo, título y artista
+ flotan sobre la portada y se desvanecen a los pocos
+ segundos; reaparecen al cambiar de canción o con el
+ gesto de volumen. Decorativo: el nombre accesible
+ sigue vivo en la vista normal. -->
             <div class="cover-fs-meta" id="coverFsMeta" aria-hidden="true">
               <div class="cover-fs-title" id="coverFsTitle"></div>
               <div class="cover-fs-artist" id="coverFsArtist"></div>
             </div>
-            <!-- §98: sin iconos de entrar/salir del modo inmersivo
-                 (hubo insignia en §95, esquinera en §96): la
-                 funcionalidad se descubre por el propio toque. -->
-            <!-- §94: role="status" para que el «Cargando…» se anuncie -->
+            <!-- Sin iconos de entrar/salir del modo inmersivo
+ (hubo insignia en, esquinera en): la
+ funcionalidad se descubre por el propio toque. -->
+            <!--  role="status" para que el «Cargando…» se anuncie -->
             <div class="cover-buffering" id="coverBuffering" role="status" hidden>
               <div class="spin-loader" aria-hidden="true"></div>
               <span data-i18n="np_loading">Cargando…</span>
@@ -186,8 +185,8 @@
             <div class="progress-fill" id="progressFill">
               <div class="progress-thumb"></div>
             </div>
-            <!-- §107: rango del bucle A-B restaurado (§100 lo
-                 retiró); lo pinta updateABRepeatUI (audio.js). -->
+            <!-- Rango del bucle A-B; lo pinta
+                 updateABRepeatUI (audio.js). -->
             <div class="progress-ab-range" id="progressAbRange" hidden></div>
           </div>
           <div class="time-row">
@@ -242,16 +241,14 @@
             <span class="sec-label" data-i18n="visualizer">Visualizador</span>
           </button>
           <button class="sec-btn ab-btn" id="btnABRepeat" type="button" data-i18n-aria="ab_repeat" data-i18n-title="ab_repeat" aria-label="Bucle A-B" aria-pressed="false">
-            <!-- §107: botón A-B restaurado tal cual era en v1.2.0
-                 (§100 lo retiró). Distintivo «A-B» del tamaño de
-                 los .ico y etiqueta debajo, como pide la fila. -->
+            <!-- Distintivo «A-B» del tamaño de los .ico y
+                 etiqueta debajo, como pide la fila. -->
             <span class="ab-badge">A-B</span>
             <span class="sec-label" data-i18n="ab_label">Bucle</span>
           </button>
         </section>
 
       </section>
-
 
       <!-- ============== PANTALLA: INICIO ============== -->
       <section class="view view-home active" id="viewHome" data-view="home" data-i18n-aria="nav_home" aria-label="Inicio">
@@ -262,12 +259,12 @@
           </div>
           <div class="home-header-actions">
             <!-- Opciones (sheetMore) también desde Inicio, y Ajustes
-                 vive DENTRO de ese menú, igual que en el reproductor:
-                 nada de rueda separada en la cabecera (§65). La rueda
-                 suelta existió porque a Ajustes solo se llegaba desde
-                 el reproductor; desde que Inicio tiene su ⋮ (§54),
-                 aquel acceso quedó duplicado. Y sigue alcanzable sin
-                 pista cargada: el ⋮ está en Inicio desde el minuto 0. -->
+ vive DENTRO de ese menú, igual que en el reproductor:
+ nada de rueda separada en la cabecera. La rueda
+ suelta existió porque a Ajustes solo se llegaba desde
+ el reproductor; desde que Inicio tiene su ⋮,
+ aquel acceso quedó duplicado. Y sigue alcanzable sin
+ pista cargada: el ⋮ está en Inicio desde el minuto 0. -->
             <button class="icon-btn" id="btnHomeMore" data-i18n-aria="more_options" aria-label="Más opciones">
               <svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg>
             </button>
@@ -314,8 +311,7 @@
               <span class="lt-a lt-a-lg" aria-hidden="true">A</span><span class="lt-sign" aria-hidden="true">+</span>
             </button>
           </div>
-          <!-- §107 (revierte el plegado de §100 a petición del
-               usuario): el ajuste fino (desfase, velocidad, bucle,
+          <!-- El ajuste fino (desfase, velocidad, bucle,
                restablecer) va SIEMPRE visible tras la barra: todas
                las opciones una detrás de otra. -->
           <div class="lyrics-fine" id="lrcFineTools">
@@ -460,8 +456,8 @@
                 <input type="text" id="playlistDesc" data-i18n-ph="optional" placeholder="Opcional" maxlength="80" />
               </label>
             </div>
-            <!-- §93: sin selector de pistas al crear — la lista
-                 nace vacía y se rellena desde su vista de edición. -->
+            <!--  sin selector de pistas al crear — la lista
+ nace vacía y se rellena desde su vista de edición. -->
             <button class="primary-btn" id="btnSavePlaylist" data-i18n="save_playlist">Guardar lista</button>
           </div>
         </div>
@@ -519,8 +515,8 @@
                 <span data-i18n="delete_playlist_btn">Eliminar lista</span>
               </button>
             </div>
-            <!-- §81: ordenación manual de la lista (la de siempre,
-                 por estrellas, sigue siendo la predeterminada §64) -->
+            <!--  ordenación manual de la lista (la de siempre,
+ por estrellas, sigue siendo la predeterminada) -->
             <div class="pl-sort-row">
               <span class="pl-sort-label" data-i18n="sort_label">Orden</span>
               <select id="plSortSelect" class="aurora-select">
@@ -592,13 +588,13 @@
         </div>
       </div>
 
-      <!-- §100: hoja de Volumen retirada — era zombi (ningún
-           código la abría). El volumen vive en el gesto de
-           la portada y en el slider compacto del botón. -->
+      <!--  hoja de Volumen retirada — era zombi (ningún
+ código la abría). El volumen vive en el gesto de
+ la portada y en el slider compacto del botón. -->
 
-      <!-- Biblioteca: solo listas de reproducción (§47: la sección
-           «Todas las canciones» se eliminó a petición del usuario; las
-           canciones viven en sus listas y en «Mi Música»). -->
+      <!-- Biblioteca: solo listas de reproducción (: la sección
+ «Todas las canciones» se eliminó; las
+ canciones viven en sus listas y en «Mi Música»). -->
       <div class="sheet sheet-full sheet-tab" id="sheetLibrary">
         <div class="sheet-backdrop" data-close-sheet="sheetLibrary"></div>
         <div class="sheet-panel">
@@ -608,12 +604,12 @@
             <h3 data-i18n="library_title">Biblioteca</h3>
             <span class="sheet-header-spacer" aria-hidden="true"></span>
           </header>
-          <!-- §81/§89: pestañas de la biblioteca, FUERA del cuerpo
-               desplazable: quedan fijas bajo la cabecera al hacer
-               scroll, igual que la propia cabecera. «Listas» es la
-               vista de siempre (§47); Álbumes/Artistas/Géneros son
-               el catálogo navegable: índice con portadas que abre
-               la vista de álbum/artista ya existente. -->
+          <!-- /: pestañas de la biblioteca, FUERA del cuerpo
+ desplazable: quedan fijas bajo la cabecera al hacer
+ scroll, igual que la propia cabecera. «Listas» es la
+ vista de siempre; Álbumes/Artistas/Géneros son
+ el catálogo navegable: índice con portadas que abre
+ la vista de álbum/artista ya existente. -->
           <div class="lib-tabs" role="tablist">
             <button class="lib-tab active" type="button" role="tab" aria-selected="true" data-libtab="playlists" data-i18n="library_playlists_section">Listas</button>
             <button class="lib-tab" type="button" role="tab" aria-selected="false" data-libtab="albums" data-i18n="tab_albums">Álbumes</button>
@@ -633,7 +629,7 @@
               </div>
               <ul class="playlist-rail" id="libraryPlaylists" tabindex="0" data-i18n-aria="library_playlists_section" aria-label="Listas de reproducción"></ul>
             </section>
-            <!-- §81: catálogo navegable (solo visible en su pestaña) -->
+            <!--  catálogo navegable (solo visible en su pestaña) -->
             <section class="lib-section" id="libSectionAlbums" hidden>
               <ul class="catalog-grid" id="libraryAlbums"></ul>
             </section>
@@ -706,7 +702,7 @@
             <button class="menu-row" id="menuSleep" type="button">
               <svg class="ico" aria-hidden="true"><use href="#i-moon"></use></svg>
               <span data-i18n="sleep">Sleep</span>
-              <!-- §97 (idea 6): cuenta atrás visible sin abrir la hoja -->
+              <!-- (idea 6): cuenta atrás visible sin abrir la hoja -->
               <span class="menu-value" id="sleepMenuValue"></span>
             </button>
             <button class="menu-row" id="menuStats">
@@ -805,7 +801,6 @@
         </div>
       </div>
 
-
       <!-- Idioma -->
       <div class="sheet" id="sheetLanguage">
         <div class="sheet-backdrop" data-close-sheet="sheetLanguage"></div>
@@ -835,8 +830,8 @@
           </header>
           <div class="sheet-body">
             <h4 class="section-title" data-i18n="settings_playback">Reproducción</h4>
-            <!-- §100: UN solo control para la transición (antes había
-                 dos sistemas: interruptor gapless + botones de fundido). -->
+            <!--  UN solo control para la transición (antes había
+ dos sistemas: interruptor gapless + botones de fundido). -->
             <p class="settings-label" data-i18n="settings_transition">Transición entre canciones</p>
             <div class="xfade-opts" role="group" data-i18n-aria="settings_transition" aria-label="Transición entre canciones">
               <button class="xfade-opt" type="button" data-transition="normal" data-i18n="transition_normal">Corte</button>
@@ -857,8 +852,8 @@
               <input type="checkbox" id="chkPreservePitch" checked />
             </label>
             <p class="settings-hint" data-i18n="settings_preserves_pitch_hint">Mantiene el tono natural de la voz sin distorsionar el pitch.</p>
-            <!-- §100: la velocidad vive solo en Letras (donde se usa
-                 con el LRC); el fundido se eligió arriba, en Transición. -->
+            <!--  la velocidad vive solo en Letras (donde se usa
+ con el LRC); el fundido se eligió arriba, en Transición. -->
             <h4 class="section-title" data-i18n="settings_interface">Interfaz</h4>
             <button class="menu-row" id="menuThemesSettings">
               <svg class="ico" aria-hidden="true"><use href="#i-palette"></use></svg>
@@ -951,13 +946,13 @@
           <div class="sheet-body">
             <p class="sheet-subtitle" data-i18n="lrc_edit_hint">Pega o edita la letra aquí. Usa [mm:ss.xx] para timestamps.</p>
             <textarea id="lrcEditorText" class="lrc-editor-textarea" rows="20" data-i18n-aria="lrc_edit" aria-label="Editar letra" placeholder="[00:12.50]Primera línea&#10;[00:15.30]Segunda línea"></textarea>
-            <!-- §100: retirado «sincronizar tocando»; el editor sigue
-                 aceptando sellos [mm:ss.xx] escritos o pegados. -->
+            <!--  retirado «sincronizar tocando»; el editor sigue
+ aceptando sellos [mm:ss.xx] escritos o pegados. -->
           </div>
         </div>
       </div>
 
-      <!-- §81: Canciones duplicadas (mismo título y artista) -->
+      <!--  Canciones duplicadas (mismo título y artista) -->
       <div class="sheet" id="sheetDuplicates">
         <div class="sheet-backdrop" data-close-sheet="sheetDuplicates"></div>
         <div class="sheet-panel">
@@ -988,7 +983,6 @@
           </div>
         </div>
       </div>
-
 
       <!-- Álbum / Artista -->
       <div class="sheet sheet-full" id="sheetBrowse">

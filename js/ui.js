@@ -111,7 +111,7 @@ Object.assign(App, {
       setTimeout(() => {
         try { (focusable || panel).focus({ preventScroll: true }); } catch (e) {}
       }, 40);
-      // §70 [4]: las hojas declaran aria-modal pero el Tab escapaba al
+      // [4]: las hojas declaran aria-modal pero el Tab escapaba al
       // fondo (medido por auditoría externa). Se instala una sola vez
       // la trampa de foco sobre la hoja superior de la pila.
       if (!this._tabTrapBound) {
@@ -120,9 +120,9 @@ Object.assign(App, {
       }
       if (typeof this.updateChrome === 'function') this.updateChrome();
     },
-    /* Trampa de foco (§70 [4]): con una hoja abierta, Tab/Shift+Tab
-     * ciclan dentro de su panel; si el foco ya está fuera (p. ej. tras
-     * cerrar una hoja hija), lo devuelve al primer/último control. */
+    /* Trampa de foco ([4]): con una hoja abierta, Tab/Shift+Tab
+ * ciclan dentro de su panel; si el foco ya está fuera (p. ej. tras
+ * cerrar una hoja hija), lo devuelve al primer/último control. */
     _sheetTabTrap(e) {
       if (e.key !== 'Tab' || !this._sheetStack || !this._sheetStack.length) return;
       const s = document.getElementById(this._sheetStack[this._sheetStack.length - 1]);
@@ -165,7 +165,7 @@ Object.assign(App, {
       if (id === 'sheetConfirm' && this._confirmResolver) {
         this._confirmResolver(false);
       }
-      // (§93: al cerrar la hoja de creación ya no hay «modo add»
+      // (: al cerrar la hoja de creación ya no hay «modo add»
       // que limpiar: _addingToPlaylistId fue extirpado.)
       // Si se cierra el sheet de edición, limpiar editing
       if (id === 'sheetEditPlaylist') {
@@ -227,7 +227,7 @@ Object.assign(App, {
      *  Cambio de vista (player ↔ lyrics)
      * ============================================================ */
     showView(name) {
-      // §95: el modo inmersivo de portada pertenece al reproductor;
+      //  el modo inmersivo de portada pertenece al reproductor;
       // al ir a otra vista se abandona (y al volver no resucita).
       if (name !== 'player' && this._coverFs && typeof this.setCoverFullscreen === 'function') {
         this.setCoverFullscreen(false);
@@ -471,7 +471,7 @@ Object.assign(App, {
               await new Promise(r => setTimeout(r, fadeSec * 1000 / steps));
             }
           }
-          // §94: ¿cancelado durante el fundido? cancelSleep ya
+          //  ¿cancelado durante el fundido? cancelSleep ya
           // restauró ganancia y volumen: no pausar ni seguir.
           if (!this._sleepFading) return;
           this.togglePlay(false);
@@ -503,7 +503,7 @@ Object.assign(App, {
       // «Sleep» del menú Más (y en el sheet si está abierto).
       const btn = document.getElementById('btnSleep') || document.getElementById('menuSleep');
       const menu = document.getElementById('menuSleep');
-      // §97 (idea 6): la fila «Sleep» del menú enseña la cuenta
+      // (idea 6): la fila «Sleep» del menú enseña la cuenta
       // atrás sin abrir su hoja (este método ya corre cada
       // segundo mientras el temporizador vive).
       const menuVal = document.getElementById('sleepMenuValue');

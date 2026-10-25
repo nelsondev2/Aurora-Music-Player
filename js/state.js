@@ -40,16 +40,15 @@
     preservesPitch: true,
 
     /* Visualizador de frecuencias y repetición A-B */
-    visualizerMode: 'wave', // §90: solo onda — 'wave' | 'off'
+    visualizerMode: 'wave', //  solo onda — 'wave' | 'off'
     _visRafId: null,
-    /* §95: portada a pantalla completa (modo inmersivo al tocarla).
-     * No se persiste: es un estado de vista, no una preferencia. */
+    /*  portada a pantalla completa (modo inmersivo al tocarla).
+ * No se persiste: es un estado de vista, no una preferencia. */
     _coverFs: false,
-    /* §107: bucle A-B del reproductor RESTAURADO a petición del
-     * usuario (§100 lo había retirado y el release se cayó por
-     * ello). Convive con lrcLoop (el de sección en Letras):
-     * este repite entre dos instantes de la canción; aquel,
-     * entre dos líneas de la letra. */
+    /* Bucle A-B del reproductor. Convive con lrcLoop (el de
+     * sección en Letras):
+ * este repite entre dos instantes de la canción; aquel,
+ * entre dos líneas de la letra. */
     abRepeat: { active: false, a: null, b: null },
 
     /* Selección múltiple / lote */
@@ -73,9 +72,9 @@
     _gaplessEnabled: true,    // reproducción continua; no intercambia <audio>
     _normalizeVolume: false,  // RMS opt-in
     _trackGainCache: new Map(), // trackId → gain normalizado
-    /* §104: sin _playHistory (historial retirado). */
+    /*  sin _playHistory (historial retirado). */
     _originalQueue: null,     // cola sin barajar (para deshacer shuffle)
-    _plSyncIds: null,         // §82: ids de la lista al construir la cola (base de sincronización)
+    _plSyncIds: null,         //  ids de la lista al construir la cola (base de sincronización)
     _normGain: 1,
     _decodeSkipCount: 0,
 
@@ -94,7 +93,7 @@
     /* Estadísticas de reproducción */
     stats: {
       plays: {},        // {trackId: count}
-      skips: {},        // {trackId: count} — §81: saltos a mitad de canción
+      skips: {},        // {trackId: count} —: saltos a mitad de canción
       totalSeconds: 0,
       lastPlayed: null,  // ISO string
       sessionStart: Date.now()
@@ -102,8 +101,8 @@
     _statsFlushTimer: null,
     _currentPlayStart: null,
     _currentPlayBaseTime: 0,
-    _playCounted: false,   // §67: la escucha en curso ya sumó (o no)
-    _skipCounted: false,   // §81: el salto de este pase ya contó (o no)
+    _playCounted: false,   //  la escucha en curso ya sumó (o no)
+    _skipCounted: false,   //  el salto de este pase ya contó (o no)
 
     /* Crossfade opt-in (0 / 3 / 6 / 12 s). 0 = off; no retrasa el next manual. */
     crossfadeEnabled: false,
@@ -117,9 +116,9 @@
     lang: 'es',  // código ISO 639-1: 'es' | 'en' | 'pt' | 'zh' | 'ja' | 'fr' | 'it' | 'ru'
 
     /* Edición de playlist:
-     *   _editingPlaylistId = ID de playlist que se está editando (en sheetEditPlaylist)
-     * Null cuando no hay edición en curso.
-     * (§93: _addingToPlaylistId extirpado con el modo «añadir».) */
+ * _editingPlaylistId = ID de playlist que se está editando (en sheetEditPlaylist)
+ * Null cuando no hay edición en curso.
+ * (: _addingToPlaylistId extirpado con el modo «añadir».) */
     _editingPlaylistId: null,
 
     /* Contexto de reproducción actual: indica desde qué lista se está
@@ -134,7 +133,7 @@
 
     /* Biblioteca: orden de la lista de canciones.
      * Ya no hay pestañas: la vista muestra listas + todas las canciones. */
-    _libTab: 'playlists', // §81: pestaña activa de la biblioteca
+    _libTab: 'playlists', //  pestaña activa de la biblioteca
     _menuTrackId: null,
     _editTrackId: null,
     _browse: null,
@@ -143,11 +142,11 @@
     _importing: false,
 
     /* Índice id → pista para evitar búsquedas O(n*m) en listas grandes.
-     * Se reconstruye de forma perezosa cuando cambia el tamaño de
-     * tracks o el propio array (§103: antes solo se miraba el tamaño,
-     * y una reasignación con el mismo número de pistas — la carga
-     * inicial, por ejemplo — habría dejado el mapa viejo si ya
-     * existía). Los mutadores además invalidan a mano. */
+ * Se reconstruye de forma perezosa cuando cambia el tamaño de
+ * tracks o el propio array (: antes solo se miraba el tamaño,
+ * y una reasignación con el mismo número de pistas — la carga
+ * inicial, por ejemplo — habría dejado el mapa viejo si ya
+ * existía). Los mutadores además invalidan a mano. */
     _trackById: null,
     _trackMapSize: -1,
     _trackMapRef: null,
@@ -162,16 +161,16 @@
     _lastError: null,
     VERSION: '1.2.0',
     _marqueeEnabled: true,
-    /* §100: sin _vinylEnabled (modo vinilo retirado). */
-    _showRemaining: false, // §72: la duración total alterna a «tiempo restante» al tocarla
+    /*  sin _vinylEnabled (modo vinilo retirado). */
+    _showRemaining: false, //  la duración total alterna a «tiempo restante» al tocarla
 
     ico(name, extra) {
       const cls = extra ? ('ico ' + extra) : 'ico';
       return '<svg class="' + cls + '" aria-hidden="true"><use href="#i-' + name + '"></use></svg>';
     },
     /* Inicial para portadas generadas: primera letra o número del
-     * texto (§70 [13]: antes era el primer carácter literal y un
-     * título como «<img…» pintaba «<»). Sin letra válida, una nota. */
+ * texto ([13]: antes era el primer carácter literal y un
+ * título como «<img…» pintaba «<»). Sin letra válida, una nota. */
     coverInitial(text) {
       const m = String(text || '').match(/[\p{L}\p{N}]/u);
       return m ? m[0].toUpperCase() : '♪';
@@ -190,7 +189,7 @@
       this._trackMapRef = null;
     },
     trackMap() {
-      // §103: la condición incluye la IDENTIDAD del array. Con solo
+      //  la condición incluye la IDENTIDAD del array. Con solo
       // el tamaño, `this.tracks = [otras pistas]` manteniendo la
       // cuenta dejaba un mapa apuntando a pistas que ya no están.
       if (!this._trackById || this._trackMapRef !== this.tracks || this._trackMapSize !== this.tracks.length) {

@@ -188,7 +188,7 @@ def validate_sources(files):
     # Spec webxdc: «webxdc.js» lo proporciona el mensajero y NO debe
     # incluirse en el .xdc. Si viajara uno propio (p. ej. en js/), el
     # cliente no lo reemplazaría y todo envío al chat caería en él,
-    # sin llegar nunca a ningún chat (fue el fallo del §53).
+    # sin llegar nunca a ningún chat.
     for rel in sorted(names):
         if rel.rsplit("/", 1)[-1] == "webxdc.js":
             ok = fail("«%s» no debe viajar en el .xdc: la API webxdc la "
@@ -282,7 +282,6 @@ def main():
     if args.check:
         return 0 if check(args.check) else 1
     return 0 if build(args.output) else 1
-
 
 if __name__ == "__main__":
     sys.exit(main())

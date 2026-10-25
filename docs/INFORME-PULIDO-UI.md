@@ -4270,3 +4270,58 @@ El diccionario pasa de 333 a **337 claves × 14 idiomas**
 - **Release 1.2.5: eliminado por el usuario** (release y
   tag). El código sigue en `main`; publicar de nuevo
   requiere su luz verde.
+
+## 108. Poda de comentarios y README público limpio
+
+A petición del usuario: fuera de los comentarios del
+código todo lo que solo interesa al proceso de desarrollo
+(la crónica: referencias «§», peticiones del usuario,
+genealogías de versiones, notas de verificación) y el
+README sin información interna.
+
+### Qué se quitó y qué se queda (criterio documentado)
+- **Fuera**: tokens «§NN» y rangos, «a petición del
+  usuario» y familia, «restaurado/tal cual era en vX»,
+  comentarios que solo narraban la historia del cambio.
+- **Se queda**: el porqué técnico no obvio (trampas de
+  API, invariantes, «sin esta guarda pasa esto otro»),
+  reescrito en neutro cuando venía mezclado con crónica.
+- 378 comentarios reescritos y 2 bloques borrados en
+  19 archivos; retoques manuales en la crónica
+  superviviente (A-B y Letras, de §107).
+
+### Seguridad de la poda (nada funcional se tocó)
+- Procesador consciente de cadenas (tokeniza
+  código/cadena/comentario): **ninguna cadena literal
+  cambió** en ningún archivo — verificado comparando el
+  multiconjunto de literales contra HEAD. (El único
+  «diferente», un `"status"` en index.html, era prosa
+  dentro de un comentario HTML.)
+- `node --check` en todo `js/`, llaves CSS 978/978,
+  divs 202/202, `build-xdc.py` compila.
+- Un susto real durante la poda: el colapso de líneas
+  en blanco pegó un `continue` a una línea de
+  build-xdc.py; detectado revisando el diff y revertido.
+  El diff del empaquetador queda en un solo comentario.
+- Comportamiento: check §107 **14/14** y humo de
+  regresión **11/11** tras la poda.
+
+### README
+Reescrito para público: sin información de desarrollo
+y con los hechos al día — versión 1.2.0 (la única
+publicada; la constante de la app ya decía 1.2.0),
+14 idiomas, bucle A-B dentro, y fuera lo que ya no
+existe (listas inteligentes, historial, sincronía por
+toques, «saltadas/olvidadas»). Tamaño del paquete
+corregido a lo medido: 26 archivos, ~383 KB. La tabla
+de contenido ya no cita documentos internos (un
+`docs/AUDITORIA.md` que ni existía); el informe se
+conserva en el repo pero el README no lo publicita.
+
+### CHANGELOG
+Las secciones publicadas no se tocan (son historial).
+En «Sin publicar» y la cabecera se retiran las
+referencias «§», crípticas sin el diario interno.
+
+- **Sin release**: la única publicada sigue siendo
+  la v1.2.0.
