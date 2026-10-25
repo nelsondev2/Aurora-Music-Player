@@ -4084,3 +4084,36 @@ variante; si era otra cosa, se corrige.
 - **Sin release**: la publicada sigue siendo v1.2.0 (§99).
 
 14 idiomas no cambian la 1.2.0 pública; viven en la rama.
+
+## 103. Micro-pulido: la caché de pistas mira también la identidad
+
+El índice `id → pista` (`trackMap()`, en `state.js`) se
+reconstruía perezosamente solo cuando cambiaba el **número**
+de pistas. Los mutadores reales invalidan a mano (cargar,
+añadir, borrar, deshacer, vaciar: comprobados uno a uno) y
+push/splice cambian la cuenta, así que hoy ningún flujo
+fallaba. Pero el agujero existía: **reasignar el array con
+el mismo número de pistas distintas** habría dejado el mapa
+apuntando a pistas que ya no están — la carga inicial hace
+precisamente `this.tracks = stored.map(...)`, protegida solo
+porque invalida justo después.
+
+### El cambio (una condición, cero comportamiento visible)
+- `trackMap()` reconstruye también si `this._trackMapRef !==
+  this.tracks`: la identidad del array forma parte de la
+  clave de la caché, junto al tamaño.
+- `invalidateTrackIndex()` limpia también la referencia.
+- Sin cambios, el mapa se reutiliza tal cual: sigue siendo
+  perezoso y gratis en el camino caliente.
+
+### Verificación
+- **Check §103** `/tmp/check-vista103.js`: **8/8** — el
+  escenario del fallo (reasignar 2 pistas por otras 2) ya
+  reconstruye; sin cambios se reutiliza la instancia;
+  push/splice en el sitio se detectan; la invalidación
+  manual sigue forzando reconstrucción.
+- Humo de regresión: **20/20**.
+- **Sin release**: la publicada sigue siendo v1.2.0 (§99).
+
+En la rama quedan §§100–103 sin publicar; la app pública
+no cambia.

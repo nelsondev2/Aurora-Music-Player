@@ -36,6 +36,11 @@ Cambios ya en el código, a la espera de orden de publicación:
   pasa de 8 a 14 idiomas. Las traducciones nuevas son
   automáticas: convendría una revisión nativa antes de
   publicarlas.
+- Micro-pulido interno (§103, sin cambio visible): el
+  índice que localiza canciones por identificador ahora
+  también detecta si la lista entera fue sustituida por
+  otra con el mismo número de canciones, para no mirar
+  nunca un mapa anticuado.
 
 ## 1.2.0 — Primera versión pública
 

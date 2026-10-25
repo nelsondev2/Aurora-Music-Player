@@ -139,9 +139,14 @@
     _importing: false,
 
     /* Índice id → pista para evitar búsquedas O(n*m) en listas grandes.
-     * Se reconstruye de forma perezosa cuando cambia el tamaño de tracks. */
+     * Se reconstruye de forma perezosa cuando cambia el tamaño de
+     * tracks o el propio array (§103: antes solo se miraba el tamaño,
+     * y una reasignación con el mismo número de pistas — la carga
+     * inicial, por ejemplo — habría dejado el mapa viejo si ya
+     * existía). Los mutadores además invalidan a mano. */
     _trackById: null,
     _trackMapSize: -1,
+    _trackMapRef: null,
 
     /* Timers y ciclo de vida (se limpian al cerrar la app) */
     _sessionTimer: null,
@@ -178,14 +183,19 @@
     invalidateTrackIndex() {
       this._trackById = null;
       this._trackMapSize = -1;
+      this._trackMapRef = null;
     },
     trackMap() {
-      if (!this._trackById || this._trackMapSize !== this.tracks.length) {
+      // §103: la condición incluye la IDENTIDAD del array. Con solo
+      // el tamaño, `this.tracks = [otras pistas]` manteniendo la
+      // cuenta dejaba un mapa apuntando a pistas que ya no están.
+      if (!this._trackById || this._trackMapRef !== this.tracks || this._trackMapSize !== this.tracks.length) {
         this._trackById = new Map();
         for (const t of this.tracks) {
           if (t && t.id != null) this._trackById.set(t.id, t);
         }
         this._trackMapSize = this.tracks.length;
+        this._trackMapRef = this.tracks;
       }
       return this._trackById;
     },
