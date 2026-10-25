@@ -181,15 +181,8 @@ Object.assign(App, {
       });
 
       // === Letras LRC: barra de herramientas ===
-      // §100: despliegue del ajuste fino (desfase, velocidad, bucle)
-      const btnLrcTools = document.getElementById('btnLrcTools');
-      if (btnLrcTools) btnLrcTools.addEventListener('click', () => {
-        const panel = document.getElementById('lrcFineTools');
-        if (!panel) return;
-        panel.hidden = !panel.hidden;
-        btnLrcTools.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
-        btnLrcTools.classList.toggle('active', !panel.hidden);
-      });
+      // §107: el ajuste fino ya no se despliega — va siempre visible
+      // (todas las opciones una detrás de otra); sin botón ni wiring.
       // Tamaño de fuente (#7)
       $('btnLrcFontDec').addEventListener('click', () => this.setLrcFontSize(this.lrcFontSize - 2));
       $('btnLrcFontInc').addEventListener('click', () => this.setLrcFontSize(this.lrcFontSize + 2));
@@ -345,7 +338,9 @@ Object.assign(App, {
       if (btnVis) btnVis.addEventListener('click', () => this.cycleVisualizerMode());
       const cvVis = document.getElementById('visualizerCanvas');
       if (cvVis) cvVis.addEventListener('click', () => this.cycleVisualizerMode());
-      // §100: botón A-B retirado con su sistema (audio.js).
+      // §107: botón A-B restaurado con su sistema (audio.js).
+      const btnAB = document.getElementById('btnABRepeat');
+      if (btnAB) btnAB.addEventListener('click', () => this.toggleABRepeat());
       /* §94: chkPreservePitch ya tiene su listener 'change' en el
        * bloque de ajustes de reproducción; aquí había un segundo
        * idéntico y cada cambio se aplicaba (y guardaba) dos veces. */

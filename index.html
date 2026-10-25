@@ -186,8 +186,9 @@
             <div class="progress-fill" id="progressFill">
               <div class="progress-thumb"></div>
             </div>
-            <!-- §100: retirado el bucle A-B del reproductor; el
-                 bucle que queda es el de sección en Letras. -->
+            <!-- §107: rango del bucle A-B restaurado (§100 lo
+                 retiró); lo pinta updateABRepeatUI (audio.js). -->
+            <div class="progress-ab-range" id="progressAbRange" hidden></div>
           </div>
           <div class="time-row">
             <span class="time-current" id="timeCurrent">0:00</span>
@@ -240,7 +241,13 @@
             <svg class="ico" aria-hidden="true"><use href="#i-chart-simple"></use></svg>
             <span class="sec-label" data-i18n="visualizer">Visualizador</span>
           </button>
-          <!-- §100: botón A-B retirado con su sistema. -->
+          <button class="sec-btn ab-btn" id="btnABRepeat" type="button" data-i18n-aria="ab_repeat" data-i18n-title="ab_repeat" aria-label="Bucle A-B" aria-pressed="false">
+            <!-- §107: botón A-B restaurado tal cual era en v1.2.0
+                 (§100 lo retiró). Distintivo «A-B» del tamaño de
+                 los .ico y etiqueta debajo, como pide la fila. -->
+            <span class="ab-badge">A-B</span>
+            <span class="sec-label" data-i18n="ab_label">Bucle</span>
+          </button>
         </section>
 
       </section>
@@ -307,10 +314,11 @@
               <span class="lt-a lt-a-lg" aria-hidden="true">A</span><span class="lt-sign" aria-hidden="true">+</span>
             </button>
           </div>
-          <!-- §100: el ajuste fino (desfase, velocidad, bucle,
-               restablecer) vive plegado tras «Ajustes de letra»;
-               visible queda lo diario: tamaño y acciones. -->
-          <div class="lyrics-fine" id="lrcFineTools" hidden>
+          <!-- §107 (revierte el plegado de §100 a petición del
+               usuario): el ajuste fino (desfase, velocidad, bucle,
+               restablecer) va SIEMPRE visible tras la barra: todas
+               las opciones una detrás de otra. -->
+          <div class="lyrics-fine" id="lrcFineTools">
           <!-- Desfase de la letra: − y + con etiqueta y valor en medio. -->
           <div class="lt-group" role="group" data-i18n-aria="lrc_offset_group" aria-label="Desfase de la letra">
             <span class="lt-group-label" data-i18n="lrc_offset_short">Desfase</span>
@@ -332,7 +340,6 @@
           </div>
           </div>
           <div class="lt-cluster lt-actions">
-            <button class="lt-btn" id="btnLrcTools" type="button" aria-expanded="false" aria-controls="lrcFineTools" data-i18n-aria="lrc_tools" data-i18n-title="lrc_tools" aria-label="Ajustes de letra" title="Ajustes de letra"><svg class="ico" aria-hidden="true"><use href="#i-sliders"></use></svg></button>
             <button class="lt-btn" id="btnLrcFullscreen" data-i18n-title="lrc_fullscreen" data-i18n-aria="lrc_fullscreen" title="Pantalla completa" aria-label="Pantalla completa"><svg class="ico" aria-hidden="true"><use href="#i-expand"></use></svg></button>
             <button class="lt-btn" id="btnLrcLoadFile" data-i18n-title="lrc_load_file" data-i18n-aria="lrc_load_file" title="Cargar .lrc" aria-label="Cargar .lrc"><svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg></button>
             <button class="lt-btn" id="btnLrcEdit" data-i18n-title="lrc_edit" data-i18n-aria="lrc_edit" title="Editar" aria-label="Editar letra"><svg class="ico" aria-hidden="true"><use href="#i-pen"></use></svg></button>

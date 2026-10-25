@@ -220,8 +220,10 @@ svg { display: block; }
   .lrc-line { font-size: var(--lrc-font-size, 0.9375rem); }
   .controls-secondary { gap: 2px; padding: 6px 0 4px; }
   /* Toolbar de letras más compacta */
-  /* §100: panel plegable del ajuste fino de Letras (desfase,
- * velocidad, bucle, restablecer): la barra diaria queda ligera. */
+  /* §107 (revierte el plegado de §100, a petición del usuario):
+ * el ajuste fino de Letras (desfase, velocidad, bucle,
+ * restablecer) va SIEMPRE visible: todas las opciones, una
+ * detrás de otra, sin botón de despliegue. */
 .lyrics-fine {
   display: flex;
   align-items: center;
@@ -229,7 +231,6 @@ svg { display: block; }
   gap: 8px;
   flex-basis: 100%;
 }
-.lyrics-fine[hidden] { display: none; }
 .lt-btn.active { color: var(--accent); }
 
 .lyrics-toolbar { padding: 3px 4px; gap: 1px; }
@@ -4315,11 +4316,44 @@ html.aurora-wide .toast {
  *  A-B repeat · selección por lote · preservar tono (v1.2.0)
  * ===================================================================== */
 
-/* Rango A-B sobre la barra de progreso */
+/* Rango A-B sobre la barra de progreso (§107: restaurado) */
+.progress-ab-range {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(var(--accent-rgb), 0.32);
+  border-left: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+  z-index: 0;
+}
 
 /* Botón A-B en controles secundarios. El distintivo ocupa el puesto
  * del icono: misma caja de 36×36 y radio 12 que los .ico de la fila,
  * con su etiqueta .sec-label debajo (sin ella quedaba descuadrado). */
+.ab-btn { position: relative; }
+.ab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0 2px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.ab-btn.active .ab-badge,
+.ab-btn.setting-b .ab-badge {
+  background: rgba(var(--accent-rgb), 0.18);
+  color: var(--accent);
+}
 
 @media (max-width: 380px) {
   /* 5 controles secundarios (incluye A-B): reducir separación */
@@ -4803,6 +4837,12 @@ html.aurora-wide .toast {
   top: 50%;
   bottom: auto;
   height: 4px;
+  transform: translateY(-50%);
+}
+.progress-ab-range {
+  top: 50%;
+  bottom: auto;
+  height: 6px;
   transform: translateY(-50%);
 }
 .progress-thumb {

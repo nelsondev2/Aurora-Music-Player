@@ -4212,3 +4212,61 @@ conversión.
 - **Sin release**: la publicada sigue siendo v1.2.0 (§99).
 
 En la rama quedan §§100–105 sin publicar.
+
+## 107. El usuario borra el release: vuelven A-B y las opciones de Letras
+
+El usuario **eliminó el release 1.2.5** (y su tag) tras
+probarlo, por dos ausencias de la poda de §100 que sí usa:
+el bucle A-B del reproductor y el menú de Letras con
+todas las opciones a la vista. Ambas se restauran aquí;
+el resto de §§100–105 queda como estaba. **Sin release**
+nuevo hasta nueva luz verde expresa.
+
+### Bucle A-B del reproductor (recuperado, no reinventado)
+El código se rescató **literal del tag v1.2.0** (la última
+versión sin la poda), no se reescribió:
+- Estado `abRepeat {active, a, b}` (state.js), lógica
+  `toggleABRepeat`/`clearABRepeat`/`updateABRepeatUI`
+  (audio.js: fijar A → fijar B → activo → limpiar, con sus
+  avisos y el distintivo `A-B`/`A→`/`A⇄B`), imposición en
+  `updateProgress` (player-ui.js: al llegar a B, vuelta a A).
+- Botón `#btnABRepeat` en la fila secundaria y marcador
+  `#progressAbRange` en la barra, con su CSS (`.ab-btn`,
+  `.ab-badge`, `.progress-ab-range` + override de la barra
+  centrada; §100 había dejado hasta los comentarios).
+- Higiene de v1.2.0: `clearABRepeat()` en los dos caminos
+  de cambio de pista — canción nueva, bucle fuera.
+- i18n: las 5 claves (`ab_repeat`, `ab_label`, `ab_set_a`,
+  `ab_active`, `ab_cleared`) vuelven con sus textos
+  originales en los 8 idiomas de entonces; de/uk/pl/tr/
+  id/zh-TW se traducen ahora (pendientes de revisión
+  nativa, como §102). Su comentario, huérfano sobre
+  `settings_preserves_pitch` desde §100, vuelve a casa.
+
+### Letras: todas las opciones, una detrás de otra
+Fuera el plegado de §100: `#lrcFineTools` ya no nace
+`hidden`, desaparece el botón `#btnLrcTools` (y su wiring
+y la regla CSS `[hidden]`), y desfase, velocidad, bucle
+de sección y restablecer quedan siempre visibles tras la
+barra. La clave `lrc_tools` queda huérfana y sale del
+diccionario. El bucle de sección de Letras (lrcLoop) no
+se toca: convive con el A-B, cada uno con su rango.
+
+El diccionario pasa de 333 a **337 claves × 14 idiomas**
+(+5 A-B, −1 `lrc_tools`), sin huecos.
+
+### Verificación
+- **Check §107** `/tmp/check-vista107.js`: **14/14** —
+  ciclo A-B completo con reloj falso (fijar A en 30,
+  B en 90, imponer el salto a 120 ≥ B, limpiar), panel
+  de Letras visible con sus 6 controles, diccionario
+  337×14 sin huecos y estrellas intactas.
+- Humo de regresión (recreado; `/tmp` se reinició con la
+  sesión y arnés y checks se reconstruyeron): **11/11** —
+  incluidas las podas §§100/104 que siguen fuera, Buscar
+  duplicados vivo y la migración §§104–105 sana. Un fallo
+  inicial del humo era del propio humo (nombre real:
+  `startSleep`, no `setSleepTimer`); la app estaba bien.
+- **Release 1.2.5: eliminado por el usuario** (release y
+  tag). El código sigue en `main`; publicar de nuevo
+  requiere su luz verde.

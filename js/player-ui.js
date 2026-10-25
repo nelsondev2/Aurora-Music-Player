@@ -409,8 +409,18 @@ Object.assign(App, {
       const cur = a.currentTime || 0;
       const dur = a.duration || this.currentTrack?.duration || 0;
 
-      // §100: la ejecución del A-B se fue con su sistema; el bucle
-      // que queda es el de sección de letras, justo aquí debajo.
+      // Repetición A-B (§107: restaurada a petición del usuario;
+      // §100 la había retirado). Con el bucle activo, al llegar
+      // a B se vuelve a A y no se pinta más en este ciclo. Va
+      // antes que el bucle de sección de Letras: este manda
+      // sobre dos instantes de la canción.
+      if (this.abRepeat && this.abRepeat.active && this.abRepeat.b !== null && this.abRepeat.a !== null) {
+        if (cur >= this.abRepeat.b) {
+          this.seekToTime(this.abRepeat.a);
+          return;
+        }
+      }
+
       // Repetición de sección de letras (#19): rango elegido a mano en la
       // vista de letras ({start, end} en segundos de la canción). Se aplica
       // aquí, no en el RAF de letras, para que siga activa al volver al

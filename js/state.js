@@ -45,8 +45,12 @@
     /* §95: portada a pantalla completa (modo inmersivo al tocarla).
      * No se persiste: es un estado de vista, no una preferencia. */
     _coverFs: false,
-    /* §100: sin abRepeat (sistema retirado); el bucle vivo
-     * es lrcLoop, el de sección en Letras. */
+    /* §107: bucle A-B del reproductor RESTAURADO a petición del
+     * usuario (§100 lo había retirado y el release se cayó por
+     * ello). Convive con lrcLoop (el de sección en Letras):
+     * este repite entre dos instantes de la canción; aquel,
+     * entre dos líneas de la letra. */
+    abRepeat: { active: false, a: null, b: null },
 
     /* Selección múltiple / lote */
 

@@ -6,7 +6,14 @@ diario detallado de desarrollo y verificación de cada cambio está en
 
 ## Sin publicar
 
-_(nada por ahora)_
+- Restauraciones a petición del usuario (§107, tras caer
+  el release 1.2.5): vuelve el **bucle A-B del reproductor**
+  tal cual era en la 1.2.0 (botón en la fila de controles,
+  rango marcado en la barra, se limpia al cambiar de
+  canción) y el **menú de Letras muestra otra vez todas
+  sus opciones una detrás de otra** — desfase, velocidad,
+  bucle de sección y restablecer siempre visibles, sin
+  botón de despliegue.
 
 ## 1.2.5 — Más ligera, en 14 idiomas
 

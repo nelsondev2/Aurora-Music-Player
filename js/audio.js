@@ -309,6 +309,9 @@ Object.assign(App, {
       this._noAudioSkips = 0;
       this.audio.src = url;
       try { this.audio.volume = this.volume; } catch (e) {}
+      // §107: pista nueva, bucle A-B de la anterior fuera
+      // (restaurado con el sistema; en v1.2.0 ya se limpiaba aquí).
+      if (this.clearABRepeat) this.clearABRepeat();
       if (this.preservesPitch !== undefined) {
         this.audio.preservesPitch = this.preservesPitch;
         this.audio.mozPreservesPitch = this.preservesPitch;
@@ -365,6 +368,8 @@ Object.assign(App, {
       // §94: misma higiene que loadAndPlay al cambiar de pista:
       // fuera el bucle A-B de la anterior y dentro las prefs de
       // letra (offset/velocidad) de ESTA pista, no de la borrada.
+      // (§107: el clearABRepeat vuelve a existir y se ejecuta.)
+      if (this.clearABRepeat) this.clearABRepeat();
       if (typeof this.restoreLyricsPrefs === 'function') this.restoreLyricsPrefs();
       this.isPlaying = false;
       this.renderCurrentTrack();
@@ -1142,8 +1147,89 @@ Object.assign(App, {
       if (chk) chk.checked = this.preservesPitch;
     },
 
-    /* §100: sistema A-B retirado. Había DOS bucles (este y el de
-     * sección en Letras, sobre la letra); queda el de Letras. */
+    /* ============================================================
+     *  Repetición A-B (A-B Repeat)
+     *  §107: RESTAURADA a petición del usuario tal cual era en
+     *  v1.2.0 (§100 la retiró y el release se cayó por ello).
+     *  Convive con el bucle de sección de Letras (lrcLoop):
+     *  este actúa sobre dos instantes de la canción desde el
+     *  reproductor; aquel, sobre dos líneas de la letra.
+     * ============================================================ */
+    toggleABRepeat() {
+      if (!this.audio || !this.currentTrack || !this.audio.src) {
+        this.toast(this.t('no_track_playing'));
+        return;
+      }
+      if (!this.abRepeat) this.abRepeat = { active: false, a: null, b: null };
+      const cur = Number(this.audio.currentTime) || 0;
+      if (this.abRepeat.a === null) {
+        this.abRepeat.a = cur;
+        this.abRepeat.b = null;
+        this.abRepeat.active = false;
+        this.updateABRepeatUI();
+        this.toast(this.t('ab_set_a').replace('X', this.fmtTime(cur)));
+      } else if (this.abRepeat.b === null) {
+        if (cur <= this.abRepeat.a + 0.3) {
+          this.abRepeat.b = this.abRepeat.a + 1.0;
+        } else {
+          this.abRepeat.b = cur;
+        }
+        this.abRepeat.active = true;
+        this.updateABRepeatUI();
+        this.toast(this.t('ab_active')
+          .replace('X', this.fmtTime(this.abRepeat.a))
+          .replace('Y', this.fmtTime(this.abRepeat.b)));
+        if (this.audio && (this.audio.currentTime < this.abRepeat.a || this.audio.currentTime >= this.abRepeat.b)) {
+          this.seekToTime(this.abRepeat.a);
+        }
+      } else {
+        this.clearABRepeat();
+        this.toast(this.t('ab_cleared'));
+      }
+    },
+
+    clearABRepeat() {
+      this.abRepeat = { active: false, a: null, b: null };
+      this.updateABRepeatUI();
+    },
+
+    updateABRepeatUI() {
+      const btn = document.getElementById('btnABRepeat');
+      const range = document.getElementById('progressAbRange');
+      if (btn) {
+        btn.classList.remove('setting-b', 'active');
+        const badge = btn.querySelector('.ab-badge') || btn;
+        if (this.abRepeat && this.abRepeat.a !== null && this.abRepeat.b === null) {
+          btn.classList.add('setting-b');
+          btn.setAttribute('aria-pressed', 'false');
+          btn.title = this.t('ab_set_a').replace('X', this.fmtTime(this.abRepeat.a));
+          badge.textContent = 'A→';
+        } else if (this.abRepeat && this.abRepeat.active && this.abRepeat.b !== null) {
+          btn.classList.add('active');
+          btn.setAttribute('aria-pressed', 'true');
+          btn.title = this.t('ab_active')
+            .replace('X', this.fmtTime(this.abRepeat.a))
+            .replace('Y', this.fmtTime(this.abRepeat.b));
+          badge.textContent = 'A⇄B';
+        } else {
+          btn.setAttribute('aria-pressed', 'false');
+          btn.title = this.t('ab_repeat');
+          badge.textContent = 'A-B';
+        }
+      }
+      if (range) {
+        const dur = (this.audio && this.audio.duration) || (this.currentTrack && this.currentTrack.duration) || 0;
+        if (this.abRepeat && this.abRepeat.a !== null && dur > 0) {
+          range.removeAttribute('hidden');
+          const startPct = (this.abRepeat.a / dur) * 100;
+          const endPct = this.abRepeat.b !== null ? (this.abRepeat.b / dur) * 100 : Math.min(100, startPct + 0.8);
+          range.style.left = startPct + '%';
+          range.style.width = Math.max(0.5, endPct - startPct) + '%';
+        } else {
+          range.setAttribute('hidden', '');
+        }
+      }
+    },
 
     /* ============================================================
      *  Visualizador de frecuencias en tiempo real (AnalyserNode)
