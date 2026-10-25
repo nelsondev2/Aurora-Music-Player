@@ -4,6 +4,13 @@ Reproductor de música **offline-first** pensado para **WebXDC**: se comparte co
 
 **Versión:** 1.2.0 · licencia MIT
 
+> **Nota:** Aurora es un proyecto **generado con inteligencia
+> artificial**. Todo su código —y las traducciones de la
+> interfaz— lo ha escrito un asistente de IA, con la dirección,
+> las decisiones y las pruebas finales de una persona. Si algo
+> suena raro en tu idioma o se comporta de forma extraña, no es
+> un misterio: repórtalo en los *issues* y se corrige.
+
 ## Qué hace
 
 - **Tu música, sin nube**: importa MP3, M4A, FLAC, WAV, OGG y Opus

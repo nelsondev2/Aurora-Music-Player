@@ -4,6 +4,15 @@ Historial de versiones **publicadas** de Aurora Music Player.
 
 ## Sin publicar
 
+_(nada por ahora)_
+
+## 1.2.5 — Más ligera, en 14 idiomas
+
+- Limpieza de cara al público: los comentarios del código
+  ya no cuentan la crónica interna del desarrollo y el
+  README solo trae lo que interesa a quien usa o desarrolla
+  la app, incluida la nota que aclara que es un proyecto
+  generado por IA.
 - Restauraciones a petición del usuario: vuelve el **bucle A-B del reproductor**
   tal cual era en la 1.2.0 (botón en la fila de controles,
   rango marcado en la barra, se limpia al cambiar de
@@ -15,9 +24,6 @@ Historial de versiones **publicadas** de Aurora Music Player.
   opciones vuelven a ir **en una sola fila, una detrás de
   otra** (tamaño, desfase, velocidad, bucle, acciones),
   sin grupos desperdigados ni acciones cortadas.
-
-## 1.2.5 — Más ligera, en 14 idiomas
-
 - Gran poda tras una auditoría completa (§100): fuera la hoja
   de Volumen (nadie la abría), el bucle A-B del reproductor
   (queda el de Letras), «sincronizar tocando» y el karaoke por
