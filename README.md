@@ -2,7 +2,7 @@
 
 Reproductor de música **offline-first** pensado para **WebXDC**: se comparte como archivo `.xdc` en un chat de Delta Chat y funciona sin red, sin cuenta y sin servidor. Carga archivos locales (MP3, M4A, FLAC, WAV, OGG, Opus), lee ID3 y letras LRC.
 
-**Versión:** 1.2.0 · licencia MIT
+**Versión:** 1.2.5 · licencia MIT
 
 ## Qué hace
 
