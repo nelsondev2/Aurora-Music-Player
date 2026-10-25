@@ -221,7 +221,19 @@ svg { display: block; }
   .lrc-line { font-size: var(--lrc-font-size, 0.9375rem); }
   .controls-secondary { gap: 2px; padding: 6px 0 4px; }
   /* Toolbar de letras más compacta */
-  .lyrics-toolbar { padding: 3px 4px; gap: 1px; }
+  /* §100: panel plegable del ajuste fino de Letras (desfase,
+ * velocidad, bucle, restablecer): la barra diaria queda ligera. */
+.lyrics-fine {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-basis: 100%;
+}
+.lyrics-fine[hidden] { display: none; }
+.lt-btn.active { color: var(--accent); }
+
+.lyrics-toolbar { padding: 3px 4px; gap: 1px; }
   /* 40 px también en pantallas estrechas: 26 px no es un objetivo táctil. */
   .lt-btn { min-width: 40px; height: 40px; padding: 0 4px; }
   .lt-btn .ico { width: 12px; height: 12px; }
@@ -392,10 +404,6 @@ svg { display: block; }
   min-height: 0;
   overflow: hidden;
 }
-.cover-section.vinyl-on {
-  overflow: visible;
-  perspective: 1000px;
-}
 .cover-glow {
   position: absolute;
   width: min(88vw, 44dvh, 360px);
@@ -452,37 +460,6 @@ svg { display: block; }
   display: block;
 }
 
-.cover-vinyl {
-  position: absolute;
-  right: -22%;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 70%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 50%, #2a2a2a 0%, #0a0a0a 38%, #1a1a1a 38.5%, #0a0a0a 100%);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .5s ease, transform .5s ease;
-  z-index: 0;
-}
-.cover-art.vinyl-mode {
-  overflow: visible;
-}
-.cover-art.vinyl-mode .cover-vinyl {
-  opacity: 1;
-}
-.cover-art.vinyl-mode.playing .cover-vinyl {
-  animation: spin 8s linear infinite;
-}
-.vinyl-inner {
-  position: absolute;
-  inset: 30%;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--cover-from), var(--cover-to));
-}
 @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
 
 .sec-btn.liked svg {
@@ -3418,18 +3395,6 @@ button,
 }
 /* Stepper de velocidad en Ajustes (el mismo ajuste que el pill de
  * Letras; ambos se mantienen sincronizados en setPlaybackRate). */
-.speed-stepper {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin: 2px 2px 14px;
-}
-.speed-stepper .speed-val {
-  font-weight: 700;
-  min-width: 52px;
-  text-align: center;
-}
-.speed-stepper .icon-btn-sm:disabled { opacity: 0.35; }
 .xfade-opt {
   padding: 10px 6px;
   background: var(--surface);
@@ -3703,23 +3668,10 @@ button,
 }
 
 
-.lrc-word {
-  display: inline;
-  color: inherit;
-  transition: color .1s linear, text-shadow .1s linear;
-}
-.lrc-line.active .lrc-word {
-  color: var(--text-4);
-}
-.lrc-line.active .lrc-word.sung {
-  color: var(--text-1);
-  text-shadow: 0 0 18px var(--cover-from);
-}
 
 @media (prefers-reduced-motion: reduce) {
   .marquee-inner { animation: none !important; transform: none !important; }
-  .cover-art.vinyl-mode.playing .cover-vinyl { animation: none; }
-  .cover-art.playing { animation: none; }
+    .cover-art.playing { animation: none; }
 }
 
 
@@ -4373,43 +4325,10 @@ html.aurora-wide .toast {
  * ===================================================================== */
 
 /* Rango A-B sobre la barra de progreso */
-.progress-ab-range {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: rgba(var(--accent-rgb), 0.32);
-  border-left: 2px solid var(--accent);
-  border-right: 2px solid var(--accent);
-  border-radius: var(--radius-pill);
-  pointer-events: none;
-  z-index: 0;
-}
 
 /* Botón A-B en controles secundarios. El distintivo ocupa el puesto
  * del icono: misma caja de 36×36 y radio 12 que los .ico de la fila,
  * con su etiqueta .sec-label debajo (sin ella quedaba descuadrado). */
-.ab-btn { position: relative; }
-.ab-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0 2px;
-  box-sizing: border-box;
-  border-radius: 12px;
-  background: var(--surface);
-  color: var(--text-2);
-  font-size: 0.5625rem;
-  font-weight: 800;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-}
-.ab-btn.active .ab-badge,
-.ab-btn.setting-b .ab-badge {
-  background: rgba(var(--accent-rgb), 0.18);
-  color: var(--accent);
-}
 
 @media (max-width: 380px) {
   /* 5 controles secundarios (incluye A-B): reducir separación */
@@ -4895,12 +4814,6 @@ html.aurora-wide .toast {
   height: 4px;
   transform: translateY(-50%);
 }
-.progress-ab-range {
-  top: 50%;
-  bottom: auto;
-  height: 6px;
-  transform: translateY(-50%);
-}
 .progress-thumb {
   width: 13px;
   height: 13px;
@@ -5202,12 +5115,6 @@ html.aurora-wide .toast {
 }
 .edit-pl-rename-btn.confirm { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; } /* §94: contraste */
 /* Editor LRC por toques */
-.lrc-tap-box { margin-top: 14px; }
-.lrc-tap-next {
-  font-size: 1.05rem; font-weight: 600; color: var(--text-1); min-height: 1.4em; margin: 10px 0;
-}
-.lrc-tap-btn { width: 100%; min-height: 64px; font-size: 1.05rem; margin: 6px 0; }
-.lrc-tap-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 /* Duplicados */
 .dup-group { margin-bottom: 18px; }
 .dup-group-title { font-size: var(--fs-sm); font-weight: 700; color: var(--text-2); margin: 0 0 6px; }

@@ -82,16 +82,13 @@ Object.assign(App, {
           hasTimed = true;
           const lastStampEnd = trimmed.lastIndexOf(stamps[stamps.length - 1].match) + stamps[stamps.length - 1].match.length;
           const rawText = trimmed.substring(lastStampEnd).trim();
-          const words = this.parseKaraokeWords(rawText, Math.max(0, stamps[0].time), globalOffset);
           const text = this.stripKaraokeTags(rawText);
           for (const stamp of stamps) {
-            const line = {
+            result.push({
               time: Math.max(0, stamp.time),
               text: text,
               timed: true
-            };
-            if (words) line.words = words;
-            result.push(line);
+            });
           }
         } else {
           // Línea de texto plano (sin timestamp)
@@ -130,7 +127,6 @@ Object.assign(App, {
           ) {
             if (!prev.text && line.text) {
               prev.text = line.text;   // la 1ª estaba vacía: promover su texto
-              if (!prev.words && line.words) prev.words = line.words;
             } else if (line.text) {
               prev.translation = line.text;
             }
@@ -149,40 +145,8 @@ Object.assign(App, {
       return String(text || '').replace(/<\d{1,2}:\d{2}(?:\.\d{1,3})?>/g, '');
     },
 
-    /* Palabras con timestamp Enhanced LRC: <mm:ss.xx>palabra
-     * Solo si hay al menos 2 tags. No se inventan tiempos. */
-    parseKaraokeWords(text, lineTime, globalOffset) {
-      const off = Number(globalOffset) || 0;
-      if (!text || text.indexOf('<') === -1) return null;
-      const re = /<(\d{1,2}):(\d{2}(?:\.\d{1,3})?)>/g;
-      if (!re.test(text)) return null;
-      re.lastIndex = 0;
-      const words = [];
-      let last = 0;
-      let m;
-      let tags = 0;
-      while ((m = re.exec(text)) !== null) {
-        tags++;
-        if (m.index > last) {
-          const chunk = text.slice(last, m.index);
-          if (words.length) words[words.length - 1].text += chunk;
-          else if (chunk) words.push({ time: lineTime, text: chunk });
-        }
-        words.push({
-          // [offset:] aplica también a los tags <mm:ss> de karaoke; antes
-          // solo se aplicaba a los timestamps de línea.
-          time: Math.max(0, parseInt(m[1], 10) * 60 + parseFloat(m[2]) + off),
-          text: ''
-        });
-        last = re.lastIndex;
-      }
-      if (last < text.length && words.length) {
-        words[words.length - 1].text += text.slice(last);
-      }
-      const cleaned = words.filter(w => w.text.length);
-      cleaned.forEach(w => { w.time = Math.max(0, w.time); });
-      return (tags >= 2 && cleaned.length >= 2) ? cleaned : null;
-    },
+    /* §100: karaoke por palabras retirado; stripKaraokeTags sigue
+     * limpiando los <mm:ss> de los LRC mejorados al pintar la línea. */
 
     _setLyricsEmpty(on) {
       const emptyEl = document.getElementById('lrcEmpty');
@@ -274,17 +238,7 @@ Object.assign(App, {
         if (!l.text) div.classList.add('empty');
         if (!this.lrcHasTimed) div.classList.add('untimed');
         // Traducción (LRC bilingüe): línea secundaria bajo el texto principal
-        if (l.words && l.words.length >= 2) {
-          const wordHtml = l.words.map(w =>
-            '<span class="lrc-word" data-t="' + w.time + '">' + this.esc(w.text) + '</span>'
-          ).join('');
-          if (l.translation) {
-            div.innerHTML = '<span class="lrc-main">' + wordHtml + '</span>' +
-              '<span class="lrc-translation">' + this.esc(l.translation) + '</span>';
-          } else {
-            div.innerHTML = wordHtml;
-          }
-        } else if (l.translation) {
+        if (l.translation) {
           div.innerHTML = '<span class="lrc-main">' + this.esc(l.text || '♪') + '</span>' +
             '<span class="lrc-translation">' + this.esc(l.translation) + '</span>';
         } else {
@@ -408,7 +362,6 @@ Object.assign(App, {
         }
         // §86: antes de la primera línea (intro) todo visible.
         this._setLrcFocus(false);
-        this._updateKaraokeWords(cur);
         return;
       }
 
@@ -486,7 +439,6 @@ Object.assign(App, {
         }
       }
 
-      this._updateKaraokeWords(cur);
     },
 
     /* Posición de reposo de la línea activa: su centro, en el centro
@@ -498,26 +450,6 @@ Object.assign(App, {
       return el.offsetTop - (sc.clientHeight / 2) + (el.clientHeight / 2);
     },
 
-    _updateKaraokeWords(cur) {
-      if (!this._lrcLineEls) {
-        const cont = document.getElementById('lyricsContent');
-        if (cont) this._lrcLineEls = Array.from(cont.querySelectorAll('.lrc-line'));
-      }
-      if (!this._lrcLineEls) return;
-      for (let i = 0; i < this._lrcLineEls.length; i++) {
-        const el = this._lrcLineEls[i];
-        const spans = el.querySelectorAll('.lrc-word');
-        if (!spans.length) continue;
-        const active = el.classList.contains('active');
-        for (let j = 0; j < spans.length; j++) {
-          const wt = parseFloat(spans[j].dataset.t);
-          const sung = active && isFinite(wt) && wt <= cur;
-          if (spans[j].classList.contains('sung') !== sung) {
-            spans[j].classList.toggle('sung', sung);
-          }
-        }
-      }
-    },
 
     /* ============================================================
      *  Cargar .lrc externo (#1)
@@ -600,92 +532,8 @@ Object.assign(App, {
       if (typeof this._syncLyricsButton === 'function') this._syncLyricsButton();
     },
 
-    /* ============================================================
-     *  §81: sincronizar tocando (tap-to-sync)
-     *  El editor ya existía (pegar/editar con [mm:ss.xx] a mano);
-     *  faltaba marcar los tiempos al ritmo de la canción. Modo:
-     *  escribes las líneas SIN tiempos, abres el panel, reproduces
-     *  y tocas «Marcar línea» al empezar cada una. Al terminar, las
-     *  marcas se escriben en el editor como LRC normal y se guardan
-     *  con el botón Guardar de siempre (saveLrcFromEditor).
-     * ============================================================ */
-    _fmtLrcStamp(sec) {
-      // §94: redondear primero en centésimas — antes 59.999 s
-      // salía como [00:60.00], un sello inválido que el propio
-      // parser luego no sabía leer bien.
-      const cs = Math.round(Math.max(0, Number(sec) || 0) * 100);
-      const m = Math.floor(cs / 6000);
-      const r = (cs % 6000) / 100;
-      return '[' + String(m).padStart(2, '0') + ':' + r.toFixed(2).padStart(5, '0') + ']';
-    },
-
-    toggleLrcTapMode() {
-      const panel = document.getElementById('lrcTapPanel');
-      const ta = document.getElementById('lrcEditorText');
-      if (!panel || !ta) return;
-      if (!panel.hidden) {
-        panel.hidden = true;
-        this._tapSync = null;
-        return;
-      }
-      // Líneas sin marcas de tiempo (las que ya las traen se saltan:
-      // el modo es para letras pegadas en crudo).
-      const stampRe = /\[\d+:\d{1,2}(?:\.\d+)?\]/g;
-      const lines = ta.value.split(/\r?\n/)
-        .map(l => l.replace(stampRe, '').trim())
-        .filter(l => l && !/^\[(ar|ti|al|by|offset|length|re|ve|id):/i.test(l));
-      if (!lines.length) {
-        this.toast(this.t('lrc_tap_no_lines'));
-        return;
-      }
-      this._tapSync = { lines, stamps: [] };
-      panel.hidden = false;
-      this._renderTapSync();
-    },
-
-    _renderTapSync() {
-      const st = this._tapSync;
-      const nextEl = document.getElementById('lrcTapNext');
-      const progEl = document.getElementById('lrcTapProgress');
-      if (!st) return;
-      const idx = st.stamps.length;
-      if (nextEl) nextEl.textContent = idx < st.lines.length ? st.lines[idx] : '✓';
-      if (progEl) progEl.textContent = Math.min(idx, st.lines.length) + ' / ' + st.lines.length;
-    },
-
-    tapSyncMark() {
-      const st = this._tapSync;
-      if (!st || st.stamps.length >= st.lines.length) return;
-      const now = (this.audio && isFinite(this.audio.currentTime)) ? this.audio.currentTime : 0;
-      // Marcas siempre crecientes: si el usuario retrocede, la marca
-      // no puede ir antes que la anterior (el parser ordena, pero la
-      // línea quedaría asociada al tiempo equivocado).
-      const prev = st.stamps.length ? st.stamps[st.stamps.length - 1].time : 0;
-      st.stamps.push({ time: Math.max(now, prev), text: st.lines[st.stamps.length] });
-      this._renderTapSync();
-    },
-
-    tapSyncUndo() {
-      const st = this._tapSync;
-      if (!st || !st.stamps.length) return;
-      st.stamps.pop();
-      this._renderTapSync();
-    },
-
-    tapSyncDone() {
-      const st = this._tapSync;
-      const ta = document.getElementById('lrcEditorText');
-      if (!st || !ta) return;
-      const stamped = st.stamps.map(s => this._fmtLrcStamp(s.time) + s.text);
-      // Las líneas no marcadas se conservan sin tiempo al final:
-      // terminar antes de tiempo no borra letra.
-      const rest = st.lines.slice(st.stamps.length);
-      ta.value = stamped.concat(rest).join('\n');
-      const panel = document.getElementById('lrcTapPanel');
-      if (panel) panel.hidden = true;
-      this._tapSync = null;
-      this.toast(this.t('lrc_saved'));
-    },
+    /* §100: «sincronizar tocando» retirado con su panel y métodos
+     * (la letra se sigue pudiendo pegar con sellos [mm:ss.xx]). */
 
     /* Exportar / compartir letra LRC activa en Delta Chat o descarga local */
     async exportCurrentLyrics() {
@@ -844,14 +692,7 @@ Object.assign(App, {
       }
       const label = document.getElementById('lrcSpeedLabel');
       if (label) label.textContent = this.playbackRate.toFixed(1) + '×';
-      // El mismo ajuste se ofrece en Ajustes → Reproducción (A3):
-      // ambas etiquetas y los topes del stepper quedan sincronizados.
-      const sVal = document.getElementById('settingsSpeedVal');
-      if (sVal) sVal.textContent = this.playbackRate.toFixed(1) + '×';
-      const bDown = document.getElementById('btnSpeedDown');
-      if (bDown) bDown.disabled = this.playbackRate <= 0.5;
-      const bUp = document.getElementById('btnSpeedUp');
-      if (bUp) bUp.disabled = this.playbackRate >= 2.0;
+      // §100: la velocidad vive solo aquí (Ajustes ya no la duplica).
       try { localStorage.setItem('aurora_playback_rate', this.playbackRate); } catch (e) {}
       if (this.currentTrack) {
         this.currentTrack.lrcSpeed = this.playbackRate;

@@ -45,7 +45,8 @@
     /* §95: portada a pantalla completa (modo inmersivo al tocarla).
      * No se persiste: es un estado de vista, no una preferencia. */
     _coverFs: false,
-    abRepeat: { active: false, a: null, b: null },
+    /* §100: sin abRepeat (sistema retirado); el bucle vivo
+     * es lrcLoop, el de sección en Letras. */
 
     /* Selección múltiple / lote */
 
@@ -152,7 +153,7 @@
     _lastError: null,
     VERSION: '1.2.0',
     _marqueeEnabled: true,
-    _vinylEnabled: false,
+    /* §100: sin _vinylEnabled (modo vinilo retirado). */
     _showRemaining: false, // §72: la duración total alterna a «tiempo restante» al tocarla
 
     ico(name, extra) {

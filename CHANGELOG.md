@@ -4,6 +4,21 @@ Historial de versiones **publicadas** de Aurora Music Player. El
 diario detallado de desarrollo y verificación de cada cambio está en
 `docs/INFORME-PULIDO-UI.md` (§§1–61).
 
+## Sin publicar
+
+Cambios ya en el código, a la espera de orden de publicación:
+
+- Gran poda tras una auditoría completa (§100): fuera la hoja
+  de Volumen (nadie la abría), el bucle A-B del reproductor
+  (queda el de Letras), «sincronizar tocando» y el karaoke por
+  palabras, el modo vinilo, «Iniciar radio» y compartir
+  estadísticas. La transición entre canciones es ahora un solo
+  control (Corte / Sin pausa / Fundido), el ajuste fino de
+  Letras se pliega tras un botón, el menú ⋯ ya no mezcla
+  contexto de la canción, y «Mantenimiento» explica qué hace
+  y qué destruye cada opción. La valoración con estrellas
+  no se ha tocado.
+
 ## 1.2.0 — Primera versión pública
 
 Primera versión compartida fuera del desarrollo. Incluye, ya

@@ -98,7 +98,6 @@ Object.assign(App, {
 
       // Vinilo en lugar de cover si está reproduciendo
       this.updateCoverA11y();
-      if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
 
       // Favorito
       this.updateFavoriteUI();
@@ -350,7 +349,6 @@ Object.assign(App, {
         }
       });
       this.updateCoverA11y();
-      if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
 
       /* Los anillos de «esta lista está sonando» (hero de la lista
        * abierta y «Reproducir Todo» de Favoritos) se pintan al
@@ -423,14 +421,8 @@ Object.assign(App, {
       const cur = a.currentTime || 0;
       const dur = a.duration || this.currentTrack?.duration || 0;
 
-      // Repetición A-B (#22)
-      if (this.abRepeat && this.abRepeat.active && this.abRepeat.b !== null && this.abRepeat.a !== null) {
-        if (cur >= this.abRepeat.b) {
-          this.seekToTime(this.abRepeat.a);
-          return;
-        }
-      }
-
+      // §100: la ejecución del A-B se fue con su sistema; el bucle
+      // que queda es el de sección de letras, justo aquí debajo.
       // Repetición de sección de letras (#19): rango elegido a mano en la
       // vista de letras ({start, end} en segundos de la canción). Se aplica
       // aquí, no en el RAF de letras, para que siga activa al volver al
@@ -511,13 +503,7 @@ Object.assign(App, {
       this._syncMarquee(el);
     },
 
-    applyVinylMode() {
-      const art = document.getElementById('coverArt');
-      const sec = document.querySelector('.cover-section');
-      const on = !!this._vinylEnabled;
-      if (art) art.classList.toggle('vinyl-mode', on);
-      if (sec) sec.classList.toggle('vinyl-on', on);
-    },
+    /* §100: applyVinylMode retirado con el modo vinilo. */
 
     _syncMarquee(el) {
       if (!el) return;

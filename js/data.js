@@ -442,10 +442,6 @@ const I18N = {
     es: 'Color de acento', en: 'Accent color', pt: 'Cor de destaque',
     zh: '强调色', ja: 'アクセントカラー', fr: 'Couleur d’accent', it: 'Colore accento', ru: 'Цвет акцента'
   },
-  settings_speed: {
-    es: 'Velocidad de reproducción', en: 'Playback speed', pt: 'Velocidade de reprodução',
-    zh: '播放速度', ja: '再生速度', fr: 'Vitesse de lecture', it: 'Velocità di riproduzione', ru: 'Скорость воспроизведения'
-  },
   stats_title: {
     es: 'Estadísticas',
     en: 'Statistics',
@@ -1125,16 +1121,6 @@ const I18N = {
     it: 'Riprodurrà dopo',
     ru: 'Воспроизведётся далее'
   },
-  toast_radio_based: {
-    es: 'Radio basada en:',
-    en: 'Radio based on:',
-    pt: 'Rádio baseada em:',
-    zh: '电台基于：',
-    ja: 'ラジオのベース：',
-    fr: 'Radio basée sur :',
-    it: 'Radio basata su:',
-    ru: 'Радио на основе:'
-  },
   toast_playlist_empty: {
     es: 'Lista vacía',
     en: 'Empty playlist',
@@ -1489,14 +1475,6 @@ const I18N = {
     es: 'Interfaz', en: 'Interface', pt: 'Interface', zh: '界面', ja: 'インターフェース',
     fr: 'Interface', it: 'Interfaccia', ru: 'Интерфейс'
   },
-  settings_storage: {
-    es: 'Almacenamiento', en: 'Storage', pt: 'Armazenamento', zh: '存储', ja: 'ストレージ',
-    fr: 'Stockage', it: 'Memoria', ru: 'Хранилище'
-  },
-  settings_gapless: {
-    es: 'Reproducción sin pausa', en: 'Gapless playback', pt: 'Reprodução sem pausas', zh: '无缝播放', ja: 'ギャップレス再生',
-    fr: 'Lecture sans pause', it: 'Riproduzione senza pause', ru: 'Воспроизведение без пауз'
-  },
   settings_norm_volume: {
     es: 'Normalizar volumen', en: 'Normalize volume', pt: 'Normalizar volume', zh: '音量标准化', ja: '音量の正規化',
     fr: 'Normaliser le volume', it: 'Normalizza volume', ru: 'Нормализация громкости'
@@ -1807,16 +1785,6 @@ const I18N = {
   },
 
   /* ---------- Fase 2: motor de audio ---------- */
-  settings_crossfade: {
-    es: 'Fundido cruzado', en: 'Crossfade', pt: 'Crossfade',
-    zh: '交叉淡化', ja: 'クロスフェード', fr: 'Fondu enchaîné',
-    it: 'Dissolvenza', ru: 'Кроссфейд'
-  },
-  settings_crossfade_off: {
-    es: 'Off', en: 'Off', pt: 'Off',
-    zh: '关', ja: 'オフ', fr: 'Off',
-    it: 'Off', ru: 'Выкл'
-  },
   toast_skipped_give_up: {
     es: 'X pistas omitidas. Reproducción pausada.',
     en: 'X tracks skipped. Playback paused.',
@@ -2149,11 +2117,6 @@ const I18N = {
     zh: '长标题滚动', ja: '長いタイトルをスクロール', fr: 'Marquee des titres longs',
     it: 'Marquee per titoli lunghi', ru: 'Бегущая строка длинных названий'
   },
-  settings_vinyl: {
-    es: 'Vinilo en la portada', en: 'Vinyl on artwork', pt: 'Vinil na capa',
-    zh: '封面黑胶效果', ja: 'ジャケットにレコード', fr: 'Vinyle sur la pochette',
-    it: 'Vinile sulla copertina', ru: 'Винил на обложке'
-  },
   settings_sleep_fade: {
     es: 'El temporizador sleep hace un fade-out de 10 s al apagar.',
     en: 'The sleep timer fades out over 10 s before stopping.',
@@ -2184,11 +2147,6 @@ const I18N = {
     zh: '分享到聊天 / 导出', ja: 'チャットに共有 / 書き出し', fr: 'Partager dans le chat / Exporter',
     it: 'Condividi in chat / Esporta', ru: 'Поделиться в чате / Экспорт'
   },
-  menu_share_track: {
-    es: 'Compartir canción en chat', en: 'Share song to chat', pt: 'Compartilhar música no chat',
-    zh: '在聊天中分享歌曲', ja: '曲をチャットに共有', fr: 'Partager le morceau dans le chat',
-    it: 'Condividi brano in chat', ru: 'Поделиться треком в чате'
-  },
   lrc_export_btn: {
     es: 'Compartir', en: 'Share', pt: 'Compartilhar',
     zh: '分享', ja: '共有', fr: 'Partager',
@@ -2198,11 +2156,6 @@ const I18N = {
     es: 'Compartir letra', en: 'Share lyrics', pt: 'Compartilhar letra',
     zh: '分享歌词', ja: '歌詞を共有', fr: 'Partager les paroles',
     it: 'Condividi testo', ru: 'Поделиться текстом'
-  },
-  stats_share_btn: {
-    es: 'Compartir resumen', en: 'Share summary', pt: 'Compartilhar resumo',
-    zh: '分享概览', ja: '概要を共有', fr: 'Partager le résumé',
-    it: 'Condividi riepilogo', ru: 'Поделиться сводкой'
   },
   toast_preparing_share: {
     es: 'Preparando archivo para compartir...', en: 'Preparing file to share...', pt: 'Preparando arquivo para compartilhar...',
@@ -2244,11 +2197,6 @@ const I18N = {
     zh: '歌词已导出', ja: '歌詞を書き出しました', fr: 'Paroles exportées',
     it: 'Testo esportato', ru: 'Текст экспортирован'
   },
-  stats_summary_title: {
-    es: 'Mi resumen en Aurora Music Player', en: 'My summary on Aurora Music Player', pt: 'Meu resumo no Aurora Music Player',
-    zh: '我在 Aurora Music Player 的收听概览', ja: 'Aurora Music Player の再生サマリー', fr: 'Mon résumé sur Aurora Music Player',
-    it: 'Il mio riepilogo su Aurora Music Player', ru: 'Моя сводка в Aurora Music Player'
-  },
   visualizer: {
     es: 'Visualizador', en: 'Visualizer', pt: 'Visualizador',
     zh: '频谱可视化', ja: 'ビジュアライザー', fr: 'Visualiseur',
@@ -2264,33 +2212,8 @@ const I18N = {
     zh: '已关闭', ja: '無効', fr: 'Désactivé',
     it: 'Disattivato', ru: 'Отключено'
   },
-  ab_repeat: {
-    es: 'Bucle A-B', en: 'A-B Loop', pt: 'Loop A-B',
-    zh: 'A-B 循环', ja: 'A-B ループ', fr: 'Boucle A-B',
-    it: 'Loop A-B', ru: 'Петля A-B'
-  },
   /* Etiqueta corta bajo el botón A-B: junto al distintivo «A-B» se lee
    * «Bucle A-B» sin ocupar el ancho completo de la fila secundaria. */
-  ab_label: {
-    es: 'Bucle', en: 'Loop', pt: 'Loop',
-    zh: '循环', ja: 'ループ', fr: 'Boucle',
-    it: 'Loop', ru: 'Петля'
-  },
-  ab_set_a: {
-    es: 'Punto A fijado en X. Pulsa para fijar B', en: 'Point A set at X. Tap to set B', pt: 'Ponto A fixado em X. Toque para fixar B',
-    zh: 'A 点已设置在 X。再次点击设置 B 点', ja: 'A 地点を X に設定しました。タップして B を設定', fr: 'Point A défini à X. Touchez pour définir B',
-    it: 'Punto A impostato su X. Tocca per impostare B', ru: 'Точка A установлена на X. Нажмите для B'
-  },
-  ab_active: {
-    es: 'Bucle A-B activo (X ⇄ Y)', en: 'A-B Loop active (X ⇄ Y)', pt: 'Loop A-B ativo (X ⇄ Y)',
-    zh: 'A-B 循环开启 (X ⇄ Y)', ja: 'A-B ループ有効 (X ⇄ Y)', fr: 'Boucle A-B active (X ⇄ Y)',
-    it: 'Loop A-B attivo (X ⇄ Y)', ru: 'Петля A-B активна (X ⇄ Y)'
-  },
-  ab_cleared: {
-    es: 'Bucle A-B desactivado', en: 'A-B Loop cleared', pt: 'Loop A-B desativado',
-    zh: 'A-B 循环已清除', ja: 'A-B ループを解除しました', fr: 'Boucle A-B désactivée',
-    it: 'Loop A-B disattivato', ru: 'Петля A-B отключена'
-  },
   settings_preserves_pitch: {
     es: 'Preservar tono al cambiar velocidad', en: 'Preserve pitch on speed change', pt: 'Preservar tom ao mudar velocidade',
     zh: '变速时保持音调', ja: '速度変更時にピッチを維持', fr: 'Préserver la hauteur à vitesse variable',
@@ -2333,6 +2256,68 @@ const I18N = {
     es: 'Subir velocidad', en: 'Increase speed', pt: 'Aumentar velocidade',
     zh: '提高速度', ja: '速度を上げる', fr: 'Augmenter la vitesse',
     it: 'Aumenta velocità', ru: 'Увеличить скорость'
+  },
+  /* §100: transición única, mantenimiento con textos claros y
+   * el despliegue del ajuste fino de Letras. */
+  settings_transition: {
+    es: 'Transición entre canciones', en: 'Transition between tracks', pt: 'Transição entre faixas',
+    zh: '曲目过渡', ja: '曲間のトランジション', fr: 'Transition entre les titres',
+    it: 'Transizione tra i brani', ru: 'Переход между треками'
+  },
+  transition_normal: {
+    es: 'Corte', en: 'Cut', pt: 'Corte',
+    zh: '直接切换', ja: 'カット', fr: 'Coupe',
+    it: 'Taglio', ru: 'Сразу'
+  },
+  transition_gapless: {
+    es: 'Sin pausa', en: 'Gapless', pt: 'Sem pausa',
+    zh: '无缝', ja: 'ギャップレス', fr: 'Sans pause',
+    it: 'Senza pausa', ru: 'Без паузы'
+  },
+  transition_crossfade: {
+    es: 'Fundido', en: 'Crossfade', pt: 'Fundido',
+    zh: '淡入淡出', ja: 'クロスフェード', fr: 'Fondu enchaîné',
+    it: 'Dissolvenza', ru: 'Кроссфейд'
+  },
+  settings_maintenance: {
+    es: 'Mantenimiento', en: 'Maintenance', pt: 'Manutenção',
+    zh: '维护', ja: 'メンテナンス', fr: 'Maintenance',
+    it: 'Manutenzione', ru: 'Обслуживание'
+  },
+  settings_retag_hint: {
+    es: 'Vuelve a leer título, artista y portada de tus archivos. No borra nada.',
+    en: 'Re-reads title, artist and artwork from your files. Deletes nothing.',
+    pt: 'Relê título, artista e capa dos seus arquivos. Não apaga nada.',
+    zh: '重新读取文件的标题、艺术家和封面。不删除任何内容。',
+    ja: 'ファイルのタイトル、アーティスト、アートワークを読み直します。何も削除されません。',
+    fr: 'Relit le titre, l’artiste et la pochette de vos fichiers. Ne supprime rien.',
+    it: 'Rilegge titolo, artista e copertina dei tuoi file. Non elimina nulla.',
+    ru: 'Перечитывает название, исполнителя и обложку файлов. Ничего не удаляет.'
+  },
+  settings_free_hint: {
+    es: 'Borra miniaturas y cachés para recuperar espacio. Tu música se queda.',
+    en: 'Deletes thumbnails and caches to reclaim space. Your music stays.',
+    pt: 'Apaga miniaturas e caches para recuperar espaço. Sua música fica.',
+    zh: '删除缩略图和缓存以释放空间。音乐会保留。',
+    ja: 'サムネイルとキャッシュを削除して空き容量を増やします。音楽は残ります。',
+    fr: 'Supprime miniatures et caches pour récupérer de l’espace. Votre musique reste.',
+    it: 'Elimina miniature e cache per recuperare spazio. La tua musica resta.',
+    ru: 'Удаляет миниатюры и кэш, освобождая место. Музыка остаётся.'
+  },
+  settings_delete_hint: {
+    es: 'Borra TODAS las canciones y listas de la app. Los archivos de tu dispositivo no se tocan, pero esto no se puede deshacer.',
+    en: 'Deletes ALL songs and playlists from the app. Files on your device are untouched, but this cannot be undone.',
+    pt: 'Apaga TODAS as músicas e listas do app. Os arquivos do dispositivo não são tocados, mas não há como desfazer.',
+    zh: '删除应用中的所有歌曲和播放列表。设备上的文件不受影响，但此操作无法撤销。',
+    ja: 'アプリ内のすべての曲とプレイリストを削除します。デバイス上のファイルは変更されませんが、元に戻せません。',
+    fr: 'Supprime TOUS les titres et listes de l’app. Les fichiers de l’appareil ne sont pas touchés, mais c’est irréversible.',
+    it: 'Elimina TUTTI i brani e le liste dall’app. I file sul dispositivo non vengono toccati, ma non si può annullare.',
+    ru: 'Удаляет ВСЕ песни и плейлисты из приложения. Файлы на устройстве не затрагиваются, но действие необратимо.'
+  },
+  lrc_tools: {
+    es: 'Ajustes de letra', en: 'Lyrics settings', pt: 'Ajustes da letra',
+    zh: '歌词设置', ja: '歌詞設定', fr: 'Réglages des paroles',
+    it: 'Impostazioni testo', ru: 'Настройки текста'
   },
   cover_art_aria: {
     es: 'Portada de X', en: 'Cover art for X', pt: 'Capa de X',
@@ -2516,36 +2501,6 @@ const I18N = {
     es: 'Cola guardada como lista', en: 'Queue saved as playlist', pt: 'Fila salva como lista',
     zh: '队列已存为歌单', ja: 'キューをリストに保存しました', fr: 'File enregistrée comme liste',
     it: 'Coda salvata come playlist', ru: 'Очередь сохранена как плейлист'
-  },
-  lrc_tap_mode: {
-    es: 'Sincronizar tocando', en: 'Tap to sync', pt: 'Sincronizar tocando',
-    zh: '点按同步', ja: 'タップで同期', fr: 'Synchroniser en touchant',
-    it: 'Sincronizza toccando', ru: 'Синхронизация касаниями'
-  },
-  lrc_tap_hint: {
-    es: 'Reproduce la canción y toca el botón grande al empezar cada línea. Al terminar, las marcas se escriben en el editor.', en: 'Play the song and tap the big button as each line starts. When done, the marks are written into the editor.', pt: 'Toque a música e toque no botão grande no início de cada linha. Ao terminar, as marcas vão para o editor.',
-    zh: '播放歌曲，在每行开始时点大按钮。完成后时间标记会写入编辑器。', ja: '曲を再生し、各行の頭で大きなボタンをタップ。終わると編集欄に時刻が入ります。', fr: 'Lancez le titre et touchez le gros bouton au début de chaque ligne. À la fin, les repères sont écrits dans l’éditeur.',
-    it: 'Riproduci il brano e tocca il pulsante grande all’inizio di ogni riga. Alla fine i segni finiscono nell’editor.', ru: 'Включите трек и нажимайте большую кнопку в начале каждой строки. В конце метки попадут в редактор.'
-  },
-  lrc_tap_button: {
-    es: 'Marcar línea', en: 'Mark line', pt: 'Marcar linha',
-    zh: '标记此行', ja: '行をマーク', fr: 'Marquer la ligne',
-    it: 'Segna riga', ru: 'Отметить строку'
-  },
-  lrc_tap_undo: {
-    es: 'Deshacer marca', en: 'Undo mark', pt: 'Desfazer marca',
-    zh: '撤销标记', ja: 'マークを取り消す', fr: 'Annuler le repère',
-    it: 'Annulla segno', ru: 'Отменить метку'
-  },
-  lrc_tap_done: {
-    es: 'Terminar y escribir marcas', en: 'Finish and write marks', pt: 'Terminar e escrever marcas',
-    zh: '完成并写入', ja: '終了して書き込む', fr: 'Terminer et écrire',
-    it: 'Finisci e scrivi', ru: 'Готово, записать метки'
-  },
-  lrc_tap_no_lines: {
-    es: 'Escribe primero las líneas de la letra (sin tiempos).', en: 'Write the lyric lines first (without timestamps).', pt: 'Escreva primeiro as linhas da letra (sem tempos).',
-    zh: '请先写下歌词行（不带时间）。', ja: 'まず歌詞の行を書いてください（時刻なし）。', fr: 'Écrivez d’abord les lignes des paroles (sans horodatage).',
-    it: 'Scrivi prima le righe del testo (senza tempi).', ru: 'Сначала впишите строки текста (без меток).'
   },
   stats_most_skipped: {
     es: 'Más saltadas', en: 'Most skipped', pt: 'Mais puladas',

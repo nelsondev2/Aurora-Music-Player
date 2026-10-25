@@ -126,7 +126,6 @@ Object.assign(App, {
       }
       this.setPreservesPitch(this.preservesPitch);
       if (typeof this.initVisualizer === 'function') this.initVisualizer();
-      if (typeof this.updateABRepeatUI === 'function') this.updateABRepeatUI();
       // #11 Cargar historial
       this.loadHistory();
       this.loadSearchHistory();

@@ -3899,3 +3899,65 @@ La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
   re-ejecutados — sus supervivientes están cubiertos en §98).
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## 100. Auditoría aplicada: la gran poda (sin estrellas y sin release)
+
+Tras la auditoría completa (3 vistas, 23 hojas, 99 botones), el
+usuario ordenó aplicar **todos** los cambios mencionados, con dos
+condiciones: el sistema de valoración con estrellas **no se toca**
+y **no hay release nuevo** hasta nueva orden. Saldo:
+**−738/+218 líneas** en 13 archivos.
+
+### Retirado («esto sobra»)
+- **Hoja de Volumen zombi**: ningún código la abría desde hacía
+  tiempo; fuera hoja, slider y sus referencias en `setVolume`.
+  El volumen vive en el gesto de la portada y el slider compacto.
+- **El bucle A-B del reproductor**: había dos bucles (A-B y el de
+  sección en Letras); queda el de Letras. Fuera botón, rango en la
+  barra, métodos, ejecución en `updateProgress` y estado.
+- **«Sincronizar tocando» y el karaoke por palabras** de Letras:
+  panel, 5 métodos y el troceo `<mm:ss>` por palabra. La letra se
+  sigue pudiendo pegar con sellos, y los LRC mejorados se pintan
+  limpios (`stripKaraokeTags` se queda como limpieza de texto).
+- **Modo vinilo** (disco decorativo): DOM, CSS, ajuste y método.
+- **«Iniciar radio»** del menú de pista y `startRadio` (solapaba
+  con aleatorio y listas inteligentes).
+- **Compartir estadísticas** (botón y método; la hoja se queda).
+- **La ayuda de atajos se oculta sin teclado**: en puntero grueso
+  la fila de Ajustes ni se muestra; en escritorio sigue igual.
+- 21 claves i18n huérfanas de todo lo anterior (363 ×8 al final).
+
+### Simplificado («esto se puede mejorar»)
+- **Transición única Corte / Sin pausa / Fundido** en Ajustes:
+  un solo selector gobierna gapless y crossfade (la duración solo
+  se ve en Fundido; elegirla implica Fundido). Los ajustes
+  heredados se derivan sin pérdida (gapless suelto y/o fundido
+  con duración → su modo) y se guarda la clave nueva `transition`.
+- **Letras jerarquizada**: lo diario (tamaño, pantalla completa,
+  cargar/editar/compartir) visible; lo fino (desfase, velocidad,
+  bucle, restablecer) plegado tras «Ajustes de letra».
+- **Menú ⋯ depurado**: fuera «Ir al artista/álbum» y «Compartir
+  pista» (viven en el menú de pista, con su contexto); el ⋯ queda
+  para sistema y biblioteca.
+- **«Mantenimiento» honesto** en Ajustes: Releer metadatos,
+  Liberar espacio y Borrar biblioteca, cada una con una línea que
+  dice qué hace y qué destruye (3 claves nuevas ×8).
+- **La velocidad, en un solo sitio**: Letras. Fuera el stepper de
+  Ajustes.
+- **`btnBack` → `btnLoadMusic`**: el botón superior del
+  reproductor se llama como lo que hace (cargar música).
+
+### Verificación
+- **Check §100** `/tmp/check-vista100.js`: **26/26** — métodos y
+  DOM retirados ausentes; transición en sus tres modos + la
+  duración que implica Fundido + herencia de ajustes viejos; el
+  ajuste fino nace plegado y se despliega; la letra se pinta sin
+  `.lrc-word`; «Mantenimiento» con sus tres avisos; `btnLoadMusic`
+  abre el selector; **las estrellas siguen intactas**; i18n
+  363×8 sin colgadas.
+- Humo de regresión: **20/20** (arranque, cola/listas, verso que
+  salta, inmersivo, precarga, transición…).
+- **Sin release**: el publicado sigue siendo v1.2.0 (§99); esto
+  queda en la rama hasta nueva orden.
+
+La 1.2.0 publicada no cambia; el trabajo vive en la rama.
