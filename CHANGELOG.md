@@ -18,6 +18,16 @@ Cambios ya en el código, a la espera de orden de publicación:
   contexto de la canción, y «Mantenimiento» explica qué hace
   y qué destruye cada opción. La valoración con estrellas
   no se ha tocado.
+- Trabajos de fondo (§101): el ajuste del sistema «reducir
+  movimiento» ahora también calma el visualizador y la
+  portada flotante (antes el lienzo seguía animándose), y
+  las listas con miles de canciones ya no se pintan enteras
+  al abrirlas — el detalle de lista usa la misma lista
+  virtual que la cola — sin perder el abrir donde suena.
+  De paso, un arreglo menor: una pista sin portada ya no
+  puede romper el pintado de las filas. El blindaje de
+  datos se evaluó y se descartó expresamente: sin copia de
+  seguridad, como estaba.
 
 ## 1.2.0 — Primera versión pública
 

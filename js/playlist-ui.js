@@ -284,7 +284,7 @@ Object.assign(App, {
     },
 
     _paintLetterCover(ctx, W, H, track) {
-      const cover = (typeof track.cover === 'object' && track.cover.from) ? track.cover : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6' });
+      const cover = (track.cover && typeof track.cover === 'object' && track.cover.from) ? track.cover : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6' });
       const g = ctx.createLinearGradient(0,0,W,H);
       g.addColorStop(0, cover.from); g.addColorStop(1, cover.to);
       ctx.fillStyle = g; ctx.fillRect(0,0,W,H);

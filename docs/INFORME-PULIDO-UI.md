@@ -3961,3 +3961,76 @@ y **no hay release nuevo** hasta nueva orden. Saldo:
   queda en la rama hasta nueva orden.
 
 La 1.2.0 publicada no cambia; el trabajo vive en la rama.
+
+## 101. Los dos trabajos de fondo (y el blindaje, descartado)
+
+De la lista de «funcionalidades realmente necesarias» solo
+quedaron tres candidatos, y el usuario decidió: el **blindaje
+de datos, no tocar** (se mantiene la reversión de §57: sin copia
+de seguridad de ningún tipo, reafirmado expresamente). Los dos
+trabajos de fondo, hechos.
+
+### (2) «Reducir movimiento» llega al lienzo
+El CSS ya obedecía (bloque global de `prefers-reduced-motion`),
+pero el visualizador era un lienzo animado por código y se le
+escapaba: quien pedía calma seguía viendo la onda bailar a 60
+fps — y en el modo inmersivo ni siquiera podía apagarla (§95 la
+fuerza). Ahora:
+- `_prefersReducedMotion()` consulta el ajuste **en vivo** (sin
+  cachear: el sistema puede cambiar con la app abierta).
+- Al arrancar el visualizador con calma activa, no hay bucle:
+  se pinta una vez la onda quieta de reposo y se sale. Cubre
+  también el modo inmersivo.
+- El bucle se autocomprueba en cada pasada y se detiene solo si
+  la calma llega a mitad de canción (por si un WebView no
+  emite el evento `change`; si lo emite, un oyente registrado
+  en `initVisualizer` para/detiene al instante).
+- La flotación de la portada (`.cover-art.playing`) se apaga
+  del todo bajo `prefers-reduced-motion` en CSS: el bloque
+  global solo acortaba duraciones, y una animación infinita
+  acortada sigue «viva».
+
+### (3) Bibliotecas grandes: el detalle de lista, virtualizado
+Medido con una biblioteca sintética de 3.000 pistas: la cola,
+Favoritos y la búsqueda ya usaban la lista virtual (>80), pero
+el **detalle/edición de lista pintaba las 3.000 filas** — cada
+una con su canvas, sus listeners y su portada — en cada
+apertura y en cada re-pintado. Era el único agujero.
+- `renderEditPlaylist` construye la fila con una fábrica
+  (`makeEditRow`) y pinta con `fillVirtualList` (umbral 80,
+  filas de 64 px, la misma máquina probada en la cola). La
+  fila conserva TODO: tocar reproduce en contexto, menú ⋯,
+  pulsación larga, quitar de la lista y portada.
+- Abrir donde suena (§97) sobrevive a la virtualización con el
+  patrón de la cola (§98): scroll a la ventana de la fila,
+  repintado y centrado.
+- `clearPlaylist` y el estado vacío sueltan el estado virtual
+  (`unbindVirtualList`) antes de vaciar, para que ningún
+  listener de scroll repinte filas sobre lo nuevo.
+- En jsdom la lista de 3.000 pasa de 3.000 filas a **9 nodos**
+  en el DOM (espaciador de 192.000 px incluido); la apertura
+  tarda 62 ms en el arnés. Los tiempos de jsdom no son los
+  del teléfono (no hay layout real), pero el DOM acotado es
+  exactamente lo que alivia al dispositivo.
+
+### Hallazgos de la verificación (fallos menores, corregidos)
+- **Portada nula que rompía filas**: la guarda `(typeof
+  track.cover === 'object' && track.cover.from)` explota con
+  `cover === null` (porque `typeof null === 'object'`), y el
+  cargador crea metadatos con `cover: null`. La misma guarda
+  frágil vivía en tres sitios (`playlist-ui`, `player-ui`,
+  `ui`); los tres ahora comprueban `track.cover && …`.
+  (`settings.js` tenía la forma segura y no se tocó.)
+- **Bloque muerto de §100**: la visibilidad de «Ir al
+  artista/álbum» del menú ⋯ seguía calculándose en
+  `player-ui.js` contra elementos ya retirados. Fuera.
+
+### Verificación
+- **Check §101** `/tmp/check-vista101.js`: **13/13** — calma
+  en arranque, en bucle y a mitad de canción; lista de 3.000
+  virtualizada con su espaciador; lista de 50 intacta; vacío
+  tras virtual limpio; cola de 3.000 acotada; catálogo sin
+  errores; §100 en pie.
+- Humo de regresión: **20/20**. Sintaxis global OK. i18n:
+  363 claves ×8, 0 colgadas.
+- **Sin release**: la publicada sigue siendo v1.2.0 (§99).

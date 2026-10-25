@@ -74,7 +74,28 @@ Object.assign(App, {
         setTimeout(() => {
           if (this._editingPlaylistId !== playlistId) return;
           const ul = document.getElementById('editPlaylistTracks');
-          const row = ul && ul.querySelector('li[data-track-id="' + curId + '"]');
+          if (!ul) return;
+          // §101: con lista virtual (>80) la fila puede no existir
+          // aún en el DOM: primero se lleva el scroll a su ventana
+          // (64 px por fila, dos de margen arriba) y se pide el
+          // repintado; después se centra la fila ya creada. Es el
+          // mismo patrón probado en la cola (§98).
+          if (ul._virt) {
+            const scroller = ul.closest('.sheet-body');
+            const idx = this.playlistTracksSorted(pl).findIndex(t => t.id === curId);
+            if (scroller && idx >= 0) {
+              scroller.scrollTop = Math.max(0, (idx * 64) - 128);
+              if (ul._virt.onScroll) ul._virt.onScroll();
+            }
+            requestAnimationFrame(() => {
+              const row = ul.querySelector('li[data-track-id="' + curId + '"]');
+              if (row) {
+                try { row.scrollIntoView({ block: 'center' }); } catch (e) {}
+              }
+            });
+            return;
+          }
+          const row = ul.querySelector('li[data-track-id="' + curId + '"]');
           if (row) {
             try { row.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
           }
@@ -150,6 +171,10 @@ Object.assign(App, {
         }
       }
       if (!ul) return;
+      // §101: soltar la lista virtual anterior (si la hubo) ANTES de
+      // vaciar: su listener de scroll repintaría filas viejas sobre
+      // el contenido nuevo o sobre el estado vacío.
+      if (typeof this.unbindVirtualList === 'function') this.unbindVirtualList(ul);
       ul.innerHTML = '';
       const sortedTracks = this.playlistTracksSorted(pl);
       if (sortedTracks.length === 0) {
@@ -161,7 +186,7 @@ Object.assign(App, {
       }
       // La lista se ve en el orden elegido (§81; por defecto el de
       // estrellas de §64). El orden guardado no se reescribe.
-      sortedTracks.forEach((t, i) => {
+      const makeEditRow = (t, i) => {
         const id = t.id;
         const isCurrent = this.currentTrack && this.currentTrack.id === id;
         const li = document.createElement('li');
@@ -197,10 +222,26 @@ Object.assign(App, {
           e.stopPropagation();
           this.removeFromPlaylist(pl.id, t.id);
         });
-        ul.appendChild(li);
         const cv = li.querySelector('canvas');
         if (cv) this.drawRowCover(cv, t);
-      });
+        return li;
+      };
+      // §101: con listas enormes, pintar TODAS las filas (cada una
+      // con su canvas, sus listeners y su portada) hacía la
+      // apertura lenta y el desplazamiento a tirones. Se reusa la
+      // lista virtual de la cola y de Favoritos: hasta 80 filas se
+      // pinta todo como siempre; por encima, solo vive en el DOM
+      // la ventana visible. La fila conserva TODO: tocar
+      // reproduce en contexto, menú ⋯, pulsación larga, quitar
+      // de la lista y portada.
+      if (typeof this.fillVirtualList === 'function') {
+        this.fillVirtualList(ul, sortedTracks, makeEditRow, { rowHeight: 64 });
+      } else {
+        sortedTracks.forEach((t, i) => {
+          const li = makeEditRow(t, i);
+          if (li) ul.appendChild(li);
+        });
+      }
     },
 
     /* Renombrar la lista (§81: arreglo del fallo «no hay forma de
@@ -353,6 +394,10 @@ Object.assign(App, {
       // Actualizar vista sin parpadeo
       const ul = document.getElementById('editPlaylistTracks');
       if (ul) {
+        // §101: si la lista era virtual (>80), soltar su estado
+        // primero: si no, su listener de scroll repintaría filas
+        // sobre el estado vacío que se muestra al terminar.
+        if (typeof this.unbindVirtualList === 'function') this.unbindVirtualList(ul);
         // Animar salida de todos los items
         ul.querySelectorAll('.track-row').forEach((item, i) => {
           setTimeout(() => {

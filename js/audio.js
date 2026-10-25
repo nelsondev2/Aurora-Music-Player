@@ -1149,6 +1149,16 @@ Object.assign(App, {
     /* ============================================================
      *  Visualizador de frecuencias en tiempo real (AnalyserNode)
      * ============================================================ */
+    /* §101: ¿pide el sistema «reducir movimiento»? Se consulta EN
+     * VIVO, sin cachear: el usuario puede cambiar el ajuste con la
+     * app abierta y el lienzo debe obedecer al momento. Lo usan el
+     * arranque del visualizador y su propio bucle de dibujo. */
+    _prefersReducedMotion() {
+      try {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      } catch (e) { return false; }
+    },
+
     initVisualizer() {
       let saved = null;
       try {
@@ -1157,9 +1167,7 @@ Object.assign(App, {
       if (!saved) {
         // Respetar reduced-motion: desactivado por defecto si el usuario
         // prefiere movimiento reducido.
-        try {
-          if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) saved = 'off';
-        } catch (e) {}
+        if (this._prefersReducedMotion()) saved = 'off';
       }
       // §90: solo queda la onda (las barras tapaban el cover). Lo
       // guardado como «bars» migra a «wave» y se re-persiste para
@@ -1170,6 +1178,25 @@ Object.assign(App, {
       }
       this.visualizerMode = saved || 'wave';
       this.updateVisualizerUI();
+      // §101: si el ajuste de movimiento del sistema cambia con la
+      // app abierta, obedecer al momento: con «reducir» se para el
+      // bucle (queda la onda quieta de stopVisualizer) y sin él se
+      // reanuda si estaba sonando. El bucle además se autocomprueba
+      // en cada fotograma, por si un WebView viejo no avisa.
+      if (!this._visMotionWired) {
+        this._visMotionWired = true;
+        try {
+          const mq = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+          if (mq) {
+            const onMotionChange = () => {
+              if (this._prefersReducedMotion()) this.stopVisualizer();
+              else if (this.isPlaying) this.startVisualizer();
+            };
+            if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onMotionChange);
+            else if (typeof mq.addListener === 'function') mq.addListener(onMotionChange);
+          }
+        } catch (e) {}
+      }
       if (this.isPlaying) this.startVisualizer();
     },
 
@@ -1237,6 +1264,14 @@ Object.assign(App, {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       this._fitVisualizerCanvas(canvas);
+      // §101: con «reducir movimiento» el bucle ni arranca: se
+      // pinta UNA vez la onda quieta de reposo y se sale. Cubre
+      // también el modo inmersivo (§95), que fuerza la onda aunque
+      // el ajuste esté en «apagado»: la calma manda.
+      if (this._prefersReducedMotion()) {
+        this._drawVisualizerIdle(canvas, ctx);
+        return;
+      }
 
       // Pausar el dibujado cuando el canvas no está en pantalla
       // (otra vista, sheet encima): ahorra batería en móvil.
@@ -1269,6 +1304,16 @@ Object.assign(App, {
               this._visRafId = requestAnimationFrame(render);
             }
           }, 500);
+          return;
+        }
+        // §101: si el sistema activó «reducir movimiento» a mitad
+        // de canción y el aviso de cambio no llegó (WebView sin
+        // listener), el propio bucle se detiene y deja pintada la
+        // onda de reposo, en vez de seguir bailando.
+        if (this._prefersReducedMotion()) {
+          this._visRafId = null;
+          this._visTimer = null;
+          this._drawVisualizerIdle(canvas, ctx);
           return;
         }
         this._visRafId = requestAnimationFrame(render);

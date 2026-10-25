@@ -454,6 +454,14 @@ svg { display: block; }
   50%      { transform: translateY(-6px); }
 }
 
+/* §101: la flotación de la portada también obedece a «reducir
+ * movimiento». El bloque global de reduced-motion solo acorta
+ * las duraciones (0.01ms), y una animación infinita así acortada
+ * sigue "viva"; aquí se apaga del todo, sin medias tintas. */
+@media (prefers-reduced-motion: reduce) {
+  .cover-art.playing { animation: none; }
+}
+
 .cover-art canvas {
   width: 100%;
   height: 100%;
