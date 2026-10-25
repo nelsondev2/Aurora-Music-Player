@@ -4363,3 +4363,30 @@ plegado de,)»).
 - §107 **14/14**; humo de regresión **11/11**.
 - **Sin release**: la única publicada sigue siendo
   la v1.2.0.
+
+## 110. Nota de IA en el README y relanzamiento de la 1.2.5
+
+- **Nota en el README** (tras la línea de versión): aclara
+  que Aurora es un proyecto **generado con inteligencia
+  artificial** — código y traducciones escritos por un
+  asistente de IA, con dirección, decisiones y pruebas
+  finales humanas — e invita a reportar rarezas en los
+  *issues*.
+- **Notas del release completas**: lo que esperaba en
+  «Sin publicar» (restauraciones de §107, la fila única
+  de Letras de §109 y la limpieza pública de §108 con la
+  nota de IA) abre ahora la sección `## 1.2.5` del
+  CHANGELOG; «Sin publicar» queda vacío.
+- **Sin sorpresas (lección del A-B)**: antes de etiquetar
+  se verificó el árbol exacto del PR (check §109 9/9,
+  §107 14/14, regresión 11/11) y se auditó el `.xdc`
+  construido: **390.033 bytes**, con `btnABRepeat` y
+  `#lrcFineTools` visibles dentro del paquete, y
+  `.lyrics-fine { display: contents; }` en el CSS.
+- Mecánica: commit `cc112c3` en la rama, **PR #10**
+  fusionado a `main` (`b211591`), **tag `v1.2.5`**
+  recreado (el anterior lo borró el usuario) y workflow
+  en `success`. Release público:
+  https://github.com/nelsondev2/Aurora-Music-Player/releases/tag/v1.2.5
+  — asset `Aurora-Music-Player.xdc` de **390.033 bytes**,
+  idénticos al build local verificado por API.
