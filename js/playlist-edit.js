@@ -18,7 +18,7 @@ Object.assign(App, {
      * Las pistas son opcionales: se puede crear una lista vacía. */
     openCreatePlaylistSheet() {
       // Cada apertura empieza sin bandera de «guardar cola»
-      // (openSaveQueueSheet la pone después de llamar). §104: el
+      // (openSaveQueueSheet la pone después de llamar).: el
       // modo «inteligente» se fue con las listas por reglas;
       // crear es siempre lista normal.
       this._queueSaveMode = false;
@@ -27,7 +27,7 @@ Object.assign(App, {
       const descInput = document.getElementById('playlistDesc');
       if (nameInput) nameInput.value = '';
       if (descInput) descInput.value = '';
-      // §93: al crear no se eligen pistas (se añaden después desde
+      //  al crear no se eligen pistas (se añaden después desde
       // la vista de edición); el selector que aquí se ocultaba era
       // del modo «añadir» retirado y ya no existe en la hoja.
       // Título
@@ -39,11 +39,11 @@ Object.assign(App, {
       this.openSheet('sheetCreatePlaylist');
     },
 
-    /* §93: aquí vivía openAddTracksSheet() — el modo «añadir a
-     * existente» de esta hoja, inalcanzable desde la §81 (las
-     * pistas se añaden desde la vista de edición). Cadáver
-     * extirpado con todo su clúster: _addingToPlaylistId,
-     * renderPickTracks y el selector de pistas de la hoja. */
+    /*  aquí vivía openAddTracksSheet — el modo «añadir a
+ * existente» de esta hoja, inalcanzable desde la (las
+ * pistas se añaden desde la vista de edición). Cadáver
+ * extirpado con todo su clúster: _addingToPlaylistId,
+ * renderPickTracks y el selector de pistas de la hoja. */
 
     /* Abre el sheet "Editar playlist" con el detalle de una playlist */
     openEditPlaylist(playlistId) {
@@ -57,7 +57,7 @@ Object.assign(App, {
       const btnDeleteFull = document.getElementById('btnDeletePlaylistFull');
       if (btnDeleteFull) btnDeleteFull.style.display = '';
       this.openSheet('sheetEditPlaylist');
-      // §97: abrir la lista DONDE suena — si la canción actual
+      //  abrir la lista DONDE suena — si la canción actual
       // está en ella (su fila ya sale marcada con .current), se
       // desplaza hasta ella al terminar la animación de apertura.
       // Solo al abrir: los re-pintados posteriores no secuestran
@@ -68,11 +68,11 @@ Object.assign(App, {
           if (this._editingPlaylistId !== playlistId) return;
           const ul = document.getElementById('editPlaylistTracks');
           if (!ul) return;
-          // §101: con lista virtual (>80) la fila puede no existir
+          //  con lista virtual (>80) la fila puede no existir
           // aún en el DOM: primero se lleva el scroll a su ventana
           // (64 px por fila, dos de margen arriba) y se pide el
           // repintado; después se centra la fila ya creada. Es el
-          // mismo patrón probado en la cola (§98).
+          // mismo patrón probado en la cola.
           if (ul._virt) {
             const scroller = ul.closest('.sheet-body');
             const idx = this.playlistTracksSorted(pl).findIndex(t => t.id === curId);
@@ -96,8 +96,8 @@ Object.assign(App, {
       }
     },
 
-    /* §104: aquí vivía _fillSmartGenreSelect, el relleno del
-     * selector de géneros de la regla inteligente. */
+    /*  aquí vivía _fillSmartGenreSelect, el relleno del
+ * selector de géneros de la regla inteligente. */
 
     /* Pinta el contenido del sheet "Editar playlist" */
     renderEditPlaylist() {
@@ -134,12 +134,12 @@ Object.assign(App, {
           const from = (cover && cover.from) || ((this.coverFallback && this.coverFallback().from) || '#6E5CFF');
           const to = (cover && cover.to) || ((this.coverFallback && this.coverFallback().to) || '#FF7AB6');
           coverEl.style.background = 'linear-gradient(135deg, ' + from + ', ' + to + ')';
-          const iconName = 'list-ul'; // §104: sin lista favorita especial
+          const iconName = 'list-ul'; //  sin lista favorita especial
           coverEl.innerHTML = this.ico(iconName);
         }
       }
       if (!ul) return;
-      // §101: soltar la lista virtual anterior (si la hubo) ANTES de
+      //  soltar la lista virtual anterior (si la hubo) ANTES de
       // vaciar: su listener de scroll repintaría filas viejas sobre
       // el contenido nuevo o sobre el estado vacío.
       if (typeof this.unbindVirtualList === 'function') this.unbindVirtualList(ul);
@@ -152,8 +152,8 @@ Object.assign(App, {
         ul.appendChild(li);
         return;
       }
-      // La lista se ve en el orden elegido (§81; por defecto el de
-      // estrellas de §64). El orden guardado no se reescribe.
+      // La lista se ve en el orden elegido (; por defecto el de
+      // estrellas de). El orden guardado no se reescribe.
       const makeEditRow = (t, i) => {
         const id = t.id;
         const isCurrent = this.currentTrack && this.currentTrack.id === id;
@@ -194,7 +194,7 @@ Object.assign(App, {
         if (cv) this.drawRowCover(cv, t);
         return li;
       };
-      // §101: con listas enormes, pintar TODAS las filas (cada una
+      //  con listas enormes, pintar TODAS las filas (cada una
       // con su canvas, sus listeners y su portada) hacía la
       // apertura lenta y el desplazamiento a tirones. Se reusa la
       // lista virtual de la cola y de Favoritos: hasta 80 filas se
@@ -212,16 +212,16 @@ Object.assign(App, {
       }
     },
 
-    /* Renombrar la lista (§81: arreglo del fallo «no hay forma de
-     * confirmar el renombre»).
-     * Antes el <input> reemplazaba al <h4 id="editPlaylistName"> SIN
-     * conservar el id: al confirmar, renderEditPlaylist() ya no
-     * encontraba el título, la vista se quedaba con el campo de texto
-     * para siempre y no existía ningún botón de confirmar.
-     * Ahora el campo nace con botones ✓ (confirmar) y ✗ (cancelar)
-     * bien visibles; Enter confirma, Escape cancela, y al terminar se
-     * restaura el <h4> con su id para que la vista vuelva a pintar el
-     * nombre (y se pueda renombrar otra vez). */
+    /* Renombrar la lista (: arreglo del fallo «no hay forma de
+ * confirmar el renombre»).
+ * Antes el <input> reemplazaba al <h4 id="editPlaylistName"> SIN
+ * conservar el id: al confirmar, renderEditPlaylist ya no
+ * encontraba el título, la vista se quedaba con el campo de texto
+ * para siempre y no existía ningún botón de confirmar.
+ * Ahora el campo nace con botones ✓ (confirmar) y ✗ (cancelar)
+ * bien visibles; Enter confirma, Escape cancela, y al terminar se
+ * restaura el <h4> con su id para que la vista vuelva a pintar el
+ * nombre (y se pueda renombrar otra vez). */
     startRenamePlaylist() {
       const pl = this.playlists.find(p => p.id === this._editingPlaylistId);
       if (!pl) return;
@@ -362,7 +362,7 @@ Object.assign(App, {
       // Actualizar vista sin parpadeo
       const ul = document.getElementById('editPlaylistTracks');
       if (ul) {
-        // §101: si la lista era virtual (>80), soltar su estado
+        //  si la lista era virtual (>80), soltar su estado
         // primero: si no, su listener de scroll repintaría filas
         // sobre el estado vacío que se muestra al terminar.
         if (typeof this.unbindVirtualList === 'function') this.unbindVirtualList(ul);
@@ -438,7 +438,7 @@ Object.assign(App, {
       if (!id) return;
       const pl = this.playlists.find(p => p.id === id);
       if (!pl) return;
-      // §81: las inteligentes exportan sus pistas efectivas (trackIds va vacío).
+      //  las inteligentes exportan sus pistas efectivas (trackIds va vacío).
       const tracks = this.playlistTracksSorted(pl);
       const safeName = (pl.name || 'playlist').replace(/[\\/:*?"<>|]/g, '_');
 
@@ -465,7 +465,7 @@ Object.assign(App, {
           caption
         });
         // Antes: toast de éxito incondicional aunque Delta no hubiera
-        // enviado nada — el «no funciona» de compartir lista (§51).
+        // enviado nada — el «no funciona» de compartir lista.
         this.toast(ok === 'chat' ? this.t('toast_playlist_shared') : ok === 'download' ? this.t('toast_downloaded') : this.t('toast_share_error'), ok ? undefined : 'danger');
       } catch (e) {
         this.toast(this.t('toast_share_error'), 'danger');

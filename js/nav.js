@@ -22,14 +22,14 @@ Object.assign(App, {
       const hasModal = openSheets.some(s => !s.classList.contains('sheet-tab'));
 
       /* El mini reproductor:
-       * - Solo en vistas de navegación general (Inicio, Biblioteca, Buscar, Favoritos)
-       * - NUNCA en pantalla completa de Now Playing ni en Letras
-       * - NUNCA cuando hay un menú, modal o diálogo de confirmación abierto
-       * - Solo si hay una pista actual y no estamos en modo escritorio dividido
-       * - En Inicio (sin ninguna pestaña encima), solo mientras suena:
-       *   en pausa sobra, porque el hero «Retomar en…» ya ofrece seguir
-       *   donde ibas y la pantalla queda limpia (§52). Fuera de Inicio
-       *   se comporta como siempre, también en pausa. */
+ * - Solo en vistas de navegación general (Inicio, Biblioteca, Buscar, Favoritos)
+ * - NUNCA en pantalla completa de Now Playing ni en Letras
+ * - NUNCA cuando hay un menú, modal o diálogo de confirmación abierto
+ * - Solo si hay una pista actual y no estamos en modo escritorio dividido
+ * - En Inicio (sin ninguna pestaña encima), solo mientras suena:
+ * en pausa sobra, porque el hero «Retomar en…» ya ofrece seguir
+ * donde ibas y la pantalla queda limpia. Fuera de Inicio
+ * se comporta como siempre, también en pausa. */
       const homeView = document.getElementById('viewHome');
       const tabOpen = openSheets.some(s => s.classList.contains('sheet-tab'));
       const onHome = !!(homeView && homeView.classList.contains('active')) && !tabOpen;
@@ -193,7 +193,7 @@ Object.assign(App, {
         // si hay posición de reproducción enseña dónde retomar
         // («Retomar en 1:24»). Sin posición queda título y artista.
         // Y si la pista ESTÁ SONANDO no hay nada que «seguir»
-        // escuchando: nace oculta y updatePlayUI la conmuta (§49).
+        // escuchando: nace oculta y updatePlayUI la conmuta.
         const pos = (this.audio && this.audio.currentTime) || 0;
         const dur = (this.audio && this.audio.duration) || t.duration || 0;
         const resumeLine = (pos > 5 && (!dur || pos < dur - 2))
@@ -263,11 +263,11 @@ Object.assign(App, {
       </section>`;
     },
 
-    /* Escaparate «Más valoradas» de Inicio (§60, redefinido en §64):
-     * solo si hay alguna nota. Ya NO es una lista aparte —sin hoja ni
-     * contexto propio—: las tarjetas suenan con el contexto de la
-     * lista de cada canción, como el resto de Inicio. Es el escaparate
-     * de las estrellas; el orden de verdad vive en las listas. */
+    /* Escaparate «Más valoradas» de Inicio (redefinido en):
+ * solo si hay alguna nota. Ya NO es una lista aparte —sin hoja ni
+ * contexto propio—: las tarjetas suenan con el contexto de la
+ * lista de cada canción, como el resto de Inicio. Es el escaparate
+ * de las estrellas; el orden de verdad vive en las listas. */
     _homeRatedRail() {
       const rated = typeof this.getTopRatedTracks === 'function' ? this.getTopRatedTracks().slice(0, 10) : [];
       if (!rated.length) return '';
@@ -291,12 +291,12 @@ Object.assign(App, {
       </section>`;
     },
 
-    /* Refresca SOLO el raíl de valoradas en sitio (§63): al valorar,
-     * Inicio enseñaba la nota que hubiera cuando se pintó, y una
-     * canción recién valorada ni siquiera aparecía. Se reconstruye su
-     * sección y se re-enlazan sus tarjetas (sin tocar el resto de
-     * Inicio ni su posición de desplazamiento). Si aún no existe y
-     * ya hay valoradas, se repinta Inicio entero. */
+    /* Refresca SOLO el raíl de valoradas en sitio: al valorar,
+ * Inicio enseñaba la nota que hubiera cuando se pintó, y una
+ * canción recién valorada ni siquiera aparecía. Se reconstruye su
+ * sección y se re-enlazan sus tarjetas (sin tocar el resto de
+ * Inicio ni su posición de desplazamiento). Si aún no existe y
+ * ya hay valoradas, se repinta Inicio entero. */
     _refreshRatedRail() {
       const home = document.getElementById('homeContent');
       if (!home) return;
@@ -348,7 +348,7 @@ Object.assign(App, {
     },
 
     /* Enlaza las tarjetas de un ámbito (Inicio entero o una sección
-     * reconstruida, como la de valoradas al refrescarla, §63). */
+ * reconstruida, como la de valoradas al refrescarla,). */
     _bindHomeCards(scope) {
       scope.querySelectorAll('.home-card').forEach(card => {
         const kind = card.dataset.kind;
@@ -356,12 +356,12 @@ Object.assign(App, {
         if (kind === 'track') {
           const t = this.tracks.find(x => x.id === id);
           const cv = card.querySelector('canvas');
-          // Tarjetas grandes de Inicio: la obra completa, sin recorte (§63)
+          // Tarjetas grandes de Inicio: la obra completa, sin recorte
           if (cv && t) this.drawRowCover(cv, t, { fit: 'ambient' });
           card.addEventListener('click', () => {
             // Tarjeta suelta de Inicio: la lista de la canción manda
-            // (mismo criterio que Buscar, §38). También en el
-            // escaparate de valoradas, que ya no es lista aparte (§64).
+            // (mismo criterio que Buscar,). También en el
+            // escaparate de valoradas, que ya no es lista aparte.
             const ctx = typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(t) : { type: 'all' };
             this.playTrack(id, ctx);
             this.updateChrome();
@@ -394,28 +394,28 @@ Object.assign(App, {
     },
 
     /* ============================================================
-     *  Biblioteca: solo listas de reproducción (§47). Antes había
-     *  pestañas y después una sección «Todas las canciones» con su
-     *  ordenación y su selección por lotes: todo eso se fue a
-     *  petición del usuario. Álbumes y artistas siguen accesibles
-     *  desde el menú de cada pista («Ir al artista» / «Ir al álbum»).
-     * ============================================================ */
+ * Biblioteca: solo listas de reproducción. Antes había
+ * pestañas y después una sección «Todas las canciones» con su
+ * ordenación y su selección por lotes: todo eso se fue a
+ *. Álbumes y artistas siguen accesibles
+ * desde el menú de cada pista («Ir al artista» / «Ir al álbum»).
+ * ============================================================ */
     renderLibrarySections() {
       this.renderPlaylists();
       this.renderLibraryCatalog();
     },
 
-    /* §81: pestañas de la biblioteca. 'playlists' es la vista de
-     * siempre (§47: solo listas; NO vuelve «Todas las canciones»).
-     * Álbumes/Artistas/Géneros son un índice navegable nuevo que el
-     * usuario pidió expresamente tras la auditoría: tarjetas con
-     * portada que abren la vista de álbum/artista ya existente. */
+    /*  pestañas de la biblioteca. 'playlists' es la vista de
+ * siempre (: solo listas; NO vuelve «Todas las canciones»).
+ * Álbumes/Artistas/Géneros son un índice navegable nuevo que el
+ * usuario pidió expresamente tras la auditoría: tarjetas con
+ * portada que abren la vista de álbum/artista ya existente. */
     setLibTab(tab) {
       this._libTab = tab || 'playlists';
       document.querySelectorAll('.lib-tab').forEach(b => {
         const on = b.dataset.libtab === this._libTab;
         b.classList.toggle('active', on);
-        // §92: el estado visual debe reflejarse en ARIA — los
+        //  el estado visual debe reflejarse en ARIA — los
         // lectores de pantalla anuncian qué pestaña está activa.
         b.setAttribute('aria-selected', on ? 'true' : 'false');
       });
@@ -430,8 +430,8 @@ Object.assign(App, {
       if (this._libTab !== 'playlists') this.renderLibraryCatalog();
     },
 
-    /* §81: pinta el índice de Álbumes / Artistas / Géneros según la
-     * pestaña activa. Cada tarjeta abre openBrowse() con sus pistas. */
+    /*  pinta el índice de Álbumes / Artistas / Géneros según la
+ * pestaña activa. Cada tarjeta abre openBrowse con sus pistas. */
     renderLibraryCatalog() {
       const tab = this._libTab || 'playlists';
       const gridId = tab === 'albums' ? 'libraryAlbums'
@@ -518,7 +518,7 @@ Object.assign(App, {
      * ============================================================ */
     openBrowse(opts) {
       this._browse = opts;
-      // §81: cada vista nueva empieza en su orden natural.
+      //  cada vista nueva empieza en su orden natural.
       const sortSel = document.getElementById('browseSortSelect');
       if (sortSel) { this._browse.sort = 'added'; sortSel.value = 'added'; }
       const title = document.getElementById('browseTitle');
@@ -536,8 +536,8 @@ Object.assign(App, {
       this.openSheet('sheetBrowse');
     },
 
-    /* §81: las pistas de la vista actual en el orden elegido en su
-     * selector (por defecto, el orden en que llegaron: 'added'). */
+    /*  las pistas de la vista actual en el orden elegido en su
+ * selector (por defecto, el orden en que llegaron: 'added'). */
     browseTracksSorted() {
       if (!this._browse) return [];
       const sel = document.getElementById('browseSortSelect');
@@ -563,12 +563,12 @@ Object.assign(App, {
         this.toast(this.t('toast_playlist_empty'));
         return;
       }
-      // §81: «Reproducir Todo» suena en el orden que se ve (el del
+      //  «Reproducir Todo» suena en el orden que se ve (el del
       // selector), no en el orden interno de _browse.tracks.
       const ids = this.browseTracksSorted().map(t => t.id);
       this.queue = ids;
       this.queueIdx = 0;
-      this._plSyncIds = null; // §82: álbum/artista/género no sincronizan
+      this._plSyncIds = null; //  álbum/artista/género no sincronizan
       this.playContext = this._browse.type === 'album'
         ? { type: 'album', name: this._browse.title, artist: this._browse.artist || this._browse.subtitle }
         : this._browse.type === 'genre'
@@ -684,7 +684,7 @@ Object.assign(App, {
           timer = null;
           fired = true;
           // Pulsación larga = menú de la canción (antes entraba en
-          // el modo lote de «Todas las canciones», eliminado en §47).
+          // el modo lote de «Todas las canciones», eliminado en).
           this.openTrackMenu(trackId);
           if (navigator.vibrate) navigator.vibrate(25);
         }, 520);
@@ -748,11 +748,11 @@ Object.assign(App, {
     },
 
     /* ============================================================
-     *  Valoración por estrellas (§58)
-     * ============================================================
-     * track.rating guarda 1..5 (ausente/0 = sin valorar). Vive en el
-     * registro de la pista: persistTrack() lo guarda en IndexedDB
-     * sin tocar nada más. Tocar la estrella ya puesta quita la nota. */
+ * Valoración por estrellas
+ * ============================================================
+ * track.rating guarda 1..5 (ausente/0 = sin valorar). Vive en el
+ * registro de la pista: persistTrack lo guarda en IndexedDB
+ * sin tocar nada más. Tocar la estrella ya puesta quita la nota. */
     _ratingOf(t) {
       const r = t && parseInt(t.rating, 10);
       return Number.isFinite(r) ? Math.max(0, Math.min(5, r)) : 0;
@@ -765,7 +765,7 @@ Object.assign(App, {
       t.rating = this._ratingOf(t) === v ? 0 : v;
       this.persistTrack(t);
       this._syncRatingUI(t);
-      // §83: si lo que suena manda por más valoradas (lista con el
+      //  si lo que suena manda por más valoradas (lista con el
       // orden de estrellas o Favoritos), la cola viva se reordena
       // detrás de la actual: valorar y que no pase nada era la
       // mitad de la queja de «la cola por valoradas no funciona».
@@ -778,9 +778,9 @@ Object.assign(App, {
         }
       }
       // La hoja de «Más valoradas», si está abierta, se rinde otra vez:
-      // la canción puede entrar, salir o cambiar de puesto (§60).
+      // la canción puede entrar, salir o cambiar de puesto.
       // Y el raíl de Inicio, que es la otra superficie de la nota:
-      // sin esto enseñaba la valoración de cuando se pintó (§63).
+      // sin esto enseñaba la valoración de cuando se pintó.
       this._refreshRatedRail();
     },
 
@@ -837,7 +837,7 @@ Object.assign(App, {
       t.title = title.trim() || t.title;
       t.artist = artist.trim() || this.t('unknown_artist');
       t.album = album.trim() || this.t('no_album');
-      // §94: marca de «editado a mano» — releer etiquetas ya no
+      //  marca de «editado a mano» — releer etiquetas ya no
       // pisa este texto con el del archivo (ver retagExistingTracks).
       t._userEdited = true;
       await this.persistTrack(t);

@@ -45,7 +45,7 @@ Object.assign(App, {
           this.openNowPlaying();
         });
         mini.addEventListener('keydown', (e) => {
-          // §94: misma guardia que el clic — si la tecla nace en
+          //  misma guardia que el clic — si la tecla nace en
           // un botón del mini (play/siguiente), es para ese botón,
           // no para abrir el reproductor a pantalla completa.
           if (e.target.closest && e.target.closest('.mini-btn')) return;
@@ -58,7 +58,7 @@ Object.assign(App, {
       const btnHomeAdd = document.getElementById('btnHomeAdd');
       if (btnHomeAdd) btnHomeAdd.addEventListener('click', () => this.openFilePicker());
       // Ajustes desde Inicio: no depende de tener una pista cargada.
-      // Opciones desde Inicio (§54): mismo motivo —la copia de
+      // Opciones desde Inicio: mismo motivo —la copia de
       // seguridad se importa también en una instalación vacía—.
       const btnHomeMore = document.getElementById('btnHomeMore');
       if (btnHomeMore) btnHomeMore.addEventListener('click', () => this.openSheet('sheetMore'));
@@ -119,7 +119,7 @@ Object.assign(App, {
             const h = Math.max(120, coverArt.getBoundingClientRect().height);
             this.setVolume(cvVol + dy / h);
             this.showNpVolume(true);
-            // §97 (idea 3): en el modo inmersivo, el gesto de
+            // (idea 3): en el modo inmersivo, el gesto de
             // volumen también despierta el título flotante.
             if (this._coverFs) this._pokeCoverFsMeta();
           }
@@ -133,7 +133,7 @@ Object.assign(App, {
             e.preventDefault();
             return;
           }
-          // §95: tocar la portada ya no pausa — abre/cierra la
+          //  tocar la portada ya no pausa — abre/cierra la
           // portada a pantalla completa con el visualizador. Los
           // gestos (deslizar, volumen, pulsación larga) siguen
           // anulando este clic vía _coverSkipClick.
@@ -181,15 +181,8 @@ Object.assign(App, {
       });
 
       // === Letras LRC: barra de herramientas ===
-      // §100: despliegue del ajuste fino (desfase, velocidad, bucle)
-      const btnLrcTools = document.getElementById('btnLrcTools');
-      if (btnLrcTools) btnLrcTools.addEventListener('click', () => {
-        const panel = document.getElementById('lrcFineTools');
-        if (!panel) return;
-        panel.hidden = !panel.hidden;
-        btnLrcTools.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
-        btnLrcTools.classList.toggle('active', !panel.hidden);
-      });
+      //  el ajuste fino ya no se despliega — va siempre visible
+      // (todas las opciones una detrás de otra); sin botón ni wiring.
       // Tamaño de fuente (#7)
       $('btnLrcFontDec').addEventListener('click', () => this.setLrcFontSize(this.lrcFontSize - 2));
       $('btnLrcFontInc').addEventListener('click', () => this.setLrcFontSize(this.lrcFontSize + 2));
@@ -209,7 +202,7 @@ Object.assign(App, {
       // Editor de letras (#2)
       $('btnLrcEdit').addEventListener('click', () => this.openLrcEditor());
       $('btnLrcSave').addEventListener('click', () => this.saveLrcFromEditor());
-      // §100: «sincronizar tocando» retirado con su panel (letras.js).
+      //  «sincronizar tocando» retirado con su panel (letras.js).
       const btnLrcExp = document.getElementById('btnLrcExport');
       if (btnLrcExp) btnLrcExp.addEventListener('click', () => this.exportCurrentLyrics());
       const btnLrcSh = document.getElementById('btnLrcShare');
@@ -232,7 +225,7 @@ Object.assign(App, {
         });
       });
 
-      // §104: aquí se abría el Historial desde el menú ⋯; la hoja
+      //  aquí se abría el Historial desde el menú ⋯; la hoja
       // se fue con él (Estadísticas conserva lo esencial).
 
       // === #17 Panel de ajustes ===
@@ -271,7 +264,7 @@ Object.assign(App, {
         const count = document.getElementById('importCount');
         if (count) count.textContent = this.t('import_cancel');
       });
-      // §100: un solo control de transición (Corte / Sin pausa /
+      //  un solo control de transición (Corte / Sin pausa /
       // Fundido) en vez de interruptor gapless + botones de fundido.
       document.querySelectorAll('[data-transition]').forEach(b => {
         b.addEventListener('click', () => this.setTransitionMode(b.dataset.transition));
@@ -289,8 +282,8 @@ Object.assign(App, {
       if (togglePreservePitch) togglePreservePitch.addEventListener('change', () => {
         this.setPreservesPitch(togglePreservePitch.checked);
       });
-      // §100: la velocidad ya no se duplica en Ajustes; vive solo
-      // en Letras (§ del LRC), donde se usa de verdad.
+      //  la velocidad ya no se duplica en Ajustes; vive solo
+      // en Letras (sincronía del LRC), donde se usa de verdad.
       const toggleMarquee = document.getElementById('toggleMarquee');
       if (toggleMarquee) toggleMarquee.addEventListener('change', () => {
         this._marqueeEnabled = !!toggleMarquee.checked;
@@ -302,10 +295,10 @@ Object.assign(App, {
           if (artist) this._syncMarquee(artist);
         }
       });
-      // §100: modo vinilo retirado (decorativo) con su interruptor.
+      //  modo vinilo retirado (decorativo) con su interruptor.
       const btnShortcuts = document.getElementById('menuShortcutsSettings');
       if (btnShortcuts && window.matchMedia && !window.matchMedia('(pointer: fine)').matches) {
-        // §100: en el móvil (sin teclado) la ayuda de atajos sobra:
+        //  en el móvil (sin teclado) la ayuda de atajos sobra:
         // la fila se oculta; la hoja sigue disponible en escritorio.
         btnShortcuts.style.display = 'none';
       } else if (btnShortcuts) btnShortcuts.addEventListener('click', () => {
@@ -345,16 +338,18 @@ Object.assign(App, {
       if (btnVis) btnVis.addEventListener('click', () => this.cycleVisualizerMode());
       const cvVis = document.getElementById('visualizerCanvas');
       if (cvVis) cvVis.addEventListener('click', () => this.cycleVisualizerMode());
-      // §100: botón A-B retirado con su sistema (audio.js).
-      /* §94: chkPreservePitch ya tiene su listener 'change' en el
-       * bloque de ajustes de reproducción; aquí había un segundo
-       * idéntico y cada cambio se aplicaba (y guardaba) dos veces. */
+      // Botón A-B (su lógica vive en audio.js).
+      const btnAB = document.getElementById('btnABRepeat');
+      if (btnAB) btnAB.addEventListener('click', () => this.toggleABRepeat());
+      /*  chkPreservePitch ya tiene su listener 'change' en el
+ * bloque de ajustes de reproducción; aquí había un segundo
+ * idéntico y cada cambio se aplicaba (y guardaba) dos veces. */
 
       // Cola
       $('btnQueue').addEventListener('click', () => {
         this.renderQueue();
         this.openSheet('sheetQueue');
-        // §98: como en las listas (§97), la cola se abre donde
+        //  como en las listas, la cola se abre donde
         // suena — al terminar la animación de apertura.
         setTimeout(() => this.scrollQueueToCurrent(), 380);
       });
@@ -426,7 +421,7 @@ Object.assign(App, {
       });
 
       // Playlists
-      // §104: btnNewPlaylist vivía en la hoja de listas retirada;
+      //  btnNewPlaylist vivía en la hoja de listas retirada;
       // crear listas se abre desde Biblioteca (btnOpenNewPlaylist).
       $('btnOpenNewPlaylist').addEventListener('click', () => {
         this.openCreatePlaylistSheet();
@@ -434,11 +429,11 @@ Object.assign(App, {
 
       // Guardar playlist: crea una nueva (vacía; las pistas se
       // añaden luego desde la vista de edición) o guarda la cola.
-      // (§93: el modo «añadir a existente» desde esta hoja y su
-      // selector de pistas eran inalcanzables desde la §81.)
+      // (: el modo «añadir a existente» desde esta hoja y su
+      // selector de pistas eran inalcanzables desde la.)
       $('btnSavePlaylist').addEventListener('click', () => {
 
-        // §81 modo «guardar cola como lista»: la lista nace con la
+        // modo «guardar cola como lista»: la lista nace con la
         // cola entera en su orden exacto (sort='added').
         if (this._queueSaveMode) {
           const qName = $('playlistName').value.trim();
@@ -466,7 +461,7 @@ Object.assign(App, {
         $('playlistName').value = '';
         $('playlistDesc').value = '';
         this.closeSheet('sheetCreatePlaylist');
-        // §93: desde esta hoja la lista siempre nace vacía (sin
+        //  desde esta hoja la lista siempre nace vacía (sin
         // selector de pistas); antes había un toast alternativo
         // para «creada con pistas» que ya nunca podía sonar.
         this.toast(this.t('toast_playlist_empty_created') + ': ' + name);
@@ -510,7 +505,7 @@ Object.assign(App, {
 
       // Favorito desde el menú de pista: funciona sin abrir el reproductor
       // y para cualquier pista, no solo la que está sonando.
-      // Estrellas (§58): en el menú valoran la canción del menú; en el
+      // Estrellas: en el menú valoran la canción del menú; en el
       // Reproductor, la que suena. Tocar la misma estrella quita la nota.
       document.querySelectorAll('#ctxRatingStars .rate-star').forEach(b => {
         b.addEventListener('click', () => {
@@ -536,7 +531,7 @@ Object.assign(App, {
         if (t) {
           // «Reproducir ahora» desde el menú de una lista no debe
           // saltar a «Todas las canciones»: manda la lista de la
-          // canción, como en Buscar (§38).
+          // canción, como en Buscar.
           this.playTrack(t.id, typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(t) : { type: 'all' });
           if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
         }
@@ -555,15 +550,15 @@ Object.assign(App, {
         this.closeSheet('sheetTrackMenu');
         if (t) this.addToQueue(t.id);
       });
-      // §100: «Iniciar radio» retirado del menú de pista (solapaba
+      //  «Iniciar radio» retirado del menú de pista (solapaba
       // con aleatorio y listas inteligentes); startRadio fuera.
-      // §81: pestañas de la biblioteca y buscador de duplicados
+      //  pestañas de la biblioteca y buscador de duplicados
       document.querySelectorAll('.lib-tab').forEach(b => {
         b.addEventListener('click', () => this.setLibTab(b.dataset.libtab));
       });
       const btnDup = document.getElementById('btnFindDuplicates');
       if (btnDup) btnDup.addEventListener('click', () => this.openDuplicates());
-      // §81: orden de la lista en edición
+      //  orden de la lista en edición
       const plSortSel = document.getElementById('plSortSelect');
       if (plSortSel) plSortSel.addEventListener('change', () => {
         const pl = this.playlists.find(p => p.id === this._editingPlaylistId);
@@ -571,7 +566,7 @@ Object.assign(App, {
         pl.sort = plSortSel.value;
         this.persistPlaylist(pl);
         this.renderEditPlaylist();
-        // §83: si es la lista que está sonando, lo que queda por
+        //  si es la lista que está sonando, lo que queda por
         // sonar adopta el nuevo criterio al momento (si no, la
         // vista enseñaba un orden y la cola sonaba otro).
         if (this.playContext && this.playContext.type === 'playlist'
@@ -581,7 +576,7 @@ Object.assign(App, {
         }
         this.toast(this.t('toast_sort_saved'));
       });
-      // §81: orden de la vista álbum/artista/género
+      //  orden de la vista álbum/artista/género
       const browseSortSel = document.getElementById('browseSortSelect');
       if (browseSortSel) browseSortSel.addEventListener('change', () => {
         if (this._browse) this._browse.sort = browseSortSel.value;
@@ -663,7 +658,7 @@ Object.assign(App, {
         }
       });
 
-      // §100: el menú ⋯ ya no mezcla contexto de la canción
+      //  el menú ⋯ ya no mezcla contexto de la canción
       // («Ir al artista/álbum», «Compartir pista» viven en el menú
       // de la pista, que es donde tienen contexto).
       // Botón "Reproducir Todo" en el sheet de favoritos
@@ -709,7 +704,7 @@ Object.assign(App, {
         }
       });
 
-      // §72: tocar la duración total alterna duración ⇄ restante.
+      //  tocar la duración total alterna duración ⇄ restante.
       const timeTotalEl = document.getElementById('timeTotal');
       if (timeTotalEl) {
         try { this._showRemaining = localStorage.getItem('aurora_show_remaining') === '1'; } catch (e) {}
@@ -733,7 +728,7 @@ Object.assign(App, {
       const savedVol = localStorage.getItem('aurora_volume');
       const savedN = savedVol != null ? parseFloat(savedVol) : NaN;
       // 0.8 era el default antiguo; al subirlo a 1 no pisar un volumen elegido a propósito.
-      // §94: el 0 también es un volumen elegido (silencio): antes
+      //  el 0 también es un volumen elegido (silencio): antes
       // no pasaba el `> 0` y la app amanecía a todo volumen.
       if (isFinite(savedN) && savedN >= 0 && Math.abs(savedN - 0.8) > 0.001) this.setVolume(savedN);
       else this.setVolume(1);
@@ -784,7 +779,7 @@ Object.assign(App, {
       // Atajos de teclado (desktop)
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-          // §94: cerrar la hoja de ENCIMA de la pila (la última
+          //  cerrar la hoja de ENCIMA de la pila (la última
           // abierta), no la última en orden del DOM: con dos hojas
           // abiertas cuyo orden en el HTML difiere del de apertura,
           // Escape cerraba la de abajo y dejaba la visible abierta.
@@ -795,7 +790,7 @@ Object.assign(App, {
             e.preventDefault();
             this.closeSheet(topId);
           } else if (this._coverFs) {
-            // §95: sin hojas abiertas, Escape sale de la portada
+            //  sin hojas abiertas, Escape sale de la portada
             // a pantalla completa (las hojas tienen prioridad).
             e.preventDefault();
             this.setCoverFullscreen(false);
@@ -811,7 +806,7 @@ Object.assign(App, {
         // manejo de flechas (±5 s): si el evento también llega aquí, el
         // salto se duplica (hallazgo A2 de la revisión externa).
         if (e.target.closest && e.target.closest('[role="slider"]')) return;
-        // §94: si el foco está sobre un botón/enlace/control, la
+        //  si el foco está sobre un botón/enlace/control, la
         // tecla Espacio es suya (el navegador lo activa con ella):
         // secuestrarla para play/pausa dejaba el botón enfocado
         // sin responder. Los atajos solo mandan con el foco libre.
@@ -932,7 +927,7 @@ Object.assign(App, {
     wireGestures() {
       // Ídem que wireEvents(): los gestos tampoco se cablean dos veces.
       if (this._wired.gestures) return;
-      // §86: eliminado el gesto horizontal para cambiar de canción.
+      //  eliminado el gesto horizontal para cambiar de canción.
       // Solo vivía en la vista de Letras y provocaba saltos de pista
       // accidentales al desplazar la letra en diagonal; quedan los
       // botones anterior/siguiente y el toque sobre una línea para

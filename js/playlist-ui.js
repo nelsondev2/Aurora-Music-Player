@@ -41,16 +41,16 @@ Object.assign(App, {
     },
 
     /* ============================================================
-     *  Paleta extraída de la portada (§75)
-     *  El fondo del reproductor ya hablaba este idioma (--cover-from/
-     *  --cover-to), pero con portada de imagen nadie producía los
-     *  colores: siempre caía al acento del tema. Ahora se muestrean
-     *  de la miniatura grande, CON BARANDILLAS: saturación mínima y
-     *  luminosidad encerrada en banda oscura segura, para que una
-     *  portada marrón, blanca o gris no ensucie la pantalla ni rompa
-     *  el contraste del texto. Sin portada (o sin color útil), manda
-     *  el acento de siempre.
-     * ============================================================ */
+ * Paleta extraída de la portada
+ * El fondo del reproductor ya hablaba este idioma (--cover-from/
+ * --cover-to), pero con portada de imagen nadie producía los
+ * colores: siempre caía al acento del tema. Ahora se muestrean
+ * de la miniatura grande, CON BARANDILLAS: saturación mínima y
+ * luminosidad encerrada en banda oscura segura, para que una
+ * portada marrón, blanca o gris no ensucie la pantalla ni rompa
+ * el contraste del texto. Sin portada (o sin color útil), manda
+ * el acento de siempre.
+ * ============================================================ */
     _hexToRgbArr(hex) {
       const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
       if (!m) return [109, 92, 255];
@@ -218,12 +218,12 @@ Object.assign(App, {
     },
 
     /* Pinta la portada en un canvas. Sin opciones, el clásico
-     * «rellenar recortando» de filas y miniaturas. Con
-     * { fit: 'ambient' } (§63, tarjetas grandes de Inicio) se enseña
-     * la obra COMPLETA: al importar, las miniaturas ya nacen
-     * cuadradas y recortadas, así que este modo pinta del original
-     * (track.cover) y rellena las bandas con la misma imagen
-     * ampliada, difuminada y oscurecida. */
+ * «rellenar recortando» de filas y miniaturas. Con
+ * { fit: 'ambient' } (tarjetas grandes de Inicio) se enseña
+ * la obra COMPLETA: al importar, las miniaturas ya nacen
+ * cuadradas y recortadas, así que este modo pinta del original
+ * (track.cover) y rellena las bandas con la misma imagen
+ * ampliada, difuminada y oscurecida. */
     drawRowCover(canvas, track, opts) {
       if (!canvas || !track) return;
       const ctx = canvas.getContext('2d');
@@ -262,7 +262,7 @@ Object.assign(App, {
 
       if (isImage && (thumb || full)) {
         paintImg(ambient && full ? full : thumb);
-        // §71: en superficies grandes (tarjetas), si la miniatura
+        //  en superficies grandes (tarjetas), si la miniatura
         // guardada es de la generación 256px, se rehace a 384 desde el
         // original y se repinta este mismo lienzo al terminar.
         if (Math.max(W, H) >= 160) {
@@ -307,11 +307,11 @@ Object.assign(App, {
       ctx.fillText(this.coverInitial(track.title), W/2, H/2 + Math.floor(H*0.02));
     },
 
-    /* Genera las miniaturas si faltan y, desde §71, ACTUALIZA las de
-     * bibliotecas antiguas: la grande nació a 256px cuando las
-     * pantallas objetivo eran DPR 2; con DPR 3 las tarjetas de Inicio
-     * (116px CSS = ~348 reales) estiraban esa miniatura y se veían
-     * blandas. Devuelve true solo si (re)generó, para repintar. */
+    /* Genera las miniaturas si faltan y, desde, ACTUALIZA las de
+ * bibliotecas antiguas: la grande nació a 256px cuando las
+ * pantallas objetivo eran DPR 2; con DPR 3 las tarjetas de Inicio
+ * (116px CSS = ~348 reales) estiraban esa miniatura y se veían
+ * blandas. Devuelve true solo si (re)generó, para repintar. */
     async ensureCoverThumbs(track) {
       if (!track) return false;
       const src = (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:'))) ? track.cover : null;
@@ -367,7 +367,7 @@ Object.assign(App, {
      *  que nunca se modifica.
      * ============================================================ */
     async pickCustomCover(trackId) {
-      // Delta Chat nativo: selector integrado antes que <input> (§42)
+      // Delta Chat nativo: selector integrado antes que <input>
       const nativeFiles = await this.pickFilesWebxdc({ extensions: ['.jpg', '.jpeg', '.png', '.webp', '.gif'], multiple: false });
       if (nativeFiles) {
         if (nativeFiles.length > 0) await this.setCustomCover(trackId, nativeFiles[0]);
@@ -414,7 +414,7 @@ Object.assign(App, {
         const thumb = await U.resizeDataUrl(dataUrl, 144);
         if (!lg && !thumb) throw new Error('imagen ilegible');
         t.customCover = { thumb: thumb || lg, lg: lg || thumb };
-        delete t.coverPalette; // §75: la paleta era de la portada anterior
+        delete t.coverPalette; //  la paleta era de la portada anterior
         await this.persistTrack(t);
         this._refreshCoverSurfaces(t);
         this.toast(this.t('toast_cover_updated'));
@@ -429,7 +429,7 @@ Object.assign(App, {
       const t = this.tracks.find(x => x.id === trackId);
       if (!t || !t.customCover) return;
       delete t.customCover;
-      delete t.coverPalette; // §75: vuelve la de los metadatos (o el acento)
+      delete t.coverPalette; //  vuelve la de los metadatos (o el acento)
       await this.persistTrack(t);
       this._refreshCoverSurfaces(t);
       this.toast(this.t('toast_cover_removed'));
@@ -798,8 +798,8 @@ Object.assign(App, {
           ctxLabel.style.display = 'none';
         }
       }
-      // §98: retirado el resumen «A continuación · N · duración»
-      // que la §97 (idea 10) pintaba sobre la cola; la cabecera
+      //  retirado el resumen «A continuación · N · duración»
+      // que la (idea 10) pintaba sobre la cola; la cabecera
       // vuelve a ser solo el contexto «Reproduciendo desde X».
       const cleaned = this.queue.filter(id => this.trackMap().has(id));
       if (cleaned.length !== this.queue.length) {
@@ -809,7 +809,7 @@ Object.assign(App, {
         this.queueIdx = nq >= 0 ? nq : Math.min(this.queueIdx, Math.max(0, this.queue.length - 1));
       }
       if (this.queue.length === 0) {
-        // §94: desvincular la lista virtual anterior — su listener
+        //  desvincular la lista virtual anterior — su listener
         // de scroll seguía vivo y repintaba filas fantasma sobre
         // el estado vacío al desplazar la hoja.
         this.unbindVirtualList(ul);
@@ -823,7 +823,7 @@ Object.assign(App, {
         ul.appendChild(emptyLi);
         return;
       }
-      // §94: índice por id una sola vez — antes cada fila hacía
+      //  índice por id una sola vez — antes cada fila hacía
       // tracks.find() y pintar la cola entera era O(filas × pistas).
       const queueById = typeof this.trackMap === 'function' ? this.trackMap() : null;
       const makeQueueRow = (id, i) => {
@@ -873,7 +873,7 @@ Object.assign(App, {
           this.renderQueue();
         });
 
-        // §83: el menú «Más opciones» de la canción también vive en
+        //  el menú «Más opciones» de la canción también vive en
         // la cola (antes solo estaba en las filas de las listas):
         // mismo menú, con su «Reproducir después de la actual» ya
         // capaz de MOVER la pista dentro de esta misma cola.
@@ -897,13 +897,13 @@ Object.assign(App, {
       });
     },
 
-    /* §98: abrir la cola DONDE suena, como en las listas (§97).
-     * La fila actual ya sale marcada (.current); esto mueve la
-     * vista hasta ella. Con lista virtual (>80) la fila puede no
-     * existir aún: primero se lleva el scroll a su ventana
-     * (64 px por fila, dejando dos de margen arriba) y se pide
-     * el repintado; después se centra la fila ya creada. Solo se
-     * llama al abrir la hoja: re-pintar la cola no mueve nada. */
+    /*  abrir la cola DONDE suena, como en las listas.
+ * La fila actual ya sale marcada (.current); esto mueve la
+ * vista hasta ella. Con lista virtual (>80) la fila puede no
+ * existir aún: primero se lleva el scroll a su ventana
+ * (64 px por fila, dejando dos de margen arriba) y se pide
+ * el repintado; después se centra la fila ya creada. Solo se
+ * llama al abrir la hoja: re-pintar la cola no mueve nada. */
     scrollQueueToCurrent() {
       const ul = document.getElementById('queueList');
       if (!ul || !this.queue.length) return;
@@ -1091,7 +1091,7 @@ Object.assign(App, {
 
     playlistDuration(pl) {
       if (!pl) return 0;
-      // §81: las inteligentes no guardan trackIds: se suman sus pistas
+      //  las inteligentes no guardan trackIds: se suman sus pistas
       // efectivas (las que la regla elige ahora mismo).
       let sum = 0;
       for (const t of this.playlistTracksSorted(pl)) {
@@ -1130,7 +1130,7 @@ Object.assign(App, {
     },
 
     renderPlaylists() {
-      // §104: una sola casa para las listas — la rejilla de
+      //  una sola casa para las listas — la rejilla de
       // Biblioteca. La otra superficie era la hoja #sheetPlaylists,
       // que nadie abría desde que la navegación vive aquí: pintar
       // las dos en cada render era trabajo duplicado para nadie.
@@ -1169,7 +1169,7 @@ Object.assign(App, {
           const coverBg = hasArt
             ? `background-image:url('${cover}');background-size:cover;background-position:center;`
             : `background:linear-gradient(135deg, ${cover.from || '#6E5CFF'}, ${cover.to || '#FF7AB6'});`;
-          // §104: Favoritos vive solo en su vista; en Listas ya no
+          //  Favoritos vive solo en su vista; en Listas ya no
           // hay lista con trato de favorita.
           const fallbackIcon = 'list-ul';
           const tracksLabel = this.playlistMetaLabel(pl);
@@ -1275,22 +1275,22 @@ Object.assign(App, {
       this.toast(this.t('toast_restored'));
     },
 
-    /* §93: renderPickTracks() extirpado — pintaba el selector de
-     * pistas del modo «añadir» retirado; ya nadie lo mostraba. */
+    /*  renderPickTracks extirpado — pintaba el selector de
+ * pistas del modo «añadir» retirado; ya nadie lo mostraba. */
 
-    /* Orden por estrellas (§64): de más a menos nota; las sin nota
-     * (0) caen al final solas. El empate conserva el orden que traía
-     * la lista (el sort de JS es estable): el orden guardado NO se
-     * reescribe, solo decide el desempate. Es la única ordenación
-     * automática: listas y Favoritos se ven y suenan así. */
+    /* Orden por estrellas: de más a menos nota; las sin nota
+ * (0) caen al final solas. El empate conserva el orden que traía
+ * la lista (el sort de JS es estable): el orden guardado NO se
+ * reescribe, solo decide el desempate. Es la única ordenación
+ * automática: listas y Favoritos se ven y suenan así. */
     sortByRating(tracks) {
       return (tracks || []).slice().sort((a, b) => this._ratingOf(b) - this._ratingOf(a));
     },
 
-    /* §81: ordenación elegible por el usuario. 'stars' es la de
-     * siempre (§64) y sigue siendo la predeterminada; el resto son
-     * alternativas manuales que se guardan en pl.sort. El sort de JS
-     * es estable: los empates conservan el orden de entrada. */
+    /*  ordenación elegible por el usuario. 'stars' es la de
+ * siempre y sigue siendo la predeterminada; el resto son
+ * alternativas manuales que se guardan en pl.sort. El sort de JS
+ * es estable: los empates conservan el orden de entrada. */
     sortTracksBy(tracks, mode) {
       const arr = (tracks || []).slice();
       const txt = (v) => String(v == null ? '' : v).toLocaleLowerCase();
@@ -1313,8 +1313,8 @@ Object.assign(App, {
       }
     },
 
-    /* §81: géneros presentes en la biblioteca (el importador ya leía
-     * el género; hasta ahora ninguna vista lo usaba). */
+    /*  géneros presentes en la biblioteca (el importador ya leía
+ * el género; hasta ahora ninguna vista lo usaba). */
     getGenres() {
       const map = new Map();
       this.tracks.forEach(t => {
@@ -1326,8 +1326,8 @@ Object.assign(App, {
       return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     },
 
-    /* §104: aquí vivía smartPlaylistTracks — el motor de las
-     * listas inteligentes, retirado con ellas. */
+    /*  aquí vivía smartPlaylistTracks — el motor de las
+ * listas inteligentes, retirado con ellas. */
 
     /* Las pistas de una lista, en el orden en que se ven y suenan. */
     playlistTracksSorted(pl) {
@@ -1344,7 +1344,7 @@ Object.assign(App, {
       if (ids.length === 0) { this.toast(this.t('toast_playlist_empty')); return; }
       this.queue = ids;
       this.queueIdx = 0;
-      this._plSyncIds = ids.slice(); // §82: foto base de la lista
+      this._plSyncIds = ids.slice(); //  foto base de la lista
       // Establecer contexto de reproducción: "Reproduciendo desde <playlist>"
       this.playContext = { type: 'playlist', id: pl.id, name: pl.name };
       // Con Aleatorio activo la cola es nueva: hay que anclar su primera pista
@@ -1359,9 +1359,9 @@ Object.assign(App, {
     },
 
     /* Las canciones con estrellas, de mejor nota a menor (a igual
-     * nota, las más reproducidas primero y el título desempatando).
-     * Desde §64 solo alimenta el escaparate de Inicio: la ordenación
-     * de verdad, en listas y colas, es sortByRating(). */
+ * nota, las más reproducidas primero y el título desempatando).
+ * Desde solo alimenta el escaparate de Inicio: la ordenación
+ * de verdad, en listas y colas, es sortByRating. */
     getTopRatedTracks() {
       const plays = (this.stats && this.stats.plays) || {};
       return this.tracks
@@ -1381,7 +1381,7 @@ Object.assign(App, {
       }
       this.queue = favTracks.map(t => t.id);
       this.queueIdx = 0;
-      this._plSyncIds = null; // §82: Favoritos no sincroniza con listas
+      this._plSyncIds = null; //  Favoritos no sincroniza con listas
       this.playContext = { type: 'favorites' };
       // Igual que playPlaylist(): anclar la primera favorita, no la pista previa.
       if (this.shuffle) this._applyShuffle(this.queue[0]);
@@ -1425,8 +1425,8 @@ Object.assign(App, {
       return null;
     },
 
-    /* §93: _addTrackIdToPlaylist() extirpado — su comentario
-     * decía «la usan el flujo individual y el lote», pero no
-     * tenía ni una llamada: los flujos vivos añaden por su cuenta. */
+    /*  _addTrackIdToPlaylist extirpado — su comentario
+ * decía «la usan el flujo individual y el lote», pero no
+ * tenía ni una llamada: los flujos vivos añaden por su cuenta. */
 
 });

@@ -3715,8 +3715,65 @@ const I18N = {
     id: 'Nonaktif',
     'zh-TW': '已關閉'
   },
+  /* Textos del bucle A-B. Como el resto del diccionario, las
+   * traducciones automáticas agradecen revisión nativa. */
+  ab_repeat: {
+    es: 'Bucle A-B', en: 'A-B Loop', pt: 'Loop A-B',
+    zh: 'A-B 循环', ja: 'A-B ループ', fr: 'Boucle A-B',
+    it: 'Loop A-B', ru: 'Петля A-B',
+    de: 'A-B-Schleife',
+    uk: 'Петля A-B',
+    pl: 'Pętla A-B',
+    tr: 'A-B Döngüsü',
+    id: 'Loop A-B',
+    'zh-TW': 'A-B 循環'
+  },
   /* Etiqueta corta bajo el botón A-B: junto al distintivo «A-B» se lee
-   * «Bucle A-B» sin ocupar el ancho completo de la fila secundaria. */
+   * «Bucle» sin ocupar el ancho completo de la fila secundaria. */
+  ab_label: {
+    es: 'Bucle', en: 'Loop', pt: 'Loop',
+    zh: '循环', ja: 'ループ', fr: 'Boucle',
+    it: 'Loop', ru: 'Петля',
+    de: 'Schleife',
+    uk: 'Петля',
+    pl: 'Pętla',
+    tr: 'Döngü',
+    id: 'Loop',
+    'zh-TW': '循環'
+  },
+  ab_set_a: {
+    es: 'Punto A fijado en X. Pulsa para fijar B', en: 'Point A set at X. Tap to set B', pt: 'Ponto A fixado em X. Toque para fixar B',
+    zh: 'A 点已设置在 X。再次点击设置 B 点', ja: 'A 地点を X に設定しました。タップして B を設定', fr: 'Point A défini à X. Touchez pour définir B',
+    it: 'Punto A impostato su X. Tocca per impostare B', ru: 'Точка A установлена на X. Нажмите для B',
+    de: 'Punkt A bei X gesetzt. Tippen, um B zu setzen',
+    uk: 'Точку A встановлено на X. Торкніться, щоб встановити B',
+    pl: 'Punkt A ustawiony na X. Dotknij, aby ustawić B',
+    tr: 'A noktası X olarak ayarlandı. B noktasını ayarlamak için dokunun',
+    id: 'Titik A diatur pada X. Ketuk untuk mengatur B',
+    'zh-TW': 'A 點已設定在 X。再次點擊設定 B 點'
+  },
+  ab_active: {
+    es: 'Bucle A-B activo (X ⇄ Y)', en: 'A-B Loop active (X ⇄ Y)', pt: 'Loop A-B ativo (X ⇄ Y)',
+    zh: 'A-B 循环开启 (X ⇄ Y)', ja: 'A-B ループ有効 (X ⇄ Y)', fr: 'Boucle A-B active (X ⇄ Y)',
+    it: 'Loop A-B attivo (X ⇄ Y)', ru: 'Петля A-B активна (X ⇄ Y)',
+    de: 'A-B-Schleife aktiv (X ⇄ Y)',
+    uk: 'Петля A-B активна (X ⇄ Y)',
+    pl: 'Pętla A-B aktywna (X ⇄ Y)',
+    tr: 'A-B döngüsü etkin (X ⇄ Y)',
+    id: 'Loop A-B aktif (X ⇄ Y)',
+    'zh-TW': 'A-B 循環開啟 (X ⇄ Y)'
+  },
+  ab_cleared: {
+    es: 'Bucle A-B desactivado', en: 'A-B Loop cleared', pt: 'Loop A-B desativado',
+    zh: 'A-B 循环已清除', ja: 'A-B ループを解除しました', fr: 'Boucle A-B désactivée',
+    it: 'Loop A-B disattivato', ru: 'Петля A-B отключена',
+    de: 'A-B-Schleife deaktiviert',
+    uk: 'Петлю A-B вимкнено',
+    pl: 'Pętla A-B wyłączona',
+    tr: 'A-B döngüsü kapatıldı',
+    id: 'Loop A-B dimatikan',
+    'zh-TW': 'A-B 循環已清除'
+  },
   settings_preserves_pitch: {
     es: 'Preservar tono al cambiar velocidad', en: 'Preserve pitch on speed change', pt: 'Preservar tom ao mudar velocidade',
     zh: '变速时保持音调', ja: '速度変更時にピッチを維持', fr: 'Préserver la hauteur à vitesse variable',
@@ -3808,8 +3865,8 @@ const I18N = {
     id: 'Naikkan kecepatan',
     'zh-TW': '提高速度'
   },
-  /* §100: transición única, mantenimiento con textos claros y
-   * el despliegue del ajuste fino de Letras. */
+  /*  transición única, mantenimiento con textos claros y
+ * el despliegue del ajuste fino de Letras. */
   settings_transition: {
     es: 'Transición entre canciones', en: 'Transition between tracks', pt: 'Transição entre faixas',
     zh: '曲目过渡', ja: '曲間のトランジション', fr: 'Transition entre les titres',
@@ -3913,19 +3970,8 @@ const I18N = {
     id: 'Menghapus SEMUA lagu dan daftar putar aplikasi. Berkas di perangkat Anda tidak tersentuh, tetapi ini tidak dapat dibatalkan.',
     'zh-TW': '刪除應用中的所有歌曲和播放列表。設備上的文件不受影響，但此操作無法撤銷。'
   },
-  lrc_tools: {
-    es: 'Ajustes de letra', en: 'Lyrics settings', pt: 'Ajustes da letra',
-    zh: '歌词设置', ja: '歌詞設定', fr: 'Réglages des paroles',
-    it: 'Impostazioni testo', ru: 'Настройки текста',
-    de: 'Text-Einstellungen',
-    uk: 'Налаштування тексту',
-    pl: 'Ustawienia tekstu',
-    tr: 'Söz ayarları',
-    id: 'Pengaturan lirik',
-    'zh-TW': '歌詞設置'
-  },
-  /* §95: tocar la portada abre/cierra el modo inmersivo; el nombre
-   * accesible de la portada anuncia esa acción (antes: reproducir). */
+  /*  tocar la portada abre/cierra el modo inmersivo; el nombre
+ * accesible de la portada anuncia esa acción (antes: reproducir). */
   cover_fullscreen: {
     es: 'Ver portada a pantalla completa', en: 'View cover fullscreen', pt: 'Ver capa em tela cheia',
     zh: '全屏查看封面', ja: 'カバーを全画面で表示', fr: 'Voir la pochette en plein écran',
@@ -3948,8 +3994,8 @@ const I18N = {
     id: 'Keluar dari sampul layar penuh',
     'zh-TW': '退出全屏封面'
   },
-  /* §98: la clave de la cabecera de cola (idea 10 de la §97)
-   * se retiró con ella; ninguna clave sin uso se queda aquí. */
+  /*  la clave de la cabecera de cola (idea 10 de la)
+ * se retiró con ella; ninguna clave sin uso se queda aquí. */
 
   /* Claves que faltaban y se mostraban como texto crudo en la UI
    * (auditoría 2026-10). Todas con los 8 idiomas. */
@@ -4005,7 +4051,7 @@ const I18N = {
     'zh-TW': '歌單已刪除'
   },
 
-  /* ---------- §81: ordenar, catálogo, inteligentes, editor ---------- */
+  /* ----------: ordenar, catálogo, inteligentes, editor ---------- */
   sort_label: {
     es: 'Orden', en: 'Sort', pt: 'Ordem',
     zh: '排序', ja: '並び替え', fr: 'Trier',
@@ -4264,7 +4310,6 @@ const I18N = {
     id: 'Konfirmasi',
     'zh-TW': '確認'
   },
-
 
 };
 

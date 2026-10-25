@@ -53,7 +53,7 @@ Object.assign(App, {
       for (const line of arr) {
         if (typeof line !== 'string') continue;
         const trimmed = line.trim();
-        // §94: las líneas vacías del archivo ya no crean una
+        //  las líneas vacías del archivo ya no crean una
         // entrada fantasma (texto '', sin tiempo) que luego se
         // pintaba como una línea en blanco moviéndose por la
         // letra. Vacío = nada que mostrar: se salta y punto.
@@ -63,7 +63,7 @@ Object.assign(App, {
         if (/^\[(ar|ti|al|by|offset|length|re|ve|id):/i.test(trimmed)) continue;
 
         // Buscar TODOS los timestamps en la línea.
-        // §94: el comentario prometía [h:mm:ss.xx] desde siempre,
+        //  el comentario prometía [h:mm:ss.xx] desde siempre,
         // pero el regex solo aceptaba mm:ss — y tampoco la coma
         // decimal ([00:12,50], habitual en LRC europeos). Ahora:
         // [mm:ss.xx], [mm:ss], [m:ss.xx], [h:mm:ss.xx], coma o punto.
@@ -102,7 +102,7 @@ Object.assign(App, {
 
       // Si hay timestamps, ordenar por tiempo
       if (hasTimed) {
-        // §94: las líneas sin timestamp (créditos sueltos entre
+        //  las líneas sin timestamp (créditos sueltos entre
         // estrofas) se anclan al tiempo de la línea temporizada
         // ANTERIOR en el archivo, no a 0: antes la ordenación las
         // teletransportaba todas al principio de la letra.
@@ -145,8 +145,8 @@ Object.assign(App, {
       return String(text || '').replace(/<\d{1,2}:\d{2}(?:\.\d{1,3})?>/g, '');
     },
 
-    /* §100: karaoke por palabras retirado; stripKaraokeTags sigue
-     * limpiando los <mm:ss> de los LRC mejorados al pintar la línea. */
+    /*  karaoke por palabras retirado; stripKaraokeTags sigue
+ * limpiando los <mm:ss> de los LRC mejorados al pintar la línea. */
 
     _setLyricsEmpty(on) {
       const emptyEl = document.getElementById('lrcEmpty');
@@ -154,9 +154,9 @@ Object.assign(App, {
       if (emptyEl) emptyEl.hidden = !on;
       if (scroll) {
         scroll.classList.toggle('has-empty', !!on);
-        if (on) this._setLrcFocus(false); // §86: sin letra no hay foco que mostrar
+        if (on) this._setLrcFocus(false); //  sin letra no hay foco que mostrar
       }
-      // §73: sin letra, la barra de herramientas (tamaño, desfase,
+      //  sin letra, la barra de herramientas (tamaño, desfase,
       // velocidad, bucle…) solo hacía ruido sobre el vacío y duplicaba
       // las acciones de la tarjeta: la vista entra en modo limpio y la
       // barra vuelve en cuanto hay letra que ajustar.
@@ -174,12 +174,12 @@ Object.assign(App, {
       if (hint) hint.textContent = noTrack ? this.t('load_track_to_start') : this.t('lrc_empty_hint');
     },
 
-    /* §86: modo «foco» de la letra sincronizada. Con la clase
-     * .lrc-focus en el contenedor, el CSS difumina todas las líneas
-     * menos la que suena (y sus vecinas, a media opacidad). Solo se
-     * activa con letra CON tiempos y una vez que suena la primera
-     * línea: en la intro —o con letra sin sincronizar— todo se lee
-     * como siempre. */
+    /*  modo «foco» de la letra sincronizada. Con la clase
+ *.lrc-focus en el contenedor, el CSS difumina todas las líneas
+ * menos la que suena (y sus vecinas, a media opacidad). Solo se
+ * activa con letra CON tiempos y una vez que suena la primera
+ * línea: en la intro —o con letra sin sincronizar— todo se lee
+ * como siempre. */
     _setLrcFocus(on) {
       const sc = document.getElementById('lyricsScroll');
       if (sc && sc.classList.contains('lrc-focus') !== !!on) {
@@ -261,7 +261,7 @@ Object.assign(App, {
       // Detectar scroll manual del usuario (#13)
       this.wireLyricsUserScroll();
       // Iniciar sincronización con RAF (#22), solo con la vista
-      // de letras activa. §94: antes había DOS llamadas seguidas
+      // de letras activa.: antes había DOS llamadas seguidas
       // (una incondicional y otra con guardia) — la segunda
       // cancelaba y rearrancaba la primera en el mismo pintado.
       const lv = document.getElementById('viewLyrics');
@@ -271,7 +271,7 @@ Object.assign(App, {
     /* Sincronización precisa con requestAnimationFrame (#22) */
     startLrcRafSync() {
       if (this.lrcRafId) cancelAnimationFrame(this.lrcRafId);
-      // §94: también se cancela el respiro en pausa pendiente,
+      //  también se cancela el respiro en pausa pendiente,
       // para que nunca convivan dos cadenas de sincronización.
       if (this._lrcRafTimer) { clearTimeout(this._lrcRafTimer); this._lrcRafTimer = null; }
       if (!this.lrcHasTimed) return;
@@ -292,7 +292,7 @@ Object.assign(App, {
           // activa aunque el usuario vuelva al reproductor (el RAF solo corre
           // con la vista de letras abierta).
         }
-        // §94: en pausa, pintar a 60 fps es batería tirada (la
+        //  en pausa, pintar a 60 fps es batería tirada (la
         // línea no se mueve): se respira a 4 fps, suficiente para
         // seguir un seek con la reproducción detenida.
         if (this.audio && this.audio.paused) {
@@ -331,7 +331,7 @@ Object.assign(App, {
      * líneas timed y untimed mezcladas, lo que rompe la búsqueda binaria. */
     updateLyricsHighlight(cur) {
       if (!this.lrcLines.length || !this.lrcHasTimed) {
-        this._setLrcFocus(false); // §86: sin sincronía no hay difuminado
+        this._setLrcFocus(false); //  sin sincronía no hay difuminado
         return;
       }
 
@@ -360,7 +360,7 @@ Object.assign(App, {
             }
           }
         }
-        // §86: antes de la primera línea (intro) todo visible.
+        //  antes de la primera línea (intro) todo visible.
         this._setLrcFocus(false);
         return;
       }
@@ -383,7 +383,7 @@ Object.assign(App, {
 
       // === Solo actualizar DOM si cambió la línea activa ===
       const key = activeIndices[0] + '';  // clave simple: primer índice
-      this._setLrcFocus(true); // §86: ya suena una línea: a difuminar el resto
+      this._setLrcFocus(true); //  ya suena una línea: a difuminar el resto
       if (key !== this._lastActiveKey) {
         this._lastActiveKey = key;
         this.activeLrcIdx = idx;
@@ -442,20 +442,19 @@ Object.assign(App, {
     },
 
     /* Posición de reposo de la línea activa: su centro, en el centro
-     * del área visible (§74). Antes el modo normal la aparcaba al 25%
-     * de la altura (más arriba) y solo la pantalla completa la
-     * centraba: la misma canción «saltaba» al alternar modos. Si algún
-     * día se quiere otro encuadre, es esta fracción: 0.5 = centro. */
+ * del área visible. Antes el modo normal la aparcaba al 25%
+ * de la altura (más arriba) y solo la pantalla completa la
+ * centraba: la misma canción «saltaba» al alternar modos. Si algún
+ * día se quiere otro encuadre, es esta fracción: 0.5 = centro. */
     _lrcScrollTarget(el, sc) {
       return el.offsetTop - (sc.clientHeight / 2) + (el.clientHeight / 2);
     },
-
 
     /* ============================================================
      *  Cargar .lrc externo (#1)
      * ============================================================ */
     async loadExternalLrc() {
-      // Delta Chat nativo: selector integrado antes que <input> (§42)
+      // Delta Chat nativo: selector integrado antes que <input>
       const nativeFiles = await this.pickFilesWebxdc({ extensions: ['.lrc', '.txt'], multiple: false });
       if (nativeFiles) {
         if (nativeFiles.length > 0) await this._applyExternalLrc(nativeFiles[0]);
@@ -532,8 +531,8 @@ Object.assign(App, {
       if (typeof this._syncLyricsButton === 'function') this._syncLyricsButton();
     },
 
-    /* §100: «sincronizar tocando» retirado con su panel y métodos
-     * (la letra se sigue pudiendo pegar con sellos [mm:ss.xx]). */
+    /*  «sincronizar tocando» retirado con su panel y métodos
+ * (la letra se sigue pudiendo pegar con sellos [mm:ss.xx]). */
 
     /* Exportar / compartir letra LRC activa en Delta Chat o descarga local */
     async exportCurrentLyrics() {
@@ -601,7 +600,7 @@ Object.assign(App, {
     resetLyricsPrefs() {
       // Reset COMPLETO: deshace todos los cambios hechos en la vista de letras
       // (offset, tamaño de fuente, velocidad, loop)
-      // §70 [9]: auditoría externa vio el toast sin origen aparente. No
+      // [9]: auditoría externa vio el toast sin origen aparente. No
       // hay ningún camino que lo dispare al cambiar de pista (solo este
       // botón), pero sí saltaba aunque no hubiera nada que reiniciar y
       // parecía espontáneo: ahora solo avisa si algo cambió de verdad.
@@ -692,7 +691,7 @@ Object.assign(App, {
       }
       const label = document.getElementById('lrcSpeedLabel');
       if (label) label.textContent = this.playbackRate.toFixed(1) + '×';
-      // §100: la velocidad vive solo aquí (Ajustes ya no la duplica).
+      //  la velocidad vive solo aquí (Ajustes ya no la duplica).
       try { localStorage.setItem('aurora_playback_rate', this.playbackRate); } catch (e) {}
       if (this.currentTrack) {
         this.currentTrack.lrcSpeed = this.playbackRate;

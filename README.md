@@ -2,7 +2,14 @@
 
 Reproductor de música **offline-first** pensado para **WebXDC**: se comparte como archivo `.xdc` en un chat de Delta Chat y funciona sin red, sin cuenta y sin servidor. Carga archivos locales (MP3, M4A, FLAC, WAV, OGG, Opus), lee ID3 y letras LRC.
 
-**Versión:** 1.2.5 · licencia MIT
+**Versión:** 1.2.0 · licencia MIT
+
+> **Nota:** Aurora es un proyecto **generado con inteligencia
+> artificial**. Todo su código —y las traducciones de la
+> interfaz— lo ha escrito un asistente de IA, con la dirección,
+> las decisiones y las pruebas finales de una persona. Si algo
+> suena raro en tu idioma o se comporta de forma extraña, no es
+> un misterio: repórtalo en los *issues* y se corrige.
 
 ## Qué hace
 
@@ -20,22 +27,21 @@ Reproductor de música **offline-first** pensado para **WebXDC**: se comparte co
 - **Estrellas de 1 a 5** en el menú de cada canción, en el reproductor
   y en las filas, para valorar sin salir de donde estás. En Inicio,
   el escaparate «Más valoradas» enseña tus mejores notas.
-- **Reproducción seria**: cola, aleatorio de verdad, repetir,
-  «Reproducir desde…» con su contexto, reproducción continua
+- **Reproducción seria**: cola, aleatorio de verdad, repetir, bucle
+  A-B, «Reproducir desde…» con su contexto, reproducción continua
   (gapless/crossfade), ecualizador, visualizador y temporizador de
   apagado.
-- **Estadísticas**: recientes, más reproducidas e historial (las reproducciones solo cuentan cuando la canción suena entera).
+- **Estadísticas**: más reproducidas, artistas favoritos y tiempo de
+  escucha (una reproducción solo cuenta cuando la canción suena
+  entera).
 - **Comparte por el chat**: envía canciones, listas (`.m3u8`) y letras
   con `sendToChat`, sin salir de Delta Chat.
 - **Ordena y explora a tu manera**: cada lista se puede ordenar por
   título, artista, álbum o duración (además del orden por estrellas),
   y Biblioteca explora tu colección por Álbumes, Artistas y Géneros.
-  Hay **listas inteligentes** que se rellenan solas (4+ estrellas, un
-  género, nunca reproducidas, olvidadas…), la cola se puede guardar
-  como lista, la letra se sincroniza tocando al ritmo de la canción
-  y Estadísticas también cuenta saltadas y olvidadas.
-- **8 idiomas** (es, en, pt, zh, ja, fr, it, ru), temas y colores de
-  acento.
+  La cola se puede guardar como lista y hay buscador de duplicados.
+- **14 idiomas** (es, en, pt, zh, ja, fr, it, ru, de, uk, pl, tr, id,
+  zh-TW), temas y colores de acento.
 
 ## Empaquetar como .xdc (Delta Chat)
 
@@ -55,7 +61,7 @@ El script comprueba antes de comprimir:
 - ninguna carga remota (un `.xdc` no tiene red)
 - que ningún `webxdc.js` viaje en el paquete (lo inyecta el cliente)
 
-El resultado es un ZIP con compresión Deflate, **27 archivos y ~336 KB**, reproducible (mismo contenido → mismo SHA-256).
+El resultado es un ZIP con compresión Deflate, **26 archivos y ~383 KB**, reproducible (mismo contenido → mismo SHA-256).
 
 ### Probar en Delta Chat
 
@@ -98,7 +104,7 @@ Dichas en voz alta, para que nadie se lleve una sorpresa:
 En los [*issues* de GitHub](https://github.com/nelsondev2/Aurora-Music-Player/issues)
 (en español o inglés). Ayuda mucho incluir:
 
-- la versión de Aurora (Ajustes → Acerca de: **1.2.0**),
+- la versión de Aurora (Ajustes → Acerca de),
 - tu dispositivo y la versión de Delta Chat,
 - los pasos para reproducir el fallo, y qué esperabas que pasara.
 
@@ -119,7 +125,7 @@ En navegador no hay API webxdc (la referencia a `webxdc.js` no resuelve): las ex
 |---|---|
 | `index.html` | Markup de la app (vistas, hojas, sprite de iconos) |
 | `css/styles.css` | Estilos, temas y acentos (toda la CSS vive en `css/`) |
-| `js/data.js` | Traducciones (8 idiomas) y utilidades de datos |
+| `js/data.js` | Traducciones (14 idiomas) y utilidades de datos |
 | `js/storage.js` | Persistencia en IndexedDB |
 | `js/uploader.js` | Lectura de archivos, ID3 y LRC |
 | `js/` | Todo el JavaScript propio: módulos de la app (audio, UI, listas, letras, ajustes…) |
@@ -128,6 +134,5 @@ En navegador no hay API webxdc (la referencia a `webxdc.js` no resuelve): las ex
 | `manifest.toml`, `icon.png` | Metadatos e icono del WebXDC |
 | `README.md`, `LICENSE` | Documentación y licencia |
 | `CHANGELOG.md` | Historial de versiones publicadas |
-| `docs/AUDITORIA.md`, `docs/INFORME-PULIDO-UI.md` | Informes de auditoría y del pulido de interfaz |
 
-El repositorio contiene únicamente la aplicación y su empaquetador: no incluye servidor Node, suite de pruebas, CI ni dependencias externas. El historial detallado de cambios y de las verificaciones de cada uno vive en `docs/INFORME-PULIDO-UI.md`; antes de empaquetar, `build-xdc.py` valida el paquete contra las reglas de Delta Chat.
+El repositorio contiene únicamente la aplicación y su empaquetador: no incluye servidor Node, suite de pruebas, CI ni dependencias externas. Antes de empaquetar, `build-xdc.py` valida el paquete contra las reglas de Delta Chat.

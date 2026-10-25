@@ -41,7 +41,7 @@ Object.assign(App, {
          * de verdad; con 256 solo tenía 128 muestras y salía dentada. */
         this.analyser.fftSize = 2048;
         // 0.68 (antes 0.8): con el suavizado propio de la onda
-        // encima, 0.8 hacía el trazo perezoso (§68).
+        // encima, 0.8 hacía el trazo perezoso.
         this.analyser.smoothingTimeConstant = 0.68;
         this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
         this._visTimeData = new Uint8Array(this.analyser.fftSize);
@@ -188,7 +188,7 @@ Object.assign(App, {
     playTrack(trackId, context) {
       const idx = this.tracks.findIndex(t => t.id === trackId);
       if (idx < 0) return;
-      // §81: cambiar a otra canción a mitad de reproducción cuenta
+      //  cambiar a otra canción a mitad de reproducción cuenta
       // como salto de la saliente (playFromQueue no pasa por aquí,
       // así que next/prev no lo cuentan dos veces).
       if (this.currentTrack && this.currentTrack.id !== trackId && this.isPlaying
@@ -203,9 +203,9 @@ Object.assign(App, {
         // Cola = pistas de esa playlist (en orden), filtrando las que existen
         const pl = this.playlists.find(p => p.id === context.id);
         if (pl) {
-          // La cola hereda el orden por estrellas de la lista (§64)
+          // La cola hereda el orden por estrellas de la lista
           this.queue = this.playlistTracksSorted(pl).map(t => t.id);
-          // §82: esta foto de la lista es la base de sincronización:
+          // Esta foto de la lista es la base de sincronización:
           // next() solo aplicará altas/bajas de la lista, jamás
           // resucitará lo que el usuario quite de la cola.
           this._plSyncIds = this.queue.slice();
@@ -249,7 +249,7 @@ Object.assign(App, {
         this.queueIdx = idx;
       }
 
-      // §82: fuera de contexto de lista no hay sincronización que hacer.
+      //  fuera de contexto de lista no hay sincronización que hacer.
       if (!(context && context.type === 'playlist' && context.id)) this._plSyncIds = null;
       // Si se pasa contexto, usarlo; si no, mantener el actual
       if (context) this.playContext = context;
@@ -309,6 +309,8 @@ Object.assign(App, {
       this._noAudioSkips = 0;
       this.audio.src = url;
       try { this.audio.volume = this.volume; } catch (e) {}
+      // Pista nueva: el bucle A-B de la anterior no debe sobrevivir.
+      if (this.clearABRepeat) this.clearABRepeat();
       if (this.preservesPitch !== undefined) {
         this.audio.preservesPitch = this.preservesPitch;
         this.audio.mozPreservesPitch = this.preservesPitch;
@@ -351,7 +353,7 @@ Object.assign(App, {
         this.audio.load();
         this.setBuffering(this.audio.readyState < 3);
       } else {
-        // §94: sin URL no basta con «no cargar»: el elemento
+        //  sin URL no basta con «no cargar»: el elemento
         // conservaba el src de la pista anterior (la borrada) y
         // un Play la resucitaba sonando otra canción que la que
         // enseñaba la pantalla.
@@ -362,9 +364,11 @@ Object.assign(App, {
         }
         this.setBuffering(false);
       }
-      // §94: misma higiene que loadAndPlay al cambiar de pista:
+      //  misma higiene que loadAndPlay al cambiar de pista:
       // fuera el bucle A-B de la anterior y dentro las prefs de
       // letra (offset/velocidad) de ESTA pista, no de la borrada.
+      // La misma limpieza de bucle se hace en loadAndPlay.
+      if (this.clearABRepeat) this.clearABRepeat();
       if (typeof this.restoreLyricsPrefs === 'function') this.restoreLyricsPrefs();
       this.isPlaying = false;
       this.renderCurrentTrack();
@@ -384,7 +388,7 @@ Object.assign(App, {
       if (typeof this.setBuffering === 'function') this.setBuffering(false);
       this.isPlaying = false;
       if (typeof this.updatePlayUI === 'function') this.updatePlayUI();
-      // §94: si ya hay un salto programado para ESTE fallo, el
+      //  si ya hay un salto programado para ESTE fallo, el
       // segundo aviso (evento 'error' tras el rechazo de play())
       // no cuenta ni salta otra vez.
       if (this._decodeSkipTimer) return true;
@@ -398,7 +402,7 @@ Object.assign(App, {
         return true;
       }
       if (this._decodeSkipCount === 1) this.toast(this.t('toast_audio_error'));
-      // §94: programar el salto (el candado de arriba coalesce
+      //  programar el salto (el candado de arriba coalesce
       // los dos avisos del mismo archivo corrupto en uno solo).
       this._decodeSkipTimer = setTimeout(() => {
         this._decodeSkipTimer = null;
@@ -491,7 +495,7 @@ Object.assign(App, {
             this.isPlaying = true;
             if (this.gainNode && this.audioCtx && !this._xfadeIncoming && !this._xfadeStarted) {
               try {
-                // §81: fundido de entrada (300 ms). Sin grafo Web
+                //  fundido de entrada (300 ms). Sin grafo Web
                 // Audio no hay dónde fundir y se entra directo.
                 const now = this.audioCtx.currentTime;
                 this.gainNode.gain.cancelScheduledValues(now);
@@ -530,7 +534,7 @@ Object.assign(App, {
       } else {
         this._playToken = (this._playToken || 0) + 1;
         this._cancelCrossfade();
-        // §81: fundido de salida (250 ms) antes de pausar de verdad.
+        //  fundido de salida (250 ms) antes de pausar de verdad.
         // Si llega un play() mientras tanto, el token lo invalida y
         // la pausa programada no se aplica. Sin grafo, pausa directa.
         const canFade = this.gainNode && this.audioCtx && !this._xfadeIncoming && !this._xfadeStarted
@@ -644,17 +648,17 @@ Object.assign(App, {
       if (typeof this.updateChrome === 'function') this.updateChrome();
     },
 
-    /* §82: sincroniza la cola con la lista de la que nació.
-     *  _plSyncIds es la foto de la lista cuando se construyó la cola
-     *  (o en la primera sincronización). Contra esa foto:
-     *   - altas: ids que están en la lista ahora y no estaban en la
-     *     foto ni en la cola → se añaden AL FINAL de la cola.
-     *   - bajas de la lista: ids de la foto que ya no están en la
-     *     lista → salen de la cola (salvo la que está sonando, que
-     *     termina y saldrá en la siguiente sincronización).
-     *  Lo que el usuario quitó de la cola a mano sigue en la foto,
-     *  así que NO se considera alta y no vuelve. El orden de la cola
-     *  tampoco se toca: el reorden por arrastre sobrevive. */
+    /* Sincroniza la cola con la lista de la que nació.
+ * _plSyncIds es la foto de la lista cuando se construyó la cola
+ * (o en la primera sincronización). Contra esa foto:
+ * - altas: ids que están en la lista ahora y no estaban en la
+ * foto ni en la cola → se añaden AL FINAL de la cola.
+ * - bajas de la lista: ids de la foto que ya no están en la
+ * lista → salen de la cola (salvo la que está sonando, que
+ * termina y saldrá en la siguiente sincronización).
+ * Lo que el usuario quitó de la cola a mano sigue en la foto,
+ * así que NO se considera alta y no vuelve. El orden de la cola
+ * tampoco se toca: el reorden por arrastre sobrevive. */
     _syncQueueWithPlaylist() {
       if (!this.playContext || this.playContext.type !== 'playlist' || !this.playContext.id) {
         this._plSyncIds = null;
@@ -679,7 +683,7 @@ Object.assign(App, {
       if (added.length) {
         this.queue.push(...added);
         changed = true;
-        // §83: si la lista manda por estrellas, las altas no van al
+        //  si la lista manda por estrellas, las altas no van al
         // final «porque sí»: cada una entra en su puesto por nota
         // dentro de lo que queda por sonar.
         if ((pl.sort || 'stars') === 'stars' && typeof this.resortUpcomingQueue === 'function') {
@@ -695,18 +699,18 @@ Object.assign(App, {
       this._plSyncIds = plIds;
     },
 
-    /* §83: reordena SOLO lo que queda por sonar de la cola (la
-     * actual y lo ya sonado no se tocan), que es donde la promesa
-     * «la cola va por más valoradas» tiene que cumplirse en vivo:
-     * hasta ahora valorar una canción reordenaba la lista pero la
-     * cola se quedaba como nació, y vista y cola divergían.
-     *  - byPlaylist=true: manda el orden vigente de la lista
-     *    (playlistTracksSorted con su criterio §81); las pistas
-     *    ajenas a la lista conservan su orden relativo al final.
-     *  - byPlaylist=false: manda la nota (más valoradas primero).
-     * El sort es estable: a igualdad, cada pista conserva el puesto
-     * que ya tenía en la cola (el arrastre manual sobrevive entre
-     * iguales). Con aleatorio no se toca nada. */
+    /*  reordena SOLO lo que queda por sonar de la cola (la
+ * actual y lo ya sonado no se tocan), que es donde la promesa
+ * «la cola va por más valoradas» tiene que cumplirse en vivo:
+ * hasta ahora valorar una canción reordenaba la lista pero la
+ * cola se quedaba como nació, y vista y cola divergían.
+ * - byPlaylist=true: manda el orden vigente de la lista
+ * (playlistTracksSorted con su criterio); las pistas
+ * ajenas a la lista conservan su orden relativo al final.
+ * - byPlaylist=false: manda la nota (más valoradas primero).
+ * El sort es estable: a igualdad, cada pista conserva el puesto
+ * que ya tenía en la cola (el arrastre manual sobrevive entre
+ * iguales). Con aleatorio no se toca nada. */
     resortUpcomingQueue(byPlaylist) {
       if (this.shuffle || !Array.isArray(this.queue)) return;
       if (this.queueIdx >= this.queue.length - 1) return;
@@ -735,13 +739,13 @@ Object.assign(App, {
 
     next(auto) {
       if (auto && this._sleepFading) return;
-      // §81: un salto manual a mitad de canción cuenta como «saltada»
+      //  un salto manual a mitad de canción cuenta como «saltada»
       // en estadísticas (el automático al terminar, no).
       if (!auto && this.isPlaying && typeof this._registerSkip === 'function') {
         this._registerSkip();
       }
       // Fin natural o fundido: la pista saliente sonó entera y cuenta
-      // en estadísticas (§67). Un next() manual no pasa por aquí
+      // en estadísticas. Un next manual no pasa por aquí
       // (auto=false); un archivo que falla llega con isPlaying=false
       // desde _handleDecodeFailure; y el candado por pase evita
       // contar dos veces si también lo cierra el gapless.
@@ -756,7 +760,7 @@ Object.assign(App, {
         this._fireSleep();
         return;
       }
-      // §82: sincronizar la cola con su lista SIN resucitar bajas.
+      //  sincronizar la cola con su lista SIN resucitar bajas.
       // Antes aquí se reconstruía la cola entera desde la lista en
       // cuanto difería: quitar una canción de la cola (o reordenarla
       // arrastrando, o vaciar las siguientes) se deshacía al pasar a
@@ -788,7 +792,7 @@ Object.assign(App, {
     prev() {
       this._cancelCrossfade();
       this._gaplessArmed = false;
-      // §81: ir a la anterior a mitad de canción también es un salto
+      //  ir a la anterior a mitad de canción también es un salto
       // (reiniciar la misma con >3 s no: eso lo gestiona el if).
       if (this.audio.currentTime <= 3 && this.isPlaying && typeof this._registerSkip === 'function') {
         this._registerSkip();
@@ -959,7 +963,7 @@ Object.assign(App, {
         }
         return;
       }
-      // §94: la ventana era de 80 ms, pero 'timeupdate' llega
+      //  la ventana era de 80 ms, pero 'timeupdate' llega
       // cada ~250 ms: casi ningún evento caía dentro y el gapless
       // era inerte (se oía el corte del 'ended' normal). Con
       // 0,35 s el intercambio entra en la ventana de un evento.
@@ -1000,7 +1004,7 @@ Object.assign(App, {
       if (isFinite(dur) && dur > 0) t = Math.max(0, Math.min(dur - 0.05, t));
       else t = Math.max(0, t);
       try { this.audio.currentTime = t; } catch (e) {}
-      // §94: ídem seekTo — la base de escucha salta con el seek.
+      //  ídem seekTo — la base de escucha salta con el seek.
       this._currentPlayBaseTime = this.audio.currentTime;
       this._statsWallBase = Date.now();
       this.updateProgress();
@@ -1019,7 +1023,7 @@ Object.assign(App, {
       } catch (e) {
         return;
       }
-      // §94: la base de «tiempo escuchado» salta con el seek; si
+      //  la base de «tiempo escuchado» salta con el seek; si
       // no, el flush contaba el tramo saltado como escuchado.
       this._currentPlayBaseTime = this.audio.currentTime;
       this._statsWallBase = Date.now();
@@ -1035,7 +1039,7 @@ Object.assign(App, {
         try { this.audio.volume = this.volume; } catch (e) {}
       }
       const pct = Math.round(this.volume * 100);
-      // §100: volumeSlider/volumeValue vivían en la hoja retirada.
+      //  volumeSlider/volumeValue vivían en la hoja retirada.
       const sv2 = document.getElementById('volumeSliderNp');
       const vv2 = document.getElementById('volumeValueNp');
       if (sv2) sv2.value = pct;
@@ -1142,16 +1146,95 @@ Object.assign(App, {
       if (chk) chk.checked = this.preservesPitch;
     },
 
-    /* §100: sistema A-B retirado. Había DOS bucles (este y el de
-     * sección en Letras, sobre la letra); queda el de Letras. */
+    /* ============================================================
+     *  Repetición A-B (A-B Repeat)
+     *  Convive con el bucle de sección de Letras (lrcLoop):
+ * este actúa sobre dos instantes de la canción desde el
+ * reproductor; aquel, sobre dos líneas de la letra.
+ * ============================================================ */
+    toggleABRepeat() {
+      if (!this.audio || !this.currentTrack || !this.audio.src) {
+        this.toast(this.t('no_track_playing'));
+        return;
+      }
+      if (!this.abRepeat) this.abRepeat = { active: false, a: null, b: null };
+      const cur = Number(this.audio.currentTime) || 0;
+      if (this.abRepeat.a === null) {
+        this.abRepeat.a = cur;
+        this.abRepeat.b = null;
+        this.abRepeat.active = false;
+        this.updateABRepeatUI();
+        this.toast(this.t('ab_set_a').replace('X', this.fmtTime(cur)));
+      } else if (this.abRepeat.b === null) {
+        if (cur <= this.abRepeat.a + 0.3) {
+          this.abRepeat.b = this.abRepeat.a + 1.0;
+        } else {
+          this.abRepeat.b = cur;
+        }
+        this.abRepeat.active = true;
+        this.updateABRepeatUI();
+        this.toast(this.t('ab_active')
+          .replace('X', this.fmtTime(this.abRepeat.a))
+          .replace('Y', this.fmtTime(this.abRepeat.b)));
+        if (this.audio && (this.audio.currentTime < this.abRepeat.a || this.audio.currentTime >= this.abRepeat.b)) {
+          this.seekToTime(this.abRepeat.a);
+        }
+      } else {
+        this.clearABRepeat();
+        this.toast(this.t('ab_cleared'));
+      }
+    },
+
+    clearABRepeat() {
+      this.abRepeat = { active: false, a: null, b: null };
+      this.updateABRepeatUI();
+    },
+
+    updateABRepeatUI() {
+      const btn = document.getElementById('btnABRepeat');
+      const range = document.getElementById('progressAbRange');
+      if (btn) {
+        btn.classList.remove('setting-b', 'active');
+        const badge = btn.querySelector('.ab-badge') || btn;
+        if (this.abRepeat && this.abRepeat.a !== null && this.abRepeat.b === null) {
+          btn.classList.add('setting-b');
+          btn.setAttribute('aria-pressed', 'false');
+          btn.title = this.t('ab_set_a').replace('X', this.fmtTime(this.abRepeat.a));
+          badge.textContent = 'A→';
+        } else if (this.abRepeat && this.abRepeat.active && this.abRepeat.b !== null) {
+          btn.classList.add('active');
+          btn.setAttribute('aria-pressed', 'true');
+          btn.title = this.t('ab_active')
+            .replace('X', this.fmtTime(this.abRepeat.a))
+            .replace('Y', this.fmtTime(this.abRepeat.b));
+          badge.textContent = 'A⇄B';
+        } else {
+          btn.setAttribute('aria-pressed', 'false');
+          btn.title = this.t('ab_repeat');
+          badge.textContent = 'A-B';
+        }
+      }
+      if (range) {
+        const dur = (this.audio && this.audio.duration) || (this.currentTrack && this.currentTrack.duration) || 0;
+        if (this.abRepeat && this.abRepeat.a !== null && dur > 0) {
+          range.removeAttribute('hidden');
+          const startPct = (this.abRepeat.a / dur) * 100;
+          const endPct = this.abRepeat.b !== null ? (this.abRepeat.b / dur) * 100 : Math.min(100, startPct + 0.8);
+          range.style.left = startPct + '%';
+          range.style.width = Math.max(0.5, endPct - startPct) + '%';
+        } else {
+          range.setAttribute('hidden', '');
+        }
+      }
+    },
 
     /* ============================================================
      *  Visualizador de frecuencias en tiempo real (AnalyserNode)
      * ============================================================ */
-    /* §101: ¿pide el sistema «reducir movimiento»? Se consulta EN
-     * VIVO, sin cachear: el usuario puede cambiar el ajuste con la
-     * app abierta y el lienzo debe obedecer al momento. Lo usan el
-     * arranque del visualizador y su propio bucle de dibujo. */
+    /*  ¿pide el sistema «reducir movimiento»? Se consulta EN
+ * VIVO, sin cachear: el usuario puede cambiar el ajuste con la
+ * app abierta y el lienzo debe obedecer al momento. Lo usan el
+ * arranque del visualizador y su propio bucle de dibujo. */
     _prefersReducedMotion() {
       try {
         return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -1168,7 +1251,7 @@ Object.assign(App, {
         // prefiere movimiento reducido.
         if (this._prefersReducedMotion()) saved = 'off';
       }
-      // §90: solo queda la onda (las barras tapaban el cover). Lo
+      //  solo queda la onda (las barras tapaban el cover). Lo
       // guardado como «bars» migra a «wave» y se re-persiste para
       // que el almacenamiento diga la verdad; por defecto, onda.
       if (saved === 'bars') {
@@ -1177,7 +1260,7 @@ Object.assign(App, {
       }
       this.visualizerMode = saved || 'wave';
       this.updateVisualizerUI();
-      // §101: si el ajuste de movimiento del sistema cambia con la
+      //  si el ajuste de movimiento del sistema cambia con la
       // app abierta, obedecer al momento: con «reducir» se para el
       // bucle (queda la onda quieta de stopVisualizer) y sin él se
       // reanuda si estaba sonando. El bucle además se autocomprueba
@@ -1200,7 +1283,7 @@ Object.assign(App, {
     },
 
     setVisualizerMode(mode) {
-      if (mode === 'bars') mode = 'wave'; // §90: modo retirado, migra a onda
+      if (mode === 'bars') mode = 'wave'; //  modo retirado, migra a onda
       this.visualizerMode = mode;
       try { localStorage.setItem('aurora_visualizer_mode', mode); } catch (e) {}
       this.updateVisualizerUI();
@@ -1217,7 +1300,7 @@ Object.assign(App, {
     },
 
     cycleVisualizerMode() {
-      // §90: sin barras, el ciclo es onda ↔ apagado.
+      //  sin barras, el ciclo es onda ↔ apagado.
       this.setVisualizerMode(this.visualizerMode === 'wave' ? 'off' : 'wave');
     },
 
@@ -1229,7 +1312,7 @@ Object.assign(App, {
         btn.setAttribute('aria-pressed', this.visualizerMode !== 'off' ? 'true' : 'false');
       }
       if (sec) {
-        // §95: visible también con el ajuste en «off» mientras dure
+        //  visible también con el ajuste en «off» mientras dure
         // el modo inmersivo de portada; al salir, vuelve el ajuste.
         sec.style.display = (this.visualizerMode === 'off' && !this._coverFs) ? 'none' : 'block';
       }
@@ -1254,7 +1337,7 @@ Object.assign(App, {
     },
 
     startVisualizer() {
-      // §95: en portada a pantalla completa la onda se muestra
+      //  en portada a pantalla completa la onda se muestra
       // aunque el ajuste sea «apagado» (sin cambiar la preferencia).
       if (this.visualizerMode === 'off' && !this._coverFs) return;
       if (this._visRafId || this._visTimer) return;
@@ -1263,9 +1346,9 @@ Object.assign(App, {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       this._fitVisualizerCanvas(canvas);
-      // §101: con «reducir movimiento» el bucle ni arranca: se
+      //  con «reducir movimiento» el bucle ni arranca: se
       // pinta UNA vez la onda quieta de reposo y se sale. Cubre
-      // también el modo inmersivo (§95), que fuerza la onda aunque
+      // también el modo inmersivo, que fuerza la onda aunque
       // el ajuste esté en «apagado»: la calma manda.
       if (this._prefersReducedMotion()) {
         this._drawVisualizerIdle(canvas, ctx);
@@ -1305,7 +1388,7 @@ Object.assign(App, {
           }, 500);
           return;
         }
-        // §101: si el sistema activó «reducir movimiento» a mitad
+        //  si el sistema activó «reducir movimiento» a mitad
         // de canción y el aviso de cambio no llegó (WebView sin
         // listener), el propio bucle se detiene y deja pintada la
         // onda de reposo, en vez de seguir bailando.
@@ -1316,7 +1399,7 @@ Object.assign(App, {
           return;
         }
         this._visRafId = requestAnimationFrame(render);
-        if (now - last < 16) return; // ~60 fps: a 30 las barras iban a saltos (§68)
+        if (now - last < 16) return; // ~60 fps: a 30 las barras iban a saltos
         const dt = Math.min(100, Math.max(1, now - (last || now - 33)));
         last = now;
         // Reajustar si el layout cambió (vista oculta al arrancar, rotación)
@@ -1343,8 +1426,8 @@ Object.assign(App, {
       const canvas = document.getElementById('visualizerCanvas');
       if (canvas) {
         const ctx = canvas.getContext('2d');
-        // §70 [11]: antes se limpiaba a negro y el área parecía rota en
-        // pausa. Ahora se pinta el estado de reposo (onda quieta, §90).
+        // [11]: antes se limpiaba a negro y el área parecía rota en
+        // pausa. Ahora se pinta el estado de reposo (onda quieta,).
         if (ctx) this._drawVisualizerIdle(canvas, ctx);
       }
     },
@@ -1360,7 +1443,7 @@ Object.assign(App, {
       grad.addColorStop(0, this._hexA(cols.from, 0.35));
       grad.addColorStop(0.5, this._hexA(cols.to, 0.35));
       grad.addColorStop(1, this._hexA(cols.from, 0.35));
-      // §90: también en reposo manda la onda: una línea senoidal
+      //  también en reposo manda la onda: una línea senoidal
       // suave y quieta, nada de la fila de barras bajas de antes.
       const midY = h / 2;
       const amp = Math.max(2, h * 0.12);
@@ -1387,7 +1470,7 @@ Object.assign(App, {
      * paleta dinámica pese a calcularse «para el fondo y
      * visualizador». Sin portada con paleta, el clásico de siempre. */
     _visColors() {
-      // §75: misma fuente que el fondo (antes, con portada de imagen,
+      //  misma fuente que el fondo (antes, con portada de imagen,
       // el visualizador caía a un violeta fijo que no era ni la
       // portada ni el acento).
       const pal = (this.currentTrack && typeof this.coverPaletteFor === 'function')
@@ -1432,7 +1515,7 @@ Object.assign(App, {
           const a = v < 0 ? -v : v;
           if (a > bestAbs) { bestAbs = a; best = v; }
         }
-        // §97 (idea 4): la onda tiene memoria — sube con ataque
+        // (idea 4): la onda tiene memoria — sube con ataque
         // rápido (55 ms) pero baja con relajación lenta
         // (260 ms). Antes un solo tau de 55 ms la dejaba en cero
         // en cada silencio y al arrancar cada canción «despertaba»
@@ -1456,7 +1539,7 @@ Object.assign(App, {
       const dt = (typeof dtMs === 'number' && dtMs > 0) ? Math.min(100, dtMs) : 33;
       const cols = this._visColors();
 
-      // §90: único modo: la onda fluida (las barras tapaban el cover).
+      //  único modo: la onda fluida (las barras tapaban el cover).
       // Buffer temporal propio (fftSize muestras; antes se reusaba
       // el de frecuencias, la mitad de largo: onda pobre y dentada).
       if (!this._visTimeData || (this.analyser.fftSize && this._visTimeData.length !== this.analyser.fftSize)) {

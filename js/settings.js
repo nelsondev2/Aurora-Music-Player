@@ -182,16 +182,16 @@ Object.assign(App, {
       this._normalizeStats();
     },
 
-    /* §94: validar la FORMA de las estadísticas vengan de donde
-     * vengan (IndexedDB o fallback): corruptas (un número, una
-     * lista, plays que no es objeto) se colaban tal cual y luego
-     * cada conteo sumaba NaN o lanzaba hasta parar la música. */
+    /*  validar la FORMA de las estadísticas vengan de donde
+ * vengan (IndexedDB o fallback): corruptas (un número, una
+ * lista, plays que no es objeto) se colaban tal cual y luego
+ * cada conteo sumaba NaN o lanzaba hasta parar la música. */
     _normalizeStats() {
       if (!this.stats || typeof this.stats !== 'object' || Array.isArray(this.stats)) {
         this.stats = { plays: {}, skips: {}, totalSeconds: 0 };
       }
       if (!this.stats.plays || typeof this.stats.plays !== 'object' || Array.isArray(this.stats.plays)) this.stats.plays = {};
-      if (!this.stats.skips || typeof this.stats.skips !== 'object' || Array.isArray(this.stats.skips)) this.stats.skips = {}; // §81
+      if (!this.stats.skips || typeof this.stats.skips !== 'object' || Array.isArray(this.stats.skips)) this.stats.skips = {};
       if (typeof this.stats.totalSeconds !== 'number' || !isFinite(this.stats.totalSeconds) || this.stats.totalSeconds < 0) this.stats.totalSeconds = 0;
     },
     async saveStats() {
@@ -221,24 +221,24 @@ Object.assign(App, {
     trackPlayStarted() {
       this._currentPlayStart = Date.now();
       this._currentPlayBaseTime = this.audio.currentTime || 0;
-      // El contador de reproducciones ya NO suma al empezar (§67):
+      // El contador de reproducciones ya NO suma al empezar:
       // una canción solo cuenta cuando suena entera. Aquí empieza
       // su «pase» de conteo; lo cierra trackPlayCompleted().
       this._playCounted = false;
-      this._skipCounted = false; // §81: un salto por pase, como el conteo
+      this._skipCounted = false; //  un salto por pase, como el conteo
       // Iniciar flush periódico de tiempo escuchado
       if (this._statsFlushTimer) clearInterval(this._statsFlushTimer);
-      this._statsWallBase = Date.now(); // §94: reloj de pared del flush
+      this._statsWallBase = Date.now(); //  reloj de pared del flush
       this._statsFlushTimer = setInterval(() => {
         if (this.isPlaying && this.audio) this._flushListening();
       }, 10000);  // cada 10s
     },
 
-    /* §94: vacía los segundos escuchados desde la última base.
-     * Techo de cordura: nunca contar más que el tiempo real
-     * transcurrido (× velocidad de reproducción + margen). Sin
-     * él, un salto de currentTime (seek no interceptado, pestaña
-     * congelada que despierta) inflaba el «tiempo escuchado». */
+    /*  vacía los segundos escuchados desde la última base.
+ * Techo de cordura: nunca contar más que el tiempo real
+ * transcurrido (× velocidad de reproducción + margen). Sin
+ * él, un salto de currentTime (seek no interceptado, pestaña
+ * congelada que despierta) inflaba el «tiempo escuchado». */
     _flushListening() {
       if (!this._currentPlayStart || !this.audio) return;
       const now = Date.now();
@@ -254,20 +254,20 @@ Object.assign(App, {
       }
     },
 
-    /* Registrar que la pista sonó ENTERA (§67): el único sitio donde
-     * suma el contador de reproducciones. Lo llaman el avance
-     * automático al terminar (fin natural o fundido, vía next(true))
-     * y el salto gapless al cambiar de pista; nunca un salto manual
-     * ni un archivo que falla al cargar. Una escucha por pase: el
-     * candado _playCounted lo pone trackPlayStarted() (o el propio
-     * gapless para la pista entrante). */
+    /* Registrar que la pista sonó ENTERA: el único sitio donde
+ * suma el contador de reproducciones. Lo llaman el avance
+ * automático al terminar (fin natural o fundido, vía next(true))
+ * y el salto gapless al cambiar de pista; nunca un salto manual
+ * ni un archivo que falla al cargar. Una escucha por pase: el
+ * candado _playCounted lo pone trackPlayStarted (o el propio
+ * gapless para la pista entrante). */
     trackPlayCompleted() {
       if (!this.currentTrack || this._playCounted) return;
       if (!this._heardWholeTrack()) return;
       this._playCounted = true;
       const id = this.currentTrack.id;
       this.stats.plays[id] = (this.stats.plays[id] || 0) + 1;
-      // §81: fecha de última escucha completa en la propia pista:
+      //  fecha de última escucha completa en la propia pista:
       // alimenta «Olvidadas» y la lista inteligente homónima.
       this.currentTrack.lastPlayedAt = Date.now();
       if (typeof this.persistTrack === 'function') {
@@ -276,12 +276,12 @@ Object.assign(App, {
       this.saveStats();
     },
 
-    /* §81: registrar un salto: el usuario abandona la pista a mitad
-     * (next/prev manual o elige otra). No cuenta si ya sonó entera
-     * (eso es una reproducción, §67), si se buscaron los últimos
-     * segundos a mano, ni dos veces en el mismo pase. Hace falta
-     * haber oído un mínimo (5 s o el 10 %): cambiar de opinión al
-     * instante no es «saltarla», es no haberla empezado. */
+    /*  registrar un salto: el usuario abandona la pista a mitad
+ * (next/prev manual o elige otra). No cuenta si ya sonó entera
+ * (eso es una reproducción,), si se buscaron los últimos
+ * segundos a mano, ni dos veces en el mismo pase. Hace falta
+ * haber oído un mínimo (5 s o el 10 %): cambiar de opinión al
+ * instante no es «saltarla», es no haberla empezado. */
     _registerSkip() {
       if (!this.currentTrack || !this.isPlaying || this._skipCounted || this._playCounted) return;
       if (typeof this._heardWholeTrack === 'function' && this._heardWholeTrack()) return;
@@ -330,7 +330,7 @@ Object.assign(App, {
         clearInterval(this._statsFlushTimer);
         this._statsFlushTimer = null;
       }
-      // Última actualización (§94: con el mismo techo que el flush)
+      // Última actualización (: con el mismo techo que el flush)
       this._flushListening();
       this._currentPlayStart = null;
     },
@@ -383,9 +383,9 @@ Object.assign(App, {
         bg0: '#050509', bg1: '#0a0a12', bg2: '#14141f', bg3: '#1d1d2b',
         text1: '#ffffff',
         text2: 'rgba(255,255,255,0.72)',
-        /* §94: 0.58 como en el CSS (§70) — applyTheme pisa la
-         * variable con este valor, así que el 0,48 de aquí dejaba
-         * el ajuste de contraste del CSS en papel mojado. */
+        /*  0.58 como en el CSS — applyTheme pisa la
+ * variable con este valor, así que el 0,48 de aquí dejaba
+ * el ajuste de contraste del CSS en papel mojado. */
         text3: 'rgba(255,255,255,0.58)',
         text4: 'rgba(255,255,255,0.36)',
         surface: 'rgba(255,255,255,0.05)',
@@ -416,7 +416,7 @@ Object.assign(App, {
         bg0: '#000000', bg1: '#000000', bg2: '#0a0a0a', bg3: '#141414',
         text1: '#ffffff',
         text2: 'rgba(255,255,255,0.72)',
-        text3: 'rgba(255,255,255,0.58)', /* §94: en línea con dark */
+        text3: 'rgba(255,255,255,0.58)', /*  en línea con dark */
         text4: 'rgba(255,255,255,0.40)',
         surface: 'rgba(255,255,255,0.06)',
         surface2: 'rgba(255,255,255,0.09)',
@@ -436,7 +436,7 @@ Object.assign(App, {
      * como color de texto sobre fondo oscuro o en portadas (sin texto).
      * fillLight/fillLight2 se usan en tema claro y también cumplen AA
      * sobre --bg-0/bg-1 claros. */
-    // Paleta renovada (§66): los extremos «from» viejos eran turbios
+    // Paleta renovada: los extremos «from» viejos eran turbios
     // (petróleo en Océano, pantano en Musgo, marrón en Ámbar) y cada
     // acento pesaba distinto. Ahora los seis comparten familia de
     // luz —degradados luminosos y con el tono claro— manteniendo la
@@ -569,7 +569,7 @@ Object.assign(App, {
 
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta) meta.setAttribute('content', t.bg0);
-      // §75: la paleta de portada se adapta al tema (pastel en claro,
+      //  la paleta de portada se adapta al tema (pastel en claro,
       // más negra en amoled); hay que reaplicarla al cambiar.
       if (this.currentTrack && typeof this._applyCoverPalette === 'function') {
         this._applyCoverPalette(this.coverPaletteFor(this.currentTrack));
@@ -614,7 +614,7 @@ Object.assign(App, {
       } catch (e) {}
       for (const raw of list) {
         const tag = String(raw || '').toLowerCase();
-        // §102: el chino tradicional (Taiwán, Hong Kong, Macao o
+        //  el chino tradicional (Taiwán, Hong Kong, Macao o
         // la etiqueta Hant) tiene entrada propia en el diccionario;
         // sin este desvío, el corte por '-' lo dejaba en
         // simplificado, que es otra escritura.
@@ -737,12 +737,12 @@ Object.assign(App, {
           const s = JSON.parse(raw);
           if (typeof s.normalize === 'boolean') this._normalizeVolume = s.normalize;
           if (typeof s.crossfade === 'number') {
-            // §94: acotado al rango que ofrece la UI (0–12 s): un
+            //  acotado al rango que ofrece la UI (0–12 s): un
             // valor corrupto o heredado (p. ej. 999) arrancaba el
             // fundido casi al empezar cada canción.
             this.crossfadeDuration = Math.max(0, Math.min(12, s.crossfade));
           }
-          // §100: UN modo de transición. Clave nueva si existe; si
+          //  UN modo de transición. Clave nueva si existe; si
           // no, se deriva de las heredadas (gapless suelto y/o
           // fundido con duración) para no perder ajustes viejos.
           const legacyMode = (this.crossfadeDuration > 0) ? 'crossfade'
@@ -753,7 +753,7 @@ Object.assign(App, {
           this.crossfadeEnabled = mode === 'crossfade';
           if (mode === 'crossfade' && !(this.crossfadeDuration > 0)) this.crossfadeDuration = 6;
           if (typeof s.marquee === 'boolean') this._marqueeEnabled = s.marquee;
-          // s.vinyl (§100: modo retirado) se ignora a propósito.
+          // s.vinyl (: modo retirado) se ignora a propósito.
         }
       } catch (e) {}
     },
@@ -768,9 +768,9 @@ Object.assign(App, {
         }));
       } catch (e) {}
     },
-    /* §100: modo de transición entre canciones — la única fuente
-     * de verdad de la que beben el motor (audio.js: gapless y
-     * fundido se excluyen solos) y la fila de Ajustes. */
+    /*  modo de transición entre canciones — la única fuente
+ * de verdad de la que beben el motor (audio.js: gapless y
+ * fundido se excluyen solos) y la fila de Ajustes. */
     getTransitionMode() {
       if (this.crossfadeEnabled && (this.crossfadeDuration || 0) > 0) return 'crossfade';
       return this._gaplessEnabled ? 'gapless' : 'normal';

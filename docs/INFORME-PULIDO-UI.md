@@ -4212,3 +4212,154 @@ conversión.
 - **Sin release**: la publicada sigue siendo v1.2.0 (§99).
 
 En la rama quedan §§100–105 sin publicar.
+
+## 107. El usuario borra el release: vuelven A-B y las opciones de Letras
+
+El usuario **eliminó el release 1.2.5** (y su tag) tras
+probarlo, por dos ausencias de la poda de §100 que sí usa:
+el bucle A-B del reproductor y el menú de Letras con
+todas las opciones a la vista. Ambas se restauran aquí;
+el resto de §§100–105 queda como estaba. **Sin release**
+nuevo hasta nueva luz verde expresa.
+
+### Bucle A-B del reproductor (recuperado, no reinventado)
+El código se rescató **literal del tag v1.2.0** (la última
+versión sin la poda), no se reescribió:
+- Estado `abRepeat {active, a, b}` (state.js), lógica
+  `toggleABRepeat`/`clearABRepeat`/`updateABRepeatUI`
+  (audio.js: fijar A → fijar B → activo → limpiar, con sus
+  avisos y el distintivo `A-B`/`A→`/`A⇄B`), imposición en
+  `updateProgress` (player-ui.js: al llegar a B, vuelta a A).
+- Botón `#btnABRepeat` en la fila secundaria y marcador
+  `#progressAbRange` en la barra, con su CSS (`.ab-btn`,
+  `.ab-badge`, `.progress-ab-range` + override de la barra
+  centrada; §100 había dejado hasta los comentarios).
+- Higiene de v1.2.0: `clearABRepeat()` en los dos caminos
+  de cambio de pista — canción nueva, bucle fuera.
+- i18n: las 5 claves (`ab_repeat`, `ab_label`, `ab_set_a`,
+  `ab_active`, `ab_cleared`) vuelven con sus textos
+  originales en los 8 idiomas de entonces; de/uk/pl/tr/
+  id/zh-TW se traducen ahora (pendientes de revisión
+  nativa, como §102). Su comentario, huérfano sobre
+  `settings_preserves_pitch` desde §100, vuelve a casa.
+
+### Letras: todas las opciones, una detrás de otra
+Fuera el plegado de §100: `#lrcFineTools` ya no nace
+`hidden`, desaparece el botón `#btnLrcTools` (y su wiring
+y la regla CSS `[hidden]`), y desfase, velocidad, bucle
+de sección y restablecer quedan siempre visibles tras la
+barra. La clave `lrc_tools` queda huérfana y sale del
+diccionario. El bucle de sección de Letras (lrcLoop) no
+se toca: convive con el A-B, cada uno con su rango.
+
+El diccionario pasa de 333 a **337 claves × 14 idiomas**
+(+5 A-B, −1 `lrc_tools`), sin huecos.
+
+### Verificación
+- **Check §107** `/tmp/check-vista107.js`: **14/14** —
+  ciclo A-B completo con reloj falso (fijar A en 30,
+  B en 90, imponer el salto a 120 ≥ B, limpiar), panel
+  de Letras visible con sus 6 controles, diccionario
+  337×14 sin huecos y estrellas intactas.
+- Humo de regresión (recreado; `/tmp` se reinició con la
+  sesión y arnés y checks se reconstruyeron): **11/11** —
+  incluidas las podas §§100/104 que siguen fuera, Buscar
+  duplicados vivo y la migración §§104–105 sana. Un fallo
+  inicial del humo era del propio humo (nombre real:
+  `startSleep`, no `setSleepTimer`); la app estaba bien.
+- **Release 1.2.5: eliminado por el usuario** (release y
+  tag). El código sigue en `main`; publicar de nuevo
+  requiere su luz verde.
+
+## 108. Poda de comentarios y README público limpio
+
+A petición del usuario: fuera de los comentarios del
+código todo lo que solo interesa al proceso de desarrollo
+(la crónica: referencias «§», peticiones del usuario,
+genealogías de versiones, notas de verificación) y el
+README sin información interna.
+
+### Qué se quitó y qué se queda (criterio documentado)
+- **Fuera**: tokens «§NN» y rangos, «a petición del
+  usuario» y familia, «restaurado/tal cual era en vX»,
+  comentarios que solo narraban la historia del cambio.
+- **Se queda**: el porqué técnico no obvio (trampas de
+  API, invariantes, «sin esta guarda pasa esto otro»),
+  reescrito en neutro cuando venía mezclado con crónica.
+- 378 comentarios reescritos y 2 bloques borrados en
+  19 archivos; retoques manuales en la crónica
+  superviviente (A-B y Letras, de §107).
+
+### Seguridad de la poda (nada funcional se tocó)
+- Procesador consciente de cadenas (tokeniza
+  código/cadena/comentario): **ninguna cadena literal
+  cambió** en ningún archivo — verificado comparando el
+  multiconjunto de literales contra HEAD. (El único
+  «diferente», un `"status"` en index.html, era prosa
+  dentro de un comentario HTML.)
+- `node --check` en todo `js/`, llaves CSS 978/978,
+  divs 202/202, `build-xdc.py` compila.
+- Un susto real durante la poda: el colapso de líneas
+  en blanco pegó un `continue` a una línea de
+  build-xdc.py; detectado revisando el diff y revertido.
+  El diff del empaquetador queda en un solo comentario.
+- Comportamiento: check §107 **14/14** y humo de
+  regresión **11/11** tras la poda.
+
+### README
+Reescrito para público: sin información de desarrollo
+y con los hechos al día — versión 1.2.0 (la única
+publicada; la constante de la app ya decía 1.2.0),
+14 idiomas, bucle A-B dentro, y fuera lo que ya no
+existe (listas inteligentes, historial, sincronía por
+toques, «saltadas/olvidadas»). Tamaño del paquete
+corregido a lo medido: 26 archivos, ~383 KB. La tabla
+de contenido ya no cita documentos internos (un
+`docs/AUDITORIA.md` que ni existía); el informe se
+conserva en el repo pero el README no lo publicita.
+
+### CHANGELOG
+Las secciones publicadas no se tocan (son historial).
+En «Sin publicar» y la cabecera se retiran las
+referencias «§», crípticas sin el diario interno.
+
+- **Sin release**: la única publicada sigue siendo
+  la v1.2.0.
+
+## 109. «Esto no quedó bien»: la barra de Letras, desperdigada
+
+Captura real del usuario (Ado — «Usseewa», letra no
+sincronizada): la barra de herramientas de Letras se veía
+con el desfase solo en una línea, tamaño y velocidad en
+otra, el bucle centrado debajo y las **acciones cortadas
+en el borde derecho**. «Esto no quedó bien».
+
+### Causa
+Al desplegar el ajuste fino (§107), `#lrcFineTools`
+quedó como caja `display:flex; flex-wrap:wrap;
+flex-basis:100%` **dentro** de `.lyrics-toolbar`, que es
+una fila `nowrap` desplazable. Como pieza de esa fila,
+el contenedor reclamaba el 100% del ancho y su propio
+wrap repartía los grupos en líneas de fila completa:
+exactamente la foto.
+
+### Arreglo (solo CSS)
+`.lyrics-fine { display: contents; }`: el contenedor no
+genera caja y el grupo de desfase, la velocidad y el
+bucle son piezas directas de la fila, **una detrás de
+otra** como en el diseño previo (tamaño, desfase,
+velocidad, bucle, acciones), alcanzables deslizando.
+De paso se repara un comentario roto que la poda de
+§108 había dejado junto a la regla («(revierte el
+plegado de,)»).
+
+### Verificación
+- **Check §109** `/tmp/check-vista109.js`: **9/9** —
+  regla `display:contents` única y sin flex-basis/wrap,
+  barra en fila desplazable, orden DOM de las 9 piezas,
+  A-B y estrellas intactos. jsdom no aplica CSS: el
+  layout se verifica por regla y orden; la prueba
+  visual final es la del dispositivo.
+- §107 **14/14**; humo de regresión **11/11**.
+- **Sin release**: la única publicada sigue siendo
+  la v1.2.0.

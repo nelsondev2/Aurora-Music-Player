@@ -56,7 +56,7 @@
       // concurrentemente; el límite evita saturar la CPU/memoria con muchos archivos.
       // 3–6 trabajadores según el hardware: decodificar portadas y
       // sondear duraciones es trabajo paralelo real, y con 3 fijos un
-      // móvil de 8 núcleos importaba a medio gas (§50).
+      // móvil de 8 núcleos importaba a medio gas.
       const CONCURRENCY = Math.min(6, Math.max(3, (navigator.hardwareConcurrency || 4) - 1));
       // Una sola decodificación por portada distinta en todo el lote
       // (en un álbum, las 12 canciones traen la misma imagen).
@@ -123,7 +123,7 @@
        * en paralelo con las etiquetas; probeDuration() tiene timeout y
        * ante un archivo corrupto devuelve 0 sin bloquear la importación.
        * Si el lector Vorbis ya la trajo (FLAC), ni se sondea. */
-      // §85: si el lector Vorbis propio ya sacó los tags del primer
+      //  si el lector Vorbis propio ya sacó los tags del primer
       // MB (FLAC/OGG/Opus), jsmediatags sobra: leería el archivo
       // ENTERO (los FLAC son los más grandes) para llegar a los
       // mismos datos. Solo se le llama si falta el título Vorbis.
@@ -145,7 +145,7 @@
           if (!tags.picture && vorbis.picture) tags.picture = vorbis.picture;
         }
         // En Vorbis el año viaja como DATE («2005», «2005-03-01»…);
-        // se normaliza en ambos caminos (§85: también cuando
+        // se normaliza en ambos caminos (: también cuando
         // jsmediatags se saltó y «tags» ES el objeto Vorbis).
         if (!this.tagText(tags.year) && vorbis.date) tags.year = vorbis.date;
         if (!this.tagText(tags.year) && vorbis.year) tags.year = vorbis.year;
@@ -218,7 +218,7 @@
         coverThumbLg,
         genre: meta.genre || '',
         year: meta.year || null,
-        // §85: esta pista ya pasó por el lector de tags actual
+        //  esta pista ya pasó por el lector de tags actual
         // (con género/año): el arranque no tiene que releerla.
         _tagsChecked: true,
         lrc: meta.lrc,
@@ -366,9 +366,9 @@
           if (!(key in fields)) fields[key] = entry.slice(eq + 1).trim();
         }
         const out = {};
-        /* §85: género y fecha también se copian del comentario:
-         * al saltarnos jsmediatags en FLAC/OGG/Opus (§85) estos
-         * campos ya solo pueden venir de aquí. */
+        /*  género y fecha también se copian del comentario:
+ * al saltarnos jsmediatags en FLAC/OGG/Opus estos
+ * campos ya solo pueden venir de aquí. */
         for (const k of ['title', 'artist', 'album', 'albumartist', 'genre', 'date', 'lyrics', 'unsyncedlyrics']) {
           if (fields[k]) out[k === 'unsyncedlyrics' ? 'lyrics' : k] = fields[k];
         }
@@ -420,8 +420,8 @@
         if (start + len > bytes.length) break; // portada fuera del MB leído
         if (type === 0 && len >= 18) {
           /* STREAMINFO trae frecuencia (20 bits) y nº total de
-           * muestras (36 bits): la duración sale gratis de aquí,
-           * sin sondear el archivo con un <audio> (§50). */
+ * muestras (36 bits): la duración sale gratis de aquí,
+ * sin sondear el archivo con un <audio>. */
           const sr = (bytes[start + 10] << 12) | (bytes[start + 11] << 4) | (bytes[start + 12] >> 4);
           const total = (bytes[start + 13] & 0x0f) * 4294967296
             + bytes[start + 14] * 16777216 + bytes[start + 15] * 65536
@@ -476,8 +476,8 @@
       return null;
     },
 
-    /* §104: aquí vivía limitArtwork (limitar la portada ID3):
-     * jamás se llamó; quien lo necesita lo hace en línea. */
+    /*  aquí vivía limitArtwork (limitar la portada ID3):
+ * jamás se llamó; quien lo necesita lo hace en línea. */
 
     /* Carga una imagen una sola vez. Con tiempo límite: un WebView
      * que ni carga ni da error no puede retener la importación. */
@@ -496,11 +496,11 @@
     },
 
     /* De UNA decodificación salen las tres copias (800 para el
-     * reproductor, 384 y 144 para las listas — §71: pensadas para
-     * pantallas de DPR 3, no 2). Antes cada tamaño
-     * decodificaba la imagen entera otra vez: 3 decodificaciones y
-     * 3 codificaciones JPEG por canción con portada. Mismos tamaños,
-     * calidades y respaldos que resizeDataUrl. */
+ * reproductor, 384 y 144 para las listas —: pensadas para
+ * pantallas de DPR 3, no 2). Antes cada tamaño
+ * decodificaba la imagen entera otra vez: 3 decodificaciones y
+ * 3 codificaciones JPEG por canción con portada. Mismos tamaños,
+ * calidades y respaldos que resizeDataUrl. */
     async _produceArtwork(dataUrl) {
       const out = { cover: dataUrl, coverThumb: null, coverThumbLg: null };
       const img = await this._loadImage(dataUrl);
@@ -535,9 +535,9 @@
     },
 
     /* Huella barata de una portada (longitud + muestra de hasta 512
-     * bytes/caracteres): en un álbum, todas las canciones traen la
-     * MISMA imagen incrustada y decodificarla una por canción era
-     * el mayor coste de importar carpetas enteras (§50). */
+ * bytes/caracteres): en un álbum, todas las canciones traen la
+ * MISMA imagen incrustada y decodificarla una por canción era
+ * el mayor coste de importar carpetas enteras. */
     _artworkKey(picture, dataUrl) {
       let h = 0x811c9dc5;
       const mix = (n) => { h ^= (n & 0xff); h = Math.imul(h, 0x01000193); };
@@ -849,8 +849,8 @@
       const tagSize = (u8[6] << 21) | (u8[7] << 14) | (u8[8] << 7) | u8[9];
       const headerSize = 10;
       const flags = u8[5];
-      /* §93: el bit de unsync (0x80) se calculaba y nunca se
-       * leía: fuera la variable muerta; flags sí se usa (0x40). */
+      /*  el bit de unsync (0x80) se calculaba y nunca se
+ * leía: fuera la variable muerta; flags sí se usa (0x40). */
 
       let offset = headerSize;
       const end = Math.min(headerSize + tagSize, u8.length);
@@ -882,8 +882,8 @@
           // v2.3: tamaño normal de 4 bytes big-endian
           frameSize = (u8[offset+4] << 24) | (u8[offset+5] << 16) | (u8[offset+6] << 8) | u8[offset+7];
         }
-        /* §93: los flags del frame se leían en una variable que
-         * nadie consultaba; el avance es fijo (10 bytes). */
+        /*  los flags del frame se leían en una variable que
+ * nadie consultaba; el avance es fijo (10 bytes). */
         offset += 10;  // header del frame
 
         if (frameSize <= 0 || offset + frameSize > end) {

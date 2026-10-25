@@ -27,7 +27,7 @@
 
   --text-1:      #ffffff;
   --text-2:      rgba(255,255,255,0.72);
-  /* §70 [7]: 0.48 daba ~4.3:1 sobre superficies elevadas; 0.58 supera 5:1. */
+  /* [7]: 0.48 daba ~4.3:1 sobre superficies elevadas; 0.58 supera 5:1. */
   --text-3:      rgba(255,255,255,0.58);
   --text-4:      rgba(255,255,255,0.30);
 
@@ -63,9 +63,9 @@
   /* Espaciado / forma / motion */
   --pad: 20px;
   --radius-sm: 12px;
-  /* §94: --radius-md se usaba (portadas del catálogo) sin estar
-   * definido en ninguna parte: el var() inválido dejaba las
-   * esquinas cuadradas. */
+  /*  --radius-md se usaba (portadas del catálogo) sin estar
+ * definido en ninguna parte: el var inválido dejaba las
+ * esquinas cuadradas. */
   --radius-md: 16px;
   --radius-cover: 24px;
   --radius-pill: 999px;
@@ -121,7 +121,7 @@
 .ctrl-play-sm .ico { width: 22px; height: 22px; }
 .nav-btn .ico { width: 20px; height: 20px; display: block; }
 .menu-row .ico { width: 16px; height: 16px; flex-shrink: 0; }
-/* §92: aquí vivía una regla muerta `.empty-icon .ico {32px}` —
+/*  aquí vivía una regla muerta `.empty-icon.ico {32px}` —
  * la de 28 px de la sección de estados vacíos mandaba por orden
  * de cascada; se retira para que nadie la "corrija" creyendo que
  * es la vigente. */
@@ -145,7 +145,7 @@ html, body {
 button, input { font-family: inherit; color: inherit; }
 button { background: none; border: none; cursor: pointer; }
 ul { list-style: none; }
-/* §94: textarea también — el editor LRC heredaba el
+/*  textarea también — el editor LRC heredaba el
  * user-select:none global y no dejaba seleccionar su texto. */
 input, textarea { -webkit-user-select: text; user-select: text; }
 
@@ -220,16 +220,14 @@ svg { display: block; }
   .lrc-line { font-size: var(--lrc-font-size, 0.9375rem); }
   .controls-secondary { gap: 2px; padding: 6px 0 4px; }
   /* Toolbar de letras más compacta */
-  /* §100: panel plegable del ajuste fino de Letras (desfase,
- * velocidad, bucle, restablecer): la barra diaria queda ligera. */
-.lyrics-fine {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  flex-basis: 100%;
-}
-.lyrics-fine[hidden] { display: none; }
+  /* El ajuste fino (desfase, velocidad, bucle, restablecer) va
+ * siempre visible: todas las opciones, una detrás de otra en la
+ * fila desplazable de la barra. Por eso el contenedor NO genera
+ * caja (display: contents) y sus grupos son piezas directas de
+ * la fila: si generara caja con flex-basis: 100%, ocuparía la
+ * fila entera, la partiría en varias líneas y desperdigaría
+ * los grupos por la pantalla. */
+.lyrics-fine { display: contents; }
 .lt-btn.active { color: var(--accent); }
 
 .lyrics-toolbar { padding: 3px 4px; gap: 1px; }
@@ -314,7 +312,6 @@ svg { display: block; }
   transition-delay: 0s;
   z-index: 2;
 }
-
 
 /* ---------- Fondo dinámico ---------- */
 .bg-blur {
@@ -439,8 +436,8 @@ svg { display: block; }
     0 32px 64px rgba(0,0,0,0.55),
     0 0 40px color-mix(in srgb, var(--cover-from) 35%, transparent);
 }
-/* §98: aquí vivía la pista visual de la portada (velo §95,
- * insignia esquinera §96); retirada por completo junto con su
+/*  aquí vivía la pista visual de la portada (velo,
+ * insignia esquinera); retirada por completo junto con su
  * HTML: el modo inmersivo se descubre tocando, sin iconos. */
 .cover-art:active:not(.vol-adjusting) { transform: scale(.98); }
 .cover-art.playing:active:not(.vol-adjusting) {
@@ -453,7 +450,7 @@ svg { display: block; }
   50%      { transform: translateY(-6px); }
 }
 
-/* §101: la flotación de la portada también obedece a «reducir
+/*  la flotación de la portada también obedece a «reducir
  * movimiento». El bloque global de reduced-motion solo acorta
  * las duraciones (0.01ms), y una animación infinita así acortada
  * sigue "viva"; aquí se apaga del todo, sin medias tintas. */
@@ -550,13 +547,13 @@ svg { display: block; }
   touch-action: none;
   transition: height var(--dur) var(--ease-out);
 }
-/* §69: la pista visible mide 3px; el agarre tactil sube a ~25px de alto. */
+/*  la pista visible mide 3px; el agarre tactil sube a ~25px de alto. */
 .progress-track::before {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  /* §70 [5]: la auditoria externa midio 22px de alto util; ahora ~31px. */
+  /* [5]: la auditoria externa midio 22px de alto util; ahora ~31px. */
   top: -14px;
   bottom: -14px;
 }
@@ -569,9 +566,9 @@ svg { display: block; }
   position: absolute;
   inset: 0;
   width: 0%;
-  /* §72: timeupdate llega a ~4 Hz y el relleno avanzaba a escalones;
-     con la transición lineal el avance es continuo. Solo sonando y
-     nunca arrastrando (en pausa el salto al buscar es inmediato). */
+  /*  timeupdate llega a ~4 Hz y el relleno avanzaba a escalones;
+ con la transición lineal el avance es continuo. Solo sonando y
+ nunca arrastrando (en pausa el salto al buscar es inmediato). */
   transition: width .3s linear;
   background: linear-gradient(90deg, var(--cover-from), var(--cover-to));
   border-radius: var(--radius-pill);
@@ -721,12 +718,12 @@ svg { display: block; }
 .sec-btn.active .ico { background: rgba(var(--accent-rgb), 0.18); }
 
 /* ---------- Visualizador de frecuencias ---------- */
-/* §84: superpuesto sobre la parte baja de la portada (dentro de
+/*  superpuesto sobre la parte baja de la portada (dentro de
  * #coverArt), no en el flujo de la columna. Activarlo ya no roba
  * 64 px a la portada: su tamaño es idéntico con y sin
  * visualizador, en cualquier altura de pantalla. El degradado
  * oscurece el pie de la carátula para que las barras (colores de
- * la propia portada, §75) se lean sobre cualquier imagen. */
+ * la propia portada,) se lean sobre cualquier imagen. */
 .visualizer-section {
   position: absolute;
   left: 0;
@@ -768,9 +765,9 @@ svg { display: block; }
   justify-content: center;
   gap: 2px;
   padding: 4px 2px;
-  /* §69: antes --text-4 (30% en oscuro, contraste ~2:1): apenas se leia. */
+  /*  antes --text-4 (30% en oscuro, contraste ~2:1): apenas se leia. */
   color: var(--text-3);
-  /* §70 [6]: 9px era poco para una etiqueta principal; 10px sigue cabiendo. */
+  /* [6]: 9px era poco para una etiqueta principal; 10px sigue cabiendo. */
   font-size: var(--fs-2xs);
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -808,7 +805,7 @@ svg { display: block; }
   padding: 20px 16px;
 }
 
-/* ============== PORTADA A PANTALLA COMPLETA (§95) ==============
+/* ============== PORTADA A PANTALLA COMPLETA ==============
  * Tocar la portada la agranda a toda la vista con el visualizador
  * encima; tocar otra vez vuelve al reproductor. Solo se oculta la
  * interfaz que rodea a la portada: el lienzo y la onda no se mueven
@@ -836,8 +833,8 @@ svg { display: block; }
   height: 20%;
   min-height: 88px;
 }
-/* §97 (idea 3): título flotante del modo inmersivo — aparece y
- * se desvanece solo; nunca compite con la portada (§96). */
+/* (idea 3): título flotante del modo inmersivo — aparece y
+ * se desvanece solo; nunca compite con la portada. */
 .cover-fs-meta {
   position: absolute;
   left: 18px;
@@ -872,9 +869,9 @@ svg { display: block; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* §98: aquí vivía el resumen fijo de la cola (§97, idea 10),
+/*  aquí vivía el resumen fijo de la cola (idea 10),
  * retirado por completo junto con su HTML, su JS y su clave. */
-/* §97 (idea 6): valor a la derecha de las filas del menú (sleep). */
+/* (idea 6): valor a la derecha de las filas del menú (sleep). */
 .menu-value {
   margin-left: auto;
   font-size: var(--fs-small, 13px);
@@ -886,7 +883,7 @@ svg { display: block; }
 .device-screen:has(.view-player.cover-fullscreen) .bottom-nav {
   display: none !important;
 }
-/* §98: retiradas también las reglas que anunciaban ampliar/
+/*  retiradas también las reglas que anunciaban ampliar/
  * salir sobre la portada (la insignia ya no existe). */
 .lyrics-exit-fs {
   position: absolute;
@@ -1110,9 +1107,9 @@ svg { display: block; }
   display: flex;
   align-items: center;
   gap: 8px;
-  /* §94: blanco sobre --accent (lavanda) daba ~2,7:1; sobre el
-   * relleno de acción (--accent-fill) da ~7:1. Vale para este y
-   * los otros cuatro selectores marcados abajo. */
+  /*  blanco sobre --accent (lavanda) daba ~2,7:1; sobre el
+ * relleno de acción (--accent-fill) da ~7:1. Vale para este y
+ * los otros cuatro selectores marcados abajo. */
   background: var(--accent-fill);
   color: #fff;
   padding: 6px 14px;
@@ -1227,8 +1224,8 @@ svg { display: block; }
 }
 .sheet-header h3 {
   flex: 1;
-  /* §92: un nombre de lista largo desbordaba la cabecera y
-   * empujaba la X; con elipsis queda en una línea. */
+  /*  un nombre de lista largo desbordaba la cabecera y
+ * empujaba la X; con elipsis queda en una línea. */
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -1325,7 +1322,7 @@ svg { display: block; }
   z-index: 0;
 }
 .empty-state > * { position: relative; z-index: 1; }
-/* §91: antes un mosaico morado sólido de 72 px con sombra dura y
+/*  antes un mosaico morado sólido de 72 px con sombra dura y
  * glifo blanco: pesaba más que el propio mensaje («el icono
  * horrible» de Buscar). Ahora es cristal tintado con el acento:
  * superficie con un lavado de color, filete fino, glifo en
@@ -1446,7 +1443,7 @@ svg { display: block; }
 .queue-item.current .row-title,
 .track-row.current .row-title { color: var(--text-1); }
 
-/* §69: comentario actualizado; el sistema al que aludia se elimino en §57. */
+/*  comentario actualizado; el sistema al que aludia se elimino en. */
 
 .row-cover {
   width: 48px;
@@ -1484,8 +1481,8 @@ svg { display: block; }
   color: var(--text-3);
 }
 .row-action:active { background: var(--surface); }
-/* §93: .row-check fuera — su único creador era el selector de
- * pistas retirado (la casilla circular de las filas .pick-row). */
+/* .row-check fuera — su único creador era el selector de
+ * pistas retirado (la casilla circular de las filas.pick-row). */
 
 /* ---------- Playlist list ---------- */
 .playlist-list { gap: 8px; }
@@ -1502,8 +1499,8 @@ svg { display: block; }
 .playlist-list .pl-row:active { background: var(--surface-2); transform: scale(0.99); }
 .playlist-list .pl-row.is-playing {
   border-color: rgba(var(--accent-rgb), 0.45);
-  /* §94: el segundo tono era rosa cableado (#EC4899) aunque el
-   * usuario hubiera elegido otro acento; ahora es el suyo. */
+  /*  el segundo tono era rosa cableado (#EC4899) aunque el
+ * usuario hubiera elegido otro acento; ahora es el suyo. */
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.14), color-mix(in srgb, var(--accent-2) 8%, transparent));
 }
 .pl-cover {
@@ -1713,7 +1710,7 @@ svg { display: block; }
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-/* §93: .pick-tracks-title fuera con el selector de pistas. */
+/* .pick-tracks-title fuera con el selector de pistas. */
 
 /* ---------- EQ ---------- */
 .eq-presets {
@@ -1722,8 +1719,8 @@ svg { display: block; }
   margin-bottom: 18px;
   overflow-x: auto;
   padding-bottom: 4px;
-  /* §70 [12]: el ultimo chip se cortaba sin avisar de que hay scroll;
-     el difuminado del borde derecho lo comunica. */
+  /* [12]: el ultimo chip se cortaba sin avisar de que hay scroll;
+ el difuminado del borde derecho lo comunica. */
   -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
   mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
 }
@@ -2009,8 +2006,8 @@ svg { display: block; }
 }
 .empty-hint {
   font-size: var(--fs-micro) !important;
-  /* §94: --text-4 (30 %) dejaba la pista en ~3,2:1; con
-   * --text-3 (58 %) supera 5:1 como el resto del texto tenue. */
+  /*  --text-4 (30 %) dejaba la pista en ~3,2:1; con
+ * --text-3 (58 %) supera 5:1 como el resto del texto tenue. */
   color: var(--text-3) !important;
   margin: 0 !important;
   letter-spacing: 0.03em;
@@ -2020,9 +2017,9 @@ svg { display: block; }
  *  Drag-and-drop en la cola
  * ===================================================================== */
 .drag-handle {
-  /* §92: la base decía 28 px, pero el bloque táctil posterior
-   * (40×44 px) ya fijaba el tamaño real; se alinea la base para
-   * que el primer valor que se lea no parezca un asa diminuta. */
+  /*  la base decía 28 px, pero el bloque táctil posterior
+ * (40×44 px) ya fijaba el tamaño real; se alinea la base para
+ * que el primer valor que se lea no parezca un asa diminuta. */
   width: 32px;
   height: 32px;
   border-radius: 6px;
@@ -2073,7 +2070,7 @@ svg { display: block; }
 /* En la lista abierta y en la cola el título quedaba estrangulado:
  * una sola línea con ellipsis en la columna más estrecha de la app
  * (asa + portada + duración + hasta dos botones). Ahí el nombre puede
- * usar dos líneas y la fila separa menos sus piezas (§59). */
+ * usar dos líneas y la fila separa menos sus piezas. */
 #editPlaylistTracks .track-row,
 #queueList .queue-item { gap: 8px; }
 #editPlaylistTracks .row-title,
@@ -2173,7 +2170,7 @@ svg { display: block; }
 
 .accent-grid {
   display: grid;
-  /* Seis acentos (§66): 3×2, círculos grandes y nombres legibles. */
+  /* Seis acentos: 3×2, círculos grandes y nombres legibles. */
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
@@ -2202,9 +2199,9 @@ svg { display: block; }
   color: rgba(255,255,255,0.95);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  /* Pastilla oscura (§66): el nombre se lee sobre cualquier extremo
-   * del degradado, también los luminosos (ámbar, musgo); antes solo
-   * llevaba sombra y sobre el amarillo casi no se leía. */
+  /* Pastilla oscura: el nombre se lee sobre cualquier extremo
+ * del degradado, también los luminosos (ámbar, musgo); antes solo
+ * llevaba sombra y sobre el amarillo casi no se leía. */
   background: rgba(0, 0, 0, 0.38);
   padding: 2px 7px;
   border-radius: 999px;
@@ -2374,7 +2371,7 @@ svg { display: block; }
 
 /* Soporte tema claro para listas nuevas */
 :root[data-theme="light"] .lang-row.active {
-  /* §94: ídem — morado y rosa cableados fuera; manda el acento. */
+  /*  ídem — morado y rosa cableados fuera; manda el acento. */
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.10), color-mix(in srgb, var(--accent-2) 6%, transparent));
 }
 
@@ -2602,7 +2599,7 @@ svg { display: block; }
   background: rgba(239, 68, 68, 0.12);
 }
 
-/* (El subtítulo del picker de pistas se fue en la §93.) */
+/* (El subtítulo del picker de pistas se fue en la.) */
 
 /* =====================================================================
  *  Mejoras de prioridad alta — estilos
@@ -2693,8 +2690,8 @@ svg { display: block; }
   gap: 10px;
 }
 
-/* Botones del diálogo con la caja serena del resto de la app (§48):
- * el .primary-btn global es una losa de ~52 px con degradado y
+/* Botones del diálogo con la caja serena del resto de la app:
+ * el.primary-btn global es una losa de ~52 px con degradado y
  * resplandor (pensada para formularios), y aquí dentro hacía que
  * «Cancelar» y «Eliminar» ocuparan media pantalla. Una caja de
  * 44 px en píldora, plana, un solo color por botón: cancelar es
@@ -2742,7 +2739,7 @@ svg { display: block; }
 
 .lrc-line.active .lrc-translation { color: var(--text-2); }
 
-/* §93: el bloque del picker («ya está en la lista») se fue con
+/*  el bloque del picker («ya está en la lista») se fue con
  * el selector de pistas retirado. */
 
 /* Botón "añadir a lista" por fila: mismo tratamiento que el de borrar */
@@ -2761,7 +2758,7 @@ button:focus-visible,
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
-/* §94: los sliders (volumen, EQ) no tenían anillo de foco:
+/*  los sliders (volumen, EQ) no tenían anillo de foco:
  * navegarlos con teclado era ir a ciegas. */
 input[type="range"]:focus-visible {
   outline: 2px solid var(--accent);
@@ -3072,7 +3069,7 @@ button,
   margin: 0;
 }
 .time-total.time-toggle { cursor: pointer; }
-/* §72: punto de acento en «Letras» cuando la pista trae letra. */
+/*  punto de acento en «Letras» cuando la pista trae letra. */
 #btnLyrics { position: relative; }
 #btnLyrics.has-lrc::after {
   content: "";
@@ -3089,7 +3086,7 @@ button,
   font-size: var(--fs-caption);
   font-weight: 600;
   color: var(--text-3);
-  /* §70 [5]: medido a 22px de alto; minimo tactil razonable, 40px. */
+  /* [5]: medido a 22px de alto; minimo tactil razonable, 40px. */
   display: inline-flex;
   align-items: center;
   min-height: 40px;
@@ -3181,7 +3178,7 @@ button,
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Subtítulo de «Más valoradas» (§63): las estrellas JAMÁS se recortan
+/* Subtítulo de «Más valoradas»: las estrellas JAMÁS se recortan
  * — son la información de la tarjeta —; quien se acorta con … es el
  * artista. Doradas, como en el resto de la superficie de notas. */
 .home-card-sub.rated-sub {
@@ -3275,7 +3272,7 @@ button,
   border-bottom: 1px solid var(--border);
 }
 
-/* Valoración por estrellas (§58): fila del menú de la canción y fila
+/* Valoración por estrellas: fila del menú de la canción y fila
  * compacta del Reproductor. Estrella puesta = dorada; sin poner, tenue. */
 .menu-rating {
   display: flex;
@@ -3300,7 +3297,7 @@ button,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  /* §70 [5]: objetivo tactil de 44px (el glifo no crece). */
+  /* [5]: objetivo tactil de 44px (el glifo no crece). */
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -3317,7 +3314,7 @@ button,
 /* Insignia en las filas: cuántas estrellas, en dorado discreto. */
 .row-rating {
   color: #FFB84D;
-  font-size: var(--fs-micro); /* §92: 10px quedaba fuera de la escala */
+  font-size: var(--fs-micro); /*  10px quedaba fuera de la escala */
   letter-spacing: 1px;
   white-space: nowrap;
 }
@@ -3529,7 +3526,6 @@ button,
 }
 #editPlaylistName { cursor: pointer; }
 
-
 /* =====================================================================
  *  Fase 4 — Now Playing y letras
  * ===================================================================== */
@@ -3601,15 +3597,15 @@ button,
   color: var(--text-2);
 }
 .view-lyrics.lrc-is-empty .lyrics-toolbar { display: none; }
-/* §86: sin letra no queda ni rastro del reproductor en la vista:
+/*  sin letra no queda ni rastro del reproductor en la vista:
  * fuera también la mini-cabecera (portada/título) y los controles
  * inferiores (progreso + anterior/play/siguiente). Solo quedan la
- * barra superior y la tarjeta de vacío con «Cargar .lrc». */
+ * barra superior y la tarjeta de vacío con «Cargar.lrc». */
 .view-lyrics.lrc-is-empty .lyrics-mini,
 .view-lyrics.lrc-is-empty .lyrics-controls { display: none; }
 .view-lyrics.lrc-no-track .lrc-empty-actions { display: none; }
-/* §91: mismo trato de cristal que .empty-icon, pero el lavado
- * lleva un susurro de los colores de la portada que suena (§75)
+/*  mismo trato de cristal que.empty-icon, pero el lavado
+ * lleva un susurro de los colores de la portada que suena
  * en vez del acento a secas. */
 .lrc-empty-icon {
   width: 68px;
@@ -3658,13 +3654,10 @@ button,
   gap: 8px;
 }
 
-
-
 @media (prefers-reduced-motion: reduce) {
   .marquee-inner { animation: none !important; transform: none !important; }
     .cover-art.playing { animation: none; }
 }
-
 
 /* =====================================================================
  *  Inicio — primer arranque + listas clicables
@@ -3866,7 +3859,6 @@ button,
 @media (prefers-reduced-motion: reduce) {
   .hw-orb { animation: none !important; }
 }
-
 
 /* =====================================================================
  *  Fase 6 — Ajustes, atajos, tema claro, layout desktop
@@ -4097,7 +4089,7 @@ html.aurora-wide .view-player .cover-art,
 html.aurora-wide .view-player .cover-glow {
   width: min(100%, 36dvh, 340px);
 }
-/* §95: también en la columna ancha la portada inmersiva crece. */
+/*  también en la columna ancha la portada inmersiva crece. */
 html.aurora-wide .view-player.cover-fullscreen .cover-art,
 html.aurora-wide .view-player.cover-fullscreen .cover-glow {
   width: min(100%, 82dvh, 640px);
@@ -4185,9 +4177,9 @@ html.aurora-wide .sheet.open.sheet-full .sheet-panel,
 html.aurora-wide .sheet.open.sheet-desk-full .sheet-panel {
   transform: none;
 }
-/* §70 [8]: en pantallas anchas el contenido de estas hojas se limita a
-   una columna de lectura centrada (680px): filas, interruptores y
-   acciones quedan a una distancia razonable de su etiqueta. */
+/* [8]: en pantallas anchas el contenido de estas hojas se limita a
+ una columna de lectura centrada (680px): filas, interruptores y
+ acciones quedan a una distancia razonable de su etiqueta. */
 html.aurora-wide .sheet.sheet-full .sheet-header,
 html.aurora-wide .sheet.sheet-desk-full .sheet-header,
 html.aurora-wide .sheet.sheet-full .sheet-body,
@@ -4196,8 +4188,8 @@ html.aurora-wide .sheet.sheet-desk-full .sheet-body {
   max-width: 680px;
   margin-inline: auto;
 }
-/* §70 [10]: el tirador de arrastre es un gesto movil; en el panel
-   acoplado de escritorio no arrastra nada y solo confunde. */
+/* [10]: el tirador de arrastre es un gesto movil; en el panel
+ acoplado de escritorio no arrastra nada y solo confunde. */
 html.aurora-wide .sheet-handle { display: none; }
 html.aurora-wide .sheet:not(.sheet-full):not(.sheet-desk-full) {
   position: absolute;
@@ -4269,7 +4261,6 @@ html.aurora-wide .toast {
   background: var(--bg-1);
 }
 
-
 /* Fase F — skeleton de importación (primer lote) */
 .track-row.is-skeleton {
   pointer-events: none;
@@ -4312,14 +4303,47 @@ html.aurora-wide .toast {
 }
 
 /* =====================================================================
- *  A-B repeat · selección por lote · preservar tono (v1.2.0)
+ *  A-B repeat · selección por lote · preservar tono
  * ===================================================================== */
 
 /* Rango A-B sobre la barra de progreso */
+.progress-ab-range {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(var(--accent-rgb), 0.32);
+  border-left: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+  z-index: 0;
+}
 
 /* Botón A-B en controles secundarios. El distintivo ocupa el puesto
  * del icono: misma caja de 36×36 y radio 12 que los .ico de la fila,
  * con su etiqueta .sec-label debajo (sin ella quedaba descuadrado). */
+.ab-btn { position: relative; }
+.ab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0 2px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.ab-btn.active .ab-badge,
+.ab-btn.setting-b .ab-badge {
+  background: rgba(var(--accent-rgb), 0.18);
+  color: var(--accent);
+}
 
 @media (max-width: 380px) {
   /* 5 controles secundarios (incluye A-B): reducir separación */
@@ -4586,7 +4610,7 @@ html.aurora-wide .toast {
   padding: 3px 5px 3px 10px;
   flex-shrink: 0;
 }
-/* §92 (auditoría con la cascada completa): estas reglas
+/* (auditoría con la cascada completa): estas reglas
  * intermedias decían 28–30 px, pero el bloque final de la barra
  * (36 px, 34 px en pantallas ≤360) ya mandaba por especificidad
  * y orden. Se alinean a 32 px para que ningún valor suelto
@@ -4650,13 +4674,13 @@ html.aurora-wide .toast {
   opacity: 0.8;
 }
 
-/* §86: foco en la línea que suena. La clase .lrc-focus la pone el
+/*  foco en la línea que suena. La clase.lrc-focus la pone el
  * JS solo con letra sincronizada y una primera línea ya activa:
  * la activa se lee nítida, la vecina (±1) queda a media opacidad
  * como contexto y el resto se difumina casi hasta lo ilegible
  * (opacidad muy baja + desenfoque leve; el radio es pequeño a
  * propósito: blur grande sobre ~100 líneas saldría caro en el
- * WebView). Sin .lrc-focus —intro o letra sin tiempos— no se
+ * WebView). Sin.lrc-focus —intro o letra sin tiempos— no se
  * aplica nada de esto. Mientras el usuario desplaza la letra a
  * mano (.user-scrolling), todo se aclara para poder buscar un
  * verso; al retomar el auto-scroll vuelve el foco. */
@@ -4805,6 +4829,12 @@ html.aurora-wide .toast {
   height: 4px;
   transform: translateY(-50%);
 }
+.progress-ab-range {
+  top: 50%;
+  bottom: auto;
+  height: 6px;
+  transform: translateY(-50%);
+}
 .progress-thumb {
   width: 13px;
   height: 13px;
@@ -4894,7 +4924,7 @@ html.aurora-wide .toast {
 }
 
 /* =====================================================================
- * Dentro de una lista: controles discretos (petición del usuario).
+ * Dentro de una lista: controles discretos.
  * Se conserva TODO — reproducir, subir, renombrar, compartir, vaciar,
  * eliminar, menú por pista, quitar y arrastrar — pero baja el volumen
  * visual del conjunto: sombras suaves, pastillas planas y, sobre todo,
@@ -4963,7 +4993,7 @@ html.aurora-wide .toast {
 }
 
 /* =====================================================================
- * Barra de Letras uniforme (petición del usuario).
+ * Barra de Letras uniforme.
  * Los cinco grupos de la barra medían cada uno a su manera: botones
  * de 36 px en tamaño/bucle/acciones, de 30 px en desfase y velocidad,
  * el −/+ del desfase era texto y el de velocidad icono, y los valores
@@ -5027,10 +5057,9 @@ html.aurora-wide .toast {
     linear-gradient(180deg, transparent 52%, var(--bg-0) 97%);
 }
 
-
 /* =====================================================================
- *  §81 — Ordenación, catálogo, listas inteligentes, duplicados,
- *  renombre con confirmar y sincronizar letra tocando
+ * — Ordenación, catálogo, listas inteligentes, duplicados,
+ * renombre con confirmar y sincronizar letra tocando
  * ===================================================================== */
 .lib-tabs {
   display: flex; gap: 6px; margin: 2px 0 14px; overflow-x: auto;
@@ -5042,8 +5071,8 @@ html.aurora-wide .toast {
   background: var(--surface); color: var(--text-2); font: inherit; font-size: var(--fs-sm);
   font-weight: 600; cursor: pointer; min-height: 40px;
 }
-.lib-tab.active { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; } /* §94: contraste */
-/* §89: la barra de pestañas vive fuera del cuerpo desplazable
+.lib-tab.active { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; } /*  contraste */
+/*  la barra de pestañas vive fuera del cuerpo desplazable
  * (hermana de la cabecera en el panel flexible): queda fija al
  * hacer scroll, con el mismo fondo del panel y su filete
  * inferior, como una segunda cabecera. */
@@ -5082,7 +5111,7 @@ html.aurora-wide .toast {
   border: 1px solid var(--border); background: var(--surface); color: var(--text-1);
   font: inherit; font-size: var(--fs-sm);
 }
-/* Renombrar con confirmar (§81): input + ✓/✗ en línea */
+/* Renombrar con confirmar: input + ✓/✗ en línea */
 .edit-pl-rename { display: flex; align-items: center; gap: 6px; width: 100%; }
 .edit-pl-rename .edit-pl-name-input { flex: 1; min-width: 0; }
 .edit-pl-rename-btn {
@@ -5090,7 +5119,7 @@ html.aurora-wide .toast {
   background: var(--surface); color: var(--text-1); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-.edit-pl-rename-btn.confirm { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; } /* §94: contraste */
+.edit-pl-rename-btn.confirm { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; } /*  contraste */
 /* Editor LRC por toques */
 /* Duplicados */
 .dup-group { margin-bottom: 18px; }
@@ -5101,7 +5130,7 @@ html.aurora-wide .toast {
   font-size: var(--fs-micro); font-weight: 700; color: var(--accent);
   border: 1px solid var(--accent); border-radius: 999px; padding: 1px 7px; white-space: nowrap;
 }
-/* §88: elección manual de la copia a conservar. La elegida se
+/*  elección manual de la copia a conservar. La elegida se
  * distingue con un fondo de acento suave; «Conservar esta» es un
  * botón discreto (dirección de diseño del proyecto) y «Borrar las
  * demás» cierra el grupo como acción de peligro templada. */
@@ -5118,5 +5147,5 @@ html.aurora-wide .toast {
   background: transparent; border: 1px solid var(--border); border-radius: 999px;
   cursor: pointer;
 }
-/* §83: botón «Más opciones» en las filas de la cola */
+/*  botón «Más opciones» en las filas de la cola */
 .queue-item .queue-menu { flex: 0 0 auto; }

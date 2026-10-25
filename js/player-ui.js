@@ -50,7 +50,7 @@ Object.assign(App, {
         albumEl.textContent = hasAlbum ? t.album : '';
         albumEl.style.display = hasAlbum ? '' : 'none';
       }
-      // Estrellas del Reproductor (§58): reflejan la nota de la pista.
+      // Estrellas del Reproductor: reflejan la nota de la pista.
       if (typeof this._syncRatingUI === 'function') this._syncRatingUI(t);
       this._syncLyricsButton();
       document.getElementById('timeTotal').textContent = this.fmtTime(t.duration);
@@ -75,7 +75,7 @@ Object.assign(App, {
         else ctxEl.removeAttribute('title');
       }
 
-      // Colores dinámicos (fondo y visualizador, §75): la paleta de
+      // Colores dinámicos (fondo y visualizador,): la paleta de
       // la portada — diseñada si es generada, extraída de la imagen
       // si la hay, y el acento por defecto si no hay nada.
       const cover = this.coverPaletteFor(t);
@@ -89,10 +89,10 @@ Object.assign(App, {
       this._shownCoverTrackId = t.id;
       this.drawCover('coverCanvas', t);
       this.drawCover('miniCoverCanvas', t, true);
-      // §97 (idea 3): en el modo inmersivo el título flotante
+      // (idea 3): en el modo inmersivo el título flotante
       // reaparece con cada canción y vuelve a desvanecerse.
       if (this._coverFs) this._pokeCoverFsMeta();
-      // §97 (idea 17): la portada SIGUIENTE se decodifica ya,
+      // (idea 17): la portada SIGUIENTE se decodifica ya,
       // en silencio, para que el cambio no parpadee en blanco.
       this._preloadNextCover();
 
@@ -106,12 +106,12 @@ Object.assign(App, {
       this.renderQueue();
     },
 
-    /* §97 (idea 17): decodifica en segundo plano la portada de la
-     * siguiente pista de la cola (la que tocará, con repetición
-     * «todo» incluida). drawCover la reutiliza si ya está lista:
-     * cambiar de canción deja de pasar por el fondo gris de
-     * «cargando». Sin imagen (gradiente generado) no hay nada
-     * que preparar y se sale sin coste. */
+    /* (idea 17): decodifica en segundo plano la portada de la
+ * siguiente pista de la cola (la que tocará, con repetición
+ * «todo» incluida). drawCover la reutiliza si ya está lista:
+ * cambiar de canción deja de pasar por el fondo gris de
+ * «cargando». Sin imagen (gradiente generado) no hay nada
+ * que preparar y se sale sin coste. */
     _preloadNextCover() {
       if (!Array.isArray(this.queue) || !this.queue.length) return;
       let idx = (this.queueIdx || 0) + 1;
@@ -140,7 +140,7 @@ Object.assign(App, {
     drawCover(canvasId, track, mini) {
       const c = document.getElementById(canvasId);
       if (!c) return;
-      // §94: cada pintado invalida los onload de imagen pendientes
+      //  cada pintado invalida los onload de imagen pendientes
       // de ESTE lienzo (ver el uso del sello en la rama de imagen).
       const coverToken = (c._coverToken = (c._coverToken || 0) + 1);
       const ctx = c.getContext('2d');
@@ -158,10 +158,10 @@ Object.assign(App, {
           : (this.coverSrcForRow ? this.coverSrcForRow(track, Math.max(w, h)) : null)
             || (track.cover && track.cover.dataURL) || '';
         if (src) {
-          // §94: el sello de la entrada manda — si el usuario
+          //  el sello de la entrada manda — si el usuario
           // salta de canción mientras esta imagen carga, el
           // onload tardío ya no pinta sobre la portada actual.
-          // §97: si la precarga (idea 17) ya la decodificó, se
+          //  si la precarga (idea 17) ya la decodificó, se
           // pinta al momento, sin fondo gris intermedio.
           const pre = (this._nextCoverPreload && this._nextCoverPreload.id === track.id
             && this._nextCoverPreload.src === src) ? this._nextCoverPreload.img : null;
@@ -169,7 +169,7 @@ Object.assign(App, {
           const paint = () => {
             if (c._coverToken !== coverToken) return; // ya hay otra pista
             ctx.clearRect(0, 0, w, h);
-            // Modo "cover": misma geometría que las filas (_fitRect, §63)
+            // Modo "cover": misma geometría que las filas (_fitRect,)
             const r = typeof this._fitRect === 'function'
               ? this._fitRect(img.width, img.height, w, h, 'cover')
               : { x: 0, y: 0, w, h };
@@ -226,7 +226,7 @@ Object.assign(App, {
       const mode = this.repeat || 'off';
       btn.classList.toggle('active', mode !== 'off');
       btn.dataset.mode = mode;
-      // §72: aria-pressed no distingue «todo» de «una»; el nombre sí.
+      //  aria-pressed no distingue «todo» de «una»; el nombre sí.
       const repLabel = mode === 'off' ? this.t('toast_repeat_off')
                      : mode === 'all' ? this.t('toast_repeat_all') : this.t('toast_repeat_one');
       btn.setAttribute('aria-label', this.t('repeat') + ': ' + repLabel);
@@ -238,7 +238,7 @@ Object.assign(App, {
           badge = document.createElement('span');
           badge.className = 'repeat-badge';
           badge.textContent = '1';
-          // §94: el «1» es decoración — el aria-label del botón
+          //  el «1» es decoración — el aria-label del botón
           // ya dice «Repetir: una»; sin esto el lector lo sumaba.
           badge.setAttribute('aria-hidden', 'true');
           btn.appendChild(badge);
@@ -255,7 +255,7 @@ Object.assign(App, {
       const ca = document.getElementById('coverArt');
       if (!ca) return;
       ca.classList.toggle('playing', this.isPlaying);
-      // §95: la portada ya no reproduce/pausa al tocarla — abre y
+      //  la portada ya no reproduce/pausa al tocarla — abre y
       // cierra el modo inmersivo. El nombre accesible anuncia ESA
       // acción y aria-pressed refleja el modo, no la reproducción
       // (antes anunciaba «Pausar», que ya no es lo que hace).
@@ -265,12 +265,12 @@ Object.assign(App, {
       ca.setAttribute('aria-pressed', this._coverFs ? 'true' : 'false');
     },
 
-    /* §95 — Portada a pantalla completa (modo inmersivo).
-     * Tocar la portada la agranda a toda la vista con el
-     * visualizador encima; tocarla otra vez (o Escape, o cambiar
-     * de vista) vuelve al reproductor normal. Solo cambia una
-     * clase en la vista: el lienzo y el visualizador no se mueven
-     * del DOM, así que nada se repinta ni se pierde. */
+    /* — Portada a pantalla completa (modo inmersivo).
+ * Tocar la portada la agranda a toda la vista con el
+ * visualizador encima; tocarla otra vez (o Escape, o cambiar
+ * de vista) vuelve al reproductor normal. Solo cambia una
+ * clase en la vista: el lienzo y el visualizador no se mueven
+ * del DOM, así que nada se repinta ni se pierde. */
     toggleCoverFullscreen() {
       this.setCoverFullscreen(!this._coverFs);
     },
@@ -304,11 +304,11 @@ Object.assign(App, {
       }
     },
 
-    /* §97 (idea 3): título y artista flotando sobre la portada
-     * inmersiva. Se muestran al entrar y al cambiar de canción
-     * (y con el gesto de volumen, desde events.js) y se
-     * desvanecen a los 3,6 s: la portada queda limpia, que es
-     * para lo que existe el modo. */
+    /* (idea 3): título y artista flotando sobre la portada
+ * inmersiva. Se muestran al entrar y al cambiar de canción
+ * (y con el gesto de volumen, desde events.js) y se
+ * desvanecen a los 3,6 s: la portada queda limpia, que es
+ * para lo que existe el modo. */
     _pokeCoverFsMeta() {
       const meta = document.getElementById('coverFsMeta');
       if (!meta || !this._coverFs || !this.currentTrack) return;
@@ -321,9 +321,9 @@ Object.assign(App, {
       this._coverFsMetaTimer = setTimeout(() => meta.classList.remove('show'), 3600);
     },
 
-    /* §72: el botón «Letras» de la barra secundaria se veía igual con y
-     * sin letra sincronizada. Un punto de acento lo anuncia (la vista
-     * sigue abriéndose igual: desde ahí se puede cargar el .lrc). */
+    /*  el botón «Letras» de la barra secundaria se veía igual con y
+ * sin letra sincronizada. Un punto de acento lo anuncia (la vista
+ * sigue abriéndose igual: desde ahí se puede cargar el.lrc). */
     _syncLyricsButton() {
       const btn = document.getElementById('btnLyrics');
       if (!btn) return;
@@ -392,15 +392,15 @@ Object.assign(App, {
         if (typeof this.stopVisualizer === 'function') this.stopVisualizer();
       }
 
-      // §101: aquí vivía el bloque que mostraba/ocultaba «Ir al
+      //  aquí vivía el bloque que mostraba/ocultaba «Ir al
       // artista / Ir al álbum» en el menú ⋯ según hubiera pista.
-      // Esas filas salieron del menú en la auditoría (§100) —
+      // Esas filas salieron del menú en la auditoría —
       // viven en el menú de pista — y el bloque quedó muerto.
 
       /* Cada cambio de play/pausa pasa por aquí, y la visibilidad del
-       * mini reproductor depende de isPlaying (en Inicio se oculta en
-       * pausa, §52): sin este refresco, el mini solo obedecía al
-       * navegar y quedaba congelado tras pausar o reanudar. */
+ * mini reproductor depende de isPlaying (en Inicio se oculta en
+ * pausa,): sin este refresco, el mini solo obedecía al
+ * navegar y quedaba congelado tras pausar o reanudar. */
       if (typeof this.updateChrome === 'function') this.updateChrome();
     },
 
@@ -409,8 +409,17 @@ Object.assign(App, {
       const cur = a.currentTime || 0;
       const dur = a.duration || this.currentTrack?.duration || 0;
 
-      // §100: la ejecución del A-B se fue con su sistema; el bucle
-      // que queda es el de sección de letras, justo aquí debajo.
+      // Repetición A-B. Con el bucle activo, al llegar
+      // a B se vuelve a A y no se pinta más en este ciclo. Va
+      // antes que el bucle de sección de Letras: este manda
+      // sobre dos instantes de la canción.
+      if (this.abRepeat && this.abRepeat.active && this.abRepeat.b !== null && this.abRepeat.a !== null) {
+        if (cur >= this.abRepeat.b) {
+          this.seekToTime(this.abRepeat.a);
+          return;
+        }
+      }
+
       // Repetición de sección de letras (#19): rango elegido a mano en la
       // vista de letras ({start, end} en segundos de la canción). Se aplica
       // aquí, no en el RAF de letras, para que siga activa al volver al
@@ -437,7 +446,7 @@ Object.assign(App, {
       const mini = document.getElementById('miniProgress');
       if (mini) mini.style.width = pct + '%';
       if (curEl) curEl.textContent = this.fmtTime(cur);
-      // §72: la duración total puede enseñar el tiempo restante
+      //  la duración total puede enseñar el tiempo restante
       // («-1:12») si el usuario lo eligió tocándola; se refresca aquí
       // porque es el único sitio que conoce cur y dur a la vez.
       const totEl = document.getElementById('timeTotal');
@@ -452,7 +461,7 @@ Object.assign(App, {
         track.setAttribute('aria-valuetext', this.fmtTime(cur) + ' / ' + this.fmtTime(dur));
       }
 
-      // Buffer (§94: con duración 0/desconocida salía Infinity%)
+      // Buffer (: con duración 0/desconocida salía Infinity%)
       const buf = document.getElementById('progressBuffer');
       if (buf && a.buffered && a.buffered.length > 0 && isFinite(dur) && dur > 0) {
         try {
@@ -491,7 +500,7 @@ Object.assign(App, {
       this._syncMarquee(el);
     },
 
-    /* §100: applyVinylMode retirado con el modo vinilo. */
+    /*  applyVinylMode retirado con el modo vinilo. */
 
     _syncMarquee(el) {
       if (!el) return;

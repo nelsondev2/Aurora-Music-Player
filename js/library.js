@@ -67,14 +67,14 @@ Object.assign(App, {
       // Dos importaciones simultáneas (arrastrar + selector, o doble toque)
       // mutaban `tracks` a la vez y duplicaban pistas. Una sola a la vez.
       if (this._importing) {
-        // §94: la clave lleva una X por sustituir (nº de archivos).
+        //  la clave lleva una X por sustituir (nº de archivos).
         this.toast(this.t('toast_processing_files').replace('X', String(fileList.length)));
         return;
       }
       this._importing = true;
       // Los .lrc no son audio: se enlazan con la canción del mismo
       // nombre (ver _attachLrcFiles) en vez de ir al importador. (La
-      // importación de listas .m3u se eliminó en §51.)
+      // (La importación de listas .m3u no existe.)
       const allFiles = Array.from(fileList);
       const lrcFiles = allFiles.filter(f => /\.lrc$/i.test(f.name || ''));
       const mediaFiles = allFiles.filter(f => !/\.m3u8?$/i.test(f.name || '') && !/\.lrc$/i.test(f.name || ''));
@@ -339,8 +339,8 @@ Object.assign(App, {
       } else if (skelList) skelList.remove();
     },
 
-    /* §93: findDuplicateTrack() extirpado — sin llamadores; la
-     * deduplicación al importar usa su propio índice (§85). */
+    /* Sin findDuplicateTrack (quedó sin llamadores): la
+     * deduplicación al importar usa su propio índice. */
 
     /* #15 #16 Obtener objectURL con cache para reutilizar */
     getTrackUrl(track) {
@@ -348,12 +348,12 @@ Object.assign(App, {
       if (this._urlCache.has(track.id)) {
         return this._urlCache.get(track.id);
       }
-      // §87: un objectURL vive solo en su sesión. Los registros de
+      //  un objectURL vive solo en su sesión. Los registros de
       // IndexedDB traían guardado el src de la sesión en que se
       // importaron/editaron, y al reabrir es una URL muerta: el
       // <audio> fallaba y el reproductor saltaba de canción en
       // canción avisando de que no se podía reproducir. Antes de
-      // §85 el arranque recreaba todas las URLs y lo enmascaraba;
+      // el arranque recreaba todas las URLs y lo enmascaraba;
       // ahora la URL se acuña aquí, siempre desde el blob. Solo se
       // respeta un src que NO sea blob: (p. ej. fuente http(s)).
       if (track.src && typeof track.src === 'string' && track.src.startsWith('blob:')) {
@@ -404,7 +404,7 @@ Object.assign(App, {
       if (this._sleepEndOfTrack || this._sleepFading) return false;
       if (this.crossfadeEnabled && this.crossfadeDuration > 0) return false;
       if (this.repeat === 'one') return false;
-      // §83: el avance gapless también pasa por la sincronización
+      //  el avance gapless también pasa por la sincronización
       // con la lista (antes solo la hacía next()): si no, una baja
       // de la lista se colaba cuando el cambio era sin pausa.
       if (!this.shuffle && typeof this._syncQueueWithPlaylist === 'function') {
@@ -421,7 +421,7 @@ Object.assign(App, {
       this._ignoreEndedUntil = Date.now() + 500;
       this._gaplessArmed = false;
       // La saliente llegó a su fin (~80 ms antes del corte): su
-      // escucha cuenta como completa ANTES de cambiar (§67).
+      // escucha cuenta como completa ANTES de cambiar.
       if (typeof this.trackPlayCompleted === 'function') this.trackPlayCompleted();
       this.currentTrack = nextTrack;
       this.currentTrackIdx = this.tracks.findIndex(t => t.id === nextTrackId);
@@ -437,7 +437,7 @@ Object.assign(App, {
       if (p && p.catch) p.catch(() => {});
       this.isPlaying = true;
       // La entrante no pasa por trackPlayStarted() (play() directo):
-      // estrena pase de conteo y base de segundos escuchados (§67).
+      // estrena pase de conteo y base de segundos escuchados.
       this._playCounted = false;
       this._currentPlayStart = Date.now();
       this._currentPlayBaseTime = 0;
@@ -490,9 +490,9 @@ Object.assign(App, {
       }
     },
 
-    /* §104: aquí vivían addToHistory/loadHistory/renderHistory:
-     * el historial de reproducción (registro, carga y hoja) se
-     * retiró entero. */
+    /*  aquí vivían addToHistory/loadHistory/renderHistory:
+ * el historial de reproducción (registro, carga y hoja) se
+ * retiró entero. */
 
     async loadSearchHistory() {
       try {
@@ -532,20 +532,20 @@ Object.assign(App, {
       return set.has(a);
     },
 
-    /* §85: ¿le falta algo a esta pista que solo se sepa releyendo
-     * su archivo? La marca _tagsChecked la pone el importador (y
-     * este propio retag) cuando la pista ya pasó por el lector
-     * actual, género y año incluidos. Sin marca (bibliotecas
-     * anteriores) hay que leerla UNA vez; con marca, releerla en
-     * cada arranque era el cuello de botella: miles de lecturas
-     * completas + sondeos + reescrituras de IndexedDB para no
-     * cambiar nada. Ojo: que no tenga letra NO es motivo (la
-     * mayoría de canciones no traen). §94: tampoco lo son la
-     * falta de portada ni el artista placeholder — el archivo no
-     * los trae y la condición nunca convergía. */
+    /*  ¿le falta algo a esta pista que solo se sepa releyendo
+ * su archivo? La marca _tagsChecked la pone el importador (y
+ * este propio retag) cuando la pista ya pasó por el lector
+ * actual, género y año incluidos. Sin marca (bibliotecas
+ * anteriores) hay que leerla UNA vez; con marca, releerla en
+ * cada arranque era el cuello de botella: miles de lecturas
+ * completas + sondeos + reescrituras de IndexedDB para no
+ * cambiar nada. Ojo: que no tenga letra NO es motivo (la
+ * mayoría de canciones no traen).: tampoco lo son la
+ * falta de portada ni el artista placeholder — el archivo no
+ * los trae y la condición nunca convergía. */
     _trackNeedsRetag(t) {
       if (!t || !(t._file || t.fileBlob)) return false;
-      // §94: la marca es la única condición. Antes, una pista sin
+      //  la marca es la única condición. Antes, una pista sin
       // portada en el archivo (o con el artista «desconocido» de
       // verdad) «necesitaba» retag en CADA arranque para siempre:
       // la relectura no puede inventar lo que el archivo no trae.
@@ -553,9 +553,9 @@ Object.assign(App, {
     },
 
     /* Relee tags de pistas ya guardadas (portada, artista, letras).
-     * opts.onlyIncomplete (arranque): solo las que lo necesitan
-     * (§85); el menú «Releer etiquetas» sigue siendo completo.
-     * Con tres trabajadores en paralelo, como la importación. */
+ * opts.onlyIncomplete (arranque): solo las que lo necesitan
+ *el menú «Releer etiquetas» sigue siendo completo.
+ * Con tres trabajadores en paralelo, como la importación. */
     async retagExistingTracks(opts) {
       const silent = !!(opts && opts.silent);
       const onlyIncomplete = !!(opts && opts.onlyIncomplete);
@@ -572,7 +572,7 @@ Object.assign(App, {
           try {
             const fresh = await U.processOne(file, null);
             let changed = false;
-            // §94: el texto que el usuario editó a mano (la hoja
+            //  el texto que el usuario editó a mano (la hoja
             // de edición marca _userEdited) manda sobre el
             // archivo: releer etiquetas no debe deshacer su
             // corrección en el siguiente arranque.
@@ -586,13 +586,13 @@ Object.assign(App, {
             }
             // La portada solo se toca si es otra de verdad: antes
             // se reemplazaba siempre y cada arranque reescribía
-            // cada registro de IndexedDB con su blob (§85).
+            // cada registro de IndexedDB con su blob.
             if (fresh.coverIsImage && fresh.cover && fresh.cover !== t.cover) {
               t.cover = fresh.cover;
               t.coverIsImage = true;
               changed = true;
             }
-            // §81: género y año también se recuperan al re-etiquetar:
+            //  género y año también se recuperan al re-etiquetar:
             // las bibliotecas anteriores no los guardaban y el
             // catálogo por géneros nacería vacío para ellas.
             if (fresh.genre && fresh.genre !== t.genre) { t.genre = fresh.genre; changed = true; }
@@ -654,17 +654,17 @@ Object.assign(App, {
     },
 
     /* Utilidad para exportar archivos: usa webxdc.sendToChat en Delta
-     * Chat o descarga directa en navegador. Devuelve 'chat' si salió
-     * por sendToChat, 'download' si fue descarga local y false si
-     * falló: los llamantes enseñan su toast según este resultado
-     * (§70: antes ambos éxitos devolvían true y «Compartir» decía
-     * «Enviado a Delta Chat» también cuando solo se descargaba). */
+ * Chat o descarga directa en navegador. Devuelve 'chat' si salió
+ * por sendToChat, 'download' si fue descarga local y false si
+ * falló: los llamantes enseñan su toast según este resultado
+ * (: antes ambos éxitos devolvían true y «Compartir» decía
+ * «Enviado a Delta Chat» también cuando solo se descargaba). */
     async exportFile({ name, content, mimeType = 'application/json', caption = '' }) {
       if (window.webxdc && typeof window.webxdc.sendToChat === 'function') {
         /* La forma que Delta Chat acepta hoy es { name, blob }. El
-         * plainText histórico puede ser rechazado por clientes
-         * actuales, y el fallo se tragaba aquí dentro: «Compartir
-         * lista» enseñaba «compartida» sin enviar nada (§51). */
+ * plainText histórico puede ser rechazado por clientes
+ * actuales, y el fallo se tragaba aquí dentro: «Compartir
+ * lista» enseñaba «compartida» sin enviar nada. */
         const blob = content instanceof Blob ? content : new Blob([content], { type: mimeType });
         try {
           await window.webxdc.sendToChat({
@@ -676,7 +676,7 @@ Object.assign(App, {
           console.warn('[WebXDC] sendToChat no completado:', err);
           // La spec: ante un error, la promesa se rechaza. Devolvemos
           // false y el llamante avisa de verdad (antes el fallo se
-          // tragaba y se enseñaba el toast de éxito igualmente, §51).
+          // tragaba y se enseñaba el toast de éxito igualmente,).
           return false;
         }
       }
@@ -694,7 +694,7 @@ Object.assign(App, {
     },
 
     /* Toast honesto tras exportFile: enviado al chat, descargado o
-     * error, según el tri-estado (§70 [2]). */
+ * error, según el tri-estado ([2]). */
     toastExportResult(res) {
       if (res === 'chat') this.toast(this.t('toast_shared_chat'));
       else if (res === 'download') this.toast(this.t('toast_downloaded'));
@@ -727,7 +727,7 @@ Object.assign(App, {
         }
 
         if (!blob) {
-          // §85: t.src ya no nace al arrancar; se crea bajo demanda.
+          //  t.src ya no nace al arrancar; se crea bajo demanda.
           const lazyUrl = typeof this.getTrackUrl === 'function' ? this.getTrackUrl(t) : t.src;
           if (lazyUrl && lazyUrl.startsWith('blob:')) {
             try {
@@ -797,11 +797,11 @@ Object.assign(App, {
         const promises = [];
         for (const track of tracks) {
           const toSave = Object.assign({}, track);
-          // §87: el objectURL es de sesión; si se persiste, al
+          //  el objectURL es de sesión; si se persiste, al
           // reabrir es una URL muerta y el reproductor salta de
           // canción en canción sin poder reproducir ninguna.
           delete toSave.src;
-          // §94: campos de trabajo de sesión fuera (ver
+          //  campos de trabajo de sesión fuera (ver
           // persistTrack): _lrcCache duplicaba la letra guardada.
           delete toSave._lrcCache;
           delete toSave._lrcCacheKey;
@@ -873,7 +873,7 @@ Object.assign(App, {
           cachedUrl,
           favorite: this.favorites.has(trackId),
           playlistIds: this.playlists.filter(pl => pl.trackIds.indexOf(trackId) >= 0).map(pl => pl.id),
-          // §94: posición en la cola (y en la original si hay
+          //  posición en la cola (y en la original si hay
           // aleatorio) para que «Deshacer» la devuelva también ahí.
           queuePos: this.queue ? this.queue.indexOf(trackId) : -1,
           origPos: Array.isArray(this._originalQueue) ? this._originalQueue.indexOf(trackId) : -1,
@@ -889,7 +889,7 @@ Object.assign(App, {
           try { URL.revokeObjectURL(t.src); } catch (e) {}
         }
         this.deleteTrackFromStorage(trackId);
-        this._purgeTrackTraces(trackId); // §94: borrado sin deshacer
+        this._purgeTrackTraces(trackId); //  borrado sin deshacer
       }
       // Limpiar también la cache de ganancia normalizada (#6)
       this._trackGainCache.delete(trackId);
@@ -905,7 +905,7 @@ Object.assign(App, {
         else if (qIdx === this.queueIdx) this.queueIdx = Math.min(this.queueIdx, this.queue.length - 1);
       }
       if (typeof this._removeFromOriginalQueue === 'function') this._removeFromOriginalQueue(trackId);
-      // Quitar de playlists. §94: persistPlaylist va DENTRO del
+      // Quitar de playlists.: persistPlaylist va DENTRO del
       // if — antes se guardaban en IndexedDB todas las listas de
       // la app por cada pista borrada, contuviera o no la pista.
       this.playlists.forEach(pl => {
@@ -944,10 +944,10 @@ Object.assign(App, {
       }
     },
 
-    /* §94: al confirmar un borrado se purgan también sus
-     * huellas: contadores de estadísticas e historial quedaban
-     * huérfanos para siempre (y «las más escuchadas» sumaban
-     * fantasmas). Con «Deshacer» aún posible NO se toca nada. */
+    /*  al confirmar un borrado se purgan también sus
+ * huellas: contadores de estadísticas e historial quedaban
+ * huérfanos para siempre (y «las más escuchadas» sumaban
+ * fantasmas). Con «Deshacer» aún posible NO se toca nada. */
     _purgeTrackTraces(trackId) {
       if (this.stats) {
         let dirty = false;
@@ -974,7 +974,7 @@ Object.assign(App, {
       } catch (e) {}
       this._urlCache.delete(p.track.id);
       this.deleteTrackFromStorage(p.track.id);
-      this._purgeTrackTraces(p.track.id); // §94
+      this._purgeTrackTraces(p.track.id);
     },
 
     /* Deshace el borrado: devuelve la pista a la biblioteca, a sus listas
@@ -1003,7 +1003,7 @@ Object.assign(App, {
         this.favorites.add(t.id);
         this.saveFavorites();
       }
-      // §94: …y a la cola, en su posición: antes el «Deshacer»
+      //  …y a la cola, en su posición: antes el «Deshacer»
       // devolvía la canción a la biblioteca y a sus listas,
       // pero la cola la perdía para siempre.
       if (p.queuePos >= 0 && Array.isArray(this.queue) && this.queue.indexOf(t.id) < 0) {
@@ -1161,16 +1161,16 @@ Object.assign(App, {
       }
     },
     /* ============================================================
-     *  §81/§88: canciones duplicadas (mismo título y artista)
-     *  La importación ya omite el mismo archivo dos veces; lo que
-     *  aquí se busca es la misma canción llegada por caminos
-     *  distintos (otro archivo, otra copia). Qué copia se conserva
-     *  lo elige el usuario en la hoja (§88): por defecto se propone
-     *  la más antigua (la «original»: es la que suele tener
-     *  estrellas, listas y reproducciones), pero puede marcarse
-     *  cualquier otra como «la que se conserva» y borrar el resto
-     *  una a una o todas de una vez.
-     * ============================================================ */
+ * /: canciones duplicadas (mismo título y artista)
+ * La importación ya omite el mismo archivo dos veces; lo que
+ * aquí se busca es la misma canción llegada por caminos
+ * distintos (otro archivo, otra copia). Qué copia se conserva
+ * lo elige el usuario en la hoja: por defecto se propone
+ * la más antigua (la «original»: es la que suele tener
+ * estrellas, listas y reproducciones), pero puede marcarse
+ * cualquier otra como «la que se conserva» y borrar el resto
+ * una a una o todas de una vez.
+ * ============================================================ */
     findDuplicateGroups() {
       const norm = (v) => (typeof this.cleanSearchStr === 'function')
         ? this.cleanSearchStr(v || '')
@@ -1186,7 +1186,7 @@ Object.assign(App, {
       map.forEach((list, key) => {
         if (list.length < 2) return;
         const sorted = list.slice().sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
-        // §88: «keep» es solo el valor por defecto (la más antigua);
+        //  «keep» es solo el valor por defecto (la más antigua);
         // la copia que se conserva la elige el usuario en la hoja.
         groups.push({ key, keep: sorted[0], dups: sorted.slice(1) });
       });
@@ -1205,7 +1205,7 @@ Object.assign(App, {
         cont.appendChild(div);
         return;
       }
-      // §88: qué copia se conserva lo elige el usuario, no la
+      //  qué copia se conserva lo elige el usuario, no la
       // antigüedad. La elección vive por grupo (clave título+artista)
       // y sobrevive a los repintados de la hoja; si la elegida ya no
       // está en el grupo, se vuelve al valor por defecto (la más
