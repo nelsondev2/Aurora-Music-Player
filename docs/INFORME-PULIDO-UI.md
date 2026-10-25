@@ -4034,3 +4034,53 @@ apertura y en cada re-pintado. Era el único agujero.
 - Humo de regresión: **20/20**. Sintaxis global OK. i18n:
   363 claves ×8, 0 colgadas.
 - **Sin release**: la publicada sigue siendo v1.2.0 (§99).
+
+## 102. Internacionalización: Prioridad 1 + chino tradicional
+
+Ante la pregunta «¿qué idiomas habría que agregar?», el análisis
+señaló un hueco evidente (Alemán: Delta Chat es un proyecto
+alemán) y un orden por valor/coste. El usuario aprobó la
+**Prioridad 1 «más el chino»**. Matiz importante: el chino ya
+existía (`zh`, simplificado); lo que no había era **chino
+tradicional** (Taiwán/Hong Kong/Macao), que caía en simplificado
+al detectar el idioma. Se interpreta «más el chino» como esa
+variante; si era otra cosa, se corrige.
+
+### Lo añadido: 6 idiomas, 363 claves cada uno (2.178 textos)
+- **de** Alemán, **uk** Ucraniano, **pl** Polaco, **tr** Turco,
+  **id** Indonesio: traducción completa del diccionario,
+  preservando el marcador de sustitución `X`, los símbolos
+  (♥, ▶) y las comillas de los textos originales.
+- **zh-TW** 繁體中文: generado desde el simplificado con
+  OpenCC (`s2tw`, conversión mecánica fiable) y conectado en
+  `_detectSystemLang`: `zh-TW`, `zh-HK`, `zh-MO` y las
+  etiquetas `Hant` ya no caen en simplificado. `zh-CN` sigue
+  en simplificado.
+
+### Detalles de implementación
+- `SUPPORTED_LANGS` pasa de 8 a 14; el selector de idioma y
+  la detección automática son genéricos y no necesitaron más
+  cambios (salvo el desvío zh-TW). Nadie asumía códigos de
+  dos letras (comprobado por búsqueda).
+- El diccionario tiene dos formatos conviviendo (341
+  entradas multilínea y 22 de una línea); la fusión trató
+  ambos sin reescribir el formato de nadie.
+- Honestidad: de/uk/pl/tr/id son traducción automática (la
+  del asistente) y el zh-TW, conversión automática. Antes de
+  publicar convendría que un nativo eche un vistazo a cada
+  idioma; el Español sigue siendo la referencia y el recurso
+  ante cualquier clave ausente.
+
+### Verificación
+- **Check §102** `/tmp/check-vista102.js`: **9/9** — 14
+  idiomas listados; 363×14 sin huecos; `t()` sirve los seis
+  (muestra: «Ajustes» → Einstellungen/Налаштування/
+  Ustawienia/Ayarlar/Pengaturan/設置); zh y zh-TW difieren
+  donde la escritura cambia; el selector pinta 14 opciones;
+  la detección resuelve zh-TW/zh-HK→tradicional, zh-CN→
+  simplificado, de/uk/id→su idioma; marcador X idéntico en
+  las 5.082 cadenas; §100/§101 en pie.
+- Humo de regresión: **20/20**.
+- **Sin release**: la publicada sigue siendo v1.2.0 (§99).
+
+14 idiomas no cambian la 1.2.0 pública; viven en la rama.

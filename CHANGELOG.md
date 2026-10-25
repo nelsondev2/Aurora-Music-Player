@@ -28,6 +28,14 @@ Cambios ya en el código, a la espera de orden de publicación:
   puede romper el pintado de las filas. El blindaje de
   datos se evaluó y se descartó expresamente: sin copia de
   seguridad, como estaba.
+- Internacionalización (§102): seis idiomas nuevos con el
+  diccionario completo (363 textos cada uno) — Alemán,
+  Ucraniano, Polaco, Turco e Indonesio, más chino
+  tradicional (el simplificado ya estaba), que además ya
+  se detecta solo en teléfonos de Taiwán/Hong Kong. La app
+  pasa de 8 a 14 idiomas. Las traducciones nuevas son
+  automáticas: convendría una revisión nativa antes de
+  publicarlas.
 
 ## 1.2.0 — Primera versión pública
 

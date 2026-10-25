@@ -621,7 +621,13 @@ Object.assign(App, {
         else if (navigator.userLanguage) list = [navigator.userLanguage];
       } catch (e) {}
       for (const raw of list) {
-        const code = String(raw || '').toLowerCase().split('-')[0];
+        const tag = String(raw || '').toLowerCase();
+        // §102: el chino tradicional (Taiwán, Hong Kong, Macao o
+        // la etiqueta Hant) tiene entrada propia en el diccionario;
+        // sin este desvío, el corte por '-' lo dejaba en
+        // simplificado, que es otra escritura.
+        if (/^zh([-_](tw|hk|mo)\b|.*hant)/.test(tag) && this._isValidLang('zh-TW')) return 'zh-TW';
+        const code = tag.split('-')[0];
         if (code && this._isValidLang(code)) return code;
       }
       return 'es';
