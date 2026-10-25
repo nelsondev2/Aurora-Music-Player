@@ -11,6 +11,10 @@ Historial de versiones **publicadas** de Aurora Music Player.
   sus opciones una detrás de otra** — desfase, velocidad,
   bucle de sección y restablecer siempre visibles, sin
   botón de despliegue.
+- Barra de herramientas de Letras en su sitio: todas las
+  opciones vuelven a ir **en una sola fila, una detrás de
+  otra** (tamaño, desfase, velocidad, bucle, acciones),
+  sin grupos desperdigados ni acciones cortadas.
 
 ## 1.2.5 — Más ligera, en 14 idiomas
 
