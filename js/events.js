@@ -376,6 +376,9 @@ Object.assign(App, {
       $('btnQueue').addEventListener('click', () => {
         this.renderQueue();
         this.openSheet('sheetQueue');
+        // §98: como en las listas (§97), la cola se abre donde
+        // suena — al terminar la animación de apertura.
+        setTimeout(() => this.scrollQueueToCurrent(), 380);
       });
       const btnClearQueue = document.getElementById('btnClearQueue');
       if (btnClearQueue) btnClearQueue.addEventListener('click', () => this.clearUpcomingQueue());

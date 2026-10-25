@@ -432,33 +432,9 @@ svg { display: block; }
     0 32px 64px rgba(0,0,0,0.55),
     0 0 40px color-mix(in srgb, var(--cover-from) 35%, transparent);
 }
-.cover-play-hint {
-  position: absolute;
-  /* §96: insignia esquinera discreta. Antes era un velo sobre
-   * TODA la portada (inset: 0, fondo oscuro, icono de 42 px)
-   * que tapaba la carátula —justo lo contrario de lo que el
-   * modo inmersivo quiere enseñar— y en táctil el :hover se
-   * quedaba pegado tras el toque. Ahora solo ocupa una esquina
-   * y la imagen queda siempre limpia. */
-  top: 10px;
-  right: 10px;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.42);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  color: #fff;
-  opacity: 0;
-  transition: opacity .2s;
-  pointer-events: none;
-}
-.cover-play-hint .ico { width: 16px; height: 16px; }
-.cover-art:not(.playing):hover .cover-play-hint,
-.cover-art:not(.playing):active .cover-play-hint { opacity: 1; }
+/* §98: aquí vivía la pista visual de la portada (velo §95,
+ * insignia esquinera §96); retirada por completo junto con su
+ * HTML: el modo inmersivo se descubre tocando, sin iconos. */
 .cover-art:active:not(.vol-adjusting) { transform: scale(.98); }
 .cover-art.playing:active:not(.vol-adjusting) {
   animation: none;
@@ -912,17 +888,8 @@ svg { display: block; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* §97 (idea 10): resumen fijo al desplazar la cola. */
-.queue-summary {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  padding: 8px 2px;
-  font-size: var(--fs-small, 13px);
-  font-weight: 600;
-  color: var(--text-2);
-  background: var(--bg-1);
-}
+/* §98: aquí vivía el resumen fijo de la cola (§97, idea 10),
+ * retirado por completo junto con su HTML, su JS y su clave. */
 /* §97 (idea 6): valor a la derecha de las filas del menú (sleep). */
 .menu-value {
   margin-left: auto;
@@ -935,14 +902,8 @@ svg { display: block; }
 .device-screen:has(.view-player.cover-fullscreen) .bottom-nav {
   display: none !important;
 }
-/* La pista visual anuncia ampliar; dentro del modo, salir. */
-.cover-play-hint .icon-fs-exit { display: none; }
-.view-player.cover-fullscreen .cover-play-hint .icon-fs-enter { display: none; }
-.view-player.cover-fullscreen .cover-play-hint .icon-fs-exit { display: block; }
-.cover-art:hover .cover-play-hint,
-.view-player.cover-fullscreen .cover-art:active .cover-play-hint {
-  opacity: 1;
-}
+/* §98: retiradas también las reglas que anunciaban ampliar/
+ * salir sobre la portada (la insignia ya no existe). */
 .lyrics-exit-fs {
   position: absolute;
   top: calc(var(--safe-top) + 8px);
@@ -3435,7 +3396,6 @@ button,
   text-align: right;
 }
 .cover-art.vol-adjusting { cursor: ns-resize; }
-.cover-art.vol-adjusting .cover-play-hint { opacity: 0 !important; }
 
 .sleep-opt.sleep-eot {
   grid-column: 1 / -1;
@@ -3627,7 +3587,6 @@ button,
   z-index: 2;
 }
 .cover-art canvas#coverCanvas { position: relative; z-index: 1; }
-.cover-play-hint { z-index: 3; }
 
 .cover-buffering {
   position: absolute;
@@ -3647,7 +3606,6 @@ button,
   pointer-events: none;
 }
 .cover-buffering[hidden] { display: none !important; }
-.cover-art.is-buffering .cover-play-hint { opacity: 0 !important; }
 
 .cover-art.liked-pulse {
   box-shadow:

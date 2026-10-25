@@ -3854,3 +3854,48 @@ desaparezca en silencio.
   en esta ronda y no se afirma re-ejecutado).
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## 98. Tres órdenes expresas: iconos fuera, la cola abre donde suena, resumen fuera
+
+- **Iconos del modo inmersivo, eliminados por completo.** Tras el
+  velo de §95 y la insignia esquinera de §96, el usuario decide
+  que sobre la portada no debe haber ningún icono de entrar/salir:
+  quien lo descubra, lo descubre tocando. Fuera `#coverPlayHint`
+  del HTML y las diez reglas CSS que lo pintaban (z-index y los
+  «ocultar al cargar/volumen» incluidos); quedan notas históricas
+  en su lugar. El modo sigue entrando y saliendo a un toque, con
+  Escape o cambiando de vista; el título que respira (§97-3) no
+  es un icono y se queda. Con esto §96 queda revertida por orden
+  expresa y la portada, limpia de verdad.
+- **La cola también se abre donde suena.** La §97 llevó el
+  desplazamiento a las listas; faltaba la cola del reproductor.
+  Nuevo `scrollQueueToCurrent()`: con lista corta centra la fila
+  `.current`; con lista virtual (>80) primero lleva el scroll a
+  la ventana de la fila (64 px × posición, dos de margen) y pide
+  el repintado, y al frame siguiente la centra ya creada. Se
+  llama solo al abrir la hoja (`btnQueue`, tras la animación);
+  re-pintar la cola por otros motivos no mueve la vista.
+- **El «A continuación · N · duración», eliminado por completo.**
+  La idea 10 de la §97 no ha cuajado: fuera el HTML
+  (`#queueSummary`), el bloque que lo calculaba en
+  `renderQueue`, la regla `.queue-summary` y la clave i18n
+  (376 → 375 ×8). La cabecera de la cola vuelve a ser solo el
+  contexto «Reproduciendo desde X». (El desplazamiento a la
+  canción actual, que llegó con la misma tanda, sí se queda y
+  se extiende a la cola: eran cosas distintas.)
+
+### Verificación
+
+- **Check §98** `/tmp/check-vista98.js`: **14/14** — sin
+  `#coverPlayHint` ni una sola regla `.cover-play-hint`; el modo
+  entra/sale a un toque sin iconos; sin `#queueSummary` ni
+  referencias en JS/CSS; abrir la cola desplaza hasta `q3`, y
+  con 100 pistas el scroll virtual va a los 3072 px de la fila
+  50; la onda con memoria y la cuenta atrás del sleep (§97)
+  siguen vivas; i18n 375×8 sin colgadas.
+- Humo de regresión §§80–98: **21/21** (arnés y checks recreados:
+  `/tmp` volvió a aparecer vacío al abrir la sesión; los checks
+  §95–§97 no se recrearon en esta ronda y no se afirman
+  re-ejecutados — sus supervivientes están cubiertos en §98).
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

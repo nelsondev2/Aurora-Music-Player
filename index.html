@@ -151,13 +151,9 @@
               <div class="cover-fs-title" id="coverFsTitle"></div>
               <div class="cover-fs-artist" id="coverFsArtist"></div>
             </div>
-            <!-- §95: la pista visual ya no es «play» (tocar ya no
-                 pausa): anuncia ampliar y, dentro del modo, salir.
-                 El id se conserva por compatibilidad con el CSS. -->
-            <div class="cover-play-hint" id="coverPlayHint" aria-hidden="true">
-              <svg class="ico icon-fs-enter" aria-hidden="true"><use href="#i-expand"></use></svg>
-              <svg class="ico icon-fs-exit" aria-hidden="true"><use href="#i-xmark"></use></svg>
-            </div>
+            <!-- §98: sin iconos de entrar/salir del modo inmersivo
+                 (hubo insignia en §95, esquinera en §96): la
+                 funcionalidad se descubre por el propio toque. -->
             <!-- §94: role="status" para que el «Cargando…» se anuncie -->
             <div class="cover-buffering" id="coverBuffering" role="status" hidden>
               <div class="spin-loader" aria-hidden="true"></div>
@@ -432,8 +428,6 @@
               <svg class="ico" aria-hidden="true"><use href="#i-clear-list"></use></svg>
               <span data-i18n="clear_btn">Vaciar</span>
             </button>
-            <!-- §97 (idea 10): resumen fijo de lo que queda por sonar -->
-            <div class="queue-summary" id="queueSummary" hidden></div>
             <ul class="queue-list" id="queueList"></ul>
           </div>
         </div>

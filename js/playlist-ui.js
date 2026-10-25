@@ -800,26 +800,9 @@ Object.assign(App, {
           ctxLabel.style.display = 'none';
         }
       }
-      // §97 (idea 10): resumen fijo «A continuación · N · duración»
-      // de lo que queda por sonar tras la pista actual. La fila
-      // queda pegada arriba al desplazar la cola (.queue-summary).
-      const summary = document.getElementById('queueSummary');
-      if (summary) {
-        const byIdQ = typeof this.trackMap === 'function' ? this.trackMap() : null;
-        let nQ = 0, secsQ = 0;
-        for (let i = (this.queueIdx || 0) + 1; i < this.queue.length; i++) {
-          const tq = byIdQ ? byIdQ.get(this.queue[i]) : this.tracks.find(x => x.id === this.queue[i]);
-          if (!tq) continue;
-          nQ++;
-          if (isFinite(tq.duration) && tq.duration > 0) secsQ += tq.duration;
-        }
-        if (nQ > 0) {
-          summary.textContent = this.t('queue_up_next') + ' · ' + nQ + ' · ' + this.fmtDuration(secsQ);
-          summary.hidden = false;
-        } else {
-          summary.hidden = true;
-        }
-      }
+      // §98: retirado el resumen «A continuación · N · duración»
+      // que la §97 (idea 10) pintaba sobre la cola; la cabecera
+      // vuelve a ser solo el contexto «Reproduciendo desde X».
       const cleaned = this.queue.filter(id => this.trackMap().has(id));
       if (cleaned.length !== this.queue.length) {
         const curId = this.currentTrack && this.currentTrack.id;
@@ -914,6 +897,31 @@ Object.assign(App, {
         scroller: ul.closest('.sheet-body'),
         rowHeight: 64
       });
+    },
+
+    /* §98: abrir la cola DONDE suena, como en las listas (§97).
+     * La fila actual ya sale marcada (.current); esto mueve la
+     * vista hasta ella. Con lista virtual (>80) la fila puede no
+     * existir aún: primero se lleva el scroll a su ventana
+     * (64 px por fila, dejando dos de margen arriba) y se pide
+     * el repintado; después se centra la fila ya creada. Solo se
+     * llama al abrir la hoja: re-pintar la cola no mueve nada. */
+    scrollQueueToCurrent() {
+      const ul = document.getElementById('queueList');
+      if (!ul || !this.queue.length) return;
+      const scroller = ul.closest('.sheet-body');
+      if (ul._virt && scroller) {
+        scroller.scrollTop = Math.max(0, (this.queueIdx * 64) - 128);
+        if (ul._virt.onScroll) ul._virt.onScroll();
+      }
+      const center = () => {
+        const row = ul.querySelector('.queue-item.current');
+        if (row) {
+          try { row.scrollIntoView({ block: 'center' }); } catch (e) {}
+        }
+      };
+      if (ul._virt) requestAnimationFrame(center);
+      else center();
     },
 
     /* Reordenar arrastrando el asa (Pointer Events: un solo camino
