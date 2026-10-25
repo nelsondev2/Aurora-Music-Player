@@ -220,17 +220,14 @@ svg { display: block; }
   .lrc-line { font-size: var(--lrc-font-size, 0.9375rem); }
   .controls-secondary { gap: 2px; padding: 6px 0 4px; }
   /* Toolbar de letras más compacta */
-  /* (revierte el plegado de,):
- * el ajuste fino de Letras (desfase, velocidad, bucle,
- * restablecer) va SIEMPRE visible: todas las opciones, una
- * detrás de otra, sin botón de despliegue. */
-.lyrics-fine {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  flex-basis: 100%;
-}
+  /* El ajuste fino (desfase, velocidad, bucle, restablecer) va
+ * siempre visible: todas las opciones, una detrás de otra en la
+ * fila desplazable de la barra. Por eso el contenedor NO genera
+ * caja (display: contents) y sus grupos son piezas directas de
+ * la fila: si generara caja con flex-basis: 100%, ocuparía la
+ * fila entera, la partiría en varias líneas y desperdigaría
+ * los grupos por la pantalla. */
+.lyrics-fine { display: contents; }
 .lt-btn.active { color: var(--accent); }
 
 .lyrics-toolbar { padding: 3px 4px; gap: 1px; }

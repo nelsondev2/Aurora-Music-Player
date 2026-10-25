@@ -4325,3 +4325,41 @@ referencias «§», crípticas sin el diario interno.
 
 - **Sin release**: la única publicada sigue siendo
   la v1.2.0.
+
+## 109. «Esto no quedó bien»: la barra de Letras, desperdigada
+
+Captura real del usuario (Ado — «Usseewa», letra no
+sincronizada): la barra de herramientas de Letras se veía
+con el desfase solo en una línea, tamaño y velocidad en
+otra, el bucle centrado debajo y las **acciones cortadas
+en el borde derecho**. «Esto no quedó bien».
+
+### Causa
+Al desplegar el ajuste fino (§107), `#lrcFineTools`
+quedó como caja `display:flex; flex-wrap:wrap;
+flex-basis:100%` **dentro** de `.lyrics-toolbar`, que es
+una fila `nowrap` desplazable. Como pieza de esa fila,
+el contenedor reclamaba el 100% del ancho y su propio
+wrap repartía los grupos en líneas de fila completa:
+exactamente la foto.
+
+### Arreglo (solo CSS)
+`.lyrics-fine { display: contents; }`: el contenedor no
+genera caja y el grupo de desfase, la velocidad y el
+bucle son piezas directas de la fila, **una detrás de
+otra** como en el diseño previo (tamaño, desfase,
+velocidad, bucle, acciones), alcanzables deslizando.
+De paso se repara un comentario roto que la poda de
+§108 había dejado junto a la regla («(revierte el
+plegado de,)»).
+
+### Verificación
+- **Check §109** `/tmp/check-vista109.js`: **9/9** —
+  regla `display:contents` única y sin flex-basis/wrap,
+  barra en fila desplazable, orden DOM de las 9 piezas,
+  A-B y estrellas intactos. jsdom no aplica CSS: el
+  layout se verifica por regla y orden; la prueba
+  visual final es la del dispositivo.
+- §107 **14/14**; humo de regresión **11/11**.
+- **Sin release**: la única publicada sigue siendo
+  la v1.2.0.
