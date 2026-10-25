@@ -2,11 +2,13 @@
 
 Historial de versiones **publicadas** de Aurora Music Player. El
 diario detallado de desarrollo y verificación de cada cambio está en
-`docs/INFORME-PULIDO-UI.md` (§§1–61).
+`docs/INFORME-PULIDO-UI.md` (§§1–105).
 
 ## Sin publicar
 
-Cambios ya en el código, a la espera de orden de publicación:
+_(nada por ahora)_
+
+## 1.2.5 — Más ligera, en 14 idiomas
 
 - Gran poda tras una auditoría completa (§100): fuera la hoja
   de Volumen (nadie la abría), el bucle A-B del reproductor
