@@ -126,9 +126,8 @@ Object.assign(App, {
       }
       this.setPreservesPitch(this.preservesPitch);
       if (typeof this.initVisualizer === 'function') this.initVisualizer();
-      if (typeof this.updateABRepeatUI === 'function') this.updateABRepeatUI();
-      // #11 Cargar historial
-      this.loadHistory();
+      // §104: el historial de reproducción se fue (hoja y registro);
+      // el de búsquedas es otra cosa y se queda.
       this.loadSearchHistory();
 
       document.querySelectorAll('.sheet').forEach(s => s.setAttribute('aria-hidden', 'true'));
@@ -234,6 +233,7 @@ Object.assign(App, {
         this.playlists = [];
       }
 
+      this._settlePlaylists();
       // «Mi Música»: la lista automática donde viven las canciones
       // agregadas fuera de cualquier lista (ver migrateMiMusica).
       this.migrateMiMusica();
@@ -394,10 +394,8 @@ Object.assign(App, {
           cover: pl.cover || null,
           coverArt: pl.coverArt || pl._coverCache || null,
           coverArtHash: pl.coverArtHash || pl._coverCacheHash || null,
-          // §81: sin estos dos, la ordenación elegida y las listas
-          // inteligentes se perdían al cerrar la app.
-          sort: pl.sort || null,
-          smart: pl.smart || null
+          // §81: sin esto, la ordenación elegida se perdía al cerrar.
+          sort: pl.sort || null
         };
         await window.AuroraStorage.putPlaylist(toSave);
       } catch (e) {
@@ -417,7 +415,7 @@ Object.assign(App, {
       catch (e) { console.warn('[Aurora] No se pudo borrar la lista de IndexedDB:', e); }
     },
 
-    /* ===== Compat: loadPlaylists/savePlaylists ahora usan IndexedDB ===== */
+    /* ===== Compat: loadPlaylists ahora usa IndexedDB ===== */
     async loadPlaylists() {
       // Mantenido para el test #14 (que llama a loadPlaylists)
       try {
@@ -429,15 +427,97 @@ Object.assign(App, {
             pl._coverCacheHash = pl.coverArtHash || null;
           }
         });
+        this._settlePlaylists();
         this.migrateMiMusica();
       } catch (e) {
         this.playlists = [];
       }
     },
-    savePlaylists() {
-      if (this.playlists && this.playlists.length) {
-        this.playlists.forEach(p => this.persistPlaylist(p));
+
+    /* §104: saneamiento de las listas al cargarlas.
+     * - La lista heredada con id «favoritos» desaparece de Listas
+     *   (también del almacenamiento): los favoritos viven solo en
+     *   su vista y los corazones no se tocan.
+     * - Las listas inteligentes se materializan: la regla se
+     *   convierte en trackIds con las canciones que elige HOY y
+     *   la lista queda normal para siempre. */
+    /* §105 (endurecimiento): esta normalización corre sobre datos
+     * guardados por versiones anteriores, que no controlamos. Cada
+     * lista se trata AISLADA: si su conversión o su guardado
+     * fallan, esa lista queda intacta tal como venía y el
+     * arranque sigue con las demás — un dato raro heredado jamás
+     * debe poder interrumpir la carga de la biblioteca. */
+    _settlePlaylists() {
+      if (!Array.isArray(this.playlists)) return;
+      try {
+        this.playlists = this.playlists.filter(pl => {
+          if (pl && pl.id === 'favoritos') {
+            try {
+              if (typeof this.deletePlaylistFromStorage === 'function') this.deletePlaylistFromStorage(pl.id);
+            } catch (e) { /* manda lo de memoria; el disco se reintentará al próximo arranque */ }
+            return false;
+          }
+          return !!pl;
+        });
+        this.playlists.forEach(pl => {
+          if (!(pl && pl.smart)) return;
+          try {
+            // Se calcula ANTES de tocar la lista: si la regla
+            // heredada es rara y falla, `pl` queda como estaba.
+            const ids = this._legacySmartTracks(pl).map(t => t.id);
+            pl.trackIds = ids;
+            delete pl.smart;
+            this.persistPlaylist(pl);
+          } catch (e) {
+            // Lista heredada rara: se deja tal cual venía y se
+            // continúa con el resto; nunca se propaga el error.
+          }
+        });
+      } catch (e) {
+        // Red exterior: normalizar es opcional; cargar, no.
       }
+    },
+
+    /* §104: qué canciones elige HOY la regla de una lista
+     * inteligente heredada. Es el antiguo motor de reglas,
+     * reducido a esta migración: se ejecuta solo para listas
+     * guardadas por versiones anteriores y, una vez
+     * materializadas, nunca más. */
+    _legacySmartTracks(pl) {
+      const rule = pl.smart || {};
+      const plays = (this.stats && this.stats.plays) || {};
+      let base;
+      switch (rule.kind) {
+        case 'rating':
+          base = this.tracks.filter(t => this._ratingOf(t) >= 4);
+          break;
+        case 'genre': {
+          const g = String(rule.genre || '').trim().toLocaleLowerCase();
+          base = this.tracks.filter(t => String(t.genre || '').trim().toLocaleLowerCase() === g);
+          break;
+        }
+        case 'never':
+          base = this.tracks.filter(t => !(plays[t.id] > 0));
+          break;
+        case 'recent': {
+          const since = Date.now() - 30 * 24 * 3600 * 1000;
+          base = this.tracks.filter(t => (t.addedAt || 0) >= since);
+          break;
+        }
+        case 'forgotten': {
+          const since = Date.now() - 90 * 24 * 3600 * 1000;
+          base = this.tracks.filter(t => (plays[t.id] > 0) && !(t.lastPlayedAt > since));
+          break;
+        }
+        case 'top':
+          base = this.getTopTracks(50).map(x => x.track);
+          break;
+        default:
+          base = [];
+      }
+      const mode = pl.sort || 'stars';
+      if (rule.kind === 'top' && (mode === 'stars' || mode === 'added')) return base;
+      return this.sortTracksBy(base, mode);
     },
 
     async loadFavorites() {

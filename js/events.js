@@ -181,6 +181,15 @@ Object.assign(App, {
       });
 
       // === Letras LRC: barra de herramientas ===
+      // §100: despliegue del ajuste fino (desfase, velocidad, bucle)
+      const btnLrcTools = document.getElementById('btnLrcTools');
+      if (btnLrcTools) btnLrcTools.addEventListener('click', () => {
+        const panel = document.getElementById('lrcFineTools');
+        if (!panel) return;
+        panel.hidden = !panel.hidden;
+        btnLrcTools.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true');
+        btnLrcTools.classList.toggle('active', !panel.hidden);
+      });
       // Tamaño de fuente (#7)
       $('btnLrcFontDec').addEventListener('click', () => this.setLrcFontSize(this.lrcFontSize - 2));
       $('btnLrcFontInc').addEventListener('click', () => this.setLrcFontSize(this.lrcFontSize + 2));
@@ -200,15 +209,7 @@ Object.assign(App, {
       // Editor de letras (#2)
       $('btnLrcEdit').addEventListener('click', () => this.openLrcEditor());
       $('btnLrcSave').addEventListener('click', () => this.saveLrcFromEditor());
-      // §81: sincronizar letra tocando
-      const btnTapMode = document.getElementById('btnLrcTapMode');
-      if (btnTapMode) btnTapMode.addEventListener('click', () => this.toggleLrcTapMode());
-      const btnTap = document.getElementById('btnLrcTap');
-      if (btnTap) btnTap.addEventListener('click', () => this.tapSyncMark());
-      const btnTapUndo = document.getElementById('btnLrcTapUndo');
-      if (btnTapUndo) btnTapUndo.addEventListener('click', () => this.tapSyncUndo());
-      const btnTapDone = document.getElementById('btnLrcTapDone');
-      if (btnTapDone) btnTapDone.addEventListener('click', () => this.tapSyncDone());
+      // §100: «sincronizar tocando» retirado con su panel (letras.js).
       const btnLrcExp = document.getElementById('btnLrcExport');
       if (btnLrcExp) btnLrcExp.addEventListener('click', () => this.exportCurrentLyrics());
       const btnLrcSh = document.getElementById('btnLrcShare');
@@ -231,13 +232,8 @@ Object.assign(App, {
         });
       });
 
-      // Historial (ahora en menú Opciones)
-      const btnHistoryMenu = document.getElementById('menuHistory');
-      if (btnHistoryMenu) btnHistoryMenu.addEventListener('click', () => {
-        this.closeSheet('sheetMore');
-        this.renderHistory();
-        this.openSheet('sheetHistory');
-      });
+      // §104: aquí se abría el Historial desde el menú ⋯; la hoja
+      // se fue con él (Estadísticas conserva lo esencial).
 
       // === #17 Panel de ajustes ===
       const btnSettings = document.getElementById('menuSettings');
@@ -275,11 +271,13 @@ Object.assign(App, {
         const count = document.getElementById('importCount');
         if (count) count.textContent = this.t('import_cancel');
       });
-      const toggleGapless = document.getElementById('toggleGapless');
-      if (toggleGapless) toggleGapless.addEventListener('change', () => {
-        this._gaplessEnabled = !!toggleGapless.checked;
-        this.savePlaybackSettings();
-        if (this._gaplessEnabled) this.preloadNextTrack();
+      // §100: un solo control de transición (Corte / Sin pausa /
+      // Fundido) en vez de interruptor gapless + botones de fundido.
+      document.querySelectorAll('[data-transition]').forEach(b => {
+        b.addEventListener('click', () => this.setTransitionMode(b.dataset.transition));
+      });
+      document.querySelectorAll('[data-xfade]').forEach(b => {
+        b.addEventListener('click', () => this.setCrossfadeDuration(parseInt(b.dataset.xfade, 10) || 0));
       });
       const toggleNormalize = document.getElementById('toggleNormalize');
       if (toggleNormalize) toggleNormalize.addEventListener('change', () => {
@@ -287,30 +285,12 @@ Object.assign(App, {
         this.savePlaybackSettings();
         this.applyNormalization(this.currentTrack);
       });
-      document.querySelectorAll('.xfade-opt').forEach(b => {
-        b.addEventListener('click', () => {
-          const n = parseInt(b.dataset.xfade, 10) || 0;
-          this.crossfadeDuration = n;
-          this.crossfadeEnabled = n > 0;
-          document.querySelectorAll('.xfade-opt').forEach(x => x.classList.toggle('active', x === b));
-          this.savePlaybackSettings();
-        });
-      });
       const togglePreservePitch = document.getElementById('chkPreservePitch');
       if (togglePreservePitch) togglePreservePitch.addEventListener('change', () => {
         this.setPreservesPitch(togglePreservePitch.checked);
       });
-      // Velocidad de reproducción también desde Ajustes (antes solo
-      // existía en la pantalla de Letras: hallazgo A3). Es el mismo
-      // ajuste; setPlaybackRate sincroniza ambas etiquetas.
-      const btnSpeedDown = document.getElementById('btnSpeedDown');
-      if (btnSpeedDown) btnSpeedDown.addEventListener('click', () => {
-        this.setPlaybackRate(this.playbackRate - 0.1);
-      });
-      const btnSpeedUp = document.getElementById('btnSpeedUp');
-      if (btnSpeedUp) btnSpeedUp.addEventListener('click', () => {
-        this.setPlaybackRate(this.playbackRate + 0.1);
-      });
+      // §100: la velocidad ya no se duplica en Ajustes; vive solo
+      // en Letras (§ del LRC), donde se usa de verdad.
       const toggleMarquee = document.getElementById('toggleMarquee');
       if (toggleMarquee) toggleMarquee.addEventListener('change', () => {
         this._marqueeEnabled = !!toggleMarquee.checked;
@@ -322,14 +302,13 @@ Object.assign(App, {
           if (artist) this._syncMarquee(artist);
         }
       });
-      const toggleVinyl = document.getElementById('toggleVinyl');
-      if (toggleVinyl) toggleVinyl.addEventListener('change', () => {
-        this._vinylEnabled = !!toggleVinyl.checked;
-        this.savePlaybackSettings();
-        if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
-      });
+      // §100: modo vinilo retirado (decorativo) con su interruptor.
       const btnShortcuts = document.getElementById('menuShortcutsSettings');
-      if (btnShortcuts) btnShortcuts.addEventListener('click', () => {
+      if (btnShortcuts && window.matchMedia && !window.matchMedia('(pointer: fine)').matches) {
+        // §100: en el móvil (sin teclado) la ayuda de atajos sobra:
+        // la fila se oculta; la hoja sigue disponible en escritorio.
+        btnShortcuts.style.display = 'none';
+      } else if (btnShortcuts) btnShortcuts.addEventListener('click', () => {
         this.closeSheet('sheetSettings');
         this.openSheet('sheetShortcuts');
       });
@@ -340,7 +319,7 @@ Object.assign(App, {
       });
 
       // Volver / cargar música
-      $('btnBack').addEventListener('click', () => this.openFilePicker());
+      $('btnLoadMusic').addEventListener('click', () => this.openFilePicker());
 
       // Botón "Cargar música" en menú más opciones
       const btnLoadMore = document.getElementById('menuLoadMusic');
@@ -366,8 +345,7 @@ Object.assign(App, {
       if (btnVis) btnVis.addEventListener('click', () => this.cycleVisualizerMode());
       const cvVis = document.getElementById('visualizerCanvas');
       if (cvVis) cvVis.addEventListener('click', () => this.cycleVisualizerMode());
-      const btnAB = document.getElementById('btnABRepeat');
-      if (btnAB) btnAB.addEventListener('click', () => this.toggleABRepeat());
+      // §100: botón A-B retirado con su sistema (audio.js).
       /* §94: chkPreservePitch ya tiene su listener 'change' en el
        * bloque de ajustes de reproducción; aquí había un segundo
        * idéntico y cada cambio se aplicaba (y guardaba) dos veces. */
@@ -448,7 +426,8 @@ Object.assign(App, {
       });
 
       // Playlists
-      $('btnNewPlaylist').addEventListener('click', () => this.openCreatePlaylistSheet());
+      // §104: btnNewPlaylist vivía en la hoja de listas retirada;
+      // crear listas se abre desde Biblioteca (btnOpenNewPlaylist).
       $('btnOpenNewPlaylist').addEventListener('click', () => {
         this.openCreatePlaylistSheet();
       });
@@ -482,27 +461,6 @@ Object.assign(App, {
         const name = $('playlistName').value.trim();
         const desc = $('playlistDesc').value.trim();
         if (!name) { this.toast(this.t('toast_name_required')); return; }
-        // §81: lista inteligente: nace sin pistas; la regla las elige.
-        if (this._plSmartMode) {
-          const kindSel = document.getElementById('smartRuleKind');
-          const genreSel = document.getElementById('smartRuleGenre');
-          const kind = kindSel ? kindSel.value : 'rating';
-          const smart = { kind };
-          if (kind === 'genre') {
-            smart.genre = genreSel ? genreSel.value : '';
-            if (!smart.genre) { this.toast(this.t('no_results')); return; }
-          }
-          const sCreated = this.createPlaylist(name, desc, []);
-          if (!sCreated) return;
-          sCreated.smart = smart;
-          this.persistPlaylist(sCreated);
-          this.renderPlaylists();
-          $('playlistName').value = '';
-          $('playlistDesc').value = '';
-          this.closeSheet('sheetCreatePlaylist');
-          this.toast(this.t('toast_smart_created') + ': ' + name);
-          return;
-        }
         const created = this.createPlaylist(name, desc, []);
         if (!created) return; // nombre duplicado: createPlaylist ya avisó
         $('playlistName').value = '';
@@ -597,15 +555,8 @@ Object.assign(App, {
         this.closeSheet('sheetTrackMenu');
         if (t) this.addToQueue(t.id);
       });
-      const ctxRadio = document.getElementById('ctxStartRadio');
-      if (ctxRadio) ctxRadio.addEventListener('click', () => {
-        const t = this.menuTrack();
-        this.closeSheet('sheetTrackMenu');
-        if (t) {
-          this.startRadio(t.id);
-          if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
-        }
-      });
+      // §100: «Iniciar radio» retirado del menú de pista (solapaba
+      // con aleatorio y listas inteligentes); startRadio fuera.
       // §81: pestañas de la biblioteca y buscador de duplicados
       document.querySelectorAll('.lib-tab').forEach(b => {
         b.addEventListener('click', () => this.setLibTab(b.dataset.libtab));
@@ -636,26 +587,6 @@ Object.assign(App, {
         if (this._browse) this._browse.sort = browseSortSel.value;
         this.renderBrowseTracks();
       });
-      // §81: tipo de lista al crear (normal / inteligente)
-      const btnTypeN = document.getElementById('plTypeNormal');
-      const btnTypeS = document.getElementById('plTypeSmart');
-      const smartFieldsEl = document.getElementById('smartRuleFields');
-      const setSmartMode = (on) => {
-        this._plSmartMode = !!on;
-        if (btnTypeN) btnTypeN.classList.toggle('active', !on);
-        if (btnTypeS) btnTypeS.classList.toggle('active', !!on);
-        if (smartFieldsEl) smartFieldsEl.hidden = !on;
-        if (on && typeof this._fillSmartGenreSelect === 'function') this._fillSmartGenreSelect();
-      };
-      if (btnTypeN) btnTypeN.addEventListener('click', () => setSmartMode(false));
-      if (btnTypeS) btnTypeS.addEventListener('click', () => setSmartMode(true));
-      const kindSelEl = document.getElementById('smartRuleKind');
-      if (kindSelEl) kindSelEl.addEventListener('change', () => {
-        const gf = document.getElementById('smartGenreField');
-        if (gf) gf.hidden = kindSelEl.value !== 'genre';
-        if (kindSelEl.value === 'genre' && typeof this._fillSmartGenreSelect === 'function') this._fillSmartGenreSelect();
-      });
-
       const btnRenamePl = document.getElementById('btnRenamePlaylist');
       if (btnRenamePl) btnRenamePl.addEventListener('click', () => this.startRenamePlaylist());
       const btnExpPl = document.getElementById('btnExportPlaylist');
@@ -732,24 +663,9 @@ Object.assign(App, {
         }
       });
 
-      // Más opciones
-      $('menuGoToArtist').addEventListener('click', () => {
-        this.closeSheet('sheetMore');
-        if (!this.currentTrack || this.isPlaceholderArtist(this.currentTrack.artist)) {
-          this.toast(this.t('unknown_artist'));
-          return;
-        }
-        this.goToArtist(this.currentTrack.artist);
-      });
-      const menuGoAlbum = document.getElementById('menuGoToAlbum');
-      if (menuGoAlbum) menuGoAlbum.addEventListener('click', () => {
-        this.closeSheet('sheetMore');
-        if (!this.currentTrack || this.isPlaceholderAlbum(this.currentTrack.album)) {
-          this.toast(this.t('no_album'));
-          return;
-        }
-        this.goToAlbum(this.currentTrack.album, this.currentTrack.artist);
-      });
+      // §100: el menú ⋯ ya no mezcla contexto de la canción
+      // («Ir al artista/álbum», «Compartir pista» viven en el menú
+      // de la pista, que es donde tienen contexto).
       // Botón "Reproducir Todo" en el sheet de favoritos
       const btnPlayFav = document.getElementById('btnPlayFavoritesNow');
       if (btnPlayFav) btnPlayFav.addEventListener('click', () => {
@@ -829,20 +745,6 @@ Object.assign(App, {
         this.renderStats();
         this.openSheet('sheetStats');
       });
-      const btnShareStats = document.getElementById('btnShareStats');
-      if (btnShareStats) btnShareStats.addEventListener('click', () => this.shareStats());
-
-      // Compartir canción actual desde el menú "Más opciones"
-      const btnShareCurrent = document.getElementById('menuShareCurrentTrack');
-      if (btnShareCurrent) btnShareCurrent.addEventListener('click', () => {
-        this.closeSheet('sheetMore');
-        if (this.currentTrack) {
-          this.shareTrack(this.currentTrack.id);
-        } else {
-          this.toast(this.t('no_track_playing') || 'Sin reproducción');
-        }
-      });
-
       // Theme buttons — usar .theme-opt (no [data-theme]) porque applyTheme()
       // setea data-theme en <html>, y [data-theme] también coincidiría con <html>,
       // añadiendo un listener de click a <html> que dispararía setTheme en cada click.

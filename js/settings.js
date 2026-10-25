@@ -217,14 +217,6 @@ Object.assign(App, {
       this.toast(this.t('stats_reset_toast'));
     },
 
-    /* Reiniciar historial de reproducción */
-    async resetHistory() {
-      this._playHistory = [];
-      try { await window.AuroraStorage.setSetting('history', this._playHistory); } catch (e) {}
-      this.renderHistory();
-      this.toast(this.t('history_reset_toast'));
-    },
-
     /* Registrar que una pista empezó a sonar */
     trackPlayStarted() {
       this._currentPlayStart = Date.now();
@@ -621,7 +613,13 @@ Object.assign(App, {
         else if (navigator.userLanguage) list = [navigator.userLanguage];
       } catch (e) {}
       for (const raw of list) {
-        const code = String(raw || '').toLowerCase().split('-')[0];
+        const tag = String(raw || '').toLowerCase();
+        // §102: el chino tradicional (Taiwán, Hong Kong, Macao o
+        // la etiqueta Hant) tiene entrada propia en el diccionario;
+        // sin este desvío, el corte por '-' lo dejaba en
+        // simplificado, que es otra escritura.
+        if (/^zh([-_](tw|hk|mo)\b|.*hant)/.test(tag) && this._isValidLang('zh-TW')) return 'zh-TW';
+        const code = tag.split('-')[0];
         if (code && this._isValidLang(code)) return code;
       }
       return 'es';
@@ -711,8 +709,6 @@ Object.assign(App, {
         if (typeof this.updateChrome === 'function') this.updateChrome();
         const statsEl = document.getElementById('statsContent');
         if (statsEl && statsEl.innerHTML) this.renderStats();
-        const histEl = document.getElementById('historyContent');
-        if (histEl && histEl.innerHTML) this.renderHistory();
       } catch (e) {}
     },
 
@@ -739,51 +735,87 @@ Object.assign(App, {
         const raw = localStorage.getItem('aurora_playback');
         if (raw) {
           const s = JSON.parse(raw);
-          if (typeof s.gapless === 'boolean') this._gaplessEnabled = s.gapless;
           if (typeof s.normalize === 'boolean') this._normalizeVolume = s.normalize;
           if (typeof s.crossfade === 'number') {
             // §94: acotado al rango que ofrece la UI (0–12 s): un
             // valor corrupto o heredado (p. ej. 999) arrancaba el
             // fundido casi al empezar cada canción.
             this.crossfadeDuration = Math.max(0, Math.min(12, s.crossfade));
-            this.crossfadeEnabled = this.crossfadeDuration > 0;
           }
+          // §100: UN modo de transición. Clave nueva si existe; si
+          // no, se deriva de las heredadas (gapless suelto y/o
+          // fundido con duración) para no perder ajustes viejos.
+          const legacyMode = (this.crossfadeDuration > 0) ? 'crossfade'
+            : (s.gapless ? 'gapless' : 'normal');
+          const mode = ['normal', 'gapless', 'crossfade'].includes(s.transition)
+            ? s.transition : legacyMode;
+          this._gaplessEnabled = mode === 'gapless';
+          this.crossfadeEnabled = mode === 'crossfade';
+          if (mode === 'crossfade' && !(this.crossfadeDuration > 0)) this.crossfadeDuration = 6;
           if (typeof s.marquee === 'boolean') this._marqueeEnabled = s.marquee;
-          if (typeof s.vinyl === 'boolean') this._vinylEnabled = s.vinyl;
+          // s.vinyl (§100: modo retirado) se ignora a propósito.
         }
       } catch (e) {}
     },
     savePlaybackSettings() {
       try {
         localStorage.setItem('aurora_playback', JSON.stringify({
+          transition: this.getTransitionMode(),
           gapless: !!this._gaplessEnabled,
           normalize: !!this._normalizeVolume,
           crossfade: this.crossfadeDuration || 0,
-          marquee: this._marqueeEnabled !== false,
-          vinyl: !!this._vinylEnabled
+          marquee: this._marqueeEnabled !== false
         }));
       } catch (e) {}
     },
+    /* §100: modo de transición entre canciones — la única fuente
+     * de verdad de la que beben el motor (audio.js: gapless y
+     * fundido se excluyen solos) y la fila de Ajustes. */
+    getTransitionMode() {
+      if (this.crossfadeEnabled && (this.crossfadeDuration || 0) > 0) return 'crossfade';
+      return this._gaplessEnabled ? 'gapless' : 'normal';
+    },
+    setTransitionMode(mode) {
+      if (mode === 'crossfade') {
+        this._gaplessEnabled = false;
+        if (!((this.crossfadeDuration || 0) > 0)) this.crossfadeDuration = 6;
+        this.crossfadeEnabled = true;
+      } else if (mode === 'gapless') {
+        this._gaplessEnabled = true;
+        this.crossfadeEnabled = false;
+      } else {
+        this._gaplessEnabled = false;
+        this.crossfadeEnabled = false;
+      }
+      this.savePlaybackSettings();
+      this.syncPlaybackSettingsUI();
+      if (mode === 'gapless') this.preloadNextTrack();
+    },
+    setCrossfadeDuration(n) {
+      this.crossfadeDuration = Math.max(0, Math.min(12, Number(n) || 0));
+      // Elegir duración ES elegir fundido (la fila solo se ve en
+      // ese modo, pero la coherencia no cuesta nada).
+      if (this.crossfadeDuration > 0) {
+        this.crossfadeEnabled = true;
+        this._gaplessEnabled = false;
+      }
+      this.savePlaybackSettings();
+      this.syncPlaybackSettingsUI();
+    },
     syncPlaybackSettingsUI() {
-      const g = document.getElementById('toggleGapless');
-      if (g) g.checked = !!this._gaplessEnabled;
       const n = document.getElementById('toggleNormalize');
       if (n) n.checked = !!this._normalizeVolume;
       const m = document.getElementById('toggleMarquee');
       if (m) m.checked = this._marqueeEnabled !== false;
-      const v = document.getElementById('toggleVinyl');
-      if (v) v.checked = !!this._vinylEnabled;
-      if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
-      const xf = this.crossfadeDuration || 0;
-      document.querySelectorAll('.xfade-opt').forEach(b => {
-        b.classList.toggle('active', Number(b.dataset.xfade) === xf);
+      const mode = this.getTransitionMode();
+      document.querySelectorAll('[data-transition]').forEach(b => {
+        b.classList.toggle('active', b.dataset.transition === mode);
       });
-      const sVal = document.getElementById('settingsSpeedVal');
-      if (sVal) sVal.textContent = (this.playbackRate || 1).toFixed(1) + '×';
-      const bDown = document.getElementById('btnSpeedDown');
-      if (bDown) bDown.disabled = (this.playbackRate || 1) <= 0.5;
-      const bUp = document.getElementById('btnSpeedUp');
-      if (bUp) bUp.disabled = (this.playbackRate || 1) >= 2.0;
+      const xfRow = document.getElementById('xfadeOpts');
+      if (xfRow) xfRow.hidden = mode !== 'crossfade';
+      document.querySelectorAll('[data-xfade]').forEach(b => {
+        b.classList.toggle('active', Number(b.dataset.xfade) === (this.crossfadeDuration || 0));
+      });
       const ver = document.getElementById('aboutVersion');
       if (ver) {
         let vText = this.VERSION || '1.0.0';

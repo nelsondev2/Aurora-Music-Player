@@ -17,17 +17,11 @@ Object.assign(App, {
     /* Abre el sheet "Crear playlist" en modo creación (vacío).
      * Las pistas son opcionales: se puede crear una lista vacía. */
     openCreatePlaylistSheet() {
-      // §81: cada apertura empieza en lista normal y sin bandera de
-      // «guardar cola» (openSaveQueueSheet la pone después de llamar).
+      // Cada apertura empieza sin bandera de «guardar cola»
+      // (openSaveQueueSheet la pone después de llamar). §104: el
+      // modo «inteligente» se fue con las listas por reglas;
+      // crear es siempre lista normal.
       this._queueSaveMode = false;
-      this._plSmartMode = false;
-      const smartFields = document.getElementById('smartRuleFields');
-      if (smartFields) smartFields.hidden = true;
-      const btnN = document.getElementById('plTypeNormal');
-      const btnS = document.getElementById('plTypeSmart');
-      if (btnN) btnN.classList.add('active');
-      if (btnS) btnS.classList.remove('active');
-      if (typeof this._fillSmartGenreSelect === 'function') this._fillSmartGenreSelect();
       // Reset del formulario
       const nameInput = document.getElementById('playlistName');
       const descInput = document.getElementById('playlistDesc');
@@ -62,7 +56,6 @@ Object.assign(App, {
       // Todas las listas se pueden eliminar: ya no hay lista predefinida.
       const btnDeleteFull = document.getElementById('btnDeletePlaylistFull');
       if (btnDeleteFull) btnDeleteFull.style.display = '';
-      this.closeSheet('sheetPlaylists');
       this.openSheet('sheetEditPlaylist');
       // §97: abrir la lista DONDE suena — si la canción actual
       // está en ella (su fila ya sale marcada con .current), se
@@ -74,7 +67,28 @@ Object.assign(App, {
         setTimeout(() => {
           if (this._editingPlaylistId !== playlistId) return;
           const ul = document.getElementById('editPlaylistTracks');
-          const row = ul && ul.querySelector('li[data-track-id="' + curId + '"]');
+          if (!ul) return;
+          // §101: con lista virtual (>80) la fila puede no existir
+          // aún en el DOM: primero se lleva el scroll a su ventana
+          // (64 px por fila, dos de margen arriba) y se pide el
+          // repintado; después se centra la fila ya creada. Es el
+          // mismo patrón probado en la cola (§98).
+          if (ul._virt) {
+            const scroller = ul.closest('.sheet-body');
+            const idx = this.playlistTracksSorted(pl).findIndex(t => t.id === curId);
+            if (scroller && idx >= 0) {
+              scroller.scrollTop = Math.max(0, (idx * 64) - 128);
+              if (ul._virt.onScroll) ul._virt.onScroll();
+            }
+            requestAnimationFrame(() => {
+              const row = ul.querySelector('li[data-track-id="' + curId + '"]');
+              if (row) {
+                try { row.scrollIntoView({ block: 'center' }); } catch (e) {}
+              }
+            });
+            return;
+          }
+          const row = ul.querySelector('li[data-track-id="' + curId + '"]');
           if (row) {
             try { row.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
           }
@@ -82,24 +96,8 @@ Object.assign(App, {
       }
     },
 
-    /* §81: rellena el <select> de géneros de la regla inteligente con
-     * los géneros reales de la biblioteca. */
-    _fillSmartGenreSelect() {
-      const sel = document.getElementById('smartRuleGenre');
-      if (!sel) return;
-      const prev = sel.value;
-      sel.innerHTML = '';
-      this.getGenres().forEach(g => {
-        const opt = document.createElement('option');
-        opt.value = g.name;
-        opt.textContent = g.name + ' (' + g.tracks.length + ')';
-        sel.appendChild(opt);
-      });
-      if (prev) sel.value = prev;
-      const field = document.getElementById('smartGenreField');
-      const kind = document.getElementById('smartRuleKind');
-      if (field && kind) field.hidden = kind.value !== 'genre';
-    },
+    /* §104: aquí vivía _fillSmartGenreSelect, el relleno del
+     * selector de géneros de la regla inteligente. */
 
     /* Pinta el contenido del sheet "Editar playlist" */
     renderEditPlaylist() {
@@ -115,18 +113,9 @@ Object.assign(App, {
         nameEl.onclick = () => this.startRenamePlaylist();
       }
       if (metaEl) metaEl.textContent = this.playlistMetaLabel(pl);
-      // §81: selector de orden sincronizado con la lista, y aviso en
-      // las inteligentes (sin añadir/quitar a mano: manda la regla).
+      // Selector de orden sincronizado con la lista.
       const sortSel = document.getElementById('plSortSelect');
       if (sortSel) sortSel.value = pl.sort || 'stars';
-      const smartHint = document.getElementById('editSmartHint');
-      if (smartHint) smartHint.hidden = !pl.smart;
-      const btnUpload = document.getElementById('btnUploadToPlaylist');
-      if (btnUpload) btnUpload.style.display = pl.smart ? 'none' : '';
-      // Vaciar una inteligente no vaciaría nada (la regla la rellena):
-      // se oculta también; eliminar la lista sí sigue disponible.
-      const btnClear = document.getElementById('btnClearPlaylist');
-      if (btnClear) btnClear.style.display = pl.smart ? 'none' : '';
       // El botón «hero» de reproducir refleja si esta lista es la que
       // suena (anillo de acento), igual que la portada.
       const heroPlay = document.getElementById('btnPlayPlaylistNow');
@@ -145,11 +134,15 @@ Object.assign(App, {
           const from = (cover && cover.from) || ((this.coverFallback && this.coverFallback().from) || '#6E5CFF');
           const to = (cover && cover.to) || ((this.coverFallback && this.coverFallback().to) || '#FF7AB6');
           coverEl.style.background = 'linear-gradient(135deg, ' + from + ', ' + to + ')';
-          const iconName = pl.id === 'favoritos' ? 'heart-solid' : 'list-ul';
+          const iconName = 'list-ul'; // §104: sin lista favorita especial
           coverEl.innerHTML = this.ico(iconName);
         }
       }
       if (!ul) return;
+      // §101: soltar la lista virtual anterior (si la hubo) ANTES de
+      // vaciar: su listener de scroll repintaría filas viejas sobre
+      // el contenido nuevo o sobre el estado vacío.
+      if (typeof this.unbindVirtualList === 'function') this.unbindVirtualList(ul);
       ul.innerHTML = '';
       const sortedTracks = this.playlistTracksSorted(pl);
       if (sortedTracks.length === 0) {
@@ -161,7 +154,7 @@ Object.assign(App, {
       }
       // La lista se ve en el orden elegido (§81; por defecto el de
       // estrellas de §64). El orden guardado no se reescribe.
-      sortedTracks.forEach((t, i) => {
+      const makeEditRow = (t, i) => {
         const id = t.id;
         const isCurrent = this.currentTrack && this.currentTrack.id === id;
         const li = document.createElement('li');
@@ -176,7 +169,7 @@ Object.assign(App, {
           </div>
           <div class="row-duration">${isCurrent ? '<svg class="ico now-eq" aria-hidden="true"><use href="#i-volume-high"></use></svg> ' : ''}${this.fmtRowDuration(t)}</div>
           <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>
-          ${pl.smart ? '' : `<button class="row-action remove-from-pl" aria-label="${this.esc(this.t('remove_from_playlist'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>`}
+          <button class="row-action remove-from-pl" aria-label="${this.esc(this.t('remove_from_playlist'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
         `;
         li.addEventListener('click', (e) => {
           if (e.target.closest('.remove-from-pl, .track-menu-btn')) return;
@@ -197,10 +190,26 @@ Object.assign(App, {
           e.stopPropagation();
           this.removeFromPlaylist(pl.id, t.id);
         });
-        ul.appendChild(li);
         const cv = li.querySelector('canvas');
         if (cv) this.drawRowCover(cv, t);
-      });
+        return li;
+      };
+      // §101: con listas enormes, pintar TODAS las filas (cada una
+      // con su canvas, sus listeners y su portada) hacía la
+      // apertura lenta y el desplazamiento a tirones. Se reusa la
+      // lista virtual de la cola y de Favoritos: hasta 80 filas se
+      // pinta todo como siempre; por encima, solo vive en el DOM
+      // la ventana visible. La fila conserva TODO: tocar
+      // reproduce en contexto, menú ⋯, pulsación larga, quitar
+      // de la lista y portada.
+      if (typeof this.fillVirtualList === 'function') {
+        this.fillVirtualList(ul, sortedTracks, makeEditRow, { rowHeight: 64 });
+      } else {
+        sortedTracks.forEach((t, i) => {
+          const li = makeEditRow(t, i);
+          if (li) ul.appendChild(li);
+        });
+      }
     },
 
     /* Renombrar la lista (§81: arreglo del fallo «no hay forma de
@@ -353,6 +362,10 @@ Object.assign(App, {
       // Actualizar vista sin parpadeo
       const ul = document.getElementById('editPlaylistTracks');
       if (ul) {
+        // §101: si la lista era virtual (>80), soltar su estado
+        // primero: si no, su listener de scroll repintaría filas
+        // sobre el estado vacío que se muestra al terminar.
+        if (typeof this.unbindVirtualList === 'function') this.unbindVirtualList(ul);
         // Animar salida de todos los items
         ul.querySelectorAll('.track-row').forEach((item, i) => {
           setTimeout(() => {

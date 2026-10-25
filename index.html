@@ -91,7 +91,6 @@
     <symbol id="i-library" viewBox="0 0 24 24"><path fill="currentColor" d="M3 4.5A1.5 1.5 0 0 1 4.5 3H6v18H4.5A1.5 1.5 0 0 1 3 19.5v-15zm4.5-1.5h2v18h-2V3zm4.2.9a1 1 0 0 1 .9-.8l1.8-.3a1 1 0 0 1 1.1.8L18 18.3l-1.9.3L11.7 3.9zM19 3h1.5A1.5 1.5 0 0 1 22 4.5v15a1.5 1.5 0 0 1-1.5 1.5H19V3z"/></symbol>
     <symbol id="i-grip-vertical" viewBox="0 0 24 24"><path fill="currentColor" d="M9 7.5A1.5 1.5 0 1 1 9 4.5 1.5 1.5 0 0 1 9 7.5zm6 0A1.5 1.5 0 1 1 15 4.5 1.5 1.5 0 0 1 15 7.5zM9 13.5A1.5 1.5 0 1 1 9 10.5 1.5 1.5 0 0 1 9 13.5zm6 0A1.5 1.5 0 1 1 15 10.5 1.5 1.5 0 0 1 15 13.5zM9 19.5A1.5 1.5 0 1 1 9 16.5 1.5 1.5 0 0 1 9 19.5zm6 0A1.5 1.5 0 1 1 15 16.5 1.5 1.5 0 0 1 15 19.5z"/></symbol>
     <symbol id="i-lock" viewBox="0 0 24 24"><path fill="currentColor" d="M8 10V7a4 4 0 1 1 8 0v3h1.5A1.5 1.5 0 0 1 19 11.5v8A1.5 1.5 0 0 1 17.5 21h-11A1.5 1.5 0 0 1 5 19.5v-8A1.5 1.5 0 0 1 6.5 10H8zm2 0h4V7a2 2 0 1 0-4 0v3z"/></symbol>
-    <symbol id="i-tower-broadcast" viewBox="0 0 24 24"><path fill="currentColor" d="M11 3h2v18h-2V3zm-6.5 5.5 1.4 1.4A7 7 0 0 1 5 12a7 7 0 0 1 .9 2.1L4.5 15.5A9 9 0 0 1 3 12a9 9 0 0 1 1.5-3.5zm13.6 0A9 9 0 0 1 21 12a9 9 0 0 1-1.5 3.5l-1.4-1.4A7 7 0 0 0 19 12a7 7 0 0 0-.9-2.1l1.4-1.4zM8.1 10.1 9.5 11.5A3 3 0 0 1 9 12a3 3 0 0 1 .5.5L8.1 13.9A5 5 0 0 1 7 12a5 5 0 0 1 1.1-1.9zm7.8 0A5 5 0 0 1 17 12a5 5 0 0 1-1.1 1.9l-1.4-1.4A3 3 0 0 0 15 12a3 3 0 0 0-.5-.5l1.4-1.4z"/></symbol>
     <symbol id="i-triangle-exclamation" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3 1.8 21h20.4L12 3zm0 6.5 1 6h-2l1-6zm0 9.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4z"/></symbol>
   </svg>
   
@@ -103,7 +102,7 @@
       <section class="view view-player" id="viewPlayer" data-view="player" data-i18n-aria="view_player" aria-label="Reproductor">
 
         <!-- Fondo dinámico con los colores de la portada -->
-        <div class="bg-blur" id="bgBlur">
+        <div class="bg-blur">
           <div class="bg-gradient" id="bgGradient"></div>
         </div>
 
@@ -112,7 +111,7 @@
           <!-- Cargar música: botón sobrio de 40 px. Antes era el disco
                de acento (icon-add), que competía con la portada y se
                confundía con un «volver» por su posición. -->
-          <button class="icon-btn" id="btnBack" data-i18n-aria="load_music" aria-label="Cargar música">
+          <button class="icon-btn" id="btnLoadMusic" data-i18n-aria="load_music" aria-label="Cargar música">
             <svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg>
           </button>
           <div class="top-bar-title">
@@ -128,13 +127,12 @@
 
         <!-- Portada del álbum -->
         <section class="cover-section">
-          <div class="cover-glow" id="coverGlow" aria-hidden="true"></div>
+          <div class="cover-glow" aria-hidden="true"></div>
           <div class="cover-art" id="coverArt" role="button" tabindex="0" aria-pressed="false" data-i18n-aria="cover_fullscreen" aria-label="Ver portada a pantalla completa">
             <canvas id="coverCanvasBack" class="cover-canvas-back" width="600" height="600" aria-hidden="true"></canvas>
             <canvas id="coverCanvas" width="720" height="720" aria-hidden="true"></canvas>
-            <div class="cover-vinyl" id="coverVinyl">
-              <div class="vinyl-inner"></div>
-            </div>
+            <!-- §100: retirado el modo vinilo (disco decorativo tras
+                 la portada) con su ajuste; la portada, limpia. -->
             <!-- §84: el visualizador vive SUPERPUESTO sobre la
                  parte baja de la portada, fuera del flujo. Antes
                  ocupaba 64 px de la columna y la portada, único
@@ -186,9 +184,10 @@
           <div class="progress-track" id="progressTrack" role="slider" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-i18n-aria="progress" aria-label="Progreso">
             <div class="progress-buffer" id="progressBuffer"></div>
             <div class="progress-fill" id="progressFill">
-              <div class="progress-thumb" id="progressThumb"></div>
+              <div class="progress-thumb"></div>
             </div>
-            <div class="progress-ab-range" id="progressAbRange" hidden></div>
+            <!-- §100: retirado el bucle A-B del reproductor; el
+                 bucle que queda es el de sección en Letras. -->
           </div>
           <div class="time-row">
             <span class="time-current" id="timeCurrent">0:00</span>
@@ -241,13 +240,7 @@
             <svg class="ico" aria-hidden="true"><use href="#i-chart-simple"></use></svg>
             <span class="sec-label" data-i18n="visualizer">Visualizador</span>
           </button>
-          <button class="sec-btn ab-btn" id="btnABRepeat" type="button" data-i18n-aria="ab_repeat" data-i18n-title="ab_repeat" aria-label="Bucle A-B" aria-pressed="false">
-            <!-- Misma estructura que los demás secundarios: «icono»
-                 (el distintivo A-B, del tamaño de los .ico) y etiqueta
-                 debajo. Sin etiqueta quedaba descuadrado en la fila. -->
-            <span class="ab-badge">A-B</span>
-            <span class="sec-label" data-i18n="ab_label">Bucle</span>
-          </button>
+          <!-- §100: botón A-B retirado con su sistema. -->
         </section>
 
       </section>
@@ -282,7 +275,7 @@
       <!-- ============== PANTALLA: LETRAS LRC ============== -->
       <section class="view view-lyrics" id="viewLyrics" data-view="lyrics">
         <div class="bg-blur lyrics-bg">
-          <div class="bg-gradient" id="bgGradientLyrics"></div>
+          <div class="bg-gradient"></div>
         </div>
 
         <header class="top-bar lyrics-top-bar">
@@ -304,7 +297,7 @@
              velocidad) y las acciones al final. Antes los 11 controles
              sueltos saltaban a dos filas y quedaban iconos huérfanos
              flotando sobre la letra. -->
-        <div class="lyrics-toolbar" id="lyricsToolbar">
+        <div class="lyrics-toolbar">
           <!-- Tamaño de letra: A− y A+ con la «A» a distinto tamaño. -->
           <div class="lt-cluster" role="group" data-i18n-aria="lrc_font_size" aria-label="Tamaño de letra">
             <button class="lt-btn lt-font" id="btnLrcFontDec" data-i18n-aria="lrc_font_dec" data-i18n-title="lrc_font_dec" aria-label="Reducir letra" title="Reducir letra">
@@ -314,8 +307,12 @@
               <span class="lt-a lt-a-lg" aria-hidden="true">A</span><span class="lt-sign" aria-hidden="true">+</span>
             </button>
           </div>
+          <!-- §100: el ajuste fino (desfase, velocidad, bucle,
+               restablecer) vive plegado tras «Ajustes de letra»;
+               visible queda lo diario: tamaño y acciones. -->
+          <div class="lyrics-fine" id="lrcFineTools" hidden>
           <!-- Desfase de la letra: − y + con etiqueta y valor en medio. -->
-          <div class="lt-group" id="lrcOffsetGroup" role="group" data-i18n-aria="lrc_offset_group" aria-label="Desfase de la letra">
+          <div class="lt-group" role="group" data-i18n-aria="lrc_offset_group" aria-label="Desfase de la letra">
             <span class="lt-group-label" data-i18n="lrc_offset_short">Desfase</span>
             <button class="lt-btn" id="btnLrcOffsetMinus" data-i18n-aria="lrc_offset_minus_aria" data-i18n-title="lrc_offset_minus_aria" aria-label="Retrasar la letra 0.5 s" title="Retrasar 0.5 s"><svg class="ico" aria-hidden="true"><use href="#i-minus"></use></svg></button>
             <output class="lt-offset-value" id="lrcOffsetValue" aria-live="polite">0.0s</output>
@@ -323,7 +320,7 @@
           </div>
           <!-- Velocidad de reproducción: vivía junto a la portada y
                apretaba el título; es un ajuste y va con los demás. -->
-          <div class="lt-cluster lyrics-speed" id="lyricsSpeed" role="group" data-i18n-aria="lrc_speed" aria-label="Velocidad">
+          <div class="lt-cluster lyrics-speed" role="group" data-i18n-aria="lrc_speed" aria-label="Velocidad">
             <button class="lt-btn" id="btnLrcSpeedDown" type="button" data-i18n-aria="lrc_speed_down" aria-label="Bajar velocidad"><svg class="ico" aria-hidden="true"><use href="#i-minus"></use></svg></button>
             <span id="lrcSpeedLabel">1.0×</span>
             <button class="lt-btn" id="btnLrcSpeedUp" type="button" data-i18n-aria="lrc_speed_up" aria-label="Subir velocidad"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg></button>
@@ -333,7 +330,9 @@
             <!-- Restablecer TODA la letra (no solo el desfase). -->
             <button class="lt-btn lt-reset" id="btnLrcOffsetReset" data-i18n-aria="lrc_reset_all" data-i18n-title="lrc_reset_all" aria-label="Restablecer letra" title="Restablecer letra"><svg class="ico" aria-hidden="true"><use href="#i-rotate-left"></use></svg></button>
           </div>
+          </div>
           <div class="lt-cluster lt-actions">
+            <button class="lt-btn" id="btnLrcTools" type="button" aria-expanded="false" aria-controls="lrcFineTools" data-i18n-aria="lrc_tools" data-i18n-title="lrc_tools" aria-label="Ajustes de letra" title="Ajustes de letra"><svg class="ico" aria-hidden="true"><use href="#i-sliders"></use></svg></button>
             <button class="lt-btn" id="btnLrcFullscreen" data-i18n-title="lrc_fullscreen" data-i18n-aria="lrc_fullscreen" title="Pantalla completa" aria-label="Pantalla completa"><svg class="ico" aria-hidden="true"><use href="#i-expand"></use></svg></button>
             <button class="lt-btn" id="btnLrcLoadFile" data-i18n-title="lrc_load_file" data-i18n-aria="lrc_load_file" title="Cargar .lrc" aria-label="Cargar .lrc"><svg class="ico" aria-hidden="true"><use href="#i-file-arrow-up"></use></svg></button>
             <button class="lt-btn" id="btnLrcEdit" data-i18n-title="lrc_edit" data-i18n-aria="lrc_edit" title="Editar" aria-label="Editar letra"><svg class="ico" aria-hidden="true"><use href="#i-pen"></use></svg></button>
@@ -345,7 +344,7 @@
         <button class="icon-btn lyrics-exit-fs" id="btnLrcExitFs" data-i18n-aria="exit_fs" aria-label="Salir de pantalla completa"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
 
         <!-- Mini portada + info -->
-        <section class="lyrics-mini" id="lyricsMini">
+        <section class="lyrics-mini">
           <div class="mini-cover" id="miniCover">
             <canvas id="miniCoverCanvas" width="120" height="120" aria-hidden="true"></canvas>
           </div>
@@ -433,23 +432,6 @@
         </div>
       </div>
 
-      <!-- Listas de reproducción (pantalla completa) -->
-      <div class="sheet sheet-full" id="sheetPlaylists">
-        <div class="sheet-backdrop" data-close-sheet="sheetPlaylists"></div>
-        <div class="sheet-panel">
-          <div class="sheet-handle"></div>
-          <header class="sheet-header" role="presentation">
-            <button class="icon-btn-sm" data-close-sheet="sheetPlaylists" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
-            <h3 data-i18n="your_playlists">Tus listas</h3>
-            <button class="text-btn" id="btnNewPlaylist"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg> <span data-i18n="new_playlist">Nueva</span></button>
-          </header>
-          <div class="sheet-body">
-            <p class="sheet-subtitle" id="playlistCount"></p>
-            <ul class="playlist-list" id="playlistList"></ul>
-          </div>
-        </div>
-      </div>
-
       <!-- Crear playlist / Añadir a playlist existente -->
       <div class="sheet" id="sheetCreatePlaylist">
         <div class="sheet-backdrop" data-close-sheet="sheetCreatePlaylist"></div>
@@ -461,33 +443,7 @@
             <span class="sheet-header-spacer" aria-hidden="true"></span>
           </header>
           <div class="sheet-body">
-            <div id="createPlaylistFields">
-              <!-- §81: listas inteligentes (se rellenan solas por regla) -->
-              <div class="pl-type-row">
-                <span class="pl-type-label" data-i18n="pl_type_label">Tipo de lista</span>
-                <div class="pl-type-toggle" role="group">
-                  <button type="button" class="pl-type-btn active" id="plTypeNormal" data-i18n="pl_type_normal">Normal</button>
-                  <button type="button" class="pl-type-btn" id="plTypeSmart" data-i18n="pl_type_smart">Inteligente</button>
-                </div>
-              </div>
-              <div id="smartRuleFields" hidden>
-                <label class="field">
-                  <span data-i18n="smart_rule_label">Regla</span>
-                  <select id="smartRuleKind" class="aurora-select">
-                    <option value="rating" data-i18n="smart_rule_rating">4 estrellas o más</option>
-                    <option value="genre" data-i18n="smart_rule_genre">Un género</option>
-                    <option value="never" data-i18n="smart_rule_never">Nunca reproducidas</option>
-                    <option value="recent" data-i18n="smart_rule_recent">Añadidas en 30 días</option>
-                    <option value="forgotten" data-i18n="smart_rule_forgotten">Olvidadas (+90 días)</option>
-                    <option value="top" data-i18n="smart_rule_top">Más reproducidas</option>
-                  </select>
-                </label>
-                <label class="field" id="smartGenreField" hidden>
-                  <span data-i18n="tab_genres">Géneros</span>
-                  <select id="smartRuleGenre" class="aurora-select"></select>
-                </label>
-                <p class="settings-hint" data-i18n="smart_playlist_hint">Esta lista se rellena sola según su regla.</p>
-              </div>
+            <div>
               <label class="field">
                 <span data-i18n="name_label">Nombre</span>
                 <input type="text" id="playlistName" data-i18n-ph="my_new_playlist" placeholder="Mi nueva lista" maxlength="40" />
@@ -570,7 +526,6 @@
                 <option value="duration" data-i18n="sort_duration">Duración</option>
               </select>
             </div>
-            <p class="settings-hint" id="editSmartHint" data-i18n="smart_playlist_hint" hidden>Esta lista se rellena sola según su regla.</p>
             <h4 class="section-title" data-i18n="all_tracks_section">Pistas</h4>
             <ul class="track-list" id="editPlaylistTracks"></ul>
           </div>
@@ -588,7 +543,7 @@
             <span class="sheet-header-spacer" aria-hidden="true"></span>
           </header>
           <div class="sheet-body">
-            <div class="eq-presets" id="eqPresets">
+            <div class="eq-presets">
               <button class="eq-preset active" data-preset="normal" data-i18n="eq_normal">Normal</button>
               <button class="eq-preset" data-preset="bass" data-i18n="eq_bass">Graves</button>
               <button class="eq-preset" data-preset="vocal" data-i18n="eq_vocal">Voces</button>
@@ -615,7 +570,7 @@
           </header>
           <div class="sheet-body">
             <p class="sleep-hint" data-i18n="sleep_hint">La reproducción se detendrá automáticamente.</p>
-            <div class="sleep-grid" id="sleepGrid">
+            <div class="sleep-grid">
               <button class="sleep-opt sleep-eot" data-sleep="eot" data-i18n="sleep_end_of_track">Fin de la canción</button>
               <button class="sleep-opt" data-min="5">5 min</button>
               <button class="sleep-opt" data-min="10">10 min</button>
@@ -630,26 +585,9 @@
         </div>
       </div>
 
-      <!-- Volumen -->
-      <div class="sheet" id="sheetVolume">
-        <div class="sheet-backdrop" data-close-sheet="sheetVolume"></div>
-        <div class="sheet-panel">
-          <div class="sheet-handle"></div>
-          <header class="sheet-header" role="presentation">
-            <button class="icon-btn-sm" data-close-sheet="sheetVolume" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
-            <h3 data-i18n="volume">Volumen</h3>
-            <span class="sheet-header-spacer" aria-hidden="true"></span>
-          </header>
-          <div class="sheet-body">
-            <div class="volume-row">
-              <svg class="ico" aria-hidden="true"><use href="#i-volume-low"></use></svg>
-              <input type="range" min="0" max="100" value="100" id="volumeSlider" class="slider" data-i18n-aria="volume" aria-label="Volumen" />
-              <svg class="ico" aria-hidden="true"><use href="#i-volume-high"></use></svg>
-            </div>
-            <div class="volume-value" id="volumeValue">100%</div>
-          </div>
-        </div>
-      </div>
+      <!-- §100: hoja de Volumen retirada — era zombi (ningún
+           código la abría). El volumen vive en el gesto de
+           la portada y en el slider compacto del botón. -->
 
       <!-- Biblioteca: solo listas de reproducción (§47: la sección
            «Todas las canciones» se eliminó a petición del usuario; las
@@ -724,7 +662,7 @@
               <input type="search" id="searchInput" data-i18n-ph="search_placeholder" data-i18n-aria="search_title" aria-label="Buscar" placeholder="Canción, artista o álbum" />
             </label>
             <!-- #9 Filtros de búsqueda -->
-            <div class="search-filters" id="searchFilters">
+            <div class="search-filters">
               <button class="search-filter active" data-filter="all" data-i18n="search_filter_all">Todo</button>
               <button class="search-filter" data-filter="title" data-i18n="search_filter_title">Título</button>
               <button class="search-filter" data-filter="artist" data-i18n="search_filter_artist">Artista</button>
@@ -764,25 +702,9 @@
               <!-- §97 (idea 6): cuenta atrás visible sin abrir la hoja -->
               <span class="menu-value" id="sleepMenuValue"></span>
             </button>
-            <button class="menu-row" id="menuGoToArtist">
-              <svg class="ico" aria-hidden="true"><use href="#i-user"></use></svg>
-              <span data-i18n="menu_go_to_artist">Ir al artista</span>
-            </button>
-            <button class="menu-row" id="menuGoToAlbum">
-              <svg class="ico" aria-hidden="true"><use href="#i-compact-disc"></use></svg>
-              <span data-i18n="menu_go_to_album">Ir al álbum</span>
-            </button>
             <button class="menu-row" id="menuStats">
               <svg class="ico" aria-hidden="true"><use href="#i-chart-simple"></use></svg>
               <span data-i18n="menu_stats">Estadísticas de reproducción</span>
-            </button>
-            <button class="menu-row" id="menuShareCurrentTrack">
-              <svg class="ico" aria-hidden="true"><use href="#i-paper-plane"></use></svg>
-              <span data-i18n="menu_share_track">Compartir canción en chat</span>
-            </button>
-            <button class="menu-row" id="menuHistory">
-              <svg class="ico" aria-hidden="true"><use href="#i-clock-rotate-left"></use></svg>
-              <span data-i18n="settings_history">Historial</span>
             </button>
             <button class="menu-row" id="menuSettings">
               <svg class="ico" aria-hidden="true"><use href="#i-gear"></use></svg>
@@ -804,7 +726,7 @@
           </header>
           <div class="sheet-body">
             <h4 class="section-title" data-i18n="theme_section">Tema</h4>
-            <div class="theme-grid" id="themeGrid">
+            <div class="theme-grid">
               <button class="theme-opt" data-theme="dark">
                 <div class="theme-preview theme-dark"><div class="tp-bar"></div><div class="tp-circle"></div></div>
                 <span data-i18n="theme_dark">Oscuro</span>
@@ -824,7 +746,7 @@
             </div>
 
             <h4 class="section-title" data-i18n="accent_section">Color de acento</h4>
-            <div class="accent-grid" id="accentGrid">
+            <div class="accent-grid">
               <button class="accent-opt" data-accent="aurora" type="button"><span data-i18n="accent_aurora">Aurora</span></button>
               <button class="accent-opt" data-accent="ocean" type="button"><span data-i18n="accent_ocean">Océano</span></button>
               <button class="accent-opt" data-accent="moss" type="button"><span data-i18n="accent_moss">Musgo</span></button>
@@ -839,22 +761,7 @@
       </div>
 
       <!-- Historial de reproducción -->
-      <div class="sheet sheet-full" id="sheetHistory">
-        <div class="sheet-backdrop" data-close-sheet="sheetHistory"></div>
-        <div class="sheet-panel">
-          <div class="sheet-handle"></div>
-          <header class="sheet-header" role="presentation">
-            <button class="icon-btn-sm" data-close-sheet="sheetHistory" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
-            <h3 data-i18n="history_title">Historial</h3>
-            <span class="sheet-header-spacer" aria-hidden="true"></span>
-          </header>
-          <div class="sheet-body">
-            <div id="historyContent"></div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Estadísticas (#13) -->
       <div class="sheet sheet-full" id="sheetStats">
         <div class="sheet-backdrop" data-close-sheet="sheetStats"></div>
         <div class="sheet-panel">
@@ -862,7 +769,6 @@
           <header class="sheet-header" role="presentation">
             <button class="icon-btn-sm" data-close-sheet="sheetStats" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="stats_title">Estadísticas</h3>
-            <button class="text-btn" id="btnShareStats" data-i18n="stats_share_btn">Compartir</button>
             <span class="sheet-header-spacer" aria-hidden="true"></span>
           </header>
           <div class="sheet-body">
@@ -922,10 +828,19 @@
           </header>
           <div class="sheet-body">
             <h4 class="section-title" data-i18n="settings_playback">Reproducción</h4>
-            <label class="settings-row" for="toggleGapless">
-              <span data-i18n="settings_gapless">Reproducción sin pausa</span>
-              <input type="checkbox" id="toggleGapless" checked />
-            </label>
+            <!-- §100: UN solo control para la transición (antes había
+                 dos sistemas: interruptor gapless + botones de fundido). -->
+            <p class="settings-label" data-i18n="settings_transition">Transición entre canciones</p>
+            <div class="xfade-opts" role="group" data-i18n-aria="settings_transition" aria-label="Transición entre canciones">
+              <button class="xfade-opt" type="button" data-transition="normal" data-i18n="transition_normal">Corte</button>
+              <button class="xfade-opt" type="button" data-transition="gapless" data-i18n="transition_gapless">Sin pausa</button>
+              <button class="xfade-opt" type="button" data-transition="crossfade" data-i18n="transition_crossfade">Fundido</button>
+            </div>
+            <div class="xfade-opts" id="xfadeOpts" hidden>
+              <button class="xfade-opt" type="button" data-xfade="3">3s</button>
+              <button class="xfade-opt" type="button" data-xfade="6">6s</button>
+              <button class="xfade-opt" type="button" data-xfade="12">12s</button>
+            </div>
             <label class="settings-row" for="toggleNormalize">
               <span data-i18n="settings_norm_volume">Normalizar volumen</span>
               <input type="checkbox" id="toggleNormalize" />
@@ -935,19 +850,8 @@
               <input type="checkbox" id="chkPreservePitch" checked />
             </label>
             <p class="settings-hint" data-i18n="settings_preserves_pitch_hint">Mantiene el tono natural de la voz sin distorsionar el pitch.</p>
-            <p class="settings-label" data-i18n="settings_speed">Velocidad de reproducción</p>
-            <div class="speed-stepper">
-              <button class="icon-btn-sm" id="btnSpeedDown" type="button" data-i18n-aria="lrc_speed_down" aria-label="Bajar velocidad"><svg class="ico" aria-hidden="true"><use href="#i-minus"></use></svg></button>
-              <span class="speed-val" id="settingsSpeedVal">1.0×</span>
-              <button class="icon-btn-sm" id="btnSpeedUp" type="button" data-i18n-aria="lrc_speed_up" aria-label="Subir velocidad"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg></button>
-            </div>
-            <p class="settings-label" data-i18n="settings_crossfade">Fundido cruzado</p>
-            <div class="xfade-opts" id="xfadeOpts">
-              <button class="xfade-opt active" type="button" data-xfade="0" data-i18n="settings_crossfade_off">Off</button>
-              <button class="xfade-opt" type="button" data-xfade="3">3s</button>
-              <button class="xfade-opt" type="button" data-xfade="6">6s</button>
-              <button class="xfade-opt" type="button" data-xfade="12">12s</button>
-            </div>
+            <!-- §100: la velocidad vive solo en Letras (donde se usa
+                 con el LRC); el fundido se eligió arriba, en Transición. -->
             <h4 class="section-title" data-i18n="settings_interface">Interfaz</h4>
             <button class="menu-row" id="menuThemesSettings">
               <svg class="ico" aria-hidden="true"><use href="#i-palette"></use></svg>
@@ -961,19 +865,16 @@
               <span data-i18n="settings_marquee">Marquee en títulos largos</span>
               <input type="checkbox" id="toggleMarquee" checked />
             </label>
-            <label class="settings-row" for="toggleVinyl">
-              <span data-i18n="settings_vinyl">Vinilo en la portada</span>
-              <input type="checkbox" id="toggleVinyl" />
-            </label>
             <button class="menu-row" id="menuShortcutsSettings" type="button">
               <svg class="ico" aria-hidden="true"><use href="#i-keyboard"></use></svg>
               <span data-i18n="settings_shortcuts">Atajos de teclado</span>
             </button>
-            <h4 class="section-title" data-i18n="settings_storage">Almacenamiento</h4>
+            <h4 class="section-title" data-i18n="settings_maintenance">Mantenimiento</h4>
             <button class="menu-row" id="menuRetagTracks">
               <svg class="ico" aria-hidden="true"><use href="#i-tags"></use></svg>
               <span data-i18n="settings_retag">Releer metadatos</span>
             </button>
+            <p class="settings-hint" data-i18n="settings_retag_hint">Vuelve a leer título, artista y portada de tus archivos. No borra nada.</p>
             <p class="sheet-subtitle" id="storageUsageLabel"></p>
             <button class="menu-row" id="menuFreeStorage">
               <svg class="ico" aria-hidden="true"><use href="#i-clear-list"></use></svg>
@@ -983,9 +884,11 @@
               <svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>
               <span data-i18n="settings_delete_library">Borrar toda la biblioteca</span>
             </button>
+            <p class="settings-hint" data-i18n="settings_free_hint">Borra miniaturas y cachés para recuperar espacio. Tu música se queda.</p>
+            <p class="settings-hint" data-i18n="settings_delete_hint">Borra TODAS las canciones y listas de la app. Los archivos de tu dispositivo no se tocan, pero esto no se puede deshacer.</p>
             <p class="settings-hint" data-i18n="settings_sleep_fade">El temporizador sleep hace un fade-out de 10 s al apagar.</p>
             <h4 class="section-title" data-i18n="settings_about">Acerca de</h4>
-            <div class="about-block" id="aboutBlock">
+            <div class="about-block">
               <p class="about-line"><span data-i18n="settings_version">Versión</span> <strong id="aboutVersion">1.2.0</strong></p>
               <p class="about-line" data-i18n="settings_license">Licencia MIT</p>
               <a class="menu-row" id="aboutSource" href="https://github.com/nelsondev2/Aurora-Music-Player" target="_blank" rel="noopener">
@@ -1041,20 +944,8 @@
           <div class="sheet-body">
             <p class="sheet-subtitle" data-i18n="lrc_edit_hint">Pega o edita la letra aquí. Usa [mm:ss.xx] para timestamps.</p>
             <textarea id="lrcEditorText" class="lrc-editor-textarea" rows="20" data-i18n-aria="lrc_edit" aria-label="Editar letra" placeholder="[00:12.50]Primera línea&#10;[00:15.30]Segunda línea"></textarea>
-            <!-- §81: sincronizar tocando, línea a línea al ritmo -->
-            <div class="lrc-tap-box">
-              <button class="primary-btn ghost compact" id="btnLrcTapMode" type="button" data-i18n="lrc_tap_mode">Sincronizar tocando</button>
-              <div id="lrcTapPanel" hidden>
-                <p class="sheet-subtitle" data-i18n="lrc_tap_hint">Reproduce la canción y toca el botón grande al empezar cada línea.</p>
-                <p class="lrc-tap-next" id="lrcTapNext">—</p>
-                <button class="primary-btn lrc-tap-btn" id="btnLrcTap" type="button" data-i18n="lrc_tap_button">Marcar línea</button>
-                <div class="lrc-tap-actions">
-                  <button class="primary-btn ghost compact" id="btnLrcTapUndo" type="button" data-i18n="lrc_tap_undo">Deshacer marca</button>
-                  <button class="primary-btn ghost compact" id="btnLrcTapDone" type="button" data-i18n="lrc_tap_done">Terminar y escribir marcas</button>
-                </div>
-                <p class="sheet-subtitle" id="lrcTapProgress"></p>
-              </div>
-            </div>
+            <!-- §100: retirado «sincronizar tocando»; el editor sigue
+                 aceptando sellos [mm:ss.xx] escritos o pegados. -->
           </div>
         </div>
       </div>
@@ -1106,7 +997,7 @@
             <div class="edit-pl-header">
               <div class="edit-pl-cover" id="browseCover"><canvas width="240" height="240" aria-hidden="true"></canvas></div>
               <div class="edit-pl-info">
-                <h4 id="browseTitleDup" style="display:none">—</h4>
+                <h4 style="display:none">—</h4>
                 <p id="browseSubtitle">—</p>
               </div>
             </div>
@@ -1171,10 +1062,6 @@
               <svg class="ico" aria-hidden="true"><use href="#i-list-ol"></use></svg>
               <span data-i18n="ctx_add_queue">Añadir a la cola</span>
             </button>
-            <button class="menu-row" id="ctxStartRadio">
-              <svg class="ico" aria-hidden="true"><use href="#i-tower-broadcast"></use></svg>
-              <span data-i18n="ctx_start_radio">Iniciar radio</span>
-            </button>
             <button class="menu-row" id="ctxGoArtist">
               <svg class="ico" aria-hidden="true"><use href="#i-user"></use></svg>
               <span data-i18n="menu_go_to_artist">Ir al artista</span>
@@ -1236,7 +1123,7 @@
       </div>
 
       <!-- Chrome persistente: mini-player + nav -->
-      <div class="app-chrome" id="appChrome" role="complementary" data-i18n-aria="view_player" aria-label="Reproductor">
+      <div class="app-chrome" role="complementary" data-i18n-aria="view_player" aria-label="Reproductor">
         <div class="mini-player" id="miniPlayer" role="group" data-i18n-aria="now_playing_label" aria-label="Reproduciendo ahora">
           <button class="mini-open" id="miniOpen" type="button" data-i18n-aria="now_playing_label" aria-label="Reproduciendo ahora"></button>
           <div class="mini-progress" id="miniProgress"></div>

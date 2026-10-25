@@ -98,7 +98,6 @@ Object.assign(App, {
 
       // Vinilo en lugar de cover si está reproduciendo
       this.updateCoverA11y();
-      if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
 
       // Favorito
       this.updateFavoriteUI();
@@ -187,7 +186,7 @@ Object.assign(App, {
       }
 
       // Generar gradiente dinámico
-      const cover = (typeof track.cover === 'object' && track.cover.from) ? track.cover : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6' });
+      const cover = (track.cover && typeof track.cover === 'object' && track.cover.from) ? track.cover : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6' });
       const grad = ctx.createLinearGradient(0, 0, w, h);
       grad.addColorStop(0, cover.from);
       grad.addColorStop(1, cover.to);
@@ -350,7 +349,6 @@ Object.assign(App, {
         }
       });
       this.updateCoverA11y();
-      if (typeof this.applyVinylMode === 'function') this.applyVinylMode();
 
       /* Los anillos de «esta lista está sonando» (hero de la lista
        * abierta y «Reproducir Todo» de Favoritos) se pintan al
@@ -394,22 +392,10 @@ Object.assign(App, {
         if (typeof this.stopVisualizer === 'function') this.stopVisualizer();
       }
 
-      // Visibilidad de las acciones del menú "Más opciones" según haya pista
-      // actual. Si no hay pista (estado vacío), las acciones contextuales
-      // (ir al artista, ir al álbum) no tienen sentido y se ocultan.
-      const hasTrack = !!(this.currentTrack);
-      const ct = this.currentTrack;
-      // §70 [3]: tampoco se muestran si la pista no tiene ese metadato
-      // (antes quedaban activas y solo respondían con un toast). El menú
-      // de canción ya hacía esto; aquí se iguala «Más opciones».
-      const vis = {
-        menuGoToArtist: hasTrack && !!ct.artist && !this.isPlaceholderArtist(ct.artist),
-        menuGoToAlbum: hasTrack && !!ct.album && !this.isPlaceholderAlbum(ct.album),
-      };
-      Object.keys(vis).forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = vis[id] ? '' : 'none';
-      });
+      // §101: aquí vivía el bloque que mostraba/ocultaba «Ir al
+      // artista / Ir al álbum» en el menú ⋯ según hubiera pista.
+      // Esas filas salieron del menú en la auditoría (§100) —
+      // viven en el menú de pista — y el bloque quedó muerto.
 
       /* Cada cambio de play/pausa pasa por aquí, y la visibilidad del
        * mini reproductor depende de isPlaying (en Inicio se oculta en
@@ -423,14 +409,8 @@ Object.assign(App, {
       const cur = a.currentTime || 0;
       const dur = a.duration || this.currentTrack?.duration || 0;
 
-      // Repetición A-B (#22)
-      if (this.abRepeat && this.abRepeat.active && this.abRepeat.b !== null && this.abRepeat.a !== null) {
-        if (cur >= this.abRepeat.b) {
-          this.seekToTime(this.abRepeat.a);
-          return;
-        }
-      }
-
+      // §100: la ejecución del A-B se fue con su sistema; el bucle
+      // que queda es el de sección de letras, justo aquí debajo.
       // Repetición de sección de letras (#19): rango elegido a mano en la
       // vista de letras ({start, end} en segundos de la canción). Se aplica
       // aquí, no en el RAF de letras, para que siga activa al volver al
@@ -511,13 +491,7 @@ Object.assign(App, {
       this._syncMarquee(el);
     },
 
-    applyVinylMode() {
-      const art = document.getElementById('coverArt');
-      const sec = document.querySelector('.cover-section');
-      const on = !!this._vinylEnabled;
-      if (art) art.classList.toggle('vinyl-mode', on);
-      if (sec) sec.classList.toggle('vinyl-on', on);
-    },
+    /* §100: applyVinylMode retirado con el modo vinilo. */
 
     _syncMarquee(el) {
       if (!el) return;

@@ -3899,3 +3899,316 @@ La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
   re-ejecutados — sus supervivientes están cubiertos en §98).
 
 La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## 100. Auditoría aplicada: la gran poda (sin estrellas y sin release)
+
+Tras la auditoría completa (3 vistas, 23 hojas, 99 botones), el
+usuario ordenó aplicar **todos** los cambios mencionados, con dos
+condiciones: el sistema de valoración con estrellas **no se toca**
+y **no hay release nuevo** hasta nueva orden. Saldo:
+**−738/+218 líneas** en 13 archivos.
+
+### Retirado («esto sobra»)
+- **Hoja de Volumen zombi**: ningún código la abría desde hacía
+  tiempo; fuera hoja, slider y sus referencias en `setVolume`.
+  El volumen vive en el gesto de la portada y el slider compacto.
+- **El bucle A-B del reproductor**: había dos bucles (A-B y el de
+  sección en Letras); queda el de Letras. Fuera botón, rango en la
+  barra, métodos, ejecución en `updateProgress` y estado.
+- **«Sincronizar tocando» y el karaoke por palabras** de Letras:
+  panel, 5 métodos y el troceo `<mm:ss>` por palabra. La letra se
+  sigue pudiendo pegar con sellos, y los LRC mejorados se pintan
+  limpios (`stripKaraokeTags` se queda como limpieza de texto).
+- **Modo vinilo** (disco decorativo): DOM, CSS, ajuste y método.
+- **«Iniciar radio»** del menú de pista y `startRadio` (solapaba
+  con aleatorio y listas inteligentes).
+- **Compartir estadísticas** (botón y método; la hoja se queda).
+- **La ayuda de atajos se oculta sin teclado**: en puntero grueso
+  la fila de Ajustes ni se muestra; en escritorio sigue igual.
+- 21 claves i18n huérfanas de todo lo anterior (363 ×8 al final).
+
+### Simplificado («esto se puede mejorar»)
+- **Transición única Corte / Sin pausa / Fundido** en Ajustes:
+  un solo selector gobierna gapless y crossfade (la duración solo
+  se ve en Fundido; elegirla implica Fundido). Los ajustes
+  heredados se derivan sin pérdida (gapless suelto y/o fundido
+  con duración → su modo) y se guarda la clave nueva `transition`.
+- **Letras jerarquizada**: lo diario (tamaño, pantalla completa,
+  cargar/editar/compartir) visible; lo fino (desfase, velocidad,
+  bucle, restablecer) plegado tras «Ajustes de letra».
+- **Menú ⋯ depurado**: fuera «Ir al artista/álbum» y «Compartir
+  pista» (viven en el menú de pista, con su contexto); el ⋯ queda
+  para sistema y biblioteca.
+- **«Mantenimiento» honesto** en Ajustes: Releer metadatos,
+  Liberar espacio y Borrar biblioteca, cada una con una línea que
+  dice qué hace y qué destruye (3 claves nuevas ×8).
+- **La velocidad, en un solo sitio**: Letras. Fuera el stepper de
+  Ajustes.
+- **`btnBack` → `btnLoadMusic`**: el botón superior del
+  reproductor se llama como lo que hace (cargar música).
+
+### Verificación
+- **Check §100** `/tmp/check-vista100.js`: **26/26** — métodos y
+  DOM retirados ausentes; transición en sus tres modos + la
+  duración que implica Fundido + herencia de ajustes viejos; el
+  ajuste fino nace plegado y se despliega; la letra se pinta sin
+  `.lrc-word`; «Mantenimiento» con sus tres avisos; `btnLoadMusic`
+  abre el selector; **las estrellas siguen intactas**; i18n
+  363×8 sin colgadas.
+- Humo de regresión: **20/20** (arranque, cola/listas, verso que
+  salta, inmersivo, precarga, transición…).
+- **Sin release**: el publicado sigue siendo v1.2.0 (§99); esto
+  queda en la rama hasta nueva orden.
+
+La 1.2.0 publicada no cambia; el trabajo vive en la rama.
+
+## 101. Los dos trabajos de fondo (y el blindaje, descartado)
+
+De la lista de «funcionalidades realmente necesarias» solo
+quedaron tres candidatos, y el usuario decidió: el **blindaje
+de datos, no tocar** (se mantiene la reversión de §57: sin copia
+de seguridad de ningún tipo, reafirmado expresamente). Los dos
+trabajos de fondo, hechos.
+
+### (2) «Reducir movimiento» llega al lienzo
+El CSS ya obedecía (bloque global de `prefers-reduced-motion`),
+pero el visualizador era un lienzo animado por código y se le
+escapaba: quien pedía calma seguía viendo la onda bailar a 60
+fps — y en el modo inmersivo ni siquiera podía apagarla (§95 la
+fuerza). Ahora:
+- `_prefersReducedMotion()` consulta el ajuste **en vivo** (sin
+  cachear: el sistema puede cambiar con la app abierta).
+- Al arrancar el visualizador con calma activa, no hay bucle:
+  se pinta una vez la onda quieta de reposo y se sale. Cubre
+  también el modo inmersivo.
+- El bucle se autocomprueba en cada pasada y se detiene solo si
+  la calma llega a mitad de canción (por si un WebView no
+  emite el evento `change`; si lo emite, un oyente registrado
+  en `initVisualizer` para/detiene al instante).
+- La flotación de la portada (`.cover-art.playing`) se apaga
+  del todo bajo `prefers-reduced-motion` en CSS: el bloque
+  global solo acortaba duraciones, y una animación infinita
+  acortada sigue «viva».
+
+### (3) Bibliotecas grandes: el detalle de lista, virtualizado
+Medido con una biblioteca sintética de 3.000 pistas: la cola,
+Favoritos y la búsqueda ya usaban la lista virtual (>80), pero
+el **detalle/edición de lista pintaba las 3.000 filas** — cada
+una con su canvas, sus listeners y su portada — en cada
+apertura y en cada re-pintado. Era el único agujero.
+- `renderEditPlaylist` construye la fila con una fábrica
+  (`makeEditRow`) y pinta con `fillVirtualList` (umbral 80,
+  filas de 64 px, la misma máquina probada en la cola). La
+  fila conserva TODO: tocar reproduce en contexto, menú ⋯,
+  pulsación larga, quitar de la lista y portada.
+- Abrir donde suena (§97) sobrevive a la virtualización con el
+  patrón de la cola (§98): scroll a la ventana de la fila,
+  repintado y centrado.
+- `clearPlaylist` y el estado vacío sueltan el estado virtual
+  (`unbindVirtualList`) antes de vaciar, para que ningún
+  listener de scroll repinte filas sobre lo nuevo.
+- En jsdom la lista de 3.000 pasa de 3.000 filas a **9 nodos**
+  en el DOM (espaciador de 192.000 px incluido); la apertura
+  tarda 62 ms en el arnés. Los tiempos de jsdom no son los
+  del teléfono (no hay layout real), pero el DOM acotado es
+  exactamente lo que alivia al dispositivo.
+
+### Hallazgos de la verificación (fallos menores, corregidos)
+- **Portada nula que rompía filas**: la guarda `(typeof
+  track.cover === 'object' && track.cover.from)` explota con
+  `cover === null` (porque `typeof null === 'object'`), y el
+  cargador crea metadatos con `cover: null`. La misma guarda
+  frágil vivía en tres sitios (`playlist-ui`, `player-ui`,
+  `ui`); los tres ahora comprueban `track.cover && …`.
+  (`settings.js` tenía la forma segura y no se tocó.)
+- **Bloque muerto de §100**: la visibilidad de «Ir al
+  artista/álbum» del menú ⋯ seguía calculándose en
+  `player-ui.js` contra elementos ya retirados. Fuera.
+
+### Verificación
+- **Check §101** `/tmp/check-vista101.js`: **13/13** — calma
+  en arranque, en bucle y a mitad de canción; lista de 3.000
+  virtualizada con su espaciador; lista de 50 intacta; vacío
+  tras virtual limpio; cola de 3.000 acotada; catálogo sin
+  errores; §100 en pie.
+- Humo de regresión: **20/20**. Sintaxis global OK. i18n:
+  363 claves ×8, 0 colgadas.
+- **Sin release**: la publicada sigue siendo v1.2.0 (§99).
+
+## 102. Internacionalización: Prioridad 1 + chino tradicional
+
+Ante la pregunta «¿qué idiomas habría que agregar?», el análisis
+señaló un hueco evidente (Alemán: Delta Chat es un proyecto
+alemán) y un orden por valor/coste. El usuario aprobó la
+**Prioridad 1 «más el chino»**. Matiz importante: el chino ya
+existía (`zh`, simplificado); lo que no había era **chino
+tradicional** (Taiwán/Hong Kong/Macao), que caía en simplificado
+al detectar el idioma. Se interpreta «más el chino» como esa
+variante; si era otra cosa, se corrige.
+
+### Lo añadido: 6 idiomas, 363 claves cada uno (2.178 textos)
+- **de** Alemán, **uk** Ucraniano, **pl** Polaco, **tr** Turco,
+  **id** Indonesio: traducción completa del diccionario,
+  preservando el marcador de sustitución `X`, los símbolos
+  (♥, ▶) y las comillas de los textos originales.
+- **zh-TW** 繁體中文: generado desde el simplificado con
+  OpenCC (`s2tw`, conversión mecánica fiable) y conectado en
+  `_detectSystemLang`: `zh-TW`, `zh-HK`, `zh-MO` y las
+  etiquetas `Hant` ya no caen en simplificado. `zh-CN` sigue
+  en simplificado.
+
+### Detalles de implementación
+- `SUPPORTED_LANGS` pasa de 8 a 14; el selector de idioma y
+  la detección automática son genéricos y no necesitaron más
+  cambios (salvo el desvío zh-TW). Nadie asumía códigos de
+  dos letras (comprobado por búsqueda).
+- El diccionario tiene dos formatos conviviendo (341
+  entradas multilínea y 22 de una línea); la fusión trató
+  ambos sin reescribir el formato de nadie.
+- Honestidad: de/uk/pl/tr/id son traducción automática (la
+  del asistente) y el zh-TW, conversión automática. Antes de
+  publicar convendría que un nativo eche un vistazo a cada
+  idioma; el Español sigue siendo la referencia y el recurso
+  ante cualquier clave ausente.
+
+### Verificación
+- **Check §102** `/tmp/check-vista102.js`: **9/9** — 14
+  idiomas listados; 363×14 sin huecos; `t()` sirve los seis
+  (muestra: «Ajustes» → Einstellungen/Налаштування/
+  Ustawienia/Ayarlar/Pengaturan/設置); zh y zh-TW difieren
+  donde la escritura cambia; el selector pinta 14 opciones;
+  la detección resuelve zh-TW/zh-HK→tradicional, zh-CN→
+  simplificado, de/uk/id→su idioma; marcador X idéntico en
+  las 5.082 cadenas; §100/§101 en pie.
+- Humo de regresión: **20/20**.
+- **Sin release**: la publicada sigue siendo v1.2.0 (§99).
+
+14 idiomas no cambian la 1.2.0 pública; viven en la rama.
+
+## 103. Micro-pulido: la caché de pistas mira también la identidad
+
+El índice `id → pista` (`trackMap()`, en `state.js`) se
+reconstruía perezosamente solo cuando cambiaba el **número**
+de pistas. Los mutadores reales invalidan a mano (cargar,
+añadir, borrar, deshacer, vaciar: comprobados uno a uno) y
+push/splice cambian la cuenta, así que hoy ningún flujo
+fallaba. Pero el agujero existía: **reasignar el array con
+el mismo número de pistas distintas** habría dejado el mapa
+apuntando a pistas que ya no están — la carga inicial hace
+precisamente `this.tracks = stored.map(...)`, protegida solo
+porque invalida justo después.
+
+### El cambio (una condición, cero comportamiento visible)
+- `trackMap()` reconstruye también si `this._trackMapRef !==
+  this.tracks`: la identidad del array forma parte de la
+  clave de la caché, junto al tamaño.
+- `invalidateTrackIndex()` limpia también la referencia.
+- Sin cambios, el mapa se reutiliza tal cual: sigue siendo
+  perezoso y gratis en el camino caliente.
+
+### Verificación
+- **Check §103** `/tmp/check-vista103.js`: **8/8** — el
+  escenario del fallo (reasignar 2 pistas por otras 2) ya
+  reconstruye; sin cambios se reutiliza la instancia;
+  push/splice en el sitio se detectan; la invalidación
+  manual sigue forzando reconstrucción.
+- Humo de regresión: **20/20**.
+- **Sin release**: la publicada sigue siendo v1.2.0 (§99).
+
+En la rama quedan §§100–103 sin publicar; la app pública
+no cambia.
+
+## 104. Segunda auditoría aplicada: muertos, duplicados y nicho
+
+Auditoría completa pedida por el usuario (332 métodos, 301
+ids, 22 hojas, 363 claves) y aplicada con sus decisiones:
+fuera lo muerto, Favoritos con una sola casa, fuera las
+listas inteligentes, fuera el Historial («Buscar duplicados»
+se queda expresamente), fuera «más saltadas» y «olvidadas»
+de Estadísticas. Dormir no se tocó.
+
+### Muerto retirado
+- **La hoja de Listas era zombi**: ningún `openSheet` la ha
+  abierto jamás en todo el historial; la navegación vive en
+  Biblioteca. Y `renderPlaylists()` pintaba **las dos**
+  superficies en cada render — trabajo doble para nadie.
+  Fuera la hoja, su contador y la rama de filas; la rejilla
+  de Biblioteca es la única casa.
+- `savePlaylists()` (compat), `AuroraStorage.close()` y
+  `limitArtwork()` (jamás llamada; su trabajo se hace en
+  línea donde hace falta).
+- 18 atributos `id` que nadie referencia (los elementos
+  viven; se cablean por clase o `data-*`) y el icono
+  `i-tower-broadcast`, huérfano desde §100.
+
+### Duplicado resuelto
+- **Favoritos, una sola casa**: su vista. La lista heredada
+  con id «favoritos» desaparece de Listas y del
+  almacenamiento al cargar (`_settlePlaylists`); los
+  corazones (el conjunto de favoritos) no se tocan.
+
+### Nicho retirado, con migración
+- **Listas inteligentes**: fuera la UI de creación por
+  regla, la insignia, el aviso de edición y el motor. Las
+  listas ya creadas **se materializan** al cargar: la regla
+  se convierte en sus canciones de hoy (`_legacySmartTracks`,
+  el antiguo motor reducido a la migración) y quedan listas
+  normales para siempre.
+- **Historial**: hoja, botón del menú, registro
+  (`_playHistory`), carga y reinicio fuera. «Buscar
+  duplicados» se queda por decisión expresa.
+- **Estadísticas** conserva reproducciones, tiempo, top
+  canciones y top artistas.
+
+### i18n y CSS
+- 30 claves huérfanas fuera (inteligentes ×13, historial
+  ×6, conteos de la hoja zombi y restos de §100): el
+  diccionario baja a **333 claves × 14 idiomas**, sin
+  huérfanas ni colgadas. `cover_exit_fullscreen` se queda:
+  se usa con clave dinámica (verificado a mano; el escáner
+  la daba por muerta y era falso positivo, como
+  `toast_cover_*`).
+- CSS: restos de la hoja de Volumen (`.volume-row`,
+  `.volume-value`), `.smart-badge` y los `.pl-type-*`.
+
+### Verificación
+- **Check §104** `/tmp/check-vista104.js`: **13/13** —
+  incluye la migración real de una inteligente heredada
+  (regla de estrellas → sus canciones, sin `smart`) y la
+  expulsión de la lista fantasma de Favoritos.
+- Humo de regresión: **20/20**; check §101: **13/13**.
+- **Sin release**: la publicada sigue siendo v1.2.0 (§99).
+
+En la rama quedan §§100–104 sin publicar.
+
+## 105. Endurecimiento de la migración de §104
+
+La normalización de listas heredadas (`_settlePlaylists`)
+corre al arrancar sobre datos de versiones anteriores, que
+no controlamos, y corría **sin red de seguridad**: un dato
+raro podría haber interrumpido la carga. Ahora cada lista
+se trata aislada:
+
+- La conversión de una lista inteligente se calcula **antes**
+  de tocarla: si la regla heredada falla, la lista queda
+  exactamente como venía y se sigue con las demás.
+- Si el guardado en disco falla, tampoco se propaga: la
+  sesión queda normalizada en memoria y el disco se
+  reintentará al próximo arranque.
+- Una red exterior envuelve todo: normalizar es opcional;
+  cargar la biblioteca, no.
+
+Decisión ante la ambigüedad: ante el fallo, la lista rara
+**se conserva intacta** en vez de vaciarse o borrarse —
+ningún dato del usuario se pierde por un problema de
+conversión.
+
+### Verificación
+- **Check §105** `/tmp/check-vista105.js`: **8/8** — fuerza
+  el lanzamiento de la conversión de una lista y del
+  guardado de otras, más basura estructural; nada se
+  propaga y el resto se normaliza igual.
+- §104 sigue **13/13**; humo de regresión **20/20**.
+- **Sin release**: la publicada sigue siendo v1.2.0 (§99).
+
+En la rama quedan §§100–105 sin publicar.

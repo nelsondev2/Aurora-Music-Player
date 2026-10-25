@@ -197,32 +197,8 @@ Object.assign(App, {
       this.toast(this.t('toast_play_next'));
     },
 
-    /* Modo "Radio": genera una cola a partir de la pista actual,
-     * mezclando pistas del mismo artista/álbum primero, luego el resto */
-    startRadio(trackId) {
-      const seed = this.tracks.find(t => t.id === trackId);
-      if (!seed) return;
-      const sameArtist = this.tracks.filter(t => t.id !== trackId && t.artist === seed.artist);
-      const sameAlbum = this.tracks.filter(t => t.id !== trackId && t.album === seed.album && t.artist !== seed.artist);
-      const others = this.tracks.filter(t =>
-        t.id !== trackId && t.artist !== seed.artist && t.album !== seed.album
-      );
-      const shuffle = (arr) => {
-        const a = arr.slice();
-        for (let i = a.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          const tmp = a[i]; a[i] = a[j]; a[j] = tmp;
-        }
-        return a;
-      };
-      this.queue = [trackId, ...shuffle(sameArtist).map(t => t.id), ...shuffle(sameAlbum).map(t => t.id), ...shuffle(others).map(t => t.id)];
-      this.queueIdx = 0;
-      this._plSyncIds = null; // §82: la radio no sincroniza con listas
-      this._originalQueue = null;
-      this.playContext = { type: 'radio', name: seed.artist || seed.title };
-      this.playFromQueue(0);
-      this.toast(this.t('toast_radio_based') + ' ' + seed.title);
-    },
+    /* §100: startRadio retirado (solapaba con aleatorio y
+     * listas inteligentes; vivía escondido en el menú de pista). */
 
     /* §81: «Guardar cola como lista». Reutiliza la hoja de crear
      * lista (nombre + descripción) con la bandera _queueSaveMode: al

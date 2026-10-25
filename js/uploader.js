@@ -476,32 +476,8 @@
       return null;
     },
 
-    /* ---------- Limita la portada ID3 a 800 px (JPEG) ----------
-     * El lienzo del reproductor es de 720 px (§69): guardar a 600 lo
-     * estiraba un 20% justo en la superficie protagonista. 800 da
-     * margen de reducción sin disparar el tamaño en IndexedDB (§72). */
-    limitArtwork(dataUrl, maxDim) {
-      maxDim = maxDim || 800;
-      return new Promise((resolve) => {
-        try {
-          const img = new Image();
-          img.onload = () => {
-            try {
-              const w = img.width || 0, h = img.height || 0;
-              if (!w || !h || Math.max(w, h) <= maxDim) { resolve(dataUrl); return; }
-              const k = maxDim / Math.max(w, h);
-              const c = document.createElement('canvas');
-              c.width = Math.max(1, Math.round(w * k));
-              c.height = Math.max(1, Math.round(h * k));
-              c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-              resolve(c.toDataURL('image/jpeg', 0.85));
-            } catch (e) { resolve(dataUrl); }
-          };
-          img.onerror = () => resolve(dataUrl);
-          img.src = dataUrl;
-        } catch (e) { resolve(dataUrl); }
-      });
-    },
+    /* §104: aquí vivía limitArtwork (limitar la portada ID3):
+     * jamás se llamó; quien lo necesita lo hace en línea. */
 
     /* Carga una imagen una sola vez. Con tiempo límite: un WebView
      * que ni carga ni da error no puede retener la importación. */
@@ -524,12 +500,12 @@
      * pantallas de DPR 3, no 2). Antes cada tamaño
      * decodificaba la imagen entera otra vez: 3 decodificaciones y
      * 3 codificaciones JPEG por canción con portada. Mismos tamaños,
-     * calidades y respaldos que limitArtwork/resizeDataUrl. */
+     * calidades y respaldos que resizeDataUrl. */
     async _produceArtwork(dataUrl) {
       const out = { cover: dataUrl, coverThumb: null, coverThumbLg: null };
       const img = await this._loadImage(dataUrl);
       if (!img || !(img.width > 0) || !(img.height > 0)) return out;
-      // Copia grande: encajar en 800 sin recorte (como limitArtwork)
+      // Copia grande: encajar en 800 sin recorte
       try {
         const w = img.width, h = img.height;
         if (Math.max(w, h) > 800) {
@@ -540,7 +516,7 @@
           c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
           out.cover = c.toDataURL('image/jpeg', 0.85);
         }
-      } catch (e) { /* se queda la original, como limitArtwork */ }
+      } catch (e) { /* se queda la original */ }
       // Miniaturas cuadradas con recorte centrado (como resizeDataUrl)
       const thumb = (size) => {
         try {

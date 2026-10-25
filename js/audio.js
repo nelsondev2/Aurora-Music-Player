@@ -309,7 +309,6 @@ Object.assign(App, {
       this._noAudioSkips = 0;
       this.audio.src = url;
       try { this.audio.volume = this.volume; } catch (e) {}
-      if (this.clearABRepeat) this.clearABRepeat();
       if (this.preservesPitch !== undefined) {
         this.audio.preservesPitch = this.preservesPitch;
         this.audio.mozPreservesPitch = this.preservesPitch;
@@ -320,7 +319,6 @@ Object.assign(App, {
       }
       this.setBuffering(this.audio.readyState < 3);
       if (typeof this.restoreLyricsPrefs === 'function') this.restoreLyricsPrefs();
-      this.addToHistory(t.id);
       this.togglePlay(true);
       this.renderCurrentTrack();
       this.renderLyrics();
@@ -367,7 +365,6 @@ Object.assign(App, {
       // §94: misma higiene que loadAndPlay al cambiar de pista:
       // fuera el bucle A-B de la anterior y dentro las prefs de
       // letra (offset/velocidad) de ESTA pista, no de la borrada.
-      if (this.clearABRepeat) this.clearABRepeat();
       if (typeof this.restoreLyricsPrefs === 'function') this.restoreLyricsPrefs();
       this.isPlaying = false;
       this.renderCurrentTrack();
@@ -1038,12 +1035,9 @@ Object.assign(App, {
         try { this.audio.volume = this.volume; } catch (e) {}
       }
       const pct = Math.round(this.volume * 100);
-      const sv = document.getElementById('volumeSlider');
-      const vv = document.getElementById('volumeValue');
+      // §100: volumeSlider/volumeValue vivían en la hoja retirada.
       const sv2 = document.getElementById('volumeSliderNp');
       const vv2 = document.getElementById('volumeValueNp');
-      if (sv) sv.value = pct;
-      if (vv) vv.textContent = pct + '%';
       if (sv2) sv2.value = pct;
       if (vv2) vv2.textContent = pct + '%';
       this._updateVolumeIcon();
@@ -1148,88 +1142,22 @@ Object.assign(App, {
       if (chk) chk.checked = this.preservesPitch;
     },
 
-    /* ============================================================
-     *  Repetición A-B (A-B Repeat)
-     * ============================================================ */
-    toggleABRepeat() {
-      if (!this.audio || !this.currentTrack || !this.audio.src) {
-        this.toast(this.t('no_track_playing'));
-        return;
-      }
-      if (!this.abRepeat) this.abRepeat = { active: false, a: null, b: null };
-      const cur = Number(this.audio.currentTime) || 0;
-      if (this.abRepeat.a === null) {
-        this.abRepeat.a = cur;
-        this.abRepeat.b = null;
-        this.abRepeat.active = false;
-        this.updateABRepeatUI();
-        this.toast(this.t('ab_set_a').replace('X', this.fmtTime(cur)));
-      } else if (this.abRepeat.b === null) {
-        if (cur <= this.abRepeat.a + 0.3) {
-          this.abRepeat.b = this.abRepeat.a + 1.0;
-        } else {
-          this.abRepeat.b = cur;
-        }
-        this.abRepeat.active = true;
-        this.updateABRepeatUI();
-        this.toast(this.t('ab_active')
-          .replace('X', this.fmtTime(this.abRepeat.a))
-          .replace('Y', this.fmtTime(this.abRepeat.b)));
-        if (this.audio && (this.audio.currentTime < this.abRepeat.a || this.audio.currentTime >= this.abRepeat.b)) {
-          this.seekToTime(this.abRepeat.a);
-        }
-      } else {
-        this.clearABRepeat();
-        this.toast(this.t('ab_cleared'));
-      }
-    },
-
-    clearABRepeat() {
-      this.abRepeat = { active: false, a: null, b: null };
-      this.updateABRepeatUI();
-    },
-
-    updateABRepeatUI() {
-      const btn = document.getElementById('btnABRepeat');
-      const range = document.getElementById('progressAbRange');
-      if (btn) {
-        btn.classList.remove('setting-b', 'active');
-        const badge = btn.querySelector('.ab-badge') || btn;
-        if (this.abRepeat && this.abRepeat.a !== null && this.abRepeat.b === null) {
-          btn.classList.add('setting-b');
-          btn.setAttribute('aria-pressed', 'false');
-          btn.title = this.t('ab_set_a').replace('X', this.fmtTime(this.abRepeat.a));
-          badge.textContent = 'A→';
-        } else if (this.abRepeat && this.abRepeat.active && this.abRepeat.b !== null) {
-          btn.classList.add('active');
-          btn.setAttribute('aria-pressed', 'true');
-          btn.title = this.t('ab_active')
-            .replace('X', this.fmtTime(this.abRepeat.a))
-            .replace('Y', this.fmtTime(this.abRepeat.b));
-          badge.textContent = 'A⇄B';
-        } else {
-          btn.setAttribute('aria-pressed', 'false');
-          btn.title = this.t('ab_repeat');
-          badge.textContent = 'A-B';
-        }
-      }
-      if (range) {
-        const dur = (this.audio && this.audio.duration) || (this.currentTrack && this.currentTrack.duration) || 0;
-        if (this.abRepeat && this.abRepeat.a !== null && dur > 0) {
-          range.removeAttribute('hidden');
-          const startPct = (this.abRepeat.a / dur) * 100;
-          const endPct = this.abRepeat.b !== null ? (this.abRepeat.b / dur) * 100 : Math.min(100, startPct + 0.8);
-          range.style.left = startPct + '%';
-          range.style.width = Math.max(0.5, endPct - startPct) + '%';
-        } else {
-          range.setAttribute('hidden', '');
-        }
-      }
-    },
+    /* §100: sistema A-B retirado. Había DOS bucles (este y el de
+     * sección en Letras, sobre la letra); queda el de Letras. */
 
     /* ============================================================
      *  Visualizador de frecuencias en tiempo real (AnalyserNode)
      * ============================================================ */
+    /* §101: ¿pide el sistema «reducir movimiento»? Se consulta EN
+     * VIVO, sin cachear: el usuario puede cambiar el ajuste con la
+     * app abierta y el lienzo debe obedecer al momento. Lo usan el
+     * arranque del visualizador y su propio bucle de dibujo. */
+    _prefersReducedMotion() {
+      try {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      } catch (e) { return false; }
+    },
+
     initVisualizer() {
       let saved = null;
       try {
@@ -1238,9 +1166,7 @@ Object.assign(App, {
       if (!saved) {
         // Respetar reduced-motion: desactivado por defecto si el usuario
         // prefiere movimiento reducido.
-        try {
-          if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) saved = 'off';
-        } catch (e) {}
+        if (this._prefersReducedMotion()) saved = 'off';
       }
       // §90: solo queda la onda (las barras tapaban el cover). Lo
       // guardado como «bars» migra a «wave» y se re-persiste para
@@ -1251,6 +1177,25 @@ Object.assign(App, {
       }
       this.visualizerMode = saved || 'wave';
       this.updateVisualizerUI();
+      // §101: si el ajuste de movimiento del sistema cambia con la
+      // app abierta, obedecer al momento: con «reducir» se para el
+      // bucle (queda la onda quieta de stopVisualizer) y sin él se
+      // reanuda si estaba sonando. El bucle además se autocomprueba
+      // en cada fotograma, por si un WebView viejo no avisa.
+      if (!this._visMotionWired) {
+        this._visMotionWired = true;
+        try {
+          const mq = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+          if (mq) {
+            const onMotionChange = () => {
+              if (this._prefersReducedMotion()) this.stopVisualizer();
+              else if (this.isPlaying) this.startVisualizer();
+            };
+            if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onMotionChange);
+            else if (typeof mq.addListener === 'function') mq.addListener(onMotionChange);
+          }
+        } catch (e) {}
+      }
       if (this.isPlaying) this.startVisualizer();
     },
 
@@ -1318,6 +1263,14 @@ Object.assign(App, {
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       this._fitVisualizerCanvas(canvas);
+      // §101: con «reducir movimiento» el bucle ni arranca: se
+      // pinta UNA vez la onda quieta de reposo y se sale. Cubre
+      // también el modo inmersivo (§95), que fuerza la onda aunque
+      // el ajuste esté en «apagado»: la calma manda.
+      if (this._prefersReducedMotion()) {
+        this._drawVisualizerIdle(canvas, ctx);
+        return;
+      }
 
       // Pausar el dibujado cuando el canvas no está en pantalla
       // (otra vista, sheet encima): ahorra batería en móvil.
@@ -1350,6 +1303,16 @@ Object.assign(App, {
               this._visRafId = requestAnimationFrame(render);
             }
           }, 500);
+          return;
+        }
+        // §101: si el sistema activó «reducir movimiento» a mitad
+        // de canción y el aviso de cambio no llegó (WebView sin
+        // listener), el propio bucle se detiene y deja pintada la
+        // onda de reposo, en vez de seguir bailando.
+        if (this._prefersReducedMotion()) {
+          this._visRafId = null;
+          this._visTimer = null;
+          this._drawVisualizerIdle(canvas, ctx);
           return;
         }
         this._visRafId = requestAnimationFrame(render);

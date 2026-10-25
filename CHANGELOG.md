@@ -2,7 +2,60 @@
 
 Historial de versiones **publicadas** de Aurora Music Player. El
 diario detallado de desarrollo y verificación de cada cambio está en
-`docs/INFORME-PULIDO-UI.md` (§§1–61).
+`docs/INFORME-PULIDO-UI.md` (§§1–105).
+
+## Sin publicar
+
+_(nada por ahora)_
+
+## 1.2.5 — Más ligera, en 14 idiomas
+
+- Gran poda tras una auditoría completa (§100): fuera la hoja
+  de Volumen (nadie la abría), el bucle A-B del reproductor
+  (queda el de Letras), «sincronizar tocando» y el karaoke por
+  palabras, el modo vinilo, «Iniciar radio» y compartir
+  estadísticas. La transición entre canciones es ahora un solo
+  control (Corte / Sin pausa / Fundido), el ajuste fino de
+  Letras se pliega tras un botón, el menú ⋯ ya no mezcla
+  contexto de la canción, y «Mantenimiento» explica qué hace
+  y qué destruye cada opción. La valoración con estrellas
+  no se ha tocado.
+- Trabajos de fondo (§101): el ajuste del sistema «reducir
+  movimiento» ahora también calma el visualizador y la
+  portada flotante (antes el lienzo seguía animándose), y
+  las listas con miles de canciones ya no se pintan enteras
+  al abrirlas — el detalle de lista usa la misma lista
+  virtual que la cola — sin perder el abrir donde suena.
+  De paso, un arreglo menor: una pista sin portada ya no
+  puede romper el pintado de las filas. El blindaje de
+  datos se evaluó y se descartó expresamente: sin copia de
+  seguridad, como estaba.
+- Internacionalización (§102): seis idiomas nuevos con el
+  diccionario completo (363 textos cada uno) — Alemán,
+  Ucraniano, Polaco, Turco e Indonesio, más chino
+  tradicional (el simplificado ya estaba), que además ya
+  se detecta solo en teléfonos de Taiwán/Hong Kong. La app
+  pasa de 8 a 14 idiomas. Las traducciones nuevas son
+  automáticas: convendría una revisión nativa antes de
+  publicarlas.
+- Micro-pulido interno (§103, sin cambio visible): el
+  índice que localiza canciones por identificador ahora
+  también detecta si la lista entera fue sustituida por
+  otra con el mismo número de canciones, para no mirar
+  nunca un mapa anticuado.
+- Segunda auditoría aplicada (§104): desaparece la hoja
+  de Listas que nadie podía abrir (las listas viven en
+  Biblioteca y ya no se pintan dos veces), Favoritos
+  tiene una sola casa (su vista), se acaban las listas
+  inteligentes — las ya creadas se convierten en listas
+  normales con las canciones que su regla elegía — y el
+  Historial como pantalla propia («Buscar duplicados»
+  se queda). Estadísticas conserva lo esencial y el
+  diccionario baja a 333 textos por idioma.
+- Blindaje interno (§105, sin cambio visible): la
+  conversión de listas heredadas al arrancar ahora trata
+  cada lista por separado — si alguna diera un problema,
+  queda intacta y el resto de la biblioteca carga igual.
 
 ## 1.2.0 — Primera versión pública
 

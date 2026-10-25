@@ -116,14 +116,6 @@
       }
       throw new Error('AuroraStorage: operación imposible: ' + store);
     },
-    /* Cierre explícito (tests y apagado ordenado de la SPA). */
-    close() {
-      if (this.db) {
-        try { this.db.close(); } catch (e) {}
-        this.db = null;
-      }
-      this._openPromise = null;
-    },
 
     /* ---------- Tracks ---------- */
     async putTrack(track) {
