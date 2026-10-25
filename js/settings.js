@@ -217,14 +217,6 @@ Object.assign(App, {
       this.toast(this.t('stats_reset_toast'));
     },
 
-    /* Reiniciar historial de reproducción */
-    async resetHistory() {
-      this._playHistory = [];
-      try { await window.AuroraStorage.setSetting('history', this._playHistory); } catch (e) {}
-      this.renderHistory();
-      this.toast(this.t('history_reset_toast'));
-    },
-
     /* Registrar que una pista empezó a sonar */
     trackPlayStarted() {
       this._currentPlayStart = Date.now();
@@ -717,8 +709,6 @@ Object.assign(App, {
         if (typeof this.updateChrome === 'function') this.updateChrome();
         const statsEl = document.getElementById('statsContent');
         if (statsEl && statsEl.innerHTML) this.renderStats();
-        const histEl = document.getElementById('historyContent');
-        if (histEl && histEl.innerHTML) this.renderHistory();
       } catch (e) {}
     },
 

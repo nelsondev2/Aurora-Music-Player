@@ -41,6 +41,15 @@ Cambios ya en el código, a la espera de orden de publicación:
   también detecta si la lista entera fue sustituida por
   otra con el mismo número de canciones, para no mirar
   nunca un mapa anticuado.
+- Segunda auditoría aplicada (§104): desaparece la hoja
+  de Listas que nadie podía abrir (las listas viven en
+  Biblioteca y ya no se pintan dos veces), Favoritos
+  tiene una sola casa (su vista), se acaban las listas
+  inteligentes — las ya creadas se convierten en listas
+  normales con las canciones que su regla elegía — y el
+  Historial como pantalla propia («Buscar duplicados»
+  se queda). Estadísticas conserva lo esencial y el
+  diccionario baja a 333 textos por idioma.
 
 ## 1.2.0 — Primera versión pública
 

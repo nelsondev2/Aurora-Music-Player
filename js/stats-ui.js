@@ -19,18 +19,8 @@ Object.assign(App, {
       const playsObj = (this.stats && this.stats.plays) || {};
       const topTracks = this.getTopTracks(10);
       const topArtists = this.getTopArtists(5);
-      // §81: «Más saltadas» y «Olvidadas» (segunda fila de stats).
-      const skipsObj = (this.stats && this.stats.skips) || {};
-      const topSkipped = Object.entries(skipsObj)
-        .map(([id, count]) => ({ track: this.getTrackById ? this.getTrackById(id) : this.tracks.find(t => t.id === id), count: Number(count) || 0 }))
-        .filter(x => x.track && x.count > 0)
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10);
-      const forgottenSince = Date.now() - 90 * 24 * 3600 * 1000;
-      const forgotten = this.tracks
-        .filter(t => (playsObj[t.id] > 0) && !(t.lastPlayedAt > forgottenSince))
-        .sort((a, b) => (a.lastPlayedAt || 0) - (b.lastPlayedAt || 0))
-        .slice(0, 10);
+      // §104: «Más saltadas» y «Olvidadas» se retiraron de
+      // Estadísticas; quedan reproducciones, tops y tiempo.
       const totalPlays = Object.values(playsObj).reduce((a, b) => a + (Number(b) || 0), 0);
       const totalSec = (this.stats && this.stats.totalSeconds) || 0;
 
@@ -83,34 +73,6 @@ Object.assign(App, {
           `).join('')}
         </ul>
 
-        <h4 class="section-title">${this.t('stats_most_skipped')}</h4>
-        ${topSkipped.length === 0 ? '<p class="stats-empty">' + this.t('no_results') + '</p>' : ''}
-        <ul class="stats-list">
-          ${topSkipped.map((t, i) => `
-            <li class="stats-row" data-track="${this.esc(t.track.id)}">
-              <div class="stats-rank">${i + 1}</div>
-              <div class="row-cover"><canvas width="144" height="144"></canvas></div>
-              <div class="stats-info">
-                <div class="stats-name">${this.esc(t.track.title)}</div>
-                <div class="stats-sub">${this.esc(t.track.artist)} · ${t.count} ${this.t('stats_skips_label')}</div>
-              </div>
-            </li>
-          `).join('')}
-        </ul>
-
-        <h4 class="section-title">${this.t('stats_forgotten')}</h4>
-        ${forgotten.length === 0 ? '<p class="stats-empty">' + this.t('no_results') + '</p>' : ''}
-        <ul class="stats-list">
-          ${forgotten.map((t) => `
-            <li class="stats-row" data-track="${this.esc(t.id)}">
-              <div class="row-cover"><canvas width="144" height="144"></canvas></div>
-              <div class="stats-info">
-                <div class="stats-name">${this.esc(t.title)}</div>
-                <div class="stats-sub">${this.esc(t.artist)} · ${t.lastPlayedAt ? this.t('stats_days_ago').replace('X', Math.max(0, Math.floor((Date.now() - t.lastPlayedAt) / 86400000))) : ((playsObj[t.id] || 0) + ' ' + this.t('stats_plays').toLowerCase())}</div>
-              </div>
-            </li>
-          `).join('')}
-        </ul>
       `;
 
       const resetDiv = document.createElement('div');

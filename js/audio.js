@@ -319,7 +319,6 @@ Object.assign(App, {
       }
       this.setBuffering(this.audio.readyState < 3);
       if (typeof this.restoreLyricsPrefs === 'function') this.restoreLyricsPrefs();
-      this.addToHistory(t.id);
       this.togglePlay(true);
       this.renderCurrentTrack();
       this.renderLyrics();

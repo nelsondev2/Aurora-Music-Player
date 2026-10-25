@@ -441,7 +441,6 @@ Object.assign(App, {
       this._playCounted = false;
       this._currentPlayStart = Date.now();
       this._currentPlayBaseTime = 0;
-      this.addToHistory(nextTrack.id);
       this.renderCurrentTrack();
       this.renderLyrics();
       this.updateMediaSession();
@@ -491,30 +490,9 @@ Object.assign(App, {
       }
     },
 
-    /* #11 Añadir al historial de reproducción */
-    addToHistory(trackId) {
-      if (!trackId) return;
-      // Quitar si ya existe (mover al final)
-      const idx = this._playHistory.indexOf(trackId);
-      if (idx >= 0) this._playHistory.splice(idx, 1);
-      this._playHistory.push(trackId);
-      // Limitar a 100
-      if (this._playHistory.length > 100) {
-        this._playHistory = this._playHistory.slice(-100);
-      }
-      // Persistir
-      try { window.AuroraStorage.setSetting('history', this._playHistory); } catch (e) {}
-    },
-
-    /* #11 Cargar historial */
-    async loadHistory() {
-      try {
-        const stored = await window.AuroraStorage.getSetting('history');
-        if (stored && Array.isArray(stored)) {
-          this._playHistory = stored;
-        }
-      } catch (e) {}
-    },
+    /* §104: aquí vivían addToHistory/loadHistory/renderHistory:
+     * el historial de reproducción (registro, carga y hoja) se
+     * retiró entero. */
 
     async loadSearchHistory() {
       try {
@@ -534,55 +512,6 @@ Object.assign(App, {
     clearSearchHistory() {
       this._searchHistory = [];
       try { window.AuroraStorage.setSetting('searchHistory', []); } catch (e) {}
-    },
-
-    /* #11 Render historial */
-    renderHistory() {
-      const cont = document.getElementById('historyContent');
-      if (!cont) return;
-      const history = this._playHistory.slice().reverse(); // más reciente primero
-      if (history.length === 0) {
-        // §94: escapado como el resto de textos de la vista.
-        cont.innerHTML = '<p class="stats-empty">' + this.esc(this.t('history_empty')) + '</p>';
-        return;
-      }
-      // §94: índice por id (antes: find() por fila → O(n·m)).
-      const byId = typeof this.trackMap === 'function' ? this.trackMap() : null;
-      let html = '<ul class="track-list">';
-      history.forEach(id => {
-        const t = byId ? byId.get(id) : this.tracks.find(x => x.id === id);
-        if (!t) return;
-        html += `<li class="track-row" data-track="${t.id}">
-          <div class="row-cover"><canvas width="144" height="144"></canvas></div>
-          <div class="row-text">
-            <div class="row-title">${this.esc(t.title)}</div>
-            <div class="row-sub">${this.esc(t.artist)}</div>
-          </div>
-          <div class="row-duration">${this.fmtRowDuration(t)}</div>
-          <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>
-        </li>`;
-      });
-      html += '</ul>';
-      html += '<div class="history-reset-wrap"><button class="primary-btn compact ghost danger" id="btnResetHistory"><svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg> ' + this.esc(this.t('history_reset_btn')) + '</button></div>';
-      cont.innerHTML = html;
-      const btnRH = document.getElementById('btnResetHistory');
-      if (btnRH) btnRH.addEventListener('click', async () => {
-        if (await this.showConfirm({ message: this.t('history_reset_confirm'), danger: false })) this.resetHistory();
-      });
-      cont.querySelectorAll('.track-row[data-track]').forEach(row => {
-        row.addEventListener('click', (e) => {
-          if (e.target.closest('.track-menu-btn')) return;
-          // Desde el Historial también manda la lista de la canción
-          // (mismo criterio que Buscar e Inicio, §38/§39).
-          const trk = this.tracks.find(x => x.id === row.dataset.track);
-          this.playTrack(row.dataset.track,
-            (trk && typeof this.trackPlayContextFor === 'function') ? this.trackPlayContextFor(trk) : { type: 'all' });
-        });
-        if (typeof this.wireTrackLongPress === 'function') this.wireTrackLongPress(row, row.dataset.track);
-        const cv = row.querySelector('canvas');
-        const t = this.tracks.find(x => x.id === row.dataset.track);
-        if (cv && t) this.drawRowCover(cv, t);
-      });
     },
 
     isPlaceholderAlbum(album) {
@@ -1000,8 +929,6 @@ Object.assign(App, {
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();
-      // §94: el historial, si está a la vista, también se entera.
-      if (typeof this.renderHistory === 'function') this.renderHistory();
       if (typeof this.renderHome === 'function') this.renderHome();
       if (typeof this.updateChrome === 'function') this.updateChrome();
       if (canUndo) {
@@ -1027,11 +954,6 @@ Object.assign(App, {
         if (this.stats.plays && trackId in this.stats.plays) { delete this.stats.plays[trackId]; dirty = true; }
         if (this.stats.skips && trackId in this.stats.skips) { delete this.stats.skips[trackId]; dirty = true; }
         if (dirty && typeof this.saveStats === 'function') this.saveStats();
-      }
-      if (Array.isArray(this._playHistory) && this._playHistory.indexOf(trackId) >= 0) {
-        this._playHistory = this._playHistory.filter(id => id !== trackId);
-        try { window.AuroraStorage.setSetting('history', this._playHistory); } catch (e) {}
-        if (typeof this.renderHistory === 'function') this.renderHistory();
       }
     },
 
@@ -1096,7 +1018,6 @@ Object.assign(App, {
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();
-      if (typeof this.renderHistory === 'function') this.renderHistory(); // §94
       if (typeof this.renderHome === 'function') this.renderHome();
       if (typeof this.updateChrome === 'function') this.updateChrome();
       this.toast(this.t('toast_restored'));

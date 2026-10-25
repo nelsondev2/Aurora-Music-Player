@@ -517,9 +517,7 @@ Object.assign(App, {
       this._hydratePlaylistCover(pl);
       // Con el índice id->pista: buscar cada id con find() sobre miles
       // de pistas hacía renderPlaylists cuadrático (medido en el estrés).
-      const tracks = pl.smart
-        ? this.playlistTracksSorted(pl)
-        : (pl.trackIds || []).map(id => this.getTrackById(id)).filter(Boolean);
+      const tracks = (pl.trackIds || []).map(id => this.getTrackById(id)).filter(Boolean);
       const withImage = tracks.filter(t => this._playlistTrackArtSrc(t));
 
       if (withImage.length === 0) {
@@ -1123,9 +1121,7 @@ Object.assign(App, {
     },
 
     playlistMetaLabel(pl) {
-      // §81: en listas inteligentes el conteo es el de la regla, no el
-      // de trackIds (que va vacío).
-      const n = pl.smart ? this.playlistTracksSorted(pl).length : (pl.trackIds || []).length;
+      const n = (pl.trackIds || []).length;
       const dur = this.fmtDurationLabel(this.playlistDuration(pl));
       let s = this.fmtTracksCount(n);
       if (dur) s += ' · ' + dur;
@@ -1134,41 +1130,22 @@ Object.assign(App, {
     },
 
     renderPlaylists() {
-      const ul = document.getElementById('playlistList');
+      // §104: una sola casa para las listas — la rejilla de
+      // Biblioteca. La otra superficie era la hoja #sheetPlaylists,
+      // que nadie abría desde que la navegación vive aquí: pintar
+      // las dos en cada render era trabajo duplicado para nadie.
       const grid = document.getElementById('libraryPlaylists');
-      const countEl = document.getElementById('playlistCount');
-      if (countEl) {
-        const n = this.playlists.length;
-        countEl.textContent = n === 0
-          ? this.t('playlist_count_zero')
-          : (n === 1 ? this.t('playlist_count_one') : this.t('playlist_count_many').replace('X', n));
-        // Con el estado vacío visible, «0 listas» es redundante.
-        countEl.hidden = n === 0;
-      }
       // Contador de la sección «Listas de reproducción» de la biblioteca.
       const libCountEl = document.getElementById('libraryPlaylistsCount');
       if (libCountEl) {
         libCountEl.textContent = String(this.playlists.length);
         libCountEl.hidden = this.playlists.length === 0;
       }
-      [ul, grid].forEach(target => {
+      {
+        const target = grid;
         if (!target) return;
         target.innerHTML = '';
-        if (this.playlists.length === 0 && target === ul) {
-          const li = document.createElement('li');
-          li.className = 'empty-state pl-empty';
-          li.innerHTML = `
-            <div class="empty-icon"><svg class="ico" aria-hidden="true"><use href="#i-compact-disc"></use></svg></div>
-            <h4>${this.t('no_playlists_yet')}</h4>
-            <p>${this.t('no_playlists_hint')}</p>
-            <button class="primary-btn" id="btnEmptyNewPlaylist"><svg class="ico" aria-hidden="true"><use href="#i-plus"></use></svg> ${this.t('create_new_playlist')}</button>
-          `;
-          const btn = li.querySelector('#btnEmptyNewPlaylist');
-          if (btn) btn.addEventListener('click', () => this.openCreatePlaylistSheet());
-          target.appendChild(li);
-          return;
-        }
-        if (this.playlists.length === 0 && target === grid) {
+        if (this.playlists.length === 0) {
           // Rejilla de la biblioteca sin listas: mensaje breve. El botón
           // «Nueva» ya está en la cabecera de la misma sección.
           const li = document.createElement('li');
@@ -1184,7 +1161,7 @@ Object.assign(App, {
         this.playlists.forEach(pl => {
           const li = document.createElement('li');
           const playing = this.isPlaylistPlaying(pl);
-          li.className = (target === grid ? 'pl-card' : 'pl-row') + (playing ? ' is-playing' : '');
+          li.className = 'pl-card' + (playing ? ' is-playing' : '');
           const cover = this.getPlaylistCover(pl);
           // Nunca interpolar una portada sin validar dentro de style="":
           // una comilla o un `)` permitiría inyectar CSS/HTML desde datos no fiables.
@@ -1192,22 +1169,20 @@ Object.assign(App, {
           const coverBg = hasArt
             ? `background-image:url('${cover}');background-size:cover;background-position:center;`
             : `background:linear-gradient(135deg, ${cover.from || '#6E5CFF'}, ${cover.to || '#FF7AB6'});`;
-          const fallbackIcon = pl.id === 'favoritos' ? 'heart-solid' : 'list-ul';
+          // §104: Favoritos vive solo en su vista; en Listas ya no
+          // hay lista con trato de favorita.
+          const fallbackIcon = 'list-ul';
           const tracksLabel = this.playlistMetaLabel(pl);
           // Ya no hay lista predefinida: ninguna lleva insignia.
           const badge = '';
           const live = playing
             ? '<span class="pl-live"><span class="pl-bars"><i></i><i></i><i></i></span></span>'
             : '';
-          // En las tarjetas (carril de la biblioteca) el play va sobre la
-          // portada como disco de acento. En las filas de «Tus listas» la
-          // miniatura es pequeña y el disco la tapaba: el play pasa a una
-          // columna de acciones propia, junto al borrado.
-          const fabHtml = target === grid
-            ? `<button class="pl-play-fab" type="button" aria-label="${this.esc(this.t('play_all_btn'))}">
+          // En las tarjetas el play va sobre la portada como disco
+          // de acento.
+          const fabHtml = `<button class="pl-play-fab" type="button" aria-label="${this.esc(this.t('play_all_btn'))}">
                  <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
-               </button>`
-            : '';
+               </button>`;
           const coverHtml = `
             <div class="pl-cover${hasArt ? ' has-art' : ''}" data-pl-cover="${this.esc(pl.id)}">
               <div class="pl-cover-grad" style="${coverBg}" data-pl-cover="${this.esc(pl.id)}"></div>
@@ -1216,34 +1191,7 @@ Object.assign(App, {
               ${fabHtml}
             </div>
           `;
-          const smartBadge = pl.smart ? `<span class="smart-badge">${this.esc(this.t('smart_badge'))}</span>` : '';
-          if (target === grid) {
-            li.innerHTML = coverHtml + `<div class="pl-card-info"><h4>${this.esc(pl.name)}${smartBadge}</h4><p>${this.esc(tracksLabel)}</p>${badge}</div>`;
-          } else {
-            li.innerHTML = coverHtml + `<div class="pl-info"><h4>${this.esc(pl.name)}${smartBadge}</h4><p>${this.esc(tracksLabel)}</p></div>`;
-            const actions = document.createElement('div');
-            actions.className = 'pl-row-actions';
-            const playBtn = document.createElement('button');
-            playBtn.type = 'button';
-            playBtn.className = 'pl-row-play';
-            playBtn.setAttribute('aria-label', this.t('play_all_btn'));
-            playBtn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>';
-            playBtn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              this.playPlaylist(pl.id);
-            });
-            const delBtn = document.createElement('button');
-            delBtn.type = 'button';
-            delBtn.className = 'row-action pl-row-delete';
-            delBtn.setAttribute('aria-label', this.t('delete_playlist_btn'));
-            delBtn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>';
-            delBtn.addEventListener('click', (e) => {
-              e.stopPropagation();
-              this.deletePlaylist(pl.id);
-            });
-            actions.append(playBtn, delBtn);
-            li.appendChild(actions);
-          }
+          li.innerHTML = coverHtml + `<div class="pl-card-info"><h4>${this.esc(pl.name)}</h4><p>${this.esc(tracksLabel)}</p>${badge}</div>`;
           const fab = li.querySelector('.pl-play-fab');
           if (fab) fab.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1255,7 +1203,7 @@ Object.assign(App, {
           });
           target.appendChild(li);
         });
-      });
+      }
     },
 
     /* Elimina una playlist. Todas se pueden borrar, también «Mi
@@ -1378,53 +1326,12 @@ Object.assign(App, {
       return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     },
 
-    /* §81: las pistas que una lista inteligente elige AHORA según su
-     * regla. Se recalcula en cada lectura: la lista «se rellena sola»
-     * cuando importas, valoras o reproduces. */
-    smartPlaylistTracks(pl) {
-      if (!pl || !pl.smart) return [];
-      const rule = pl.smart;
-      const plays = (this.stats && this.stats.plays) || {};
-      switch (rule.kind) {
-        case 'rating':
-          return this.tracks.filter(t => this._ratingOf(t) >= 4);
-        case 'genre': {
-          const g = String(rule.genre || '').trim().toLocaleLowerCase();
-          return this.tracks.filter(t => String(t.genre || '').trim().toLocaleLowerCase() === g);
-        }
-        case 'never':
-          return this.tracks.filter(t => !(plays[t.id] > 0));
-        case 'recent': {
-          const since = Date.now() - 30 * 24 * 3600 * 1000;
-          return this.tracks.filter(t => (t.addedAt || 0) >= since);
-        }
-        case 'forgotten': {
-          // Reproducida alguna vez y no en los últimos 90 días. Sin
-          // fecha de última escucha (bibliotecas anteriores a §81 con
-          // reproducciones), cuenta como olvidada: hace mucho que no
-          // suena, que es justo lo que la regla busca.
-          const since = Date.now() - 90 * 24 * 3600 * 1000;
-          return this.tracks.filter(t => (plays[t.id] > 0) && !(t.lastPlayedAt > since));
-        }
-        case 'top':
-          return this.getTopTracks(50).map(x => x.track);
-        default:
-          return [];
-      }
-    },
+    /* §104: aquí vivía smartPlaylistTracks — el motor de las
+     * listas inteligentes, retirado con ellas. */
 
     /* Las pistas de una lista, en el orden en que se ven y suenan. */
     playlistTracksSorted(pl) {
       if (!pl) return [];
-      // §81: inteligentes primero (su regla elige las pistas) y orden
-      // manual después. La regla 'top' ya trae su orden (más
-      // reproducidas): con el orden por defecto no se reordena.
-      if (pl.smart) {
-        const base = this.smartPlaylistTracks(pl);
-        const mode = pl.sort || 'stars';
-        if (pl.smart.kind === 'top' && (mode === 'stars' || mode === 'added')) return base;
-        return this.sortTracksBy(base, mode);
-      }
       const byId = this.trackMap();
       const stored = ((pl && pl.trackIds) || []).map(id => byId.get(id)).filter(Boolean);
       return this.sortTracksBy(stored, (pl && pl.sort) || 'stars');

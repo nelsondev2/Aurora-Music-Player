@@ -4117,3 +4117,66 @@ porque invalida justo después.
 
 En la rama quedan §§100–103 sin publicar; la app pública
 no cambia.
+
+## 104. Segunda auditoría aplicada: muertos, duplicados y nicho
+
+Auditoría completa pedida por el usuario (332 métodos, 301
+ids, 22 hojas, 363 claves) y aplicada con sus decisiones:
+fuera lo muerto, Favoritos con una sola casa, fuera las
+listas inteligentes, fuera el Historial («Buscar duplicados»
+se queda expresamente), fuera «más saltadas» y «olvidadas»
+de Estadísticas. Dormir no se tocó.
+
+### Muerto retirado
+- **La hoja de Listas era zombi**: ningún `openSheet` la ha
+  abierto jamás en todo el historial; la navegación vive en
+  Biblioteca. Y `renderPlaylists()` pintaba **las dos**
+  superficies en cada render — trabajo doble para nadie.
+  Fuera la hoja, su contador y la rama de filas; la rejilla
+  de Biblioteca es la única casa.
+- `savePlaylists()` (compat), `AuroraStorage.close()` y
+  `limitArtwork()` (jamás llamada; su trabajo se hace en
+  línea donde hace falta).
+- 18 atributos `id` que nadie referencia (los elementos
+  viven; se cablean por clase o `data-*`) y el icono
+  `i-tower-broadcast`, huérfano desde §100.
+
+### Duplicado resuelto
+- **Favoritos, una sola casa**: su vista. La lista heredada
+  con id «favoritos» desaparece de Listas y del
+  almacenamiento al cargar (`_settlePlaylists`); los
+  corazones (el conjunto de favoritos) no se tocan.
+
+### Nicho retirado, con migración
+- **Listas inteligentes**: fuera la UI de creación por
+  regla, la insignia, el aviso de edición y el motor. Las
+  listas ya creadas **se materializan** al cargar: la regla
+  se convierte en sus canciones de hoy (`_legacySmartTracks`,
+  el antiguo motor reducido a la migración) y quedan listas
+  normales para siempre.
+- **Historial**: hoja, botón del menú, registro
+  (`_playHistory`), carga y reinicio fuera. «Buscar
+  duplicados» se queda por decisión expresa.
+- **Estadísticas** conserva reproducciones, tiempo, top
+  canciones y top artistas.
+
+### i18n y CSS
+- 30 claves huérfanas fuera (inteligentes ×13, historial
+  ×6, conteos de la hoja zombi y restos de §100): el
+  diccionario baja a **333 claves × 14 idiomas**, sin
+  huérfanas ni colgadas. `cover_exit_fullscreen` se queda:
+  se usa con clave dinámica (verificado a mano; el escáner
+  la daba por muerta y era falso positivo, como
+  `toast_cover_*`).
+- CSS: restos de la hoja de Volumen (`.volume-row`,
+  `.volume-value`), `.smart-badge` y los `.pl-type-*`.
+
+### Verificación
+- **Check §104** `/tmp/check-vista104.js`: **13/13** —
+  incluye la migración real de una inteligente heredada
+  (regla de estrellas → sus canciones, sin `smart`) y la
+  expulsión de la lista fantasma de Favoritos.
+- Humo de regresión: **20/20**; check §101: **13/13**.
+- **Sin release**: la publicada sigue siendo v1.2.0 (§99).
+
+En la rama quedan §§100–104 sin publicar.

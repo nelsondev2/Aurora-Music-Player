@@ -1250,22 +1250,6 @@ const I18N = {
     id: 'Buat daftar putar untuk mengatur lagu Anda menurut suasana, artis, atau kriteria apa pun.',
     'zh-TW': '創建歌單，按心情、藝術家或任意標準整理你的音軌。'
   },
-  create_new_playlist: {
-    es: 'Crear nueva lista',
-    en: 'Create new playlist',
-    pt: 'Criar nova lista',
-    zh: '创建新歌单',
-    ja: '新しいプレイリストを作成',
-    fr: 'Créer une nouvelle liste',
-    it: 'Crea nuova lista',
-    ru: 'Создать новый список',
-    de: 'Neue Playlist erstellen',
-    uk: 'Створити новий плейлист',
-    pl: 'Utwórz nową playlistę',
-    tr: 'Yeni liste oluştur',
-    id: 'Buat daftar putar baru',
-    'zh-TW': '創建新歌單'
-  },
 
   /* ---------- Stats ---------- */
   stats_plays: {
@@ -1507,54 +1491,6 @@ const I18N = {
     tr: 'parça',
     id: 'lagu',
     'zh-TW': '首音軌'
-  },
-  playlist_count_zero: {
-    es: 'Aún no tienes listas. Crea la primera con "+ Nueva".',
-    en: 'No playlists yet. Create your first one with "+ New".',
-    pt: 'Ainda não há listas. Crie a primeira com "+ Nova".',
-    zh: '还没有歌单。点击 "+ 新建" 创建第一个。',
-    ja: 'プレイリストはまだありません。「+ 新規」で作成しましょう。',
-    fr: 'Aucune liste pour l\'instant. Créez la première avec « + Nouvelle ».',
-    it: 'Nessuna lista ancora. Crea la prima con "+ Nuova".',
-    ru: 'Списков пока нет. Создайте первый кнопкой "+ Новый".',
-    de: 'Du hast noch keine Playlists. Erstelle die erste mit "+ Neu".',
-    uk: 'У тебе ще немає плейлистів. Створи перший кнопкою «+ Новий».',
-    pl: 'Nie masz jeszcze playlist. Utwórz pierwszą przyciskiem „+ Nowa”.',
-    tr: 'Henüz listen yok. İlkini "+ Yeni" ile oluştur.',
-    id: 'Anda belum punya daftar putar. Buat yang pertama dengan "+ Baru".',
-    'zh-TW': '還沒有歌單。點擊 "+ 新建" 創建第一個。'
-  },
-  playlist_count_one: {
-    es: '1 lista guardada',
-    en: '1 playlist saved',
-    pt: '1 lista salva',
-    zh: '1 个歌单已保存',
-    ja: 'プレイリスト1件保存済み',
-    fr: '1 liste enregistrée',
-    it: '1 lista salvata',
-    ru: '1 список сохранён',
-    de: '1 Playlist gespeichert',
-    uk: '1 збережений плейлист',
-    pl: '1 zapisana playlista',
-    tr: '1 liste kaydedildi',
-    id: '1 daftar putar tersimpan',
-    'zh-TW': '1 個歌單已保存'
-  },
-  playlist_count_many: {
-    es: 'X listas guardadas',
-    en: 'X playlists saved',
-    pt: 'X listas salvas',
-    zh: 'X 个歌单已保存',
-    ja: 'プレイリストX件保存済み',
-    fr: 'X listes enregistrées',
-    it: 'X liste salvate',
-    ru: 'X списков сохранено',
-    de: 'X Playlists gespeichert',
-    uk: 'Збережено плейлистів: X',
-    pl: 'Zapisane playlisty: X',
-    tr: 'X liste kaydedildi',
-    id: 'X daftar putar tersimpan',
-    'zh-TW': 'X 個歌單已保存'
   },
   favorites_count_zero: {
     es: 'Aún no tienes canciones favoritas. Toca el corazón en cualquier pista para añadirla.',
@@ -2483,16 +2419,6 @@ const I18N = {
     id: 'Tidak ada metadata baru',
     'zh-TW': '沒有新的元數據'
   },
-  settings_history: {
-    es: 'Historial', en: 'History', pt: 'Histórico', zh: '历史记录', ja: '履歴',
-    fr: 'Historique', it: 'Cronologia', ru: 'История',
-    de: 'Verlauf',
-    uk: 'Історія',
-    pl: 'Historia',
-    tr: 'Geçmiş',
-    id: 'Riwayat',
-    'zh-TW': '歷史記錄'
-  },
   search_filter_all: {
     es: 'Todo', en: 'All', pt: 'Tudo', zh: '全部', ja: 'すべて',
     fr: 'Tout', it: 'Tutto', ru: 'Всё',
@@ -2544,26 +2470,6 @@ const I18N = {
     id: 'lagu duplikat dilewati',
     'zh-TW': '首重複音軌已跳過'
   },
-  history_title: {
-    es: 'Historial de reproducción', en: 'Playback history', pt: 'Histórico de reprodução', zh: '播放历史', ja: '再生履歴',
-    fr: 'Historique de lecture', it: 'Cronologia riproduzione', ru: 'История воспроизведения',
-    de: 'Wiedergabeverlauf',
-    uk: 'Історія відтворення',
-    pl: 'Historia odtwarzania',
-    tr: 'Çalma geçmişi',
-    id: 'Riwayat pemutaran',
-    'zh-TW': '播放歷史'
-  },
-  history_empty: {
-    es: 'Sin historial todavía', en: 'No history yet', pt: 'Sem histórico ainda', zh: '暂无历史记录', ja: '履歴はまだありません',
-    fr: "Pas encore d'historique", it: 'Nessuna cronologia ancora', ru: 'Истории пока нет',
-    de: 'Noch kein Verlauf',
-    uk: 'Історії ще немає',
-    pl: 'Brak historii',
-    tr: 'Henüz geçmiş yok',
-    id: 'Belum ada riwayat',
-    'zh-TW': '暫無歷史記錄'
-  },
 
   /* ---------- Pulido i18n ---------- */
   queue_empty: {
@@ -2598,22 +2504,6 @@ const I18N = {
     id: 'Statistik diatur ulang',
     'zh-TW': '統計已重置'
   },
-  history_reset_toast: {
-    es: 'Historial reiniciado',
-    en: 'History cleared',
-    pt: 'Histórico reiniciado',
-    zh: '历史已重置',
-    ja: '履歴をリセットしました',
-    fr: 'Historique réinitialisé',
-    it: 'Cronologia azzerata',
-    ru: 'История сброшена',
-    de: 'Verlauf zurückgesetzt',
-    uk: 'Історію скинуто',
-    pl: 'Historia zresetowana',
-    tr: 'Geçmiş sıfırlandı',
-    id: 'Riwayat diatur ulang',
-    'zh-TW': '歷史已重置'
-  },
   stats_reset_confirm: {
     es: '¿Reiniciar estadísticas?',
     en: 'Reset statistics?',
@@ -2629,22 +2519,6 @@ const I18N = {
     tr: 'İstatistikler sıfırlansın mı?',
     id: 'Atur ulang statistik?',
     'zh-TW': '重置統計？'
-  },
-  history_reset_confirm: {
-    es: '¿Reiniciar historial?',
-    en: 'Clear history?',
-    pt: 'Reiniciar histórico?',
-    zh: '重置历史？',
-    ja: '履歴をリセットしますか？',
-    fr: "Réinitialiser l'historique ?",
-    it: 'Azzerare la cronologia?',
-    ru: 'Сбросить историю?',
-    de: 'Verlauf zurücksetzen?',
-    uk: 'Скинути історію?',
-    pl: 'Zresetować historię?',
-    tr: 'Geçmiş sıfırlansın mı?',
-    id: 'Atur ulang riwayat?',
-    'zh-TW': '重置歷史？'
   },
 
   lrc_offset_toast: {
@@ -2711,22 +2585,6 @@ const I18N = {
     tr: 'İstatistikleri sıfırla',
     id: 'Atur ulang statistik',
     'zh-TW': '重置統計'
-  },
-  history_reset_btn: {
-    es: 'Reiniciar historial',
-    en: 'Clear history',
-    pt: 'Reiniciar histórico',
-    zh: '重置历史',
-    ja: '履歴をリセット',
-    fr: "Réinitialiser l'historique",
-    it: 'Azzera cronologia',
-    ru: 'Сбросить историю',
-    de: 'Verlauf zurücksetzen',
-    uk: 'Скинути історію',
-    pl: 'Resetuj historię',
-    tr: 'Geçmişi sıfırla',
-    id: 'Atur ulang riwayat',
-    'zh-TW': '重置歷史'
   },
   toast_audio_error: {
     es: 'No se pudo reproducir esta pista',
@@ -3093,17 +2951,6 @@ const I18N = {
     tr: 'İçe aktarma iptal edildi. X parça eklendi.',
     id: 'Impor dibatalkan. X lagu ditambahkan.',
     'zh-TW': '導入已取消。已添加 X 首。'
-  },
-  ctx_start_radio: {
-    es: 'Iniciar radio', en: 'Start radio', pt: 'Iniciar rádio',
-    zh: '开始电台', ja: 'ラジオを開始', fr: 'Lancer la radio',
-    it: 'Avvia radio', ru: 'Запустить радио',
-    de: 'Radio starten',
-    uk: 'Запустити радіо',
-    pl: 'Uruchom radio',
-    tr: 'Radyoyu başlat',
-    id: 'Mulai radio',
-    'zh-TW': '開始電臺'
   },
   radio_label: {
     es: 'Radio', en: 'Radio', pt: 'Rádio',
@@ -4077,16 +3924,6 @@ const I18N = {
     id: 'Pengaturan lirik',
     'zh-TW': '歌詞設置'
   },
-  cover_art_aria: {
-    es: 'Portada de X', en: 'Cover art for X', pt: 'Capa de X',
-    zh: 'X 的封面', ja: 'X のカバー', fr: 'Pochette de X', it: 'Copertina di X', ru: 'Обложка X',
-    de: 'Cover von X',
-    uk: 'Обкладинка: X',
-    pl: 'Okładka: X',
-    tr: 'Kapak: X',
-    id: 'Sampul untuk X',
-    'zh-TW': 'X 的封面'
-  },
   /* §95: tocar la portada abre/cierra el modo inmersivo; el nombre
    * accesible de la portada anuncia esa acción (antes: reproducir). */
   cover_fullscreen: {
@@ -4146,16 +3983,6 @@ const I18N = {
     tr: 'İlerleme',
     id: 'Kemajuan',
     'zh-TW': '播放進度'
-  },
-  back: {
-    es: 'Volver', en: 'Back', pt: 'Voltar',
-    zh: '返回', ja: '戻る', fr: 'Retour', it: 'Indietro', ru: 'Назад',
-    de: 'Zurück',
-    uk: 'Назад',
-    pl: 'Wstecz',
-    tr: 'Geri',
-    id: 'Kembali',
-    'zh-TW': '返回'
   },
   move: {
     es: 'Mover', en: 'Move', pt: 'Mover',
@@ -4311,149 +4138,6 @@ const I18N = {
     id: 'Tanpa genre',
     'zh-TW': '無流派'
   },
-  smart_badge: {
-    es: 'Inteligente', en: 'Smart', pt: 'Inteligente',
-    zh: '智能', ja: 'スマート', fr: 'Intelligente',
-    it: 'Smart', ru: 'Умный',
-    de: 'Smart',
-    uk: 'Розумний',
-    pl: 'Inteligentna',
-    tr: 'Akıllı',
-    id: 'Cerdas',
-    'zh-TW': '智能'
-  },
-  pl_type_label: {
-    es: 'Tipo de lista', en: 'Playlist type', pt: 'Tipo de lista',
-    zh: '歌单类型', ja: 'リストの種類', fr: 'Type de liste',
-    it: 'Tipo di playlist', ru: 'Тип плейлиста',
-    de: 'Playlist-Typ',
-    uk: 'Тип плейлиста',
-    pl: 'Typ playlisty',
-    tr: 'Liste türü',
-    id: 'Jenis daftar putar',
-    'zh-TW': '歌單類型'
-  },
-  pl_type_normal: {
-    es: 'Normal', en: 'Normal', pt: 'Normal',
-    zh: '普通', ja: '通常', fr: 'Normale',
-    it: 'Normale', ru: 'Обычный',
-    de: 'Normal',
-    uk: 'Звичайний',
-    pl: 'Zwykła',
-    tr: 'Normal',
-    id: 'Normal',
-    'zh-TW': '普通'
-  },
-  pl_type_smart: {
-    es: 'Inteligente', en: 'Smart', pt: 'Inteligente',
-    zh: '智能', ja: 'スマート', fr: 'Intelligente',
-    it: 'Smart', ru: 'Умный',
-    de: 'Intelligent',
-    uk: 'Розумний',
-    pl: 'Inteligentna',
-    tr: 'Akıllı',
-    id: 'Cerdas',
-    'zh-TW': '智能'
-  },
-  smart_rule_label: {
-    es: 'Regla', en: 'Rule', pt: 'Regra',
-    zh: '规则', ja: 'ルール', fr: 'Règle',
-    it: 'Regola', ru: 'Правило',
-    de: 'Regel',
-    uk: 'Правило',
-    pl: 'Reguła',
-    tr: 'Kural',
-    id: 'Aturan',
-    'zh-TW': '規則'
-  },
-  smart_rule_rating: {
-    es: '4 estrellas o más', en: '4 stars or more', pt: '4 estrelas ou mais',
-    zh: '4 星及以上', ja: '星4つ以上', fr: '4 étoiles ou plus',
-    it: '4 stelle o più', ru: '4 звезды и выше',
-    de: '4 Sterne oder mehr',
-    uk: '4 зірки або більше',
-    pl: '4 gwiazdki lub więcej',
-    tr: '4 yıldız veya üzeri',
-    id: '4 bintang atau lebih',
-    'zh-TW': '4 星及以上'
-  },
-  smart_rule_genre: {
-    es: 'Un género', en: 'One genre', pt: 'Um gênero',
-    zh: '某个流派', ja: 'ジャンル', fr: 'Un genre',
-    it: 'Un genere', ru: 'Один жанр',
-    de: 'Ein Genre',
-    uk: 'Один жанр',
-    pl: 'Jeden gatunek',
-    tr: 'Bir tür',
-    id: 'Satu genre',
-    'zh-TW': '某個流派'
-  },
-  smart_rule_never: {
-    es: 'Nunca reproducidas', en: 'Never played', pt: 'Nunca tocadas',
-    zh: '从未播放', ja: '未再生', fr: 'Jamais écoutées',
-    it: 'Mai riprodotte', ru: 'Никогда не играли',
-    de: 'Nie gespielt',
-    uk: 'Ніколи не грали',
-    pl: 'Nigdy nie odtwarzane',
-    tr: 'Hiç çalınmamış',
-    id: 'Belum pernah diputar',
-    'zh-TW': '從未播放'
-  },
-  smart_rule_recent: {
-    es: 'Añadidas en 30 días', en: 'Added in 30 days', pt: 'Adicionadas em 30 dias',
-    zh: '30 天内添加', ja: '30日以内に追加', fr: 'Ajoutées sous 30 jours',
-    it: 'Aggiunte in 30 giorni', ru: 'Добавлены за 30 дней',
-    de: 'In 30 Tagen hinzugefügt',
-    uk: 'Додані за 30 днів',
-    pl: 'Dodane w ciągu 30 dni',
-    tr: '30 gün içinde eklenenler',
-    id: 'Ditambahkan dalam 30 hari',
-    'zh-TW': '30 天內添加'
-  },
-  smart_rule_forgotten: {
-    es: 'Olvidadas (+90 días)', en: 'Forgotten (90+ days)', pt: 'Esquecidas (+90 dias)',
-    zh: '被遗忘（90 天以上）', ja: '忘れられた曲（90日以上）', fr: 'Oubliées (+90 jours)',
-    it: 'Dimenticate (+90 giorni)', ru: 'Забытые (90+ дней)',
-    de: 'Vergessen (+90 Tage)',
-    uk: 'Забуті (+90 днів)',
-    pl: 'Zapomniane (+90 dni)',
-    tr: 'Unutulanlar (+90 gün)',
-    id: 'Terlupakan (+90 hari)',
-    'zh-TW': '被遺忘（90 天以上）'
-  },
-  smart_rule_top: {
-    es: 'Más reproducidas', en: 'Most played', pt: 'Mais tocadas',
-    zh: '播放最多', ja: 'よく聴く曲', fr: 'Les plus écoutées',
-    it: 'Più ascoltate', ru: 'Самые популярные',
-    de: 'Am meisten gespielt',
-    uk: 'Найбільш відтворювані',
-    pl: 'Najczęściej odtwarzane',
-    tr: 'En çok çalınanlar',
-    id: 'Paling sering diputar',
-    'zh-TW': '播放最多'
-  },
-  toast_smart_created: {
-    es: 'Lista inteligente creada', en: 'Smart playlist created', pt: 'Lista inteligente criada',
-    zh: '智能歌单已创建', ja: 'スマートリストを作成', fr: 'Liste intelligente créée',
-    it: 'Playlist smart creata', ru: 'Умный плейлист создан',
-    de: 'Intelligente Playlist erstellt',
-    uk: 'Розумний плейлист створено',
-    pl: 'Utworzono inteligentną playlistę',
-    tr: 'Akıllı liste oluşturuldu',
-    id: 'Daftar putar cerdas dibuat',
-    'zh-TW': '智能歌單已創建'
-  },
-  smart_playlist_hint: {
-    es: 'Esta lista se rellena sola según su regla; las canciones no se añaden ni se quitan a mano.', en: 'This playlist fills itself by its rule; tracks cannot be added or removed by hand.', pt: 'Esta lista se preenche sozinha conforme a regra; não dá para adicionar ou remover faixas manualmente.',
-    zh: '此歌单按规则自动填充，无法手动添加或移除歌曲。', ja: 'このリストはルールで自動的に埋まります。手動で追加・削除はできません。', fr: 'Cette liste se remplit seule selon sa règle ; impossible d’ajouter ou de retirer des titres à la main.',
-    it: 'Questa playlist si riempie da sola secondo la regola; non puoi aggiungere o rimuovere brani a mano.', ru: 'Этот плейлист заполняется сам по правилу; вручную треки не добавить и не убрать.',
-    de: 'Diese Playlist füllt sich selbst nach ihrer Regel; Songs werden nicht von Hand hinzugefügt oder entfernt.',
-    uk: 'Цей плейлист заповнюється сам за своїм правилом; пісні не додаються і не прибираються вручну.',
-    pl: 'Ta playlista wypełnia się sama według swojej reguły; piosenek nie dodaje się ani nie usuwa ręcznie.',
-    tr: 'Bu liste kuralına göre kendi kendine dolar; şarkılar elle eklenip çıkarılmaz.',
-    id: 'Daftar putar ini terisi sendiri menurut aturannya; lagu tidak ditambahkan atau dihapus manual.',
-    'zh-TW': '此歌單按規則自動填充，無法手動添加或移除歌曲。'
-  },
   save_queue_btn: {
     es: 'Guardar cola como lista', en: 'Save queue as playlist', pt: 'Salvar fila como lista',
     zh: '将队列存为歌单', ja: 'キューをリストに保存', fr: 'Enregistrer la file comme liste',
@@ -4475,50 +4159,6 @@ const I18N = {
     tr: 'Sıra liste olarak kaydedildi',
     id: 'Antrean disimpan sebagai daftar putar',
     'zh-TW': '隊列已存為歌單'
-  },
-  stats_most_skipped: {
-    es: 'Más saltadas', en: 'Most skipped', pt: 'Mais puladas',
-    zh: '跳过最多', ja: 'よくスキップ', fr: 'Les plus passées',
-    it: 'Più saltate', ru: 'Чаще пропускают',
-    de: 'Am meisten übersprungen',
-    uk: 'Найбільш пропущені',
-    pl: 'Najczęściej pomijane',
-    tr: 'En çok atlananlar',
-    id: 'Paling sering dilewati',
-    'zh-TW': '跳過最多'
-  },
-  stats_skips_label: {
-    es: 'saltos', en: 'skips', pt: 'pulos',
-    zh: '次跳过', ja: 'スキップ', fr: 'sauts',
-    it: 'salti', ru: 'пропусков',
-    de: 'Sprünge',
-    uk: 'пропуски',
-    pl: 'pominięcia',
-    tr: 'atlama',
-    id: 'lewatan',
-    'zh-TW': '次跳過'
-  },
-  stats_forgotten: {
-    es: 'Olvidadas', en: 'Forgotten', pt: 'Esquecidas',
-    zh: '被遗忘', ja: '忘れられた曲', fr: 'Oubliées',
-    it: 'Dimenticate', ru: 'Забытые',
-    de: 'Vergessen',
-    uk: 'Забуті',
-    pl: 'Zapomniane',
-    tr: 'Unutulanlar',
-    id: 'Terlupakan',
-    'zh-TW': '被遺忘'
-  },
-  stats_days_ago: {
-    es: 'hace X días', en: 'X days ago', pt: 'há X dias',
-    zh: 'X 天前', ja: 'X日前', fr: 'il y a X jours',
-    it: 'X giorni fa', ru: 'X дн. назад',
-    de: 'vor X Tagen',
-    uk: 'X днів тому',
-    pl: 'X dni temu',
-    tr: 'X gün önce',
-    id: 'X hari lalu',
-    'zh-TW': 'X 天前'
   },
   find_duplicates: {
     es: 'Buscar duplicados', en: 'Find duplicates', pt: 'Buscar duplicadas',

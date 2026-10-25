@@ -232,13 +232,8 @@ Object.assign(App, {
         });
       });
 
-      // Historial (ahora en menú Opciones)
-      const btnHistoryMenu = document.getElementById('menuHistory');
-      if (btnHistoryMenu) btnHistoryMenu.addEventListener('click', () => {
-        this.closeSheet('sheetMore');
-        this.renderHistory();
-        this.openSheet('sheetHistory');
-      });
+      // §104: aquí se abría el Historial desde el menú ⋯; la hoja
+      // se fue con él (Estadísticas conserva lo esencial).
 
       // === #17 Panel de ajustes ===
       const btnSettings = document.getElementById('menuSettings');
@@ -431,7 +426,8 @@ Object.assign(App, {
       });
 
       // Playlists
-      $('btnNewPlaylist').addEventListener('click', () => this.openCreatePlaylistSheet());
+      // §104: btnNewPlaylist vivía en la hoja de listas retirada;
+      // crear listas se abre desde Biblioteca (btnOpenNewPlaylist).
       $('btnOpenNewPlaylist').addEventListener('click', () => {
         this.openCreatePlaylistSheet();
       });
@@ -465,27 +461,6 @@ Object.assign(App, {
         const name = $('playlistName').value.trim();
         const desc = $('playlistDesc').value.trim();
         if (!name) { this.toast(this.t('toast_name_required')); return; }
-        // §81: lista inteligente: nace sin pistas; la regla las elige.
-        if (this._plSmartMode) {
-          const kindSel = document.getElementById('smartRuleKind');
-          const genreSel = document.getElementById('smartRuleGenre');
-          const kind = kindSel ? kindSel.value : 'rating';
-          const smart = { kind };
-          if (kind === 'genre') {
-            smart.genre = genreSel ? genreSel.value : '';
-            if (!smart.genre) { this.toast(this.t('no_results')); return; }
-          }
-          const sCreated = this.createPlaylist(name, desc, []);
-          if (!sCreated) return;
-          sCreated.smart = smart;
-          this.persistPlaylist(sCreated);
-          this.renderPlaylists();
-          $('playlistName').value = '';
-          $('playlistDesc').value = '';
-          this.closeSheet('sheetCreatePlaylist');
-          this.toast(this.t('toast_smart_created') + ': ' + name);
-          return;
-        }
         const created = this.createPlaylist(name, desc, []);
         if (!created) return; // nombre duplicado: createPlaylist ya avisó
         $('playlistName').value = '';
@@ -612,26 +587,6 @@ Object.assign(App, {
         if (this._browse) this._browse.sort = browseSortSel.value;
         this.renderBrowseTracks();
       });
-      // §81: tipo de lista al crear (normal / inteligente)
-      const btnTypeN = document.getElementById('plTypeNormal');
-      const btnTypeS = document.getElementById('plTypeSmart');
-      const smartFieldsEl = document.getElementById('smartRuleFields');
-      const setSmartMode = (on) => {
-        this._plSmartMode = !!on;
-        if (btnTypeN) btnTypeN.classList.toggle('active', !on);
-        if (btnTypeS) btnTypeS.classList.toggle('active', !!on);
-        if (smartFieldsEl) smartFieldsEl.hidden = !on;
-        if (on && typeof this._fillSmartGenreSelect === 'function') this._fillSmartGenreSelect();
-      };
-      if (btnTypeN) btnTypeN.addEventListener('click', () => setSmartMode(false));
-      if (btnTypeS) btnTypeS.addEventListener('click', () => setSmartMode(true));
-      const kindSelEl = document.getElementById('smartRuleKind');
-      if (kindSelEl) kindSelEl.addEventListener('change', () => {
-        const gf = document.getElementById('smartGenreField');
-        if (gf) gf.hidden = kindSelEl.value !== 'genre';
-        if (kindSelEl.value === 'genre' && typeof this._fillSmartGenreSelect === 'function') this._fillSmartGenreSelect();
-      });
-
       const btnRenamePl = document.getElementById('btnRenamePlaylist');
       if (btnRenamePl) btnRenamePl.addEventListener('click', () => this.startRenamePlaylist());
       const btnExpPl = document.getElementById('btnExportPlaylist');
