@@ -441,22 +441,41 @@ Object.assign(App, {
      * - Las listas inteligentes se materializan: la regla se
      *   convierte en trackIds con las canciones que elige HOY y
      *   la lista queda normal para siempre. */
+    /* §105 (endurecimiento): esta normalización corre sobre datos
+     * guardados por versiones anteriores, que no controlamos. Cada
+     * lista se trata AISLADA: si su conversión o su guardado
+     * fallan, esa lista queda intacta tal como venía y el
+     * arranque sigue con las demás — un dato raro heredado jamás
+     * debe poder interrumpir la carga de la biblioteca. */
     _settlePlaylists() {
       if (!Array.isArray(this.playlists)) return;
-      this.playlists = this.playlists.filter(pl => {
-        if (pl && pl.id === 'favoritos') {
-          if (typeof this.deletePlaylistFromStorage === 'function') this.deletePlaylistFromStorage(pl.id);
-          return false;
-        }
-        return !!pl;
-      });
-      this.playlists.forEach(pl => {
-        if (pl && pl.smart) {
-          pl.trackIds = this._legacySmartTracks(pl).map(t => t.id);
-          delete pl.smart;
-          this.persistPlaylist(pl);
-        }
-      });
+      try {
+        this.playlists = this.playlists.filter(pl => {
+          if (pl && pl.id === 'favoritos') {
+            try {
+              if (typeof this.deletePlaylistFromStorage === 'function') this.deletePlaylistFromStorage(pl.id);
+            } catch (e) { /* manda lo de memoria; el disco se reintentará al próximo arranque */ }
+            return false;
+          }
+          return !!pl;
+        });
+        this.playlists.forEach(pl => {
+          if (!(pl && pl.smart)) return;
+          try {
+            // Se calcula ANTES de tocar la lista: si la regla
+            // heredada es rara y falla, `pl` queda como estaba.
+            const ids = this._legacySmartTracks(pl).map(t => t.id);
+            pl.trackIds = ids;
+            delete pl.smart;
+            this.persistPlaylist(pl);
+          } catch (e) {
+            // Lista heredada rara: se deja tal cual venía y se
+            // continúa con el resto; nunca se propaga el error.
+          }
+        });
+      } catch (e) {
+        // Red exterior: normalizar es opcional; cargar, no.
+      }
     },
 
     /* §104: qué canciones elige HOY la regla de una lista

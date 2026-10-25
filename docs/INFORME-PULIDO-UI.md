@@ -4180,3 +4180,35 @@ de Estadísticas. Dormir no se tocó.
 - **Sin release**: la publicada sigue siendo v1.2.0 (§99).
 
 En la rama quedan §§100–104 sin publicar.
+
+## 105. Endurecimiento de la migración de §104
+
+La normalización de listas heredadas (`_settlePlaylists`)
+corre al arrancar sobre datos de versiones anteriores, que
+no controlamos, y corría **sin red de seguridad**: un dato
+raro podría haber interrumpido la carga. Ahora cada lista
+se trata aislada:
+
+- La conversión de una lista inteligente se calcula **antes**
+  de tocarla: si la regla heredada falla, la lista queda
+  exactamente como venía y se sigue con las demás.
+- Si el guardado en disco falla, tampoco se propaga: la
+  sesión queda normalizada en memoria y el disco se
+  reintentará al próximo arranque.
+- Una red exterior envuelve todo: normalizar es opcional;
+  cargar la biblioteca, no.
+
+Decisión ante la ambigüedad: ante el fallo, la lista rara
+**se conserva intacta** en vez de vaciarse o borrarse —
+ningún dato del usuario se pierde por un problema de
+conversión.
+
+### Verificación
+- **Check §105** `/tmp/check-vista105.js`: **8/8** — fuerza
+  el lanzamiento de la conversión de una lista y del
+  guardado de otras, más basura estructural; nada se
+  propaga y el resto se normaliza igual.
+- §104 sigue **13/13**; humo de regresión **20/20**.
+- **Sin release**: la publicada sigue siendo v1.2.0 (§99).
+
+En la rama quedan §§100–105 sin publicar.

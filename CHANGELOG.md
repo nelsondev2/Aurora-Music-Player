@@ -50,6 +50,10 @@ Cambios ya en el código, a la espera de orden de publicación:
   Historial como pantalla propia («Buscar duplicados»
   se queda). Estadísticas conserva lo esencial y el
   diccionario baja a 333 textos por idioma.
+- Blindaje interno (§105, sin cambio visible): la
+  conversión de listas heredadas al arrancar ahora trata
+  cada lista por separado — si alguna diera un problema,
+  queda intacta y el resto de la biblioteca carga igual.
 
 ## 1.2.0 — Primera versión pública
 
