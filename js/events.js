@@ -45,6 +45,10 @@ Object.assign(App, {
           this.openNowPlaying();
         });
         mini.addEventListener('keydown', (e) => {
+          // §94: misma guardia que el clic — si la tecla nace en
+          // un botón del mini (play/siguiente), es para ese botón,
+          // no para abrir el reproductor a pantalla completa.
+          if (e.target.closest && e.target.closest('.mini-btn')) return;
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             this.openNowPlaying();
@@ -54,8 +58,6 @@ Object.assign(App, {
       const btnHomeAdd = document.getElementById('btnHomeAdd');
       if (btnHomeAdd) btnHomeAdd.addEventListener('click', () => this.openFilePicker());
       // Ajustes desde Inicio: no depende de tener una pista cargada.
-      const btnHomeSettings = document.getElementById('btnHomeSettings');
-      if (btnHomeSettings) btnHomeSettings.addEventListener('click', () => this.openSheet('sheetSettings'));
       // Opciones desde Inicio (§54): mismo motivo —la copia de
       // seguridad se importa también en una instalación vacía—.
       const btnHomeMore = document.getElementById('btnHomeMore');
@@ -117,6 +119,9 @@ Object.assign(App, {
             const h = Math.max(120, coverArt.getBoundingClientRect().height);
             this.setVolume(cvVol + dy / h);
             this.showNpVolume(true);
+            // §97 (idea 3): en el modo inmersivo, el gesto de
+            // volumen también despierta el título flotante.
+            if (this._coverFs) this._pokeCoverFsMeta();
           }
         });
         coverArt.addEventListener('pointerup', endGesture);
@@ -128,12 +133,16 @@ Object.assign(App, {
             e.preventDefault();
             return;
           }
-          if (this.currentTrack) this.togglePlay();
+          // §95: tocar la portada ya no pausa — abre/cierra la
+          // portada a pantalla completa con el visualizador. Los
+          // gestos (deslizar, volumen, pulsación larga) siguen
+          // anulando este clic vía _coverSkipClick.
+          if (this.currentTrack) this.toggleCoverFullscreen();
         });
         coverArt.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            if (this.currentTrack) this.togglePlay();
+            if (this.currentTrack) this.toggleCoverFullscreen();
           }
         });
       }
@@ -191,6 +200,15 @@ Object.assign(App, {
       // Editor de letras (#2)
       $('btnLrcEdit').addEventListener('click', () => this.openLrcEditor());
       $('btnLrcSave').addEventListener('click', () => this.saveLrcFromEditor());
+      // §81: sincronizar letra tocando
+      const btnTapMode = document.getElementById('btnLrcTapMode');
+      if (btnTapMode) btnTapMode.addEventListener('click', () => this.toggleLrcTapMode());
+      const btnTap = document.getElementById('btnLrcTap');
+      if (btnTap) btnTap.addEventListener('click', () => this.tapSyncMark());
+      const btnTapUndo = document.getElementById('btnLrcTapUndo');
+      if (btnTapUndo) btnTapUndo.addEventListener('click', () => this.tapSyncUndo());
+      const btnTapDone = document.getElementById('btnLrcTapDone');
+      if (btnTapDone) btnTapDone.addEventListener('click', () => this.tapSyncDone());
       const btnLrcExp = document.getElementById('btnLrcExport');
       if (btnLrcExp) btnLrcExp.addEventListener('click', () => this.exportCurrentLyrics());
       const btnLrcSh = document.getElementById('btnLrcShare');
@@ -246,12 +264,6 @@ Object.assign(App, {
         this.closeSheet('sheetSettings');
         this.toast(this.t('toast_retag_start'));
         this.retagExistingTracks().catch(() => {});
-      });
-      const btnRelink = document.getElementById('menuRelinkAudio');
-      if (btnRelink) btnRelink.addEventListener('click', () => {
-        // Reimportar los mismos archivos cura las pistas pendientes
-        // (la curación vive en handleFileInput).
-        this.openFilePicker(false);
       });
       const btnFree = document.getElementById('menuFreeStorage');
       if (btnFree) btnFree.addEventListener('click', () => {
@@ -356,16 +368,22 @@ Object.assign(App, {
       if (cvVis) cvVis.addEventListener('click', () => this.cycleVisualizerMode());
       const btnAB = document.getElementById('btnABRepeat');
       if (btnAB) btnAB.addEventListener('click', () => this.toggleABRepeat());
-      const chkPitch = document.getElementById('chkPreservePitch');
-      if (chkPitch) chkPitch.addEventListener('change', (e) => this.setPreservesPitch(e.target.checked));
+      /* §94: chkPreservePitch ya tiene su listener 'change' en el
+       * bloque de ajustes de reproducción; aquí había un segundo
+       * idéntico y cada cambio se aplicaba (y guardaba) dos veces. */
 
       // Cola
       $('btnQueue').addEventListener('click', () => {
         this.renderQueue();
         this.openSheet('sheetQueue');
+        // §98: como en las listas (§97), la cola se abre donde
+        // suena — al terminar la animación de apertura.
+        setTimeout(() => this.scrollQueueToCurrent(), 380);
       });
       const btnClearQueue = document.getElementById('btnClearQueue');
       if (btnClearQueue) btnClearQueue.addEventListener('click', () => this.clearUpcomingQueue());
+      const btnSaveQueue = document.getElementById('btnSaveQueueAsPlaylist');
+      if (btnSaveQueue) btnSaveQueue.addEventListener('click', () => this.openSaveQueueSheet());
 
       // Volumen: tap / long-press abre slider compacto; el sheet queda como respaldo
       const btnVol = document.getElementById('btnVolume');
@@ -435,39 +453,28 @@ Object.assign(App, {
         this.openCreatePlaylistSheet();
       });
 
-      // Guardar playlist: crea una nueva (vacía o con pistas) O añade pistas a una existente
+      // Guardar playlist: crea una nueva (vacía; las pistas se
+      // añaden luego desde la vista de edición) o guarda la cola.
+      // (§93: el modo «añadir a existente» desde esta hoja y su
+      // selector de pistas eran inalcanzables desde la §81.)
       $('btnSavePlaylist').addEventListener('click', () => {
-        const ids = Array.from(document.querySelectorAll('.pick-row.checked'))
-          .map(r => r.dataset.trackId);
 
-        // Modo "añadir a playlist existente"
-        if (this._addingToPlaylistId) {
-          if (ids.length === 0) {
-            this.toast(this.t('toast_pick_at_least_one'));
-            return;
-          }
-          const pl = this.playlists.find(p => p.id === this._addingToPlaylistId);
-          if (!pl) {
-            this._addingToPlaylistId = null;
-            this.closeSheet('sheetCreatePlaylist');
-            return;
-          }
-          // Añadir solo IDs que no estén ya
-          let added = 0;
-          ids.forEach(id => {
-            if (!pl.trackIds.includes(id)) { pl.trackIds.push(id); added++; }
-          });
-          this.persistPlaylist(pl);
-          this.renderPlaylists();
-          // Limpiar selección
-          document.querySelectorAll('.pick-row').forEach(r => r.classList.remove('checked'));
+        // §81 modo «guardar cola como lista»: la lista nace con la
+        // cola entera en su orden exacto (sort='added').
+        if (this._queueSaveMode) {
+          const qName = $('playlistName').value.trim();
+          const qDesc = $('playlistDesc').value.trim();
+          if (!qName) { this.toast(this.t('toast_name_required')); return; }
+          const qCreated = this.createPlaylist(qName, qDesc, (this.queue || []).slice());
+          if (!qCreated) return; // nombre duplicado: ya avisó
+          qCreated.sort = 'added';
+          this.persistPlaylist(qCreated);
+          this._queueSaveMode = false;
+          $('playlistName').value = '';
+          $('playlistDesc').value = '';
           this.closeSheet('sheetCreatePlaylist');
-          this._addingToPlaylistId = null;
-          // Re-abrir el sheet de edición si estábamos editando esa playlist
-          if (this._editingPlaylistId === pl.id) {
-            this.renderEditPlaylist();
-          }
-          this.toast(added + ' ' + this.t('toast_tracks_added_to_playlist'));
+          this.closeSheet('sheetQueue');
+          this.toast(this.t('toast_queue_saved') + ': ' + qName);
           return;
         }
 
@@ -475,17 +482,36 @@ Object.assign(App, {
         const name = $('playlistName').value.trim();
         const desc = $('playlistDesc').value.trim();
         if (!name) { this.toast(this.t('toast_name_required')); return; }
-        const created = this.createPlaylist(name, desc, ids);
+        // §81: lista inteligente: nace sin pistas; la regla las elige.
+        if (this._plSmartMode) {
+          const kindSel = document.getElementById('smartRuleKind');
+          const genreSel = document.getElementById('smartRuleGenre');
+          const kind = kindSel ? kindSel.value : 'rating';
+          const smart = { kind };
+          if (kind === 'genre') {
+            smart.genre = genreSel ? genreSel.value : '';
+            if (!smart.genre) { this.toast(this.t('no_results')); return; }
+          }
+          const sCreated = this.createPlaylist(name, desc, []);
+          if (!sCreated) return;
+          sCreated.smart = smart;
+          this.persistPlaylist(sCreated);
+          this.renderPlaylists();
+          $('playlistName').value = '';
+          $('playlistDesc').value = '';
+          this.closeSheet('sheetCreatePlaylist');
+          this.toast(this.t('toast_smart_created') + ': ' + name);
+          return;
+        }
+        const created = this.createPlaylist(name, desc, []);
         if (!created) return; // nombre duplicado: createPlaylist ya avisó
         $('playlistName').value = '';
         $('playlistDesc').value = '';
-        document.querySelectorAll('.pick-row').forEach(r => r.classList.remove('checked'));
         this.closeSheet('sheetCreatePlaylist');
-        if (ids.length === 0) {
-          this.toast(this.t('toast_playlist_empty_created') + ': ' + name);
-        } else {
-          this.toast(this.t('toast_playlist_created') + ' ' + name);
-        }
+        // §93: desde esta hoja la lista siempre nace vacía (sin
+        // selector de pistas); antes había un toast alternativo
+        // para «creada con pistas» que ya nunca podía sonar.
+        this.toast(this.t('toast_playlist_empty_created') + ': ' + name);
       });
 
       // Botones del sheet "Editar playlist"
@@ -580,22 +606,62 @@ Object.assign(App, {
           if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
         }
       });
+      // §81: pestañas de la biblioteca y buscador de duplicados
+      document.querySelectorAll('.lib-tab').forEach(b => {
+        b.addEventListener('click', () => this.setLibTab(b.dataset.libtab));
+      });
+      const btnDup = document.getElementById('btnFindDuplicates');
+      if (btnDup) btnDup.addEventListener('click', () => this.openDuplicates());
+      // §81: orden de la lista en edición
+      const plSortSel = document.getElementById('plSortSelect');
+      if (plSortSel) plSortSel.addEventListener('change', () => {
+        const pl = this.playlists.find(p => p.id === this._editingPlaylistId);
+        if (!pl) return;
+        pl.sort = plSortSel.value;
+        this.persistPlaylist(pl);
+        this.renderEditPlaylist();
+        // §83: si es la lista que está sonando, lo que queda por
+        // sonar adopta el nuevo criterio al momento (si no, la
+        // vista enseñaba un orden y la cola sonaba otro).
+        if (this.playContext && this.playContext.type === 'playlist'
+            && this.playContext.id === pl.id
+            && typeof this.resortUpcomingQueue === 'function') {
+          this.resortUpcomingQueue(true);
+        }
+        this.toast(this.t('toast_sort_saved'));
+      });
+      // §81: orden de la vista álbum/artista/género
+      const browseSortSel = document.getElementById('browseSortSelect');
+      if (browseSortSel) browseSortSel.addEventListener('change', () => {
+        if (this._browse) this._browse.sort = browseSortSel.value;
+        this.renderBrowseTracks();
+      });
+      // §81: tipo de lista al crear (normal / inteligente)
+      const btnTypeN = document.getElementById('plTypeNormal');
+      const btnTypeS = document.getElementById('plTypeSmart');
+      const smartFieldsEl = document.getElementById('smartRuleFields');
+      const setSmartMode = (on) => {
+        this._plSmartMode = !!on;
+        if (btnTypeN) btnTypeN.classList.toggle('active', !on);
+        if (btnTypeS) btnTypeS.classList.toggle('active', !!on);
+        if (smartFieldsEl) smartFieldsEl.hidden = !on;
+        if (on && typeof this._fillSmartGenreSelect === 'function') this._fillSmartGenreSelect();
+      };
+      if (btnTypeN) btnTypeN.addEventListener('click', () => setSmartMode(false));
+      if (btnTypeS) btnTypeS.addEventListener('click', () => setSmartMode(true));
+      const kindSelEl = document.getElementById('smartRuleKind');
+      if (kindSelEl) kindSelEl.addEventListener('change', () => {
+        const gf = document.getElementById('smartGenreField');
+        if (gf) gf.hidden = kindSelEl.value !== 'genre';
+        if (kindSelEl.value === 'genre' && typeof this._fillSmartGenreSelect === 'function') this._fillSmartGenreSelect();
+      });
+
       const btnRenamePl = document.getElementById('btnRenamePlaylist');
       if (btnRenamePl) btnRenamePl.addEventListener('click', () => this.startRenamePlaylist());
       const btnExpPl = document.getElementById('btnExportPlaylist');
       if (btnExpPl) btnExpPl.addEventListener('click', () => this.exportPlaylist());
       const editPlName = document.getElementById('editPlaylistName');
       if (editPlName) editPlName.addEventListener('click', () => this.startRenamePlaylist());
-      const ctxAddPlaylist = document.getElementById('ctxAddPlaylist');
-      if (ctxAddPlaylist) ctxAddPlaylist.addEventListener('click', () => {
-        const t = this.menuTrack();
-        this.closeSheet('sheetTrackMenu');
-        if (!t) return;
-        this._trackToAddId = t.id;
-        this._selectPlaylistForAdd = true;
-        this.renderPlaylists();
-        this.openSheet('sheetPlaylists');
-      });
       const ctxGoArtist = document.getElementById('ctxGoArtist');
       if (ctxGoArtist) ctxGoArtist.addEventListener('click', () => {
         const t = this.menuTrack();
@@ -667,17 +733,6 @@ Object.assign(App, {
       });
 
       // Más opciones
-      $('menuAddToPlaylist').addEventListener('click', () => {
-        this.closeSheet('sheetMore');
-        if (!this.currentTrack) {
-          this.toast(this.t('toast_pick_at_least_one'));
-          return;
-        }
-        // Activar modo "seleccionar playlist para añadir la pista actual"
-        this._selectPlaylistForAdd = true;
-        this.renderPlaylists();
-        this.openSheet('sheetPlaylists');
-      });
       $('menuGoToArtist').addEventListener('click', () => {
         this.closeSheet('sheetMore');
         if (!this.currentTrack || this.isPlaceholderArtist(this.currentTrack.artist)) {
@@ -699,11 +754,6 @@ Object.assign(App, {
       const btnPlayFav = document.getElementById('btnPlayFavoritesNow');
       if (btnPlayFav) btnPlayFav.addEventListener('click', () => {
         this.playFavorites();
-      });
-      // Botón «Reproducir Todo» en el sheet de más valoradas (§60)
-      const btnPlayRated = document.getElementById('btnPlayRatedNow');
-      if (btnPlayRated) btnPlayRated.addEventListener('click', () => {
-        this.playRated();
       });
 
       // Cerrar sheets
@@ -743,11 +793,33 @@ Object.assign(App, {
         }
       });
 
+      // §72: tocar la duración total alterna duración ⇄ restante.
+      const timeTotalEl = document.getElementById('timeTotal');
+      if (timeTotalEl) {
+        try { this._showRemaining = localStorage.getItem('aurora_show_remaining') === '1'; } catch (e) {}
+        timeTotalEl.classList.add('time-toggle');
+        timeTotalEl.setAttribute('role', 'button');
+        timeTotalEl.setAttribute('tabindex', '0');
+        timeTotalEl.setAttribute('title', this.t('time_toggle_remaining'));
+        timeTotalEl.setAttribute('aria-label', this.t('time_toggle_remaining'));
+        const flipRemaining = () => {
+          this._showRemaining = !this._showRemaining;
+          try { localStorage.setItem('aurora_show_remaining', this._showRemaining ? '1' : '0'); } catch (e) {}
+          this.updateProgress();
+        };
+        timeTotalEl.addEventListener('click', flipRemaining);
+        timeTotalEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flipRemaining(); }
+        });
+      }
+
       // Restore volume
       const savedVol = localStorage.getItem('aurora_volume');
       const savedN = savedVol != null ? parseFloat(savedVol) : NaN;
-      // 0.8 era el default antiguo; al subirlo a 1 no pisar un volumen elegido a propósito
-      if (isFinite(savedN) && savedN > 0 && Math.abs(savedN - 0.8) > 0.001) this.setVolume(savedN);
+      // 0.8 era el default antiguo; al subirlo a 1 no pisar un volumen elegido a propósito.
+      // §94: el 0 también es un volumen elegido (silencio): antes
+      // no pasaba el `> 0` y la app amanecía a todo volumen.
+      if (isFinite(savedN) && savedN >= 0 && Math.abs(savedN - 0.8) > 0.001) this.setVolume(savedN);
       else this.setVolume(1);
 
       // Botón estadísticas (si existe)
@@ -810,10 +882,21 @@ Object.assign(App, {
       // Atajos de teclado (desktop)
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-          const open = document.querySelectorAll('.sheet.open');
-          if (open.length) {
+          // §94: cerrar la hoja de ENCIMA de la pila (la última
+          // abierta), no la última en orden del DOM: con dos hojas
+          // abiertas cuyo orden en el HTML difiere del de apertura,
+          // Escape cerraba la de abajo y dejaba la visible abierta.
+          const stack = this._sheetStack || [];
+          const topId = stack.length ? stack[stack.length - 1] : null;
+          const top = topId ? document.getElementById(topId) : null;
+          if (top && top.classList.contains('open')) {
             e.preventDefault();
-            this.closeSheet(open[open.length - 1].id);
+            this.closeSheet(topId);
+          } else if (this._coverFs) {
+            // §95: sin hojas abiertas, Escape sale de la portada
+            // a pantalla completa (las hojas tienen prioridad).
+            e.preventDefault();
+            this.setCoverFullscreen(false);
           }
           return;
         }
@@ -826,6 +909,12 @@ Object.assign(App, {
         // manejo de flechas (±5 s): si el evento también llega aquí, el
         // salto se duplica (hallazgo A2 de la revisión externa).
         if (e.target.closest && e.target.closest('[role="slider"]')) return;
+        // §94: si el foco está sobre un botón/enlace/control, la
+        // tecla Espacio es suya (el navegador lo activa con ella):
+        // secuestrarla para play/pausa dejaba el botón enfocado
+        // sin responder. Los atajos solo mandan con el foco libre.
+        if (e.key === ' ' && e.target && e.target.closest &&
+            e.target.closest('button, a[href], [role="button"], select')) return;
         if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
           e.preventDefault();
           const sh = document.getElementById('sheetShortcuts');
@@ -864,6 +953,7 @@ Object.assign(App, {
           const dur = this.audio && this.audio.duration;
           const totalEl = document.getElementById('timeTotal');
           if (totalEl) totalEl.textContent = this.fmtTime(dur);
+          this.updateProgress();
           this.updateMediaPosition(true);
           if (this.currentTrack && isFinite(dur) && dur > 0 &&
               (!this.currentTrack.duration || this.currentTrack.duration === 0)) {
@@ -940,52 +1030,14 @@ Object.assign(App, {
     wireGestures() {
       // Ídem que wireEvents(): los gestos tampoco se cablean dos veces.
       if (this._wired.gestures) return;
-      const screen = document.getElementById('deviceScreen');
-      let sx = 0, sy = 0, st = 0, swiping = false, swipeFromUi = false;
-      // Zonas donde un arrastre NUNCA significa «cambiar de canción» ni
-      // «cerrar Letras»: la barra de herramientas (ahora desplazable en
-      // horizontal: arrastrarla para ver más ajustes saltaba a la
-      // siguiente canción), la cabecera, la mini-cabecera, la barra de
-      // controles y cualquier control interactivo. El gesto se marca al
-      // nacer (touchstart), porque el dedo puede terminar sobre otro
-      // elemento distinto del que lo empezó.
-      const SWIPE_UI = '.lyrics-toolbar, .lyrics-top-bar, .lyrics-mini, .lyrics-controls, .lyrics-loop-indicator, button, input, textarea, select, a, [role="slider"]';
-      screen.addEventListener('touchstart', (e) => {
-        if (e.touches.length !== 1) return;
-        sx = e.touches[0].clientX;
-        sy = e.touches[0].clientY;
-        st = Date.now();
-        swiping = true;
-        swipeFromUi = !!(e.target && e.target.closest && e.target.closest(SWIPE_UI));
-      }, { passive: true });
-
-      screen.addEventListener('touchend', (e) => {
-        if (!swiping) return;
-        swiping = false;
-        if (swipeFromUi) { swipeFromUi = false; return; }
-        const dx = e.changedTouches[0].clientX - sx;
-        const dy = e.changedTouches[0].clientY - sy;
-        const dt = Date.now() - st;
-        const ax = Math.abs(dx), ay = Math.abs(dy);
-        // Swipe horizontal (umbral 60px, rápido <500ms)
-        if (ax > 60 && ax > ay * 1.5 && dt < 600) {
-          const target = e.target;
-          if (target.closest('#progressTrack, .sheet, .bottom-nav, .mini-player, .app-chrome, .view-home, .controls-main, .controls-secondary, #coverArt')) return;
-          const lyrics = document.getElementById('viewLyrics');
-          if (!(lyrics && lyrics.classList.contains('active'))) return;
-          if (dx < 0) this.next();
-          else this.prev();
-          if (navigator.vibrate) navigator.vibrate(10);
-        }
-        // Sin swipe vertical: deslizar hacia abajo ya NO cierra
-        // Letras (a petición del usuario). Era fácil dispararlo sin
-        // querer al hacer scroll por la letra; para salir queda el
-        // botón de volver de la cabecera (y el de pantalla completa).
-        // Doble tap en portada → like
-      });
-
-      // El like está en el botón del título; la portada hace play/pausa.
-
+      // §86: eliminado el gesto horizontal para cambiar de canción.
+      // Solo vivía en la vista de Letras y provocaba saltos de pista
+      // accidentales al desplazar la letra en diagonal; quedan los
+      // botones anterior/siguiente y el toque sobre una línea para
+      // saltar a ese instante. El scroll vertical de la letra es
+      // nativo de su contenedor, no necesita gesto propio. (Antes
+      // también se gestionaba aquí que deslizar hacia abajo NO
+      // cerrara Letras: ya no hay listener alguno que cerrar.)
       this._wired.gestures = true;
     },
 

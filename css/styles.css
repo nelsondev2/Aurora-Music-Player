@@ -27,22 +27,20 @@
 
   --text-1:      #ffffff;
   --text-2:      rgba(255,255,255,0.72);
-  --text-3:      rgba(255,255,255,0.48);
+  /* §70 [7]: 0.48 daba ~4.3:1 sobre superficies elevadas; 0.58 supera 5:1. */
+  --text-3:      rgba(255,255,255,0.58);
   --text-4:      rgba(255,255,255,0.30);
 
-  --accent:      #8B7CFF;
-  --accent-2:    #FF7AB6;
-  --accent-3:    #E8B84A;
-  --accent-fill: #5B49D6;
-  --accent-fill-2: #4A3BBF;
+  --accent:      #9D8BFF;
+  --accent-2:    #FF8FB8;
+  --accent-fill: #5B45D6;
+  --accent-fill-2: #4836B4;
   /* Segundo color para degradados de TEXTO sobre el fondo (no sobre
      relleno): claro y legible en oscuro, oscuro en tema claro. */
-  --accent-text-2: #FF7AB6;
+  --accent-text-2: #FF8FB8;
   --accent-on-fill: #ffffff;
-  --accent-rgb:  139, 124, 255;
-  --success:     #3D9B7A;
+  --accent-rgb:  91, 69, 214;
   --danger:      #E85A5A;
-  --warning:     #E8B84A;
 
   /* Tipografía — sistema, sin CDN */
   --font-sans:   -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
@@ -64,10 +62,11 @@
 
   /* Espaciado / forma / motion */
   --pad: 20px;
-  --gap: 14px;
-  --radius-xs: 8px;
   --radius-sm: 12px;
-  --radius: 20px;
+  /* §94: --radius-md se usaba (portadas del catálogo) sin estar
+   * definido en ninguna parte: el var() inválido dejaba las
+   * esquinas cuadradas. */
+  --radius-md: 16px;
   --radius-cover: 24px;
   --radius-pill: 999px;
   --shadow-cover: 0 24px 48px rgba(0,0,0,.45);
@@ -116,7 +115,6 @@
   vertical-align: -0.125em;
 }
 .icon-btn .ico { width: 18px; height: 18px; }
-.icon-btn-large .ico { width: 22px; height: 22px; }
 .ctrl-shuffle .ico, .ctrl-repeat .ico { width: 18px; height: 18px; }
 .ctrl-prev .ico, .ctrl-next .ico { width: 26px; height: 26px; }
 .ctrl-play .ico { width: 26px; height: 26px; }
@@ -124,7 +122,10 @@
 .nav-btn .ico { width: 20px; height: 20px; display: block; }
 .menu-row .ico { width: 16px; height: 16px; flex-shrink: 0; }
 .volume-row .ico { width: 18px; height: 18px; }
-.empty-icon .ico { width: 32px; height: 32px; }
+/* §92: aquí vivía una regla muerta `.empty-icon .ico {32px}` —
+ * la de 28 px de la sección de estados vacíos mandaba por orden
+ * de cascada; se retira para que nadie la "corrija" creyendo que
+ * es la vigente. */
 .sec-btn { flex-direction: column; }
 .controls-secondary .sec-btn .ico { margin-bottom: 2px; }
 
@@ -145,7 +146,9 @@ html, body {
 button, input { font-family: inherit; color: inherit; }
 button { background: none; border: none; cursor: pointer; }
 ul { list-style: none; }
-input { -webkit-user-select: text; user-select: text; }
+/* §94: textarea también — el editor LRC heredaba el
+ * user-select:none global y no dejaba seleccionar su texto. */
+input, textarea { -webkit-user-select: text; user-select: text; }
 
 svg { display: block; }
 
@@ -205,7 +208,6 @@ svg { display: block; }
 @media (max-width: 360px) {
   :root {
     --pad: 12px;
-    --gap: 8px;
     --bottom-nav-h: 50px;
   }
   .sec-btn { font-size: 0.5rem; padding: 6px 2px; }
@@ -232,7 +234,7 @@ svg { display: block; }
   .lt-group-label { font-size: 0.5rem; letter-spacing: 0.04em; }
   .lt-group .lt-btn { min-width: 40px; padding: 0 4px; }
   .lt-offset-value { min-width: 32px; font-size: var(--fs-2xs); }
-  .lt-sep { display: none; }  /* ocultar separadores para ahorrar espacio */
+    /* ocultar separadores para ahorrar espacio */
 }
 
 /* Pantallas muy bajas (landscape o móviles pequeños en altura) */
@@ -302,7 +304,6 @@ svg { display: block; }
   z-index: 2;
 }
 
-.view.exit-left { transform: translateX(-40px); }
 
 /* ---------- Fondo dinámico ---------- */
 .bg-blur {
@@ -431,21 +432,9 @@ svg { display: block; }
     0 32px 64px rgba(0,0,0,0.55),
     0 0 40px color-mix(in srgb, var(--cover-from) 35%, transparent);
 }
-.cover-play-hint {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.28);
-  color: #fff;
-  opacity: 0;
-  transition: opacity .2s;
-  pointer-events: none;
-}
-.cover-play-hint .ico { width: 42px; height: 42px; filter: drop-shadow(0 6px 16px rgba(0,0,0,0.45)); }
-.cover-art:not(.playing):hover .cover-play-hint,
-.cover-art:not(.playing):active .cover-play-hint { opacity: 1; }
+/* §98: aquí vivía la pista visual de la portada (velo §95,
+ * insignia esquinera §96); retirada por completo junto con su
+ * HTML: el modo inmersivo se descubre tocando, sin iconos. */
 .cover-art:active:not(.vol-adjusting) { transform: scale(.98); }
 .cover-art.playing:active:not(.vol-adjusting) {
   animation: none;
@@ -496,30 +485,7 @@ svg { display: block; }
 }
 @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
 
-.cover-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
-  padding: 12px;
-  background: linear-gradient(180deg, transparent 60%, rgba(0,0,0,0.4));
-}
-.icon-btn-large {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-1);
-  transition: transform .15s, background .2s;
-}
-.icon-btn-large:active { transform: scale(0.9); }
-.icon-btn-large.liked, .sec-btn.liked svg {
+.sec-btn.liked svg {
   /* --accent (no --accent-2) para que el corazón conserve ≥4.5:1 también
      en tema claro; --accent-2 es un tono brillante decorativo. */
   color: var(--accent);
@@ -600,6 +566,16 @@ svg { display: block; }
   touch-action: none;
   transition: height var(--dur) var(--ease-out);
 }
+/* §69: la pista visible mide 3px; el agarre tactil sube a ~25px de alto. */
+.progress-track::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* §70 [5]: la auditoria externa midio 22px de alto util; ahora ~31px. */
+  top: -14px;
+  bottom: -14px;
+}
 .progress-track:hover,
 .progress-track:focus-visible,
 .progress-track.dragging {
@@ -609,6 +585,10 @@ svg { display: block; }
   position: absolute;
   inset: 0;
   width: 0%;
+  /* §72: timeupdate llega a ~4 Hz y el relleno avanzaba a escalones;
+     con la transición lineal el avance es continuo. Solo sonando y
+     nunca arrastrando (en pausa el salto al buscar es inmediato). */
+  transition: width .3s linear;
   background: linear-gradient(90deg, var(--cover-from), var(--cover-to));
   border-radius: var(--radius-pill);
   pointer-events: none;
@@ -626,6 +606,8 @@ svg { display: block; }
   transition: transform var(--dur) var(--ease-out);
   pointer-events: none;
 }
+.progress-track.dragging .progress-fill { transition: none; }
+.view-player:not(:has(#coverArt.playing)) .progress-fill { transition: none; }
 .progress-track.dragging .progress-thumb,
 .progress-track:hover .progress-thumb,
 .progress-track:focus-visible .progress-thumb { transform: translateY(-50%) scale(1); }
@@ -755,14 +737,24 @@ svg { display: block; }
 .sec-btn.active .ico { background: rgba(var(--accent-rgb), 0.18); }
 
 /* ---------- Visualizador de frecuencias ---------- */
+/* §84: superpuesto sobre la parte baja de la portada (dentro de
+ * #coverArt), no en el flujo de la columna. Activarlo ya no roba
+ * 64 px a la portada: su tamaño es idéntico con y sin
+ * visualizador, en cualquier altura de pantalla. El degradado
+ * oscurece el pie de la carátula para que las barras (colores de
+ * la propia portada, §75) se lean sobre cualquier imagen. */
 .visualizer-section {
-  flex: 0 0 auto;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
   height: 62px;
-  margin: 2px 18px 0;
-  border-radius: 14px;
+  margin: 0;
   overflow: hidden;
-  background: var(--surface);
-  opacity: .92;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.38));
+  opacity: .95;
+  pointer-events: none;
+  z-index: 2;
 }
 .visualizer-section canvas {
   display: block;
@@ -792,8 +784,10 @@ svg { display: block; }
   justify-content: center;
   gap: 2px;
   padding: 4px 2px;
-  color: var(--text-4);
-  font-size: var(--fs-3xs);
+  /* §69: antes --text-4 (30% en oscuro, contraste ~2:1): apenas se leia. */
+  color: var(--text-3);
+  /* §70 [6]: 9px era poco para una etiqueta principal; 10px sigue cabiendo. */
+  font-size: var(--fs-2xs);
   font-weight: 600;
   letter-spacing: 0.02em;
   transition: color .2s;
@@ -829,6 +823,87 @@ svg { display: block; }
 .view-lyrics.lyrics-fullscreen .lyrics-scroll {
   padding: 20px 16px;
 }
+
+/* ============== PORTADA A PANTALLA COMPLETA (§95) ==============
+ * Tocar la portada la agranda a toda la vista con el visualizador
+ * encima; tocar otra vez vuelve al reproductor. Solo se oculta la
+ * interfaz que rodea a la portada: el lienzo y la onda no se mueven
+ * del DOM, así que no hay repintados ni saltos de tamaño. */
+.view-player.cover-fullscreen .top-bar,
+.view-player.cover-fullscreen .track-info,
+.view-player.cover-fullscreen .progress-section,
+.view-player.cover-fullscreen .np-volume,
+.view-player.cover-fullscreen .controls-main,
+.view-player.cover-fullscreen .controls-secondary {
+  display: none !important;
+}
+.view-player.cover-fullscreen {
+  padding: calc(var(--safe-top) + 10px) 12px calc(var(--safe-bottom) + 10px);
+}
+.view-player.cover-fullscreen .cover-section {
+  flex: 1 1 auto;
+  padding: 0;
+}
+.view-player.cover-fullscreen .cover-art,
+.view-player.cover-fullscreen .cover-glow {
+  width: min(94vw, 82dvh, 640px);
+}
+.view-player.cover-fullscreen .visualizer-section {
+  height: 20%;
+  min-height: 88px;
+}
+/* §97 (idea 3): título flotante del modo inmersivo — aparece y
+ * se desvanece solo; nunca compite con la portada (§96). */
+.cover-fs-meta {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: calc(20% + 14px);
+  z-index: 4;
+  text-align: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .45s ease, transform .45s ease;
+}
+.cover-fs-meta.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.cover-fs-title {
+  font-size: var(--fs-h3, 20px);
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cover-fs-artist {
+  margin-top: 2px;
+  font-size: var(--fs-small, 13px);
+  color: rgba(255, 255, 255, 0.82);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* §98: aquí vivía el resumen fijo de la cola (§97, idea 10),
+ * retirado por completo junto con su HTML, su JS y su clave. */
+/* §97 (idea 6): valor a la derecha de las filas del menú (sleep). */
+.menu-value {
+  margin-left: auto;
+  font-size: var(--fs-small, 13px);
+  font-weight: 600;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+/* Sin barra inferior: la portada manda en toda la pantalla. */
+.device-screen:has(.view-player.cover-fullscreen) .bottom-nav {
+  display: none !important;
+}
+/* §98: retiradas también las reglas que anunciaban ampliar/
+ * salir sobre la portada (la insignia ya no existe). */
 .lyrics-exit-fs {
   position: absolute;
   top: calc(var(--safe-top) + 8px);
@@ -919,13 +994,6 @@ svg { display: block; }
 }
 .lt-offset-value.is-zero { color: var(--text-3); }
 .lt-reset { color: var(--text-3); }
-.lt-sep {
-  width: 1px;
-  height: 18px;
-  background: var(--border);
-  margin: 0 2px;
-  flex-shrink: 0;
-}
 
 .lyrics-mini {
   position: relative;
@@ -1007,7 +1075,7 @@ svg { display: block; }
   font-weight: 600;
   line-height: 1.4;
   color: var(--text-3);
-  transition: color .15s ease, transform .15s ease, opacity .15s ease;
+  transition: color .15s ease, transform .15s ease, opacity .15s ease, filter .25s ease;
   padding: 2px 8px;
   opacity: 0.9;
   transform: none;
@@ -1058,7 +1126,10 @@ svg { display: block; }
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--accent);
+  /* §94: blanco sobre --accent (lavanda) daba ~2,7:1; sobre el
+   * relleno de acción (--accent-fill) da ~7:1. Vale para este y
+   * los otros cuatro selectores marcados abajo. */
+  background: var(--accent-fill);
   color: #fff;
   padding: 6px 14px;
   border-radius: 999px;
@@ -1172,6 +1243,12 @@ svg { display: block; }
 }
 .sheet-header h3 {
   flex: 1;
+  /* §92: un nombre de lista largo desbordaba la cabecera y
+   * empujaba la X; con elipsis queda en una línea. */
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: var(--fs-subtitle);
   font-weight: 700;
   font-family: var(--font-display);
@@ -1251,33 +1328,44 @@ svg { display: block; }
 .empty-state::before {
   content: '';
   position: absolute;
-  width: 180px;
-  height: 180px;
+  width: 160px;
+  height: 160px;
   top: 4%;
   left: 50%;
   transform: translateX(-50%);
   border-radius: 50%;
   background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
   filter: blur(36px);
-  opacity: 0.38;
+  opacity: 0.15;
   pointer-events: none;
   z-index: 0;
 }
 .empty-state > * { position: relative; z-index: 1; }
+/* §91: antes un mosaico morado sólido de 72 px con sombra dura y
+ * glifo blanco: pesaba más que el propio mensaje («el icono
+ * horrible» de Buscar). Ahora es cristal tintado con el acento:
+ * superficie con un lavado de color, filete fino, glifo en
+ * acento y sombra neutra suave — la dirección discreta del resto
+ * de la interfaz. El degradado sólido se queda para los botones
+ * de acción (play, primarios), donde sí manda. */
 .empty-icon {
-  width: 72px;
-  height: 72px;
-  border-radius: 22px;
+  width: 68px;
+  height: 68px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent-on-fill);
-  background: linear-gradient(145deg, var(--accent-fill), var(--accent-fill-2));
-  border: 0;
+  color: var(--accent);
+  background: var(--surface);
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--accent) 20%, var(--surface)),
+    color-mix(in srgb, var(--accent) 7%, var(--surface)));
+  border: 1px solid var(--border);
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
   margin-bottom: 6px;
-  box-shadow: 0 16px 36px rgba(var(--accent-rgb), 0.32);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
-.empty-icon .ico { width: 28px; height: 28px; color: var(--accent-on-fill); }
+.empty-icon .ico { width: 28px; height: 28px; color: var(--accent); }
 .empty-state h4 {
   font-family: var(--font-display);
   font-size: var(--fs-title);
@@ -1344,12 +1432,12 @@ svg { display: block; }
 }
 
 /* ---------- Listas ---------- */
-.queue-list, .track-list, .pick-tracks-list, .playlist-list, .library-playlists {
+.queue-list, .track-list, .playlist-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-.queue-item, .track-row, .pick-row {
+.queue-item, .track-row {
   position: relative;
   display: flex;
   align-items: center;
@@ -1358,7 +1446,7 @@ svg { display: block; }
   border-radius: var(--radius-sm);
   transition: background .15s;
 }
-.queue-item:active, .track-row:active, .pick-row:active { background: var(--surface); }
+.queue-item:active, .track-row:active { background: var(--surface); }
 .queue-item.current, .track-row.current { background: var(--surface); }
 .queue-item.current::before,
 .track-row.current::before {
@@ -1374,7 +1462,7 @@ svg { display: block; }
 .queue-item.current .row-title,
 .track-row.current .row-title { color: var(--text-1); }
 
-/* Pistas restauradas de un backup que aún no tienen audio vinculado */
+/* §69: comentario actualizado; el sistema al que aludia se elimino en §57. */
 
 .row-cover {
   width: 48px;
@@ -1412,18 +1500,8 @@ svg { display: block; }
   color: var(--text-3);
 }
 .row-action:active { background: var(--surface); }
-.row-check {
-  width: 24px; height: 24px;
-  border-radius: 50%;
-  border: 2px solid var(--text-4);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.pick-row.checked .row-check {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
+/* §93: .row-check fuera — su único creador era el selector de
+ * pistas retirado (la casilla circular de las filas .pick-row). */
 
 /* ---------- Playlist list ---------- */
 .playlist-list { gap: 8px; }
@@ -1440,7 +1518,9 @@ svg { display: block; }
 .playlist-list .pl-row:active { background: var(--surface-2); transform: scale(0.99); }
 .playlist-list .pl-row.is-playing {
   border-color: rgba(var(--accent-rgb), 0.45);
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.14), rgba(236,72,153,0.08));
+  /* §94: el segundo tono era rosa cableado (#EC4899) aunque el
+   * usuario hubiera elegido otro acento; ahora es el suyo. */
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.14), color-mix(in srgb, var(--accent-2) 8%, transparent));
 }
 .pl-cover {
   width: 58px; height: 58px;
@@ -1649,14 +1729,7 @@ svg { display: block; }
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-.pick-tracks-title {
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--text-2);
-  margin: 18px 0 10px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
+/* §93: .pick-tracks-title fuera con el selector de pistas. */
 
 /* ---------- EQ ---------- */
 .eq-presets {
@@ -1665,6 +1738,10 @@ svg { display: block; }
   margin-bottom: 18px;
   overflow-x: auto;
   padding-bottom: 4px;
+  /* §70 [12]: el ultimo chip se cortaba sin avisar de que hay scroll;
+     el difuminado del borde derecho lo comunica. */
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
 }
 .eq-preset {
   padding: 8px 14px;
@@ -1821,81 +1898,12 @@ svg { display: block; }
   text-align: left;
   font-size: var(--fs-body);
   font-weight: 500;
-  color: var(--text-1);
   border-radius: var(--radius-sm);
   color: var(--text-2);
   transition: background .15s;
 }
 .menu-row:active { background: var(--surface); }
 .menu-row svg { color: var(--text-3); flex-shrink: 0; }
-
-/* ---------- Tests panel ---------- */
-.tests-summary {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-bottom: 14px;
-}
-.ts-stat {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 12px 8px;
-  text-align: center;
-}
-.ts-num {
-  display: block;
-  font-size: 1.375rem;
-  font-weight: 800;
-  font-family: var(--font-display);
-  color: var(--text-1);
-  font-variant-numeric: tabular-nums;
-}
-.ts-lbl {
-  display: block;
-  font-size: var(--fs-2xs);
-  color: var(--text-3);
-  margin-top: 2px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.ts-stat.ok .ts-num { color: var(--success); }
-.ts-stat.fail .ts-num { color: var(--danger); }
-.ts-stat.fix .ts-num { color: var(--warning); }
-
-.tests-cycle {
-  display: flex;
-  justify-content: space-between;
-  background: var(--surface);
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  font-size: var(--fs-caption);
-  color: var(--text-2);
-  margin-bottom: 14px;
-}
-.tests-cycle strong { color: var(--text-1); }
-
-.tests-log {
-  background: #000;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 10px;
-  font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
-  font-size: var(--fs-micro);
-  line-height: 1.6;
-  color: var(--text-3);
-  max-height: 280px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.tests-log .log-pass { color: var(--success); }
-.tests-log .log-fail { color: var(--danger); }
-.tests-log .log-fix  { color: var(--warning); }
-.tests-log .log-info { color: var(--text-2); }
-.tests-log .log-time { color: var(--text-4); }
-.tests-log .log-divider { color: var(--text-4); border-top: 1px dashed var(--border); display: block; margin: 4px 0; }
 
 /* ---------- Toast ---------- */
 .toast {
@@ -2033,7 +2041,9 @@ svg { display: block; }
 }
 .empty-hint {
   font-size: var(--fs-micro) !important;
-  color: var(--text-4) !important;
+  /* §94: --text-4 (30 %) dejaba la pista en ~3,2:1; con
+   * --text-3 (58 %) supera 5:1 como el resto del texto tenue. */
+  color: var(--text-3) !important;
   margin: 0 !important;
   letter-spacing: 0.03em;
 }
@@ -2042,8 +2052,11 @@ svg { display: block; }
  *  Drag-and-drop en la cola
  * ===================================================================== */
 .drag-handle {
-  width: 28px;
-  height: 28px;
+  /* §92: la base decía 28 px, pero el bloque táctil posterior
+   * (40×44 px) ya fijaba el tamaño real; se alinea la base para
+   * que el primer valor que se lea no parezca un asa diminuta. */
+  width: 32px;
+  height: 32px;
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -2125,8 +2138,6 @@ svg { display: block; }
 .icon-add:active { transform: scale(0.92); }
 
 /* Eliminar pista hover */
-.delete-track { color: var(--text-3); }
-.delete-track:active { color: var(--danger); background: rgba(239, 68, 68, 0.12); }
 
 /* Placeholder cuando biblioteca vacía */
 .track-row.empty-placeholder {
@@ -2194,8 +2205,9 @@ svg { display: block; }
 
 .accent-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
+  /* Seis acentos (§66): 3×2, círculos grandes y nombres legibles. */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 }
 .accent-opt {
   aspect-ratio: 1;
@@ -2210,18 +2222,25 @@ svg { display: block; }
 }
 .accent-opt:active { transform: scale(0.9); }
 .accent-opt.active { border-color: var(--text-1); }
-.accent-opt[data-accent="aurora"] { background: linear-gradient(135deg, #6E5CFF, #FF7AB6); }
-.accent-opt[data-accent="ocean"]  { background: linear-gradient(135deg, #1A6A88, #3EC8B8); }
-.accent-opt[data-accent="moss"]   { background: linear-gradient(135deg, #2A6B48, #A8C86A); }
-.accent-opt[data-accent="amber"]  { background: linear-gradient(135deg, #C45C18, #E8B84A); }
-.accent-opt[data-accent="cherry"] { background: linear-gradient(135deg, #A61B3A, #E85A7A); }
+.accent-opt[data-accent="aurora"] { background: linear-gradient(135deg, #745CFF, #FF6FA5); }
+.accent-opt[data-accent="ocean"]  { background: linear-gradient(135deg, #1F7AE0, #23C8B2); }
+.accent-opt[data-accent="moss"]   { background: linear-gradient(135deg, #1E9E62, #9BD147); }
+.accent-opt[data-accent="amber"]  { background: linear-gradient(135deg, #E8710A, #F5B81F); }
+.accent-opt[data-accent="cherry"] { background: linear-gradient(135deg, #E01A44, #FF6B81); }
+.accent-opt[data-accent="fuchsia"] { background: linear-gradient(135deg, #C22BD6, #FF5CA8); }
 .accent-opt span {
   font-size: var(--fs-3xs);
   font-weight: 700;
-  color: rgba(255,255,255,0.9);
+  color: rgba(255,255,255,0.95);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  /* Pastilla oscura (§66): el nombre se lee sobre cualquier extremo
+   * del degradado, también los luminosos (ámbar, musgo); antes solo
+   * llevaba sombra y sobre el amarillo casi no se leía. */
+  background: rgba(0, 0, 0, 0.38);
+  padding: 2px 7px;
+  border-radius: 999px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
 }
 
 /* =====================================================================
@@ -2332,10 +2351,6 @@ svg { display: block; }
 :root[data-theme="light"] .sheet-panel {
   background: var(--bg-1);
 }
-:root[data-theme="light"] .tests-log {
-  background: #F4F1EA;
-  color: #1A1612;
-}
 :root[data-theme="light"] .bg-blur::after {
   background:
     radial-gradient(ellipse at 50% 0%, transparent 0%, var(--bg-0) 75%),
@@ -2345,17 +2360,6 @@ svg { display: block; }
 /* =====================================================================
  *  Lista de Favoritos
  * ===================================================================== */
-#favoritesList .track-row .unfav-track {
-  color: var(--accent);
-}
-#favoritesList .track-row .unfav-track:active {
-  background: rgba(239, 68, 68, 0.12);
-  color: var(--danger);
-}
-#favoritesList .track-row .unfav-track .ico {
-  width: 14px;
-  height: 14px;
-}
 
 /* =====================================================================
  *  Lista de Idiomas
@@ -2378,7 +2382,7 @@ svg { display: block; }
 }
 .lang-row:active { background: var(--surface); }
 .lang-row.active {
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), rgba(236,72,153,0.10));
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), color-mix(in srgb, var(--accent-2) 10%, transparent));
   outline: 1px solid var(--accent);
 }
 .lang-flag {
@@ -2402,7 +2406,8 @@ svg { display: block; }
 
 /* Soporte tema claro para listas nuevas */
 :root[data-theme="light"] .lang-row.active {
-  background: linear-gradient(135deg, rgba(124,58,237,0.10), rgba(236,72,153,0.06));
+  /* §94: ídem — morado y rosa cableados fuera; manda el acento. */
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.10), color-mix(in srgb, var(--accent-2) 6%, transparent));
 }
 
 /* =====================================================================
@@ -2629,8 +2634,7 @@ svg { display: block; }
   background: rgba(239, 68, 68, 0.12);
 }
 
-/* Subtítulo opcional del picker */
-.pick-tracks-title { margin-top: 6px; }
+/* (El subtítulo del picker de pistas se fue en la §93.) */
 
 /* =====================================================================
  *  Mejoras de prioridad alta — estilos
@@ -2665,12 +2669,6 @@ svg { display: block; }
 .search-filter:active { transform: scale(0.95); }
 
 /* #5 EQ manual: botones */
-.eq-manual-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-  justify-content: center;
-}
 
 /* #17 Panel de ajustes */
 .settings-row {
@@ -2776,33 +2774,10 @@ svg { display: block; }
 
 .lrc-line.active .lrc-translation { color: var(--text-2); }
 
-/* =====================================================================
- *  Pulido: picker de pistas — estado "ya está en la lista"
- * ===================================================================== */
-.pick-row.in-pl {
-  opacity: 0.55;
-}
-
-.pick-row.in-pl:active {
-  background: transparent;   /* no parece pulsable */
-}
-
-.pick-row.in-pl .row-check {
-  background: var(--surface-2);
-  color: var(--text-3);
-}
-
-.in-pl-tag {
-  color: var(--accent);
-  font-size: var(--fs-micro);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
+/* §93: el bloque del picker («ya está en la lista») se fue con
+ * el selector de pistas retirado. */
 
 /* Botón "añadir a lista" por fila: mismo tratamiento que el de borrar */
-.add-to-pl { color: var(--text-3); }
-.add-to-pl:active { color: var(--accent); background: rgba(var(--accent-rgb), 0.12); }
 
 /* =====================================================================
  *  Pulido: accesibilidad de teclado y movimiento reducido
@@ -2813,11 +2788,17 @@ svg { display: block; }
  * prefers-reduced-motion existente en este archivo. */
 button:focus-visible,
 .track-row:focus-visible,
-.pick-row:focus-visible,
 .menu-row:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
+}
+/* §94: los sliders (volumen, EQ) no tenían anillo de foco:
+ * navegarlos con teclado era ir a ciegas. */
+input[type="range"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: var(--radius-pill);
 }
 
 /* Accesibilidad: sin doble-tap zoom en controles (el pinch-zoom sigue
@@ -3051,15 +3032,6 @@ button,
   -webkit-overflow-scrolling: touch;
   padding-bottom: 8px;
 }
-.home-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 48px 16px 24px;
-  min-height: 70%;
-}
 .home-hero[hidden] { display: none; }
 .home-hero {
   display: flex;
@@ -3070,7 +3042,7 @@ button,
   padding: 12px;
   margin-bottom: 18px;
   border-radius: 18px;
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), rgba(236,72,153,0.10));
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), color-mix(in srgb, var(--accent-2) 10%, transparent));
   border: 1px solid var(--border);
 }
 .home-hero:active { transform: scale(0.98); }
@@ -3131,12 +3103,29 @@ button,
   font-family: var(--font-display);
   margin: 0;
 }
+.time-total.time-toggle { cursor: pointer; }
+/* §72: punto de acento en «Letras» cuando la pista trae letra. */
+#btnLyrics { position: relative; }
+#btnLyrics.has-lrc::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: calc(50% - 15px);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-2);
+}
 .home-see-all {
   flex: 0 0 auto;
   font-size: var(--fs-caption);
   font-weight: 600;
   color: var(--text-3);
-  padding: 4px 2px;
+  /* §70 [5]: medido a 22px de alto; minimo tactil razonable, 40px. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 4px 6px;
 }
 .home-see-all:active { color: var(--accent); }
 .home-rail {
@@ -3224,6 +3213,26 @@ button,
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Subtítulo de «Más valoradas» (§63): las estrellas JAMÁS se recortan
+ * — son la información de la tarjeta —; quien se acorta con … es el
+ * artista. Doradas, como en el resto de la superficie de notas. */
+.home-card-sub.rated-sub {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.rated-sub .sub-stars {
+  flex: 0 0 auto;
+  color: #FFB84D;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.rated-sub .sub-artist {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ---------- Biblioteca: secciones (listas + canciones) ---------- */
 /* Cabecera con un hueco simétrico al botón de cerrar para centrar el título */
@@ -3287,15 +3296,6 @@ button,
   border-radius: var(--radius-sm);
 }
 .artist-row:active { background: var(--surface); }
-.artist-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: var(--surface);
-}
-.artist-avatar canvas { width: 100%; height: 100%; display: block; }
 .row-chevron { color: var(--text-4); font-size: var(--fs-caption); }
 
 .track-menu-head {
@@ -3332,8 +3332,9 @@ button,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  /* §70 [5]: objetivo tactil de 44px (el glifo no crece). */
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   color: var(--text-3);
   opacity: .55;
@@ -3343,12 +3344,12 @@ button,
 .rate-star.on { color: #FFB84D; opacity: 1; }
 .rate-star:active { transform: scale(1.18); }
 .np-rating { margin-top: 6px; }
-.np-rating .rate-star { width: 32px; height: 32px; }
+.np-rating .rate-star { width: 44px; height: 44px; }
 .np-rating .rate-star .ico { width: 18px; height: 18px; }
 /* Insignia en las filas: cuántas estrellas, en dorado discreto. */
 .row-rating {
   color: #FFB84D;
-  font-size: 10px;
+  font-size: var(--fs-micro); /* §92: 10px quedaba fuera de la escala */
   letter-spacing: 1px;
   white-space: nowrap;
 }
@@ -3395,7 +3396,6 @@ button,
   text-align: right;
 }
 .cover-art.vol-adjusting { cursor: ns-resize; }
-.cover-art.vol-adjusting .cover-play-hint { opacity: 0 !important; }
 
 .sleep-opt.sleep-eot {
   grid-column: 1 / -1;
@@ -3587,7 +3587,6 @@ button,
   z-index: 2;
 }
 .cover-art canvas#coverCanvas { position: relative; z-index: 1; }
-.cover-play-hint { z-index: 3; }
 
 .cover-buffering {
   position: absolute;
@@ -3607,7 +3606,6 @@ button,
   pointer-events: none;
 }
 .cover-buffering[hidden] { display: none !important; }
-.cover-art.is-buffering .cover-play-hint { opacity: 0 !important; }
 
 .cover-art.liked-pulse {
   box-shadow:
@@ -3642,22 +3640,38 @@ button,
   align-items: center;
   text-align: center;
   gap: 10px;
-  max-width: 280px;
+  max-width: 304px;
   padding: 8px 8px 28px;
   color: var(--text-2);
 }
+.view-lyrics.lrc-is-empty .lyrics-toolbar { display: none; }
+/* §86: sin letra no queda ni rastro del reproductor en la vista:
+ * fuera también la mini-cabecera (portada/título) y los controles
+ * inferiores (progreso + anterior/play/siguiente). Solo quedan la
+ * barra superior y la tarjeta de vacío con «Cargar .lrc». */
+.view-lyrics.lrc-is-empty .lyrics-mini,
+.view-lyrics.lrc-is-empty .lyrics-controls { display: none; }
+.view-lyrics.lrc-no-track .lrc-empty-actions { display: none; }
+/* §91: mismo trato de cristal que .empty-icon, pero el lavado
+ * lleva un susurro de los colores de la portada que suena (§75)
+ * en vez del acento a secas. */
 .lrc-empty-icon {
-  width: 64px;
-  height: 64px;
+  width: 68px;
+  height: 68px;
   border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, var(--accent-fill), var(--accent-fill-2));
-  color: var(--accent-on-fill);
-  box-shadow: 0 12px 28px rgba(var(--accent-rgb), 0.28);
+  background: var(--surface);
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--cover-from, var(--accent)) 22%, var(--surface)),
+    color-mix(in srgb, var(--cover-to, var(--accent)) 9%, var(--surface)));
+  border: 1px solid var(--border);
+  border-color: color-mix(in srgb, var(--cover-from, var(--accent)) 38%, var(--border));
+  color: var(--accent);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
-.lrc-empty-icon .ico { width: 24px; height: 24px; color: var(--accent-on-fill); }
+.lrc-empty-icon .ico { width: 28px; height: 28px; color: var(--accent); }
 .lrc-empty h4 {
   font-family: var(--font-display);
   font-size: 1.125rem;
@@ -3688,12 +3702,6 @@ button,
   gap: 8px;
 }
 
-.lt-btn.emphasis {
-  /* Par de relleno seguro (blanco ≥ 4.5:1 garantizado): el --accent
-   * a secas con blanco se quedaba en ~3.9:1. */
-  color: var(--accent-on-fill);
-  background: var(--accent-fill);
-}
 
 .lrc-word {
   display: inline;
@@ -4006,10 +4014,6 @@ button,
 :root[data-theme="light"] .primary-btn:not(.ghost) { color: var(--accent-on-fill); }
 :root[data-theme="light"] .icon-add { color: var(--text-1); }
 :root[data-theme="light"] .device-screen { background: var(--bg-0); }
-:root[data-theme="light"] .tests-log {
-  background: #F4F1EA;
-  color: #1A1612;
-}
 
 :root[data-theme="amoled"] {
   --bg-0: #000000;
@@ -4039,7 +4043,7 @@ button,
  *  Fase E — Hover de puntero, tablet 600–899, desktop ≥ 900
  * ===================================================================== */
 
-.queue-item, .track-row, .pick-row, .artist-row,
+.queue-item, .track-row, .artist-row,
 .nav-btn, .eq-preset, .sleep-opt,
 .menu-row, .search-filter, .xfade-opt, .theme-opt,
 .home-hero, .home-card, .pl-row, .pl-card, .lang-row,
@@ -4063,7 +4067,6 @@ button,
   .nav-btn:hover { color: var(--text-1); }
   .queue-item:hover,
   .track-row:hover,
-  .pick-row:hover,
   .artist-row:hover,
   .stats-row:hover,
   .search-history-row:hover { background: var(--surface); }
@@ -4084,17 +4087,12 @@ button,
   .theme-opt:hover { background: var(--surface-2); }
   .primary-btn:hover { filter: brightness(1.06); }
   .text-btn:hover { opacity: 0.85; }
-  .delete-track:hover,
   .remove-from-pl:hover,
   #editPlaylistTracks .remove-from-pl:hover {
     color: var(--danger);
     background: rgba(239, 68, 68, 0.12);
   }
-  .add-to-pl:hover {
-    color: var(--accent);
-    background: rgba(var(--accent-rgb), 0.12);
-  }
-  .eq-band input[type="range"]::-webkit-slider-thumb:hover,
+    .eq-band input[type="range"]::-webkit-slider-thumb:hover,
   .slider::-webkit-slider-thumb:hover { transform: scale(1.12); }
   .progress-track:hover { cursor: pointer; }
 }
@@ -4155,6 +4153,11 @@ html.aurora-wide .view-player {
 html.aurora-wide .view-player .cover-art,
 html.aurora-wide .view-player .cover-glow {
   width: min(100%, 36dvh, 340px);
+}
+/* §95: también en la columna ancha la portada inmersiva crece. */
+html.aurora-wide .view-player.cover-fullscreen .cover-art,
+html.aurora-wide .view-player.cover-fullscreen .cover-glow {
+  width: min(100%, 82dvh, 640px);
 }
 html.aurora-wide .view-home {
   position: absolute;
@@ -4239,6 +4242,20 @@ html.aurora-wide .sheet.open.sheet-full .sheet-panel,
 html.aurora-wide .sheet.open.sheet-desk-full .sheet-panel {
   transform: none;
 }
+/* §70 [8]: en pantallas anchas el contenido de estas hojas se limita a
+   una columna de lectura centrada (680px): filas, interruptores y
+   acciones quedan a una distancia razonable de su etiqueta. */
+html.aurora-wide .sheet.sheet-full .sheet-header,
+html.aurora-wide .sheet.sheet-desk-full .sheet-header,
+html.aurora-wide .sheet.sheet-full .sheet-body,
+html.aurora-wide .sheet.sheet-desk-full .sheet-body {
+  width: 100%;
+  max-width: 680px;
+  margin-inline: auto;
+}
+/* §70 [10]: el tirador de arrastre es un gesto movil; en el panel
+   acoplado de escritorio no arrastra nada y solo confunde. */
+html.aurora-wide .sheet-handle { display: none; }
 html.aurora-wide .sheet:not(.sheet-full):not(.sheet-desk-full) {
   position: absolute;
   left: calc(var(--np-col) + var(--side-col));
@@ -4526,8 +4543,7 @@ html.aurora-wide .toast {
 .track-list,
 .queue-list { gap: 2px; }
 .queue-item,
-.track-row,
-.pick-row {
+.track-row {
   gap: 9px;
   padding: 7px 6px 7px 10px;
   min-height: 60px;
@@ -4598,8 +4614,7 @@ html.aurora-wide .toast {
  * título hasta dejarlo ilegible. */
 @media (max-width: 360px) {
   .queue-item,
-  .track-row,
-  .pick-row { gap: 7px; padding-left: 8px; }
+  .track-row { gap: 7px; padding-left: 8px; }
   .row-cover { width: 40px; height: 40px; border-radius: 9px; }
   .row-action,
   .queue-item .row-action.queue-remove,
@@ -4661,9 +4676,14 @@ html.aurora-wide .toast {
   padding: 3px 5px 3px 10px;
   flex-shrink: 0;
 }
-.lyrics-toolbar .lt-group .lt-btn { min-width: 28px; height: 30px; }
+/* §92 (auditoría con la cascada completa): estas reglas
+ * intermedias decían 28–30 px, pero el bloque final de la barra
+ * (36 px, 34 px en pantallas ≤360) ya mandaba por especificidad
+ * y orden. Se alinean a 32 px para que ningún valor suelto
+ * parezca —ni vuelva a ser— un botón bajo el suelo táctil. */
+.lyrics-toolbar .lt-group .lt-btn { min-width: 32px; height: 32px; }
 .lyrics-speed { gap: 2px; }
-.lyrics-speed .lt-btn { min-width: 30px; height: 30px; }
+.lyrics-speed .lt-btn { min-width: 32px; height: 32px; }
 
 /* Mini-cabecera: solo identidad (la velocidad ya vive en la barra). */
 .lyrics-mini {
@@ -4718,6 +4738,41 @@ html.aurora-wide .toast {
   color: var(--accent);
   background: transparent;
   opacity: 0.8;
+}
+
+/* §86: foco en la línea que suena. La clase .lrc-focus la pone el
+ * JS solo con letra sincronizada y una primera línea ya activa:
+ * la activa se lee nítida, la vecina (±1) queda a media opacidad
+ * como contexto y el resto se difumina casi hasta lo ilegible
+ * (opacidad muy baja + desenfoque leve; el radio es pequeño a
+ * propósito: blur grande sobre ~100 líneas saldría caro en el
+ * WebView). Sin .lrc-focus —intro o letra sin tiempos— no se
+ * aplica nada de esto. Mientras el usuario desplaza la letra a
+ * mano (.user-scrolling), todo se aclara para poder buscar un
+ * verso; al retomar el auto-scroll vuelve el foco. */
+.lyrics-scroll.lrc-focus .lrc-line {
+  opacity: 0.18;
+  filter: blur(2px);
+}
+.lyrics-scroll.lrc-focus .lrc-line.near-2 {
+  opacity: 0.3;
+  filter: blur(1.3px);
+}
+.lyrics-scroll.lrc-focus .lrc-line.near {
+  opacity: 0.55;
+  filter: blur(0.7px);
+}
+.lyrics-scroll.lrc-focus .lrc-line.active {
+  opacity: 1;
+  filter: none;
+}
+.lyrics-scroll.lrc-focus .lrc-line:active {
+  opacity: 1;
+  filter: none;
+}
+.lyrics-scroll.lrc-focus.user-scrolling .lrc-line {
+  opacity: 0.85;
+  filter: none;
 }
 
 /* Controles atracados: ocupan su sitio en la columna, con fondo
@@ -5067,3 +5122,117 @@ html.aurora-wide .toast {
     radial-gradient(ellipse at 50% 0%, transparent 0%, transparent 55%),
     linear-gradient(180deg, transparent 52%, var(--bg-0) 97%);
 }
+
+
+/* =====================================================================
+ *  §81 — Ordenación, catálogo, listas inteligentes, duplicados,
+ *  renombre con confirmar y sincronizar letra tocando
+ * ===================================================================== */
+.lib-tabs {
+  display: flex; gap: 6px; margin: 2px 0 14px; overflow-x: auto;
+  scrollbar-width: none;
+}
+.lib-tabs::-webkit-scrollbar { display: none; }
+.lib-tab {
+  flex: 1 0 auto; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-2); font: inherit; font-size: var(--fs-sm);
+  font-weight: 600; cursor: pointer; min-height: 40px;
+}
+.lib-tab.active { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; } /* §94: contraste */
+/* §89: la barra de pestañas vive fuera del cuerpo desplazable
+ * (hermana de la cabecera en el panel flexible): queda fija al
+ * hacer scroll, con el mismo fondo del panel y su filete
+ * inferior, como una segunda cabecera. */
+#sheetLibrary .lib-tabs {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 10px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-2);
+}
+.lib-tools { margin: 14px 0 4px; display: flex; gap: 8px; flex-wrap: wrap; }
+.catalog-grid {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 14px;
+}
+.catalog-card { cursor: pointer; }
+.catalog-card .cat-cover {
+  width: 100%; aspect-ratio: 1; border-radius: var(--radius-md); overflow: hidden;
+  background: var(--surface-2); display: flex; align-items: center; justify-content: center;
+}
+.catalog-card .cat-cover canvas { width: 100%; height: 100%; display: block; }
+.catalog-card .cat-name {
+  margin-top: 7px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-1);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.catalog-card .cat-sub {
+  font-size: var(--fs-caption); color: var(--text-3);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pl-sort-row {
+  display: flex; align-items: center; gap: 10px; margin: 12px 0 4px;
+}
+.pl-sort-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.aurora-select {
+  flex: 1; min-height: 40px; padding: 8px 10px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-1);
+  font: inherit; font-size: var(--fs-sm);
+}
+.pl-type-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.pl-type-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.pl-type-toggle { display: flex; gap: 6px; margin-left: auto; }
+.pl-type-btn {
+  padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-2); font: inherit; font-size: var(--fs-sm);
+  font-weight: 600; cursor: pointer; min-height: 40px;
+}
+.pl-type-btn.active { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; } /* §94: contraste */
+.smart-badge {
+  display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px;
+  background: var(--accent-fill); color: #fff; font-size: var(--fs-micro); font-weight: 700; /* §94: contraste */
+  vertical-align: middle; letter-spacing: .02em;
+}
+/* Renombrar con confirmar (§81): input + ✓/✗ en línea */
+.edit-pl-rename { display: flex; align-items: center; gap: 6px; width: 100%; }
+.edit-pl-rename .edit-pl-name-input { flex: 1; min-width: 0; }
+.edit-pl-rename-btn {
+  flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-1); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.edit-pl-rename-btn.confirm { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; } /* §94: contraste */
+/* Editor LRC por toques */
+.lrc-tap-box { margin-top: 14px; }
+.lrc-tap-next {
+  font-size: 1.05rem; font-weight: 600; color: var(--text-1); min-height: 1.4em; margin: 10px 0;
+}
+.lrc-tap-btn { width: 100%; min-height: 64px; font-size: 1.05rem; margin: 6px 0; }
+.lrc-tap-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+/* Duplicados */
+.dup-group { margin-bottom: 18px; }
+.dup-group-title { font-size: var(--fs-sm); font-weight: 700; color: var(--text-2); margin: 0 0 6px; }
+.dup-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.dup-row .row-text { flex: 1; min-width: 0; }
+.dup-keep {
+  font-size: var(--fs-micro); font-weight: 700; color: var(--accent);
+  border: 1px solid var(--accent); border-radius: 999px; padding: 1px 7px; white-space: nowrap;
+}
+/* §88: elección manual de la copia a conservar. La elegida se
+ * distingue con un fondo de acento suave; «Conservar esta» es un
+ * botón discreto (dirección de diseño del proyecto) y «Borrar las
+ * demás» cierra el grupo como acción de peligro templada. */
+.dup-row.is-keep { background: rgba(var(--accent-rgb), 0.08); border-radius: 12px; padding: 6px 8px; margin: 0 -8px; }
+.dup-keep-btn {
+  flex: 0 0 auto; min-height: 32px; padding: 4px 10px;
+  font-size: var(--fs-caption); font-weight: 600; color: var(--accent);
+  background: transparent; border: 1px solid var(--accent); border-radius: 999px;
+  cursor: pointer; white-space: nowrap;
+}
+.dup-del-others {
+  display: block; margin: 8px 0 2px auto; min-height: 32px; padding: 4px 12px;
+  font-size: var(--fs-caption); font-weight: 600; color: var(--danger, #e5484d);
+  background: transparent; border: 1px solid var(--border); border-radius: 999px;
+  cursor: pointer;
+}
+/* §83: botón «Más opciones» en las filas de la cola */
+.queue-item .queue-menu { flex: 0 0 auto; }

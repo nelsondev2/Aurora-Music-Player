@@ -53,24 +53,27 @@ Object.assign(App, {
       for (const line of arr) {
         if (typeof line !== 'string') continue;
         const trimmed = line.trim();
-        if (!trimmed) {
-          if (hasTimed) {
-            result.push({ time: -1, text: '', timed: false });
-          }
-          continue;
-        }
+        // §94: las líneas vacías del archivo ya no crean una
+        // entrada fantasma (texto '', sin tiempo) que luego se
+        // pintaba como una línea en blanco moviéndose por la
+        // letra. Vacío = nada que mostrar: se salta y punto.
+        if (!trimmed) continue;
 
         // Saltar metadata LRC pura
         if (/^\[(ar|ti|al|by|offset|length|re|ve|id):/i.test(trimmed)) continue;
 
         // Buscar TODOS los timestamps en la línea.
-        // Soporta: [mm:ss.xx], [mm:ss], [m:ss.xx], [m:ss], [h:mm:ss.xx]
-        const timestampRegex = /\[(\d+):(\d{1,2}(?:\.\d+)?)\]/g;
+        // §94: el comentario prometía [h:mm:ss.xx] desde siempre,
+        // pero el regex solo aceptaba mm:ss — y tampoco la coma
+        // decimal ([00:12,50], habitual en LRC europeos). Ahora:
+        // [mm:ss.xx], [mm:ss], [m:ss.xx], [h:mm:ss.xx], coma o punto.
+        const timestampRegex = /\[(?:(\d+):)?(\d{1,2}):(\d{1,2}(?:[.,]\d+)?)\]/g;
         const stamps = [];
         let m;
         while ((m = timestampRegex.exec(trimmed)) !== null) {
           stamps.push({
-            time: parseInt(m[1]) * 60 + parseFloat(m[2]) + globalOffset,
+            time: (parseInt(m[1] || '0', 10) * 3600) + (parseInt(m[2], 10) * 60)
+              + parseFloat(m[3].replace(',', '.')) + globalOffset,
             match: m[0]
           });
         }
@@ -102,11 +105,17 @@ Object.assign(App, {
 
       // Si hay timestamps, ordenar por tiempo
       if (hasTimed) {
-        result.sort((a, b) => {
-          const ta = a.timed ? a.time : 0;
-          const tb = b.timed ? b.time : 0;
-          return ta - tb;
-        });
+        // §94: las líneas sin timestamp (créditos sueltos entre
+        // estrofas) se anclan al tiempo de la línea temporizada
+        // ANTERIOR en el archivo, no a 0: antes la ordenación las
+        // teletransportaba todas al principio de la letra.
+        let anchor = 0;
+        for (const line of result) {
+          if (line.timed) anchor = line.time;
+          line._sk = line.timed ? line.time : anchor;
+        }
+        result.sort((a, b) => a._sk - b._sk);
+        for (const line of result) delete line._sk;
 
         // Fusionar líneas con el MISMO timestamp: la primera es el texto
         // principal y la siguiente es su traducción (formato LRC bilingüe,
@@ -179,11 +188,39 @@ Object.assign(App, {
       const emptyEl = document.getElementById('lrcEmpty');
       const scroll = document.getElementById('lyricsScroll');
       if (emptyEl) emptyEl.hidden = !on;
-      if (scroll) scroll.classList.toggle('has-empty', !!on);
-      const loadBtn = document.getElementById('btnLrcLoadFile');
-      const editBtn = document.getElementById('btnLrcEdit');
-      if (loadBtn) loadBtn.classList.toggle('emphasis', !!on);
-      if (editBtn) editBtn.classList.toggle('emphasis', !!on);
+      if (scroll) {
+        scroll.classList.toggle('has-empty', !!on);
+        if (on) this._setLrcFocus(false); // §86: sin letra no hay foco que mostrar
+      }
+      // §73: sin letra, la barra de herramientas (tamaño, desfase,
+      // velocidad, bucle…) solo hacía ruido sobre el vacío y duplicaba
+      // las acciones de la tarjeta: la vista entra en modo limpio y la
+      // barra vuelve en cuanto hay letra que ajustar.
+      const view = document.getElementById('viewLyrics');
+      const noTrack = !!on && !this.currentTrack;
+      if (view) {
+        view.classList.toggle('lrc-is-empty', !!on);
+        view.classList.toggle('lrc-no-track', noTrack);
+      }
+      // Sin pista cargada, «Cargar .lrc» no tiene dónde aplicarse: la
+      // tarjeta cambia el mensaje y esconde las acciones.
+      const title = document.getElementById('lrcEmptyTitle');
+      const hint = document.getElementById('lrcEmptyHint');
+      if (title) title.textContent = noTrack ? this.t('no_track_playing') : this.t('lrc_empty_title');
+      if (hint) hint.textContent = noTrack ? this.t('load_track_to_start') : this.t('lrc_empty_hint');
+    },
+
+    /* §86: modo «foco» de la letra sincronizada. Con la clase
+     * .lrc-focus en el contenedor, el CSS difumina todas las líneas
+     * menos la que suena (y sus vecinas, a media opacidad). Solo se
+     * activa con letra CON tiempos y una vez que suena la primera
+     * línea: en la intro —o con letra sin sincronizar— todo se lee
+     * como siempre. */
+    _setLrcFocus(on) {
+      const sc = document.getElementById('lyricsScroll');
+      if (sc && sc.classList.contains('lrc-focus') !== !!on) {
+        sc.classList.toggle('lrc-focus', !!on);
+      }
     },
 
     /* ============================================================
@@ -267,11 +304,12 @@ Object.assign(App, {
       this.activeLrcIdx = -1;
       this._lastActiveKey = '';
       this._lrcLineEls = null;  // invalidar caché de elementos DOM
-      // Iniciar sincronización con RAF (#22)
-      this.startLrcRafSync();
       // Detectar scroll manual del usuario (#13)
       this.wireLyricsUserScroll();
-      // El RAF solo debe correr con la vista de letras activa.
+      // Iniciar sincronización con RAF (#22), solo con la vista
+      // de letras activa. §94: antes había DOS llamadas seguidas
+      // (una incondicional y otra con guardia) — la segunda
+      // cancelaba y rearrancaba la primera en el mismo pintado.
       const lv = document.getElementById('viewLyrics');
       if (lv && lv.classList.contains('active')) this.startLrcRafSync();
     },
@@ -279,6 +317,9 @@ Object.assign(App, {
     /* Sincronización precisa con requestAnimationFrame (#22) */
     startLrcRafSync() {
       if (this.lrcRafId) cancelAnimationFrame(this.lrcRafId);
+      // §94: también se cancela el respiro en pausa pendiente,
+      // para que nunca convivan dos cadenas de sincronización.
+      if (this._lrcRafTimer) { clearTimeout(this._lrcRafTimer); this._lrcRafTimer = null; }
       if (!this.lrcHasTimed) return;
       const tick = () => {
         const lyricsView = document.getElementById('viewLyrics');
@@ -296,6 +337,16 @@ Object.assign(App, {
           // La repetición de sección se aplica en updateProgress(): así sigue
           // activa aunque el usuario vuelva al reproductor (el RAF solo corre
           // con la vista de letras abierta).
+        }
+        // §94: en pausa, pintar a 60 fps es batería tirada (la
+        // línea no se mueve): se respira a 4 fps, suficiente para
+        // seguir un seek con la reproducción detenida.
+        if (this.audio && this.audio.paused) {
+          this._lrcRafTimer = setTimeout(() => {
+            this._lrcRafTimer = null;
+            this.lrcRafId = requestAnimationFrame(tick);
+          }, 250);
+          return;
         }
         this.lrcRafId = requestAnimationFrame(tick);
       };
@@ -325,7 +376,10 @@ Object.assign(App, {
      * Usa búsqueda LINEAL (no binaria) porque el array puede tener
      * líneas timed y untimed mezcladas, lo que rompe la búsqueda binaria. */
     updateLyricsHighlight(cur) {
-      if (!this.lrcLines.length || !this.lrcHasTimed) return;
+      if (!this.lrcLines.length || !this.lrcHasTimed) {
+        this._setLrcFocus(false); // §86: sin sincronía no hay difuminado
+        return;
+      }
 
       // === BÚSQUEDA LINEAL del índice activo ===
       // Encontrar la última línea timed con time <= cur.
@@ -352,6 +406,8 @@ Object.assign(App, {
             }
           }
         }
+        // §86: antes de la primera línea (intro) todo visible.
+        this._setLrcFocus(false);
         this._updateKaraokeWords(cur);
         return;
       }
@@ -374,6 +430,7 @@ Object.assign(App, {
 
       // === Solo actualizar DOM si cambió la línea activa ===
       const key = activeIndices[0] + '';  // clave simple: primer índice
+      this._setLrcFocus(true); // §86: ya suena una línea: a difuminar el resto
       if (key !== this._lastActiveKey) {
         this._lastActiveKey = key;
         this.activeLrcIdx = idx;
@@ -416,9 +473,7 @@ Object.assign(App, {
         if (sc) {
           const firstActiveEl = this._lrcLineEls[activeIndices[0]];
           if (firstActiveEl) {
-            const isFullscreen = document.getElementById('viewLyrics').classList.contains('lyrics-fullscreen');
-            const offsetUp = isFullscreen ? 0 : sc.clientHeight * -0.25;
-            const targetTop = firstActiveEl.offsetTop - (sc.clientHeight / 2) + (firstActiveEl.clientHeight / 2) - offsetUp;
+            const targetTop = this._lrcScrollTarget(firstActiveEl, sc);
             const current = sc.scrollTop;
             const diff = targetTop - current;
             if (Math.abs(diff) > 0.5) {
@@ -432,6 +487,15 @@ Object.assign(App, {
       }
 
       this._updateKaraokeWords(cur);
+    },
+
+    /* Posición de reposo de la línea activa: su centro, en el centro
+     * del área visible (§74). Antes el modo normal la aparcaba al 25%
+     * de la altura (más arriba) y solo la pantalla completa la
+     * centraba: la misma canción «saltaba» al alternar modos. Si algún
+     * día se quiere otro encuadre, es esta fracción: 0.5 = centro. */
+    _lrcScrollTarget(el, sc) {
+      return el.offsetTop - (sc.clientHeight / 2) + (el.clientHeight / 2);
     },
 
     _updateKaraokeWords(cur) {
@@ -496,6 +560,7 @@ Object.assign(App, {
           this.persistTrack(this.currentTrack);
           this.renderLyrics();
           this.toast(this.t('lrc_loaded'));
+          if (typeof this._syncLyricsButton === 'function') this._syncLyricsButton();
         }
       } catch (err) {
         this.toast(this.t('toast_load_error'));
@@ -531,6 +596,94 @@ Object.assign(App, {
       this.persistTrack(this.currentTrack);
       this.renderLyrics();
       this.closeSheet('sheetLrcEditor');
+      this.toast(this.t('lrc_saved'));
+      if (typeof this._syncLyricsButton === 'function') this._syncLyricsButton();
+    },
+
+    /* ============================================================
+     *  §81: sincronizar tocando (tap-to-sync)
+     *  El editor ya existía (pegar/editar con [mm:ss.xx] a mano);
+     *  faltaba marcar los tiempos al ritmo de la canción. Modo:
+     *  escribes las líneas SIN tiempos, abres el panel, reproduces
+     *  y tocas «Marcar línea» al empezar cada una. Al terminar, las
+     *  marcas se escriben en el editor como LRC normal y se guardan
+     *  con el botón Guardar de siempre (saveLrcFromEditor).
+     * ============================================================ */
+    _fmtLrcStamp(sec) {
+      // §94: redondear primero en centésimas — antes 59.999 s
+      // salía como [00:60.00], un sello inválido que el propio
+      // parser luego no sabía leer bien.
+      const cs = Math.round(Math.max(0, Number(sec) || 0) * 100);
+      const m = Math.floor(cs / 6000);
+      const r = (cs % 6000) / 100;
+      return '[' + String(m).padStart(2, '0') + ':' + r.toFixed(2).padStart(5, '0') + ']';
+    },
+
+    toggleLrcTapMode() {
+      const panel = document.getElementById('lrcTapPanel');
+      const ta = document.getElementById('lrcEditorText');
+      if (!panel || !ta) return;
+      if (!panel.hidden) {
+        panel.hidden = true;
+        this._tapSync = null;
+        return;
+      }
+      // Líneas sin marcas de tiempo (las que ya las traen se saltan:
+      // el modo es para letras pegadas en crudo).
+      const stampRe = /\[\d+:\d{1,2}(?:\.\d+)?\]/g;
+      const lines = ta.value.split(/\r?\n/)
+        .map(l => l.replace(stampRe, '').trim())
+        .filter(l => l && !/^\[(ar|ti|al|by|offset|length|re|ve|id):/i.test(l));
+      if (!lines.length) {
+        this.toast(this.t('lrc_tap_no_lines'));
+        return;
+      }
+      this._tapSync = { lines, stamps: [] };
+      panel.hidden = false;
+      this._renderTapSync();
+    },
+
+    _renderTapSync() {
+      const st = this._tapSync;
+      const nextEl = document.getElementById('lrcTapNext');
+      const progEl = document.getElementById('lrcTapProgress');
+      if (!st) return;
+      const idx = st.stamps.length;
+      if (nextEl) nextEl.textContent = idx < st.lines.length ? st.lines[idx] : '✓';
+      if (progEl) progEl.textContent = Math.min(idx, st.lines.length) + ' / ' + st.lines.length;
+    },
+
+    tapSyncMark() {
+      const st = this._tapSync;
+      if (!st || st.stamps.length >= st.lines.length) return;
+      const now = (this.audio && isFinite(this.audio.currentTime)) ? this.audio.currentTime : 0;
+      // Marcas siempre crecientes: si el usuario retrocede, la marca
+      // no puede ir antes que la anterior (el parser ordena, pero la
+      // línea quedaría asociada al tiempo equivocado).
+      const prev = st.stamps.length ? st.stamps[st.stamps.length - 1].time : 0;
+      st.stamps.push({ time: Math.max(now, prev), text: st.lines[st.stamps.length] });
+      this._renderTapSync();
+    },
+
+    tapSyncUndo() {
+      const st = this._tapSync;
+      if (!st || !st.stamps.length) return;
+      st.stamps.pop();
+      this._renderTapSync();
+    },
+
+    tapSyncDone() {
+      const st = this._tapSync;
+      const ta = document.getElementById('lrcEditorText');
+      if (!st || !ta) return;
+      const stamped = st.stamps.map(s => this._fmtLrcStamp(s.time) + s.text);
+      // Las líneas no marcadas se conservan sin tiempo al final:
+      // terminar antes de tiempo no borra letra.
+      const rest = st.lines.slice(st.stamps.length);
+      ta.value = stamped.concat(rest).join('\n');
+      const panel = document.getElementById('lrcTapPanel');
+      if (panel) panel.hidden = true;
+      this._tapSync = null;
       this.toast(this.t('lrc_saved'));
     },
 
@@ -600,6 +753,16 @@ Object.assign(App, {
     resetLyricsPrefs() {
       // Reset COMPLETO: deshace todos los cambios hechos en la vista de letras
       // (offset, tamaño de fuente, velocidad, loop)
+      // §70 [9]: auditoría externa vio el toast sin origen aparente. No
+      // hay ningún camino que lo dispare al cambiar de pista (solo este
+      // botón), pero sí saltaba aunque no hubiera nada que reiniciar y
+      // parecía espontáneo: ahora solo avisa si algo cambió de verdad.
+      const view0 = document.getElementById('viewLyrics');
+      const changed = (this.lrcOffset || 0) !== 0
+        || (Number(this.lrcFontSize) || 19) !== 19
+        || (this.playbackRate || 1) !== 1
+        || !!this.lrcLoop || this._lrcLoopA != null
+        || !!(view0 && view0.classList.contains('lyrics-fullscreen'));
       // 1. Offset
       this.lrcOffset = 0;
       if (this.currentTrack) {
@@ -623,7 +786,7 @@ Object.assign(App, {
       }
       // Re-renderizar para aplicar cambios visuales
       this.renderLyrics();
-      this.toast(this.t('lrc_reset_done'));
+      if (changed) this.toast(this.t('lrc_reset_done'));
     },
 
     /* ============================================================

@@ -27,33 +27,255 @@ Object.assign(App, {
       return null;
     },
 
-    drawRowCover(canvas, track) {
+    /* Geometría de encaje de una imagen en un lienzo, separada del
+     * pintado para poder verificarla sin un navegador: 'cover' rellena
+     * recortando lo que sobra; 'contain' enseña la imagen ENTERA
+     * aunque sobren bandas. Devuelve el rectángulo destino. */
+    _fitRect(iw, ih, W, H, mode) {
+      if (!iw || !ih || !W || !H) return { x: 0, y: 0, w: W || 0, h: H || 0 };
+      const r = mode === 'contain'
+        ? Math.min(W / iw, H / ih)
+        : Math.max(W / iw, H / ih);
+      const w = iw * r, h = ih * r;
+      return { x: (W - w) / 2, y: (H - h) / 2, w, h };
+    },
+
+    /* ============================================================
+     *  Paleta extraída de la portada (§75)
+     *  El fondo del reproductor ya hablaba este idioma (--cover-from/
+     *  --cover-to), pero con portada de imagen nadie producía los
+     *  colores: siempre caía al acento del tema. Ahora se muestrean
+     *  de la miniatura grande, CON BARANDILLAS: saturación mínima y
+     *  luminosidad encerrada en banda oscura segura, para que una
+     *  portada marrón, blanca o gris no ensucie la pantalla ni rompa
+     *  el contraste del texto. Sin portada (o sin color útil), manda
+     *  el acento de siempre.
+     * ============================================================ */
+    _hexToRgbArr(hex) {
+      const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+      if (!m) return [109, 92, 255];
+      const n = parseInt(m[1], 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    },
+    _rgbToHex(r, g, b) {
+      const c = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+      return '#' + c(r) + c(g) + c(b);
+    },
+    _mixHexArr(a, b, t) {
+      return [0, 1, 2].map(i => a[i] + (b[i] - a[i]) * t);
+    },
+    _rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      const l = (mx + mn) / 2, d = mx - mn;
+      let h = 0;
+      const s = d === 0 ? 0 : (l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn));
+      if (d) {
+        if (mx === r) h = ((g - b) / d) % 6;
+        else if (mx === g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
+        h *= 60; if (h < 0) h += 360;
+      }
+      return [h, s, l];
+    },
+    _hslToHex(h, s, l) {
+      h = ((h % 360) + 360) % 360; s = Math.max(0, Math.min(1, s)); l = Math.max(0, Math.min(1, l));
+      const c = (1 - Math.abs(2 * l - 1)) * s;
+      const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+      const m = l - c / 2;
+      let rgb;
+      if (h < 60) rgb = [c, x, 0]; else if (h < 120) rgb = [x, c, 0];
+      else if (h < 180) rgb = [0, c, x]; else if (h < 240) rgb = [0, x, c];
+      else if (h < 300) rgb = [x, 0, c]; else rgb = [c, 0, x];
+      return this._rgbToHex((rgb[0] + m) * 255, (rgb[1] + m) * 255, (rgb[2] + m) * 255);
+    },
+
+    /* De los píxeles (RGBA de un lienzo 48×48) a {from, to} seguros.
+     * Puro y comprobable sin navegador. Devuelve null si la imagen
+     * no tiene color aprovechable (gris, casi blanca, casi negra). */
+    _paletteFromPixels(data, fallback) {
+      const buckets = [];
+      for (let i = 0; i < 36; i++) buckets.push({ w: 0, r: 0, g: 0, b: 0 });
+      let totalW = 0;
+      for (let i = 0; i + 3 < data.length; i += 4) {
+        if (data[i + 3] < 128) continue;
+        const r = data[i], g = data[i + 1], b = data[i + 2];
+        const hsl = this._rgbToHsl(r, g, b);
+        // Peso: premia lo saturado y de luz media; ignora casi
+        // blancos y casi negros (fondos de portada que no dicen nada).
+        const vivid = hsl[1] * (1 - Math.abs(hsl[2] - 0.45) * 1.5);
+        if (vivid <= 0.03) continue;
+        const bk = buckets[Math.min(35, Math.floor(hsl[0] / 10))];
+        bk.w += vivid; bk.r += r * vivid; bk.g += g * vivid; bk.b += b * vivid;
+        totalW += vivid;
+      }
+      if (totalW <= 0) return null;
+      let dom = 0;
+      for (let i = 1; i < 36; i++) if (buckets[i].w > buckets[dom].w) dom = i;
+      const avg = (bk) => [bk.r / bk.w, bk.g / bk.w, bk.b / bk.w];
+      let domRgb = avg(buckets[dom]);
+      const domHsl = this._rgbToHsl(domRgb[0], domRgb[1], domRgb[2]);
+      // Segundo color: el tono con más peso a ≥35° del dominante;
+      // si no hay, el dominante aclarado y girado un poco.
+      let secRgb = null;
+      for (let i = 0; i < 36; i++) {
+        if (!buckets[i].w) continue;
+        const dh = Math.min(Math.abs(i - dom) * 10, 360 - Math.abs(i - dom) * 10);
+        if (dh >= 35 && (!secRgb || buckets[i].w > secRgb.w)) secRgb = { w: buckets[i].w, rgb: avg(buckets[i]) };
+      }
+      const fbFrom = this._hexToRgbArr(fallback && fallback.from);
+      // Portada acromática o lavada: teñir hacia el acento en vez de
+      // pintar la pantalla de gris.
+      if (domHsl[1] < 0.18) domRgb = this._mixHexArr(domRgb, fbFrom, 0.45);
+      const norm = (rgb, lMin, lMax) => {
+        const hsl2 = this._rgbToHsl(rgb[0], rgb[1], rgb[2]);
+        const s = Math.max(0.42, Math.min(0.85, hsl2[1]));
+        const l = Math.max(lMin, Math.min(lMax, hsl2[2]));
+        return { hex: this._hslToHex(hsl2[0], s, l), h: hsl2[0] };
+      };
+      const from = norm(domRgb, 0.30, 0.46);
+      let to;
+      if (secRgb) {
+        to = norm(secRgb.rgb, 0.38, 0.55);
+      } else {
+        const hsl3 = this._rgbToHsl(domRgb[0], domRgb[1], domRgb[2]);
+        to = { hex: this._hslToHex(hsl3[0] + 28, Math.max(0.42, Math.min(0.85, hsl3[1])), Math.min(0.55, Math.max(0.38, hsl3[2] + 0.07))), h: hsl3[0] + 28 };
+      }
+      return { from: from.hex, to: to.hex, angle: 135 };
+    },
+
+    /* Paleta vigente de una pista, síncrona: la diseñada si la
+     * portada es generada, la extraída si ya se calculó, y si no, el
+     * acento (el fondo por defecto de siempre). */
+    coverPaletteFor(track) {
+      if (!track) return this.coverFallback();
+      if (track.cover && typeof track.cover === 'object' && track.cover.from) return track.cover;
+      if (track.coverPalette && track.coverPalette.from) return track.coverPalette;
+      return this.coverFallback();
+    },
+
+    /* Aplica la paleta a las variables del fondo, adaptada al tema:
+     * en claro se apastela (el velo claro manda) y en amoled se
+     * oscurece más (su negro es un principio, no un accidente). */
+    _applyCoverPalette(palette) {
+      const root = document.documentElement;
+      const theme = root.getAttribute('data-theme');
+      let from = (palette && palette.from) || '#6E5CFF';
+      let to = (palette && palette.to) || '#FF7AB6';
+      if (theme === 'light') {
+        from = this._rgbToHex(...this._mixHexArr(this._hexToRgbArr(from), [255, 255, 255], 0.45));
+        to = this._rgbToHex(...this._mixHexArr(this._hexToRgbArr(to), [255, 255, 255], 0.45));
+      } else if (theme === 'amoled') {
+        from = this._rgbToHex(...this._mixHexArr(this._hexToRgbArr(from), [0, 0, 0], 0.35));
+        to = this._rgbToHex(...this._mixHexArr(this._hexToRgbArr(to), [0, 0, 0], 0.35));
+      }
+      root.style.setProperty('--cover-from', from);
+      root.style.setProperty('--cover-to', to);
+      root.style.setProperty('--cover-angle', ((palette && palette.angle) || 135) + 'deg');
+    },
+
+    /* Extrae y guarda la paleta de la portada (perezoso, una vez por
+     * pista): se invoca al sonar una pista con imagen sin paleta. Si
+     * esa pista está sonando al terminar, el fondo se actualiza solo. */
+    async _ensureCoverPalette(track) {
+      if (!track || track.coverPalette) return false;
+      // En curso: Set de sesión (nunca en el objeto pista: una
+      // persistencia coincidente lo dejaría «encendido» en la base
+      // de datos y la paleta no se extraería jamás).
+      if (!this._paletteInFlight) this._paletteInFlight = new Set();
+      if (this._paletteInFlight.has(track.id)) return false;
+      if (track.cover && typeof track.cover === 'object' && track.cover.from) return false;
+      const src = (track.customCover && (track.customCover.lg || track.customCover.thumb))
+        || track.coverThumbLg
+        || (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:')) ? track.cover : null);
+      if (!src) return false;
+      this._paletteInFlight.add(track.id);
+      try {
+        const img = await new Promise(resolve => {
+          const im = new Image();
+          im.onload = () => resolve(im);
+          im.onerror = () => resolve(null);
+          im.src = src;
+        });
+        if (!img || !img.width) return false;
+        const c = document.createElement('canvas');
+        c.width = 48; c.height = 48;
+        const x = c.getContext('2d');
+        if (!x) return false;
+        x.drawImage(img, 0, 0, 48, 48);
+        const data = x.getImageData(0, 0, 48, 48).data;
+        const pal = this._paletteFromPixels(data, this.coverFallback());
+        if (!pal) return false;
+        track.coverPalette = pal;
+        try { this.persistTrack(track); } catch (e) {}
+        if (this.currentTrack && this.currentTrack.id === track.id) this._applyCoverPalette(pal);
+        return true;
+      } catch (e) {
+        return false;
+      } finally {
+        this._paletteInFlight.delete(track.id);
+      }
+    },
+
+    /* Pinta la portada en un canvas. Sin opciones, el clásico
+     * «rellenar recortando» de filas y miniaturas. Con
+     * { fit: 'ambient' } (§63, tarjetas grandes de Inicio) se enseña
+     * la obra COMPLETA: al importar, las miniaturas ya nacen
+     * cuadradas y recortadas, así que este modo pinta del original
+     * (track.cover) y rellena las bandas con la misma imagen
+     * ampliada, difuminada y oscurecida. */
+    drawRowCover(canvas, track, opts) {
       if (!canvas || !track) return;
       const ctx = canvas.getContext('2d');
       const W = canvas.width, H = canvas.height;
+      const ambient = !!(opts && opts.fit === 'ambient');
       const isImage = !!track.customCover || track.coverIsImage || (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:')));
       const thumb = this.coverSrcForRow(track, Math.max(W, H));
+      const full = (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:')))
+        ? track.cover : null;
 
       const paintImg = (src) => {
         const img = new Image();
         img.onload = () => {
           ctx.clearRect(0,0,W,H);
-          const r = Math.max(W/img.width, H/img.height);
-          const dw = img.width*r, dh = img.height*r;
-          ctx.drawImage(img, (W-dw)/2, (H-dh)/2, dw, dh);
+          if (ambient) {
+            // Fondo: la obra en grande, desenfocada si el motor lo
+            // soporta (si no, queda oscurecida sin más).
+            ctx.fillStyle = '#101018';
+            ctx.fillRect(0, 0, W, H);
+            const bg = this._fitRect(img.width, img.height, W, H, 'cover');
+            ctx.save();
+            try { ctx.filter = 'blur(10px) brightness(0.45)'; } catch (e) { /* sin filtro: fondo oscuro */ }
+            ctx.drawImage(img, bg.x - bg.w * 0.08, bg.y - bg.h * 0.08, bg.w * 1.16, bg.h * 1.16);
+            ctx.restore();
+            // La obra entera, centrada.
+            const fg = this._fitRect(img.width, img.height, W, H, 'contain');
+            ctx.drawImage(img, fg.x, fg.y, fg.w, fg.h);
+            return;
+          }
+          const r = this._fitRect(img.width, img.height, W, H, 'cover');
+          ctx.drawImage(img, r.x, r.y, r.w, r.h);
         };
         img.src = src;
         ctx.fillStyle = '#222'; ctx.fillRect(0,0,W,H);
       };
 
-      if (isImage && thumb) {
-        paintImg(thumb);
+      if (isImage && (thumb || full)) {
+        paintImg(ambient && full ? full : thumb);
+        // §71: en superficies grandes (tarjetas), si la miniatura
+        // guardada es de la generación 256px, se rehace a 384 desde el
+        // original y se repinta este mismo lienzo al terminar.
+        if (Math.max(W, H) >= 160) {
+          this.ensureCoverThumbs(track).then((ok) => {
+            if (ok && canvas.isConnected) this.drawRowCover(canvas, track, opts);
+          });
+        }
         return;
       }
-      if (isImage && !thumb) {
+      if (isImage && !thumb && !full) {
         this._paintLetterCover(ctx, W, H, track);
         this.ensureCoverThumbs(track).then((ok) => {
-          if (ok && canvas.isConnected) this.drawRowCover(canvas, track);
+          if (ok && canvas.isConnected) this.drawRowCover(canvas, track, opts);
         });
         return;
       }
@@ -82,20 +304,39 @@ Object.assign(App, {
       ctx.fillStyle = 'rgba(255,255,255,0.92)';
       ctx.font = "700 " + Math.floor(H*0.48) + "px Outfit, ui-rounded, sans-serif";
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText((track.title || '?').charAt(0).toUpperCase(), W/2, H/2 + Math.floor(H*0.02));
+      ctx.fillText(this.coverInitial(track.title), W/2, H/2 + Math.floor(H*0.02));
     },
 
+    /* Genera las miniaturas si faltan y, desde §71, ACTUALIZA las de
+     * bibliotecas antiguas: la grande nació a 256px cuando las
+     * pantallas objetivo eran DPR 2; con DPR 3 las tarjetas de Inicio
+     * (116px CSS = ~348 reales) estiraban esa miniatura y se veían
+     * blandas. Devuelve true solo si (re)generó, para repintar. */
     async ensureCoverThumbs(track) {
-      if (!track || track.coverThumb) return !!track.coverThumb;
-      if (track._thumbing) return false;
+      if (!track) return false;
       const src = (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:'))) ? track.cover : null;
       if (!src) return false;
+      if (track.coverThumb && track.coverThumbLg) {
+        // Ya hay ambas: comprobar una vez por sesión el ancho real de
+        // la grande (las heredadas miden 256 y hay que rehacerlas).
+        if (track._thumbsHiRes) return false;
+        track._thumbsHiRes = true;
+        const w = await new Promise(resolve => {
+          const im = new Image();
+          im.onload = () => resolve(im.width || 0);
+          im.onerror = () => resolve(0);
+          im.src = track.coverThumbLg;
+        });
+        if (w >= 360) return false;
+      }
+      if (track._thumbing) return false;
       const U = window.AuroraUploader;
       if (!U || typeof U.resizeDataUrl !== 'function') return false;
       track._thumbing = true;
+      track._thumbsHiRes = true;
       try {
-        track.coverThumb = await U.resizeDataUrl(src, 96);
-        track.coverThumbLg = await U.resizeDataUrl(src, 256);
+        track.coverThumb = await U.resizeDataUrl(src, 144);
+        track.coverThumbLg = await U.resizeDataUrl(src, 384);
         track._thumbsDirty = true;
         if (!this._thumbPersistTimer) {
           this._thumbPersistTimer = setTimeout(() => {
@@ -169,10 +410,11 @@ Object.assign(App, {
         });
         const U = window.AuroraUploader;
         if (!U || typeof U.resizeDataUrl !== 'function') throw new Error('sin resizeDataUrl');
-        const lg = await U.resizeDataUrl(dataUrl, 256);
-        const thumb = await U.resizeDataUrl(dataUrl, 96);
+        const lg = await U.resizeDataUrl(dataUrl, 384);
+        const thumb = await U.resizeDataUrl(dataUrl, 144);
         if (!lg && !thumb) throw new Error('imagen ilegible');
         t.customCover = { thumb: thumb || lg, lg: lg || thumb };
+        delete t.coverPalette; // §75: la paleta era de la portada anterior
         await this.persistTrack(t);
         this._refreshCoverSurfaces(t);
         this.toast(this.t('toast_cover_updated'));
@@ -187,6 +429,7 @@ Object.assign(App, {
       const t = this.tracks.find(x => x.id === trackId);
       if (!t || !t.customCover) return;
       delete t.customCover;
+      delete t.coverPalette; // §75: vuelve la de los metadatos (o el acento)
       await this.persistTrack(t);
       this._refreshCoverSurfaces(t);
       this.toast(this.t('toast_cover_removed'));
@@ -274,9 +517,9 @@ Object.assign(App, {
       this._hydratePlaylistCover(pl);
       // Con el índice id->pista: buscar cada id con find() sobre miles
       // de pistas hacía renderPlaylists cuadrático (medido en el estrés).
-      const tracks = (pl.trackIds || [])
-        .map(id => this.getTrackById(id))
-        .filter(Boolean);
+      const tracks = pl.smart
+        ? this.playlistTracksSorted(pl)
+        : (pl.trackIds || []).map(id => this.getTrackById(id)).filter(Boolean);
       const withImage = tracks.filter(t => this._playlistTrackArtSrc(t));
 
       if (withImage.length === 0) {
@@ -289,7 +532,7 @@ Object.assign(App, {
         return fallback;
       }
 
-      const hash = (pl.trackIds || []).join('|') + '#' + withImage.map(t => {
+      const hash = 'v384|' + tracks.map(t => t.id).join('|') + '#' + withImage.map(t => {
         const src = this._playlistTrackArtSrc(t) || '';
         return t.id + ':' + src.length;
       }).join(',');
@@ -306,7 +549,7 @@ Object.assign(App, {
       pl._coverPending = hash;
 
       // Construir collage: primeras 8 portadas (orden estable, sin random)
-      const SIZE = 256;
+      const SIZE = 384;
       const canvas = document.createElement('canvas');
       canvas.width = SIZE; canvas.height = SIZE;
       const ctx = canvas.getContext('2d');
@@ -557,6 +800,9 @@ Object.assign(App, {
           ctxLabel.style.display = 'none';
         }
       }
+      // §98: retirado el resumen «A continuación · N · duración»
+      // que la §97 (idea 10) pintaba sobre la cola; la cabecera
+      // vuelve a ser solo el contexto «Reproduciendo desde X».
       const cleaned = this.queue.filter(id => this.trackMap().has(id));
       if (cleaned.length !== this.queue.length) {
         const curId = this.currentTrack && this.currentTrack.id;
@@ -565,6 +811,10 @@ Object.assign(App, {
         this.queueIdx = nq >= 0 ? nq : Math.min(this.queueIdx, Math.max(0, this.queue.length - 1));
       }
       if (this.queue.length === 0) {
+        // §94: desvincular la lista virtual anterior — su listener
+        // de scroll seguía vivo y repintaba filas fantasma sobre
+        // el estado vacío al desplazar la hoja.
+        this.unbindVirtualList(ul);
         ul.innerHTML = '';
         const emptyLi = document.createElement('li');
         emptyLi.className = 'empty-state compact';
@@ -575,8 +825,11 @@ Object.assign(App, {
         ul.appendChild(emptyLi);
         return;
       }
+      // §94: índice por id una sola vez — antes cada fila hacía
+      // tracks.find() y pintar la cola entera era O(filas × pistas).
+      const queueById = typeof this.trackMap === 'function' ? this.trackMap() : null;
       const makeQueueRow = (id, i) => {
-        const t = this.tracks.find(x => x.id === id);
+        const t = queueById ? queueById.get(id) : this.tracks.find(x => x.id === id);
         if (!t) return null;
         const li = document.createElement('li');
         li.className = 'queue-item' + (i === this.queueIdx ? ' current' : '');
@@ -584,17 +837,18 @@ Object.assign(App, {
         li.dataset.trackId = id;
         li.innerHTML = `
           <button class="drag-handle" aria-label="${this.esc(this.t('move'))}"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
-          <div class="row-cover"><canvas width="44" height="44"></canvas></div>
+          <div class="row-cover"><canvas width="144" height="144"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>
           </div>
           <div class="row-duration">${this.fmtRowDuration(t)}</div>
+          <button class="row-action queue-menu" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>
           <button class="row-action queue-remove" aria-label="${this.esc(this.t('remove'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
         `;
         // Click normal → reproducir
         li.addEventListener('click', (e) => {
-          if (e.target.closest('.drag-handle, .queue-remove')) return;
+          if (e.target.closest('.drag-handle, .queue-remove, .queue-menu')) return;
           this.playFromQueue(i);
           if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
         });
@@ -621,6 +875,17 @@ Object.assign(App, {
           this.renderQueue();
         });
 
+        // §83: el menú «Más opciones» de la canción también vive en
+        // la cola (antes solo estaba en las filas de las listas):
+        // mismo menú, con su «Reproducir después de la actual» ya
+        // capaz de MOVER la pista dentro de esta misma cola.
+        const menuBtn = li.querySelector('.queue-menu');
+        if (menuBtn) menuBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.openTrackMenu(id);
+        });
+        if (typeof this.wireTrackLongPress === 'function') this.wireTrackLongPress(li, id);
+
         // Drag handle → reordenar (touch + mouse)
         this.wireDragHandle(li, i, ul, '.queue-item');
 
@@ -632,6 +897,31 @@ Object.assign(App, {
         scroller: ul.closest('.sheet-body'),
         rowHeight: 64
       });
+    },
+
+    /* §98: abrir la cola DONDE suena, como en las listas (§97).
+     * La fila actual ya sale marcada (.current); esto mueve la
+     * vista hasta ella. Con lista virtual (>80) la fila puede no
+     * existir aún: primero se lleva el scroll a su ventana
+     * (64 px por fila, dejando dos de margen arriba) y se pide
+     * el repintado; después se centra la fila ya creada. Solo se
+     * llama al abrir la hoja: re-pintar la cola no mueve nada. */
+    scrollQueueToCurrent() {
+      const ul = document.getElementById('queueList');
+      if (!ul || !this.queue.length) return;
+      const scroller = ul.closest('.sheet-body');
+      if (ul._virt && scroller) {
+        scroller.scrollTop = Math.max(0, (this.queueIdx * 64) - 128);
+        if (ul._virt.onScroll) ul._virt.onScroll();
+      }
+      const center = () => {
+        const row = ul.querySelector('.queue-item.current');
+        if (row) {
+          try { row.scrollIntoView({ block: 'center' }); } catch (e) {}
+        }
+      };
+      if (ul._virt) requestAnimationFrame(center);
+      else center();
     },
 
     /* Reordenar arrastrando el asa (Pointer Events: un solo camino
@@ -802,10 +1092,11 @@ Object.assign(App, {
     },
 
     playlistDuration(pl) {
-      if (!pl || !pl.trackIds) return 0;
+      if (!pl) return 0;
+      // §81: las inteligentes no guardan trackIds: se suman sus pistas
+      // efectivas (las que la regla elige ahora mismo).
       let sum = 0;
-      for (const id of pl.trackIds) {
-        const t = this.getTrackById ? this.getTrackById(id) : this.tracks.find(x => x.id === id);
+      for (const t of this.playlistTracksSorted(pl)) {
         if (t && t.duration) sum += t.duration;
       }
       return sum;
@@ -832,7 +1123,9 @@ Object.assign(App, {
     },
 
     playlistMetaLabel(pl) {
-      const n = (pl.trackIds || []).length;
+      // §81: en listas inteligentes el conteo es el de la regla, no el
+      // de trackIds (que va vacío).
+      const n = pl.smart ? this.playlistTracksSorted(pl).length : (pl.trackIds || []).length;
       const dur = this.fmtDurationLabel(this.playlistDuration(pl));
       let s = this.fmtTracksCount(n);
       if (dur) s += ' · ' + dur;
@@ -858,21 +1151,10 @@ Object.assign(App, {
         libCountEl.textContent = String(this.playlists.length);
         libCountEl.hidden = this.playlists.length === 0;
       }
-      // Tarjeta inteligente «Más valoradas» (§60): solo en la rejilla
-      // de Biblioteca (en «Tus listas» sería una lista falsa a la que
-      // no se puede añadir nada). No vive en this.playlists: se
-      // compone al momento desde getTopRatedTracks().
-      const ratedCard = (() => {
-        const rated = typeof this.getTopRatedTracks === 'function' ? this.getTopRatedTracks() : [];
-        return rated.length
-          ? { id: '__rated', name: this.t('rated_title'), trackIds: rated.map(t => t.id) }
-          : null;
-      })();
       [ul, grid].forEach(target => {
         if (!target) return;
         target.innerHTML = '';
-        const source = (target === grid && ratedCard) ? [ratedCard, ...this.playlists] : this.playlists;
-        if (source.length === 0 && target === ul) {
+        if (this.playlists.length === 0 && target === ul) {
           const li = document.createElement('li');
           li.className = 'empty-state pl-empty';
           li.innerHTML = `
@@ -886,7 +1168,7 @@ Object.assign(App, {
           target.appendChild(li);
           return;
         }
-        if (source.length === 0 && target === grid) {
+        if (this.playlists.length === 0 && target === grid) {
           // Rejilla de la biblioteca sin listas: mensaje breve. El botón
           // «Nueva» ya está en la cabecera de la misma sección.
           const li = document.createElement('li');
@@ -899,7 +1181,7 @@ Object.assign(App, {
           target.appendChild(li);
           return;
         }
-        source.forEach(pl => {
+        this.playlists.forEach(pl => {
           const li = document.createElement('li');
           const playing = this.isPlaylistPlaying(pl);
           li.className = (target === grid ? 'pl-card' : 'pl-row') + (playing ? ' is-playing' : '');
@@ -910,7 +1192,7 @@ Object.assign(App, {
           const coverBg = hasArt
             ? `background-image:url('${cover}');background-size:cover;background-position:center;`
             : `background:linear-gradient(135deg, ${cover.from || '#6E5CFF'}, ${cover.to || '#FF7AB6'});`;
-          const fallbackIcon = pl.id === 'favoritos' ? 'heart-solid' : (pl.id === '__rated' ? 'star' : 'list-ul');
+          const fallbackIcon = pl.id === 'favoritos' ? 'heart-solid' : 'list-ul';
           const tracksLabel = this.playlistMetaLabel(pl);
           // Ya no hay lista predefinida: ninguna lleva insignia.
           const badge = '';
@@ -934,10 +1216,11 @@ Object.assign(App, {
               ${fabHtml}
             </div>
           `;
+          const smartBadge = pl.smart ? `<span class="smart-badge">${this.esc(this.t('smart_badge'))}</span>` : '';
           if (target === grid) {
-            li.innerHTML = coverHtml + `<div class="pl-card-info"><h4>${this.esc(pl.name)}</h4><p>${this.esc(tracksLabel)}</p>${badge}</div>`;
+            li.innerHTML = coverHtml + `<div class="pl-card-info"><h4>${this.esc(pl.name)}${smartBadge}</h4><p>${this.esc(tracksLabel)}</p>${badge}</div>`;
           } else {
-            li.innerHTML = coverHtml + `<div class="pl-info"><h4>${this.esc(pl.name)}</h4><p>${this.esc(tracksLabel)}</p></div>`;
+            li.innerHTML = coverHtml + `<div class="pl-info"><h4>${this.esc(pl.name)}${smartBadge}</h4><p>${this.esc(tracksLabel)}</p></div>`;
             const actions = document.createElement('div');
             actions.className = 'pl-row-actions';
             const playBtn = document.createElement('button');
@@ -964,22 +1247,10 @@ Object.assign(App, {
           const fab = li.querySelector('.pl-play-fab');
           if (fab) fab.addEventListener('click', (e) => {
             e.stopPropagation();
-            // La tarjeta inteligente no es una lista editable: su ▶
-            // reproduce las mejor valoradas y su cuerpo abre la hoja.
-            if (pl.id === '__rated') { this.playRated(); return; }
             this.playPlaylist(pl.id);
           });
           li.addEventListener('click', (e) => {
             if (e.target.closest('.row-action, .pl-play-fab, .pl-row-play')) return;
-            if (pl.id === '__rated') { this.goNav('rated'); return; }
-            if (this._selectPlaylistForAdd) {
-              this._selectPlaylistForAdd = false;
-              const tid = this._trackToAddId || (this.currentTrack && this.currentTrack.id) || null;
-              this._trackToAddId = null;
-              this.closeSheet('sheetPlaylists');
-              if (tid) this.addTrackToPlaylist(tid, pl.id);
-              return;
-            }
             this.openEditPlaylist(pl.id);
           });
           target.appendChild(li);
@@ -1056,42 +1327,117 @@ Object.assign(App, {
       this.toast(this.t('toast_restored'));
     },
 
-    renderPickTracks() {
-      const ul = document.getElementById('pickTracksList');
-      if (!ul) return;
-      ul.innerHTML = '';
-      // En modo "añadir a playlist existente" sabemos qué pistas ya están dentro
-      const targetPl = this._addingToPlaylistId
-        ? this.playlists.find(p => p.id === this._addingToPlaylistId)
-        : null;
+    /* §93: renderPickTracks() extirpado — pintaba el selector de
+     * pistas del modo «añadir» retirado; ya nadie lo mostraba. */
+
+    /* Orden por estrellas (§64): de más a menos nota; las sin nota
+     * (0) caen al final solas. El empate conserva el orden que traía
+     * la lista (el sort de JS es estable): el orden guardado NO se
+     * reescribe, solo decide el desempate. Es la única ordenación
+     * automática: listas y Favoritos se ven y suenan así. */
+    sortByRating(tracks) {
+      return (tracks || []).slice().sort((a, b) => this._ratingOf(b) - this._ratingOf(a));
+    },
+
+    /* §81: ordenación elegible por el usuario. 'stars' es la de
+     * siempre (§64) y sigue siendo la predeterminada; el resto son
+     * alternativas manuales que se guardan en pl.sort. El sort de JS
+     * es estable: los empates conservan el orden de entrada. */
+    sortTracksBy(tracks, mode) {
+      const arr = (tracks || []).slice();
+      const txt = (v) => String(v == null ? '' : v).toLocaleLowerCase();
+      switch (mode) {
+        case 'title':
+          return arr.sort((a, b) => txt(a.title).localeCompare(txt(b.title)));
+        case 'artist':
+          return arr.sort((a, b) => txt(a.artist).localeCompare(txt(b.artist)) || txt(a.title).localeCompare(txt(b.title)));
+        case 'album':
+          return arr.sort((a, b) => txt(a.album).localeCompare(txt(b.album)) || txt(a.title).localeCompare(txt(b.title)));
+        case 'recent':
+          return arr.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+        case 'duration':
+          return arr.sort((a, b) => (a.duration || 0) - (b.duration || 0));
+        case 'added':
+          return arr; // orden guardado, tal cual
+        case 'stars':
+        default:
+          return this.sortByRating(arr);
+      }
+    },
+
+    /* §81: géneros presentes en la biblioteca (el importador ya leía
+     * el género; hasta ahora ninguna vista lo usaba). */
+    getGenres() {
+      const map = new Map();
       this.tracks.forEach(t => {
-        const inPl = !!(targetPl && targetPl.trackIds.includes(t.id));
-        const li = document.createElement('li');
-        li.className = 'pick-row' + (inPl ? ' in-pl' : '');
-        li.dataset.trackId = t.id;
-        if (inPl) li.setAttribute('aria-disabled', 'true');
-        li.innerHTML = `
-          <div class="row-check"><svg class="ico" aria-hidden="true"><use href="#i-check"></use></svg></div>
-          <div class="row-text">
-            <div class="row-title">${this.esc(t.title)}</div>
-            <div class="row-sub">${this.esc(t.artist)}${inPl ? ' · <span class="in-pl-tag">' + this.esc(this.t('picker_already_in')) + '</span>' : ''}</div>
-          </div>
-        `;
-        li.addEventListener('click', () => {
-          if (li.classList.contains('in-pl')) return; // ya está en la lista
-          li.classList.toggle('checked');
-        });
-        ul.appendChild(li);
+        const g = String((t && t.genre) || '').trim();
+        const name = g || this.t('genre_unknown');
+        if (!map.has(name)) map.set(name, { name, tracks: [] });
+        map.get(name).tracks.push(t);
       });
+      return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+    },
+
+    /* §81: las pistas que una lista inteligente elige AHORA según su
+     * regla. Se recalcula en cada lectura: la lista «se rellena sola»
+     * cuando importas, valoras o reproduces. */
+    smartPlaylistTracks(pl) {
+      if (!pl || !pl.smart) return [];
+      const rule = pl.smart;
+      const plays = (this.stats && this.stats.plays) || {};
+      switch (rule.kind) {
+        case 'rating':
+          return this.tracks.filter(t => this._ratingOf(t) >= 4);
+        case 'genre': {
+          const g = String(rule.genre || '').trim().toLocaleLowerCase();
+          return this.tracks.filter(t => String(t.genre || '').trim().toLocaleLowerCase() === g);
+        }
+        case 'never':
+          return this.tracks.filter(t => !(plays[t.id] > 0));
+        case 'recent': {
+          const since = Date.now() - 30 * 24 * 3600 * 1000;
+          return this.tracks.filter(t => (t.addedAt || 0) >= since);
+        }
+        case 'forgotten': {
+          // Reproducida alguna vez y no en los últimos 90 días. Sin
+          // fecha de última escucha (bibliotecas anteriores a §81 con
+          // reproducciones), cuenta como olvidada: hace mucho que no
+          // suena, que es justo lo que la regla busca.
+          const since = Date.now() - 90 * 24 * 3600 * 1000;
+          return this.tracks.filter(t => (plays[t.id] > 0) && !(t.lastPlayedAt > since));
+        }
+        case 'top':
+          return this.getTopTracks(50).map(x => x.track);
+        default:
+          return [];
+      }
+    },
+
+    /* Las pistas de una lista, en el orden en que se ven y suenan. */
+    playlistTracksSorted(pl) {
+      if (!pl) return [];
+      // §81: inteligentes primero (su regla elige las pistas) y orden
+      // manual después. La regla 'top' ya trae su orden (más
+      // reproducidas): con el orden por defecto no se reordena.
+      if (pl.smart) {
+        const base = this.smartPlaylistTracks(pl);
+        const mode = pl.sort || 'stars';
+        if (pl.smart.kind === 'top' && (mode === 'stars' || mode === 'added')) return base;
+        return this.sortTracksBy(base, mode);
+      }
+      const byId = this.trackMap();
+      const stored = ((pl && pl.trackIds) || []).map(id => byId.get(id)).filter(Boolean);
+      return this.sortTracksBy(stored, (pl && pl.sort) || 'stars');
     },
 
     playPlaylist(playlistId) {
       const pl = this.playlists.find(p => p.id === playlistId);
       if (!pl) return;
-      const ids = pl.trackIds.map(id => id).filter(id => this.trackMap().has(id));
+      const ids = this.playlistTracksSorted(pl).map(t => t.id);
       if (ids.length === 0) { this.toast(this.t('toast_playlist_empty')); return; }
       this.queue = ids;
       this.queueIdx = 0;
+      this._plSyncIds = ids.slice(); // §82: foto base de la lista
       // Establecer contexto de reproducción: "Reproduciendo desde <playlist>"
       this.playContext = { type: 'playlist', id: pl.id, name: pl.name };
       // Con Aleatorio activo la cola es nueva: hay que anclar su primera pista
@@ -1105,10 +1451,10 @@ Object.assign(App, {
       this.toast(this.t('toast_now_playing') + ' ' + pl.name);
     },
 
-    /* «Más valoradas» (§60): las canciones con estrellas, de mejor
-     * nota a menor; a igual nota, las más reproducidas primero y el
-     * título desempatando. Es una lista inteligente: se calcula al
-     * momento, sin guardar una lista paralela que mantener. */
+    /* Las canciones con estrellas, de mejor nota a menor (a igual
+     * nota, las más reproducidas primero y el título desempatando).
+     * Desde §64 solo alimenta el escaparate de Inicio: la ordenación
+     * de verdad, en listas y colas, es sortByRating(). */
     getTopRatedTracks() {
       const plays = (this.stats && this.stats.plays) || {};
       return this.tracks
@@ -1119,35 +1465,16 @@ Object.assign(App, {
           String(a.title || '').localeCompare(String(b.title || '')));
     },
 
-    /* Reproduce las mejor valoradas como contexto propio, igual que
-     * Favoritos reproduce la suya. */
-    playRated() {
-      const rated = this.getTopRatedTracks();
-      if (rated.length === 0) {
-        this.toast(this.t('rated_empty'));
-        return;
-      }
-      this.queue = rated.map(t => t.id);
-      this.queueIdx = 0;
-      this.playContext = { type: 'rated' };
-      if (this.shuffle) this._applyShuffle(this.queue[0]);
-      else this._originalQueue = null;
-      this.playFromQueue(0);
-      this.renderCurrentTrack();
-      this.renderQueue();
-      if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
-      this.toast(this.t('toast_now_playing') + ' ' + this.t('rated_title'));
-    },
-
     /* Reproduce la lista de favoritos como una playlist independiente */
     playFavorites() {
-      const favTracks = this.tracks.filter(t => this.favorites.has(t.id));
+      const favTracks = this.sortByRating(this.tracks.filter(t => this.favorites.has(t.id)));
       if (favTracks.length === 0) {
         this.toast(this.t('toast_no_favorites_yet'));
         return;
       }
       this.queue = favTracks.map(t => t.id);
       this.queueIdx = 0;
+      this._plSyncIds = null; // §82: Favoritos no sincroniza con listas
       this.playContext = { type: 'favorites' };
       // Igual que playPlaylist(): anclar la primera favorita, no la pista previa.
       if (this.shuffle) this._applyShuffle(this.queue[0]);
@@ -1164,9 +1491,6 @@ Object.assign(App, {
       if (!this.playContext) return null;
       if (this.playContext.type === 'favorites') {
         return this.t('favorites_playlist_name');
-      }
-      if (this.playContext.type === 'rated') {
-        return this.t('rated_title');
       }
       if (this.playContext.type === 'playlist') {
         // El nombre se resuelve por id en el momento de pintar: si la
@@ -1194,50 +1518,8 @@ Object.assign(App, {
       return null;
     },
 
-    /* Añade la pista actual a una playlist existente (atajo desde el menú "Más") */
-    /* Añade una pista concreta a una playlist (generalización de
-     * addCurrentTrackToPlaylist: permite añadir cualquier pista de la
-     * biblioteca, no solo la que está sonando). */
-    /* Primitiva sin toasts: añade si no está. Devuelve true si cambió.
-     * La usan tanto el flujo individual como la selección por lote. */
-    _addTrackIdToPlaylist(trackId, playlistId) {
-      const pl = this.playlists.find(p => p.id === playlistId);
-      if (!pl || !Array.isArray(pl.trackIds)) return false;
-      const t = this.getTrackById ? this.getTrackById(trackId) : this.tracks.find(x => x.id === trackId);
-      if (!t) return false;
-      if (pl.trackIds.includes(trackId)) return false;
-      pl.trackIds.push(trackId);
-      if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
-      return true;
-    },
+    /* §93: _addTrackIdToPlaylist() extirpado — su comentario
+     * decía «la usan el flujo individual y el lote», pero no
+     * tenía ni una llamada: los flujos vivos añaden por su cuenta. */
 
-    addTrackToPlaylist(trackId, playlistId) {
-      const pl = this.playlists.find(p => p.id === playlistId);
-      if (!pl) return;
-      const t = this.getTrackById ? this.getTrackById(trackId) : this.tracks.find(x => x.id === trackId);
-      if (!t) {
-        this.toast(this.t('toast_pick_at_least_one'));
-        return;
-      }
-      if (pl.trackIds.includes(trackId)) {
-        this.toast(this.t('toast_already_in_playlist') + ' ♥ ' + pl.name);
-        return;
-      }
-      this._addTrackIdToPlaylist(trackId, playlistId);
-      this.persistPlaylist(pl);
-      this.renderPlaylists();
-      // Si el sheet de edición de esa playlist está abierto (debajo),
-      // refrescarlo para que la pista reaparezca al instante
-      if (this._editingPlaylistId === pl.id) this.renderEditPlaylist();
-      this.toast('♥ ' + this.t('toast_added_to_playlist_plural') + ' ' + pl.name);
-    },
-
-    /* Atajo: añade la pista que está sonando */
-    addCurrentTrackToPlaylist(playlistId) {
-      if (!this.currentTrack) {
-        this.toast(this.t('toast_pick_at_least_one'));
-        return;
-      }
-      this.addTrackToPlaylist(this.currentTrack.id, playlistId);
-    },
 });

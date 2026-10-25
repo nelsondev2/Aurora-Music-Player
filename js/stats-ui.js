@@ -16,9 +16,21 @@ Object.assign(App, {
     renderStats() {
       const cont = document.getElementById('statsContent');
       if (!cont) return;
+      const playsObj = (this.stats && this.stats.plays) || {};
       const topTracks = this.getTopTracks(10);
       const topArtists = this.getTopArtists(5);
-      const playsObj = (this.stats && this.stats.plays) || {};
+      // §81: «Más saltadas» y «Olvidadas» (segunda fila de stats).
+      const skipsObj = (this.stats && this.stats.skips) || {};
+      const topSkipped = Object.entries(skipsObj)
+        .map(([id, count]) => ({ track: this.getTrackById ? this.getTrackById(id) : this.tracks.find(t => t.id === id), count: Number(count) || 0 }))
+        .filter(x => x.track && x.count > 0)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+      const forgottenSince = Date.now() - 90 * 24 * 3600 * 1000;
+      const forgotten = this.tracks
+        .filter(t => (playsObj[t.id] > 0) && !(t.lastPlayedAt > forgottenSince))
+        .sort((a, b) => (a.lastPlayedAt || 0) - (b.lastPlayedAt || 0))
+        .slice(0, 10);
       const totalPlays = Object.values(playsObj).reduce((a, b) => a + (Number(b) || 0), 0);
       const totalSec = (this.stats && this.stats.totalSeconds) || 0;
 
@@ -38,7 +50,7 @@ Object.assign(App, {
           </div>
           <div class="stat-card">
             <div class="stat-value">${topArtists.length}</div>
-            <div class="stat-label">${this.t('menu_go_to_artist')}</div>
+            <div class="stat-label">${this.t('stats_artists')}</div>
           </div>
         </div>
 
@@ -62,10 +74,39 @@ Object.assign(App, {
           ${topTracks.map((t, i) => `
             <li class="stats-row" data-track="${this.esc(t.track.id)}">
               <div class="stats-rank">${i + 1}</div>
-              <div class="row-cover"><canvas width="40" height="40"></canvas></div>
+              <div class="row-cover"><canvas width="144" height="144"></canvas></div>
               <div class="stats-info">
                 <div class="stats-name">${this.esc(t.track.title)}</div>
                 <div class="stats-sub">${this.esc(t.track.artist)} · ${t.count} ${this.t('stats_plays').toLowerCase()}</div>
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+
+        <h4 class="section-title">${this.t('stats_most_skipped')}</h4>
+        ${topSkipped.length === 0 ? '<p class="stats-empty">' + this.t('no_results') + '</p>' : ''}
+        <ul class="stats-list">
+          ${topSkipped.map((t, i) => `
+            <li class="stats-row" data-track="${this.esc(t.track.id)}">
+              <div class="stats-rank">${i + 1}</div>
+              <div class="row-cover"><canvas width="144" height="144"></canvas></div>
+              <div class="stats-info">
+                <div class="stats-name">${this.esc(t.track.title)}</div>
+                <div class="stats-sub">${this.esc(t.track.artist)} · ${t.count} ${this.t('stats_skips_label')}</div>
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+
+        <h4 class="section-title">${this.t('stats_forgotten')}</h4>
+        ${forgotten.length === 0 ? '<p class="stats-empty">' + this.t('no_results') + '</p>' : ''}
+        <ul class="stats-list">
+          ${forgotten.map((t) => `
+            <li class="stats-row" data-track="${this.esc(t.id)}">
+              <div class="row-cover"><canvas width="144" height="144"></canvas></div>
+              <div class="stats-info">
+                <div class="stats-name">${this.esc(t.title)}</div>
+                <div class="stats-sub">${this.esc(t.artist)} · ${t.lastPlayedAt ? this.t('stats_days_ago').replace('X', Math.max(0, Math.floor((Date.now() - t.lastPlayedAt) / 86400000))) : ((playsObj[t.id] || 0) + ' ' + this.t('stats_plays').toLowerCase())}</div>
               </div>
             </li>
           `).join('')}
@@ -159,8 +200,8 @@ Object.assign(App, {
       return { type: 'all' };
     },
 
-    /* Nombre histórico del resolvedor de contexto. */
-    searchPlayContextFor(t) { return this.trackPlayContextFor(t); },
+    /* §93: searchPlayContextFor() extirpado — alias histórico
+     * sin llamadores; todos usan trackPlayContextFor() directo. */
 
     runSearch(q, filter) {
       const ul = document.getElementById('searchResults');
@@ -325,7 +366,8 @@ Object.assign(App, {
       if (!ul) return;
       const countEl = document.getElementById('favoritesCount');
       ul.innerHTML = '';
-      const favTracks = this.tracks.filter(t => this.favorites.has(t.id));
+      // Favoritos también se ve y suena en orden de estrellas (§64)
+      const favTracks = this.sortByRating(this.tracks.filter(t => this.favorites.has(t.id)));
       // «Reproducir Todo» sin favoritos no pinta nada: se oculta (el
       // estado vacío ya lo explica). Y si Favoritos es la lista que
       // suena, el botón lo dice con el mismo anillo que el hero.
@@ -370,44 +412,6 @@ Object.assign(App, {
       }
     },
 
-    /* «Más valoradas» (§60): espejo de Favoritos — Reproducción en
-     * curso marcada en el botón, contador y filas con su insignia
-     * (la encargada de pintarla es makeTrackRow). */
-    renderRated() {
-      const ul = document.getElementById('ratedList');
-      if (!ul) return;
-      const countEl = document.getElementById('ratedCount');
-      ul.innerHTML = '';
-      const rated = typeof this.getTopRatedTracks === 'function' ? this.getTopRatedTracks() : [];
-      const playBtn = document.getElementById('btnPlayRatedNow');
-      if (playBtn) {
-        playBtn.style.display = rated.length ? '' : 'none';
-        playBtn.classList.toggle('is-playing',
-          rated.length > 0 && this.isPlaying &&
-          !!this.playContext && this.playContext.type === 'rated');
-      }
-      if (countEl) {
-        countEl.hidden = rated.length === 0;
-        if (rated.length) countEl.textContent = this.fmtTracksCount(rated.length);
-      }
-      if (rated.length === 0) {
-        const li = document.createElement('li');
-        li.className = 'empty-state fav-empty';
-        li.innerHTML = this.emptyStateHtml({
-          icon: 'star',
-          title: this.t('rated_title'),
-          text: this.t('rated_empty')
-        });
-        ul.appendChild(li);
-        return;
-      }
-      if (typeof this.fillVirtualList === 'function' && typeof this.makeTrackRow === 'function') {
-        this.fillVirtualList(ul, rated,
-          (t) => this.makeTrackRow(t, { playContext: { type: 'rated' } }),
-          { scroller: ul.closest('.sheet-body'), rowHeight: 64 });
-      }
-    },
-
     /* Compartir resumen de estadísticas de reproducción en Delta Chat */
     async shareStats() {
       const topTracks = typeof this.getTopTracks === 'function' ? this.getTopTracks(5) : [];
@@ -439,13 +443,13 @@ Object.assign(App, {
       }
 
       try {
-        await this.exportFile({
+        const res = await this.exportFile({
           name: 'resumen-aurora.txt',
           content: msg,
           mimeType: 'text/plain;charset=utf-8',
           caption: msg
         });
-        this.toast(this.t('toast_shared_chat'));
+        this.toastExportResult(res);
       } catch (e) {
         this.toast(this.t('toast_share_error'));
       }

@@ -122,12 +122,6 @@ Object.assign(App, {
         this.showView('home');
         this.renderFavorites();
         this.openSheet('sheetFavorites');
-      } else if (nav === 'rated') {
-        this.closeAllSheets();
-        this.showView('home');
-        this.renderRated();
-        this.openSheet('sheetRated');
-        nav = 'home'; // no es pestaña: el resaltado se queda en Inicio
       } else if (nav === 'search') {
         this.closeAllSheets();
         this.showView('home');
@@ -207,7 +201,7 @@ Object.assign(App, {
           : '';
         hero = `
           <button class="home-hero" id="homeHero" type="button" data-track="${this.esc(t.id)}"${this.isPlaying ? ' hidden' : ''}>
-            <div class="home-hero-cover"><canvas id="homeHeroCanvas" width="160" height="160"></canvas></div>
+            <div class="home-hero-cover"><canvas id="homeHeroCanvas" width="216" height="216"></canvas></div>
             <div class="home-hero-text">
               <span class="home-kicker">${this.esc(this.t('home_continue'))}</span>
               <strong>${this.esc(t.title)}</strong>
@@ -258,7 +252,7 @@ Object.assign(App, {
           ? `<span class="eq-badge${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
           : '';
         return `<button class="home-card${isCur ? ' is-current' : ''}" type="button" data-kind="${kind}" data-id="${this.esc(t.id)}">
-          <div class="home-card-cover"><canvas width="120" height="120"></canvas>${nowBadge}</div>
+          <div class="home-card-cover"><canvas width="384" height="384"></canvas>${nowBadge}</div>
           <span class="home-card-title">${this.esc(t.title)}</span>
           <span class="home-card-sub">${this.esc(t.artist || '')}</span>
         </button>`;
@@ -269,9 +263,11 @@ Object.assign(App, {
       </section>`;
     },
 
-    /* Raíl «Más valoradas» de Inicio (§60): solo si hay alguna nota.
-     * Las tarjetas suenan dentro del contexto 'rated' y el «Ver todo»
-     * abre la hoja completa en vez de Biblioteca. */
+    /* Escaparate «Más valoradas» de Inicio (§60, redefinido en §64):
+     * solo si hay alguna nota. Ya NO es una lista aparte —sin hoja ni
+     * contexto propio—: las tarjetas suenan con el contexto de la
+     * lista de cada canción, como el resto de Inicio. Es el escaparate
+     * de las estrellas; el orden de verdad vive en las listas. */
     _homeRatedRail() {
       const rated = typeof this.getTopRatedTracks === 'function' ? this.getTopRatedTracks().slice(0, 10) : [];
       if (!rated.length) return '';
@@ -282,18 +278,43 @@ Object.assign(App, {
           ? `<span class="eq-badge${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
           : '';
         return `<button class="home-card${isCur ? ' is-current' : ''}" type="button" data-kind="track" data-id="${this.esc(t.id)}">
-          <div class="home-card-cover"><canvas width="120" height="120"></canvas>${nowBadge}</div>
+          <div class="home-card-cover"><canvas width="384" height="384"></canvas>${nowBadge}</div>
           <span class="home-card-title">${this.esc(t.title)}</span>
-          <span class="home-card-sub">${'★'.repeat(this._ratingOf(t))} ${this.esc(t.artist || '')}</span>
+          <span class="home-card-sub rated-sub"><span class="sub-stars" aria-hidden="true">${'★'.repeat(this._ratingOf(t))}</span><span class="sub-artist">${this.esc(t.artist || '')}</span></span>
         </button>`;
       }).join('');
       return `<section class="home-section">
         <div class="home-section-head">
           <h3 class="home-section-title">${this.esc(this.t('rated_title'))}</h3>
-          <button class="home-see-all" type="button" data-see-all="rated">${this.esc(this.t('see_all'))}</button>
         </div>
         <div class="home-rail" id="homeRated">${items}</div>
       </section>`;
+    },
+
+    /* Refresca SOLO el raíl de valoradas en sitio (§63): al valorar,
+     * Inicio enseñaba la nota que hubiera cuando se pintó, y una
+     * canción recién valorada ni siquiera aparecía. Se reconstruye su
+     * sección y se re-enlazan sus tarjetas (sin tocar el resto de
+     * Inicio ni su posición de desplazamiento). Si aún no existe y
+     * ya hay valoradas, se repinta Inicio entero. */
+    _refreshRatedRail() {
+      const home = document.getElementById('homeContent');
+      if (!home) return;
+      const rail = document.getElementById('homeRated');
+      if (!rail) {
+        if (this.getTopRatedTracks && this.getTopRatedTracks().length) this.renderHome();
+        return;
+      }
+      const section = rail.closest('.home-section');
+      const html = this._homeRatedRail();
+      if (!html) { if (section) section.remove(); return; }
+      const tpl = document.createElement('template');
+      tpl.innerHTML = html.trim();
+      const fresh = tpl.content.firstElementChild;
+      if (!fresh || !section) return;
+      section.replaceWith(fresh);
+      this._bindSeeAll(fresh);
+      this._bindHomeCards(fresh);
     },
 
     _homePlaylists(lists) {
@@ -313,24 +334,35 @@ Object.assign(App, {
     },
 
     _bindHomeRails() {
-      // «Ver todo» de cada sección → Biblioteca.
-      document.querySelectorAll('#homeContent [data-see-all]').forEach(btn => {
+      const home = document.getElementById('homeContent');
+      if (!home) return;
+      this._bindSeeAll(home);
+      this._bindHomeCards(home);
+    },
+
+    /* «Ver todo» de cada sección (su destino lo declara data-see-all). */
+    _bindSeeAll(scope) {
+      scope.querySelectorAll('[data-see-all]').forEach(btn => {
         btn.addEventListener('click', () => this.goNav(btn.dataset.seeAll));
       });
-      document.querySelectorAll('#homeContent .home-card').forEach(card => {
+    },
+
+    /* Enlaza las tarjetas de un ámbito (Inicio entero o una sección
+     * reconstruida, como la de valoradas al refrescarla, §63). */
+    _bindHomeCards(scope) {
+      scope.querySelectorAll('.home-card').forEach(card => {
         const kind = card.dataset.kind;
         const id = card.dataset.id;
         if (kind === 'track') {
           const t = this.tracks.find(x => x.id === id);
           const cv = card.querySelector('canvas');
-          if (cv && t) this.drawRowCover(cv, t);
+          // Tarjetas grandes de Inicio: la obra completa, sin recorte (§63)
+          if (cv && t) this.drawRowCover(cv, t, { fit: 'ambient' });
           card.addEventListener('click', () => {
-            // Tarjeta del raíl de valoradas: manda el contexto 'rated'
-            // (§60). Tarjeta suelta de Inicio: la lista de la canción
-            // manda (mismo criterio que Buscar, §38), no «Todas».
-            const ctx = card.closest('#homeRated')
-              ? { type: 'rated' }
-              : (typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(t) : { type: 'all' });
+            // Tarjeta suelta de Inicio: la lista de la canción manda
+            // (mismo criterio que Buscar, §38). También en el
+            // escaparate de valoradas, que ya no es lista aparte (§64).
+            const ctx = typeof this.trackPlayContextFor === 'function' ? this.trackPlayContextFor(t) : { type: 'all' };
             this.playTrack(id, ctx);
             this.updateChrome();
             if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
@@ -370,6 +402,82 @@ Object.assign(App, {
      * ============================================================ */
     renderLibrarySections() {
       this.renderPlaylists();
+      this.renderLibraryCatalog();
+    },
+
+    /* §81: pestañas de la biblioteca. 'playlists' es la vista de
+     * siempre (§47: solo listas; NO vuelve «Todas las canciones»).
+     * Álbumes/Artistas/Géneros son un índice navegable nuevo que el
+     * usuario pidió expresamente tras la auditoría: tarjetas con
+     * portada que abren la vista de álbum/artista ya existente. */
+    setLibTab(tab) {
+      this._libTab = tab || 'playlists';
+      document.querySelectorAll('.lib-tab').forEach(b => {
+        const on = b.dataset.libtab === this._libTab;
+        b.classList.toggle('active', on);
+        // §92: el estado visual debe reflejarse en ARIA — los
+        // lectores de pantalla anuncian qué pestaña está activa.
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      const show = (id, on) => {
+        const el = document.getElementById(id);
+        if (el) el.hidden = !on;
+      };
+      show('libSectionPlaylists', this._libTab === 'playlists');
+      show('libSectionAlbums', this._libTab === 'albums');
+      show('libSectionArtists', this._libTab === 'artists');
+      show('libSectionGenres', this._libTab === 'genres');
+      if (this._libTab !== 'playlists') this.renderLibraryCatalog();
+    },
+
+    /* §81: pinta el índice de Álbumes / Artistas / Géneros según la
+     * pestaña activa. Cada tarjeta abre openBrowse() con sus pistas. */
+    renderLibraryCatalog() {
+      const tab = this._libTab || 'playlists';
+      const gridId = tab === 'albums' ? 'libraryAlbums'
+        : tab === 'artists' ? 'libraryArtists'
+        : tab === 'genres' ? 'libraryGenres' : null;
+      if (!gridId) return;
+      const grid = document.getElementById(gridId);
+      if (!grid) return;
+      grid.innerHTML = '';
+      const card = (name, sub, seedTrack, onOpen) => {
+        const li = document.createElement('li');
+        li.className = 'catalog-card';
+        li.innerHTML = '<div class="cat-cover"><canvas width="240" height="240"></canvas></div>' +
+          '<div class="cat-name">' + this.esc(name) + '</div>' +
+          '<div class="cat-sub">' + this.esc(sub) + '</div>';
+        li.addEventListener('click', onOpen);
+        const cv = li.querySelector('canvas');
+        if (cv && seedTrack) this.drawRowCover(cv, seedTrack);
+        else if (cv) {
+          const ctx = cv.getContext('2d');
+          if (ctx) { ctx.fillStyle = (this.coverFallback && this.coverFallback().from) || '#6E5CFF'; ctx.fillRect(0, 0, 240, 240); }
+        }
+        return li;
+      };
+      if (tab === 'albums') {
+        this.getAlbums().forEach(al => {
+          const years = [...new Set(al.tracks.map(t => t.year).filter(Boolean))];
+          const sub = al.artist + ' · ' + this.fmtTracksCount(al.tracks.length) + (years.length === 1 ? ' · ' + years[0] : '');
+          const seed = al.tracks.find(t => t.coverIsImage) || al.tracks[0];
+          grid.appendChild(card(al.name, sub, seed, () => this.goToAlbum(al.name, al.artist)));
+        });
+      } else if (tab === 'artists') {
+        this.getArtists().forEach(ar => {
+          const albums = new Set(ar.tracks.map(t => this.albumKey(t))).size;
+          const sub = this.fmtTracksCount(ar.tracks.length) + ' · ' + albums + ' ' + this.t('tab_albums').toLowerCase();
+          const seed = ar.tracks.find(t => t.coverIsImage) || ar.tracks[0];
+          grid.appendChild(card(ar.name, sub, seed, () => this.goToArtist(ar.name)));
+        });
+      } else if (tab === 'genres') {
+        this.getGenres().forEach(g => {
+          const seed = g.tracks.find(t => t.coverIsImage) || g.tracks[0];
+          grid.appendChild(card(g.name, this.fmtTracksCount(g.tracks.length), seed, () => {
+            this.openBrowse({ type: 'genre', title: g.name, tracks: g.tracks.slice() });
+          }));
+        });
+      }
     },
 
     albumKey(t) {
@@ -410,13 +518,16 @@ Object.assign(App, {
      * ============================================================ */
     openBrowse(opts) {
       this._browse = opts;
+      // §81: cada vista nueva empieza en su orden natural.
+      const sortSel = document.getElementById('browseSortSelect');
+      if (sortSel) { this._browse.sort = 'added'; sortSel.value = 'added'; }
       const title = document.getElementById('browseTitle');
       const sub = document.getElementById('browseSubtitle');
       if (title) title.textContent = opts.title || '';
       if (sub) sub.textContent = opts.subtitle || this.fmtTracksCount((opts.tracks || []).length);
       const coverEl = document.getElementById('browseCover');
       if (coverEl) {
-        coverEl.innerHTML = '<canvas width="160" height="160"></canvas>';
+        coverEl.innerHTML = '<canvas width="240" height="240"></canvas>';
         const seed = (opts.tracks || []).find(t => t.coverIsImage) || (opts.tracks || [])[0];
         const cv = coverEl.querySelector('canvas');
         if (cv && seed) this.drawRowCover(cv, seed);
@@ -425,14 +536,25 @@ Object.assign(App, {
       this.openSheet('sheetBrowse');
     },
 
+    /* §81: las pistas de la vista actual en el orden elegido en su
+     * selector (por defecto, el orden en que llegaron: 'added'). */
+    browseTracksSorted() {
+      if (!this._browse) return [];
+      const sel = document.getElementById('browseSortSelect');
+      const mode = this._browse.sort || (sel && sel.value) || 'added';
+      return this.sortTracksBy(this._browse.tracks || [], mode);
+    },
+
     renderBrowseTracks() {
       const ul = document.getElementById('browseTracks');
       if (!ul || !this._browse) return;
       ul.innerHTML = '';
-      const tracks = this._browse.tracks || [];
+      const tracks = this.browseTracksSorted();
       const ctx = this._browse.type === 'album'
         ? { type: 'album', name: this._browse.title, artist: this._browse.artist || this._browse.subtitle }
-        : { type: 'artist', name: this._browse.title };
+        : this._browse.type === 'genre'
+          ? { type: 'genre', name: this._browse.title }
+          : { type: 'artist', name: this._browse.title };
       tracks.forEach(t => ul.appendChild(this.makeTrackRow(t, { playContext: ctx })));
     },
 
@@ -441,12 +563,17 @@ Object.assign(App, {
         this.toast(this.t('toast_playlist_empty'));
         return;
       }
-      const ids = this._browse.tracks.map(t => t.id);
+      // §81: «Reproducir Todo» suena en el orden que se ve (el del
+      // selector), no en el orden interno de _browse.tracks.
+      const ids = this.browseTracksSorted().map(t => t.id);
       this.queue = ids;
       this.queueIdx = 0;
+      this._plSyncIds = null; // §82: álbum/artista/género no sincronizan
       this.playContext = this._browse.type === 'album'
         ? { type: 'album', name: this._browse.title, artist: this._browse.artist || this._browse.subtitle }
-        : { type: 'artist', name: this._browse.title };
+        : this._browse.type === 'genre'
+          ? { type: 'genre', name: this._browse.title }
+          : { type: 'artist', name: this._browse.title };
       // Igual que playPlaylist(): si shuffle está activo, barajar la cola nueva
       // anclando su primera pista (no la que sonaba antes); si no, limpiar la
       // cola original para no restaurar una lista ajena.
@@ -521,7 +648,7 @@ Object.assign(App, {
         ? `<span class="eq-badge eq-badge-row${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
         : '';
       li.innerHTML = `
-        <div class="row-cover"><canvas width="44" height="44"></canvas>${nowBadge}</div>
+        <div class="row-cover"><canvas width="144" height="144"></canvas>${nowBadge}</div>
         <div class="row-text">
           <div class="row-title">${this.esc(t.title)}</div>
           <div class="row-sub">${this.esc(t.artist)}${showAlbum ? ' · ' + this.esc(t.album) : ''} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>
@@ -638,12 +765,23 @@ Object.assign(App, {
       t.rating = this._ratingOf(t) === v ? 0 : v;
       this.persistTrack(t);
       this._syncRatingUI(t);
+      // §83: si lo que suena manda por más valoradas (lista con el
+      // orden de estrellas o Favoritos), la cola viva se reordena
+      // detrás de la actual: valorar y que no pase nada era la
+      // mitad de la queja de «la cola por valoradas no funciona».
+      if (!this.shuffle && typeof this.resortUpcomingQueue === 'function' && this.playContext) {
+        if (this.playContext.type === 'favorites') {
+          this.resortUpcomingQueue(false);
+        } else if (this.playContext.type === 'playlist') {
+          const plNow = this.playlists.find(p => p.id === this.playContext.id);
+          if (plNow && (plNow.sort || 'stars') === 'stars') this.resortUpcomingQueue(false);
+        }
+      }
       // La hoja de «Más valoradas», si está abierta, se rinde otra vez:
       // la canción puede entrar, salir o cambiar de puesto (§60).
-      const ratedSheet = document.getElementById('sheetRated');
-      if (ratedSheet && ratedSheet.classList.contains('open') && typeof this.renderRated === 'function') {
-        this.renderRated();
-      }
+      // Y el raíl de Inicio, que es la otra superficie de la nota:
+      // sin esto enseñaba la valoración de cuando se pintó (§63).
+      this._refreshRatedRail();
     },
 
     /* Pinta el estado de las estrellas en los tres sitios vivos: el
@@ -699,6 +837,9 @@ Object.assign(App, {
       t.title = title.trim() || t.title;
       t.artist = artist.trim() || this.t('unknown_artist');
       t.album = album.trim() || this.t('no_album');
+      // §94: marca de «editado a mano» — releer etiquetas ya no
+      // pisa este texto con el del archivo (ver retagExistingTracks).
+      t._userEdited = true;
       await this.persistTrack(t);
       this.closeSheet('sheetEditTrack');
       this.closeSheet('sheetTrackMenu');

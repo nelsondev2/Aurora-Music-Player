@@ -123,8 +123,13 @@
        * en paralelo con las etiquetas; probeDuration() tiene timeout y
        * ante un archivo corrupto devuelve 0 sin bloquear la importación.
        * Si el lector Vorbis ya la trajo (FLAC), ni se sondea. */
+      // §85: si el lector Vorbis propio ya sacó los tags del primer
+      // MB (FLAC/OGG/Opus), jsmediatags sobra: leería el archivo
+      // ENTERO (los FLAC son los más grandes) para llegar a los
+      // mismos datos. Solo se le llama si falta el título Vorbis.
+      const vorbisComplete = !!(vorbis && this.tagText(vorbis.title));
       let [tags, lrcText, duration] = await Promise.all([
-        this.readTags(file).catch(() => null),
+        vorbisComplete ? Promise.resolve(null) : this.readTags(file).catch(() => null),
         lrcFile ? this.readTextFile(lrcFile).catch(() => null) : Promise.resolve(null),
         (vorbis && vorbis.duration) ? Promise.resolve(vorbis.duration) : this.probeDuration(file).catch(() => 0)
       ]);
@@ -132,13 +137,18 @@
       /* El lector propio rellena lo que falte sin pisar nunca un
        * dato ID3/MP4 válido. */
       if (vorbis) {
-        if (!tags) tags = vorbis;
+        if (!tags) tags = Object.assign({}, vorbis); // copia: no mutar el objeto del lector
         else {
-          for (const k of ['title', 'artist', 'album', 'albumartist', 'lyrics']) {
+          for (const k of ['title', 'artist', 'album', 'albumartist', 'lyrics', 'genre']) {
             if (!this.tagText(tags[k]) && vorbis[k]) tags[k] = vorbis[k];
           }
           if (!tags.picture && vorbis.picture) tags.picture = vorbis.picture;
         }
+        // En Vorbis el año viaja como DATE («2005», «2005-03-01»…);
+        // se normaliza en ambos caminos (§85: también cuando
+        // jsmediatags se saltó y «tags» ES el objeto Vorbis).
+        if (!this.tagText(tags.year) && vorbis.date) tags.year = vorbis.date;
+        if (!this.tagText(tags.year) && vorbis.year) tags.year = vorbis.year;
       }
 
       let coverSet = null;
@@ -149,6 +159,10 @@
         if (title) meta.title = title;
         if (artist) meta.artist = artist;
         if (album) meta.album = album;
+        const genre = this.tagText(tags.genre);
+        if (genre) meta.genre = genre.slice(0, 60);
+        const yearMatch = String(tags.year || '').match(/\d{4}/);
+        if (yearMatch) meta.year = parseInt(yearMatch[0], 10);
         if (tags.picture) {
           // Una decodificación para las tres copias (y compartida
           // con las demás canciones del mismo álbum vía caché).
@@ -185,8 +199,8 @@
           coverThumbLg = coverSet.coverThumbLg;
         } else {
           try {
-            coverThumb = await this.resizeDataUrl(meta.cover, 96);
-            coverThumbLg = await this.resizeDataUrl(meta.cover, 256);
+            coverThumb = await this.resizeDataUrl(meta.cover, 144);
+            coverThumbLg = await this.resizeDataUrl(meta.cover, 384);
           } catch (e) {}
         }
       }
@@ -202,6 +216,11 @@
         coverIsImage,
         coverThumb,
         coverThumbLg,
+        genre: meta.genre || '',
+        year: meta.year || null,
+        // §85: esta pista ya pasó por el lector de tags actual
+        // (con género/año): el arranque no tiene que releerla.
+        _tagsChecked: true,
         lrc: meta.lrc,
         fileSize: file.size,
         fileName: file.name,
@@ -347,7 +366,10 @@
           if (!(key in fields)) fields[key] = entry.slice(eq + 1).trim();
         }
         const out = {};
-        for (const k of ['title', 'artist', 'album', 'albumartist', 'lyrics', 'unsyncedlyrics']) {
+        /* §85: género y fecha también se copian del comentario:
+         * al saltarnos jsmediatags en FLAC/OGG/Opus (§85) estos
+         * campos ya solo pueden venir de aquí. */
+        for (const k of ['title', 'artist', 'album', 'albumartist', 'genre', 'date', 'lyrics', 'unsyncedlyrics']) {
           if (fields[k]) out[k === 'unsyncedlyrics' ? 'lyrics' : k] = fields[k];
         }
         if (fields.metadata_block_picture) {
@@ -454,11 +476,12 @@
       return null;
     },
 
-    /* ---------- Limita la portada ID3 a 600 px (JPEG) ----------
-     * Los canvas de la app son de 600/512 px como máximo: más resolución
-     * solo hincha IndexedDB y acerca la cuota en bibliotecas grandes. */
+    /* ---------- Limita la portada ID3 a 800 px (JPEG) ----------
+     * El lienzo del reproductor es de 720 px (§69): guardar a 600 lo
+     * estiraba un 20% justo en la superficie protagonista. 800 da
+     * margen de reducción sin disparar el tamaño en IndexedDB (§72). */
     limitArtwork(dataUrl, maxDim) {
-      maxDim = maxDim || 600;
+      maxDim = maxDim || 800;
       return new Promise((resolve) => {
         try {
           const img = new Image();
@@ -496,8 +519,9 @@
       });
     },
 
-    /* De UNA decodificación salen las tres copias (600 para el
-     * reproductor, 256 y 96 para las listas). Antes cada tamaño
+    /* De UNA decodificación salen las tres copias (800 para el
+     * reproductor, 384 y 144 para las listas — §71: pensadas para
+     * pantallas de DPR 3, no 2). Antes cada tamaño
      * decodificaba la imagen entera otra vez: 3 decodificaciones y
      * 3 codificaciones JPEG por canción con portada. Mismos tamaños,
      * calidades y respaldos que limitArtwork/resizeDataUrl. */
@@ -505,11 +529,11 @@
       const out = { cover: dataUrl, coverThumb: null, coverThumbLg: null };
       const img = await this._loadImage(dataUrl);
       if (!img || !(img.width > 0) || !(img.height > 0)) return out;
-      // Copia grande: encajar en 600 sin recorte (como limitArtwork)
+      // Copia grande: encajar en 800 sin recorte (como limitArtwork)
       try {
         const w = img.width, h = img.height;
-        if (Math.max(w, h) > 600) {
-          const k = 600 / Math.max(w, h);
+        if (Math.max(w, h) > 800) {
+          const k = 800 / Math.max(w, h);
           const c = document.createElement('canvas');
           c.width = Math.max(1, Math.round(w * k));
           c.height = Math.max(1, Math.round(h * k));
@@ -529,8 +553,8 @@
           return c.toDataURL('image/jpeg', 0.72);
         } catch (e) { return null; }
       };
-      out.coverThumbLg = thumb(256);
-      out.coverThumb = thumb(96);
+      out.coverThumbLg = thumb(384);
+      out.coverThumb = thumb(144);
       return out;
     },
 
@@ -679,6 +703,8 @@
         src: URL.createObjectURL(file),
         cover: this.randomCover(),
         coverIsImage: false,
+        genre: '',
+        year: null,
         lrc: null,
         fileSize: file.size,
         fileName: file.name,
@@ -847,7 +873,8 @@
       const tagSize = (u8[6] << 21) | (u8[7] << 14) | (u8[8] << 7) | u8[9];
       const headerSize = 10;
       const flags = u8[5];
-      const unsync = (flags & 0x80) !== 0;
+      /* §93: el bit de unsync (0x80) se calculaba y nunca se
+       * leía: fuera la variable muerta; flags sí se usa (0x40). */
 
       let offset = headerSize;
       const end = Math.min(headerSize + tagSize, u8.length);
@@ -879,7 +906,8 @@
           // v2.3: tamaño normal de 4 bytes big-endian
           frameSize = (u8[offset+4] << 24) | (u8[offset+5] << 16) | (u8[offset+6] << 8) | u8[offset+7];
         }
-        const frameFlags = (u8[offset+8] << 8) | u8[offset+9];
+        /* §93: los flags del frame se leían en una variable que
+         * nadie consultaba; el avance es fijo (10 bytes). */
         offset += 10;  // header del frame
 
         if (frameSize <= 0 || offset + frameSize > end) {

@@ -25,7 +25,9 @@ Object.assign(App, {
         if (albumEmpty) { albumEmpty.textContent = ''; albumEmpty.style.display = 'none'; }
         document.getElementById('timeTotal').textContent = '0:00';
         document.getElementById('timeCurrent').textContent = '0:00';
+        this._syncLyricsButton();
         document.getElementById('progressFill').style.width = '0%';
+        this._applyCoverPalette(this.coverFallback());
         // La cabecera vuelve a su texto neutro cuando no hay pista.
         const ctxIdle = document.getElementById('nowPlayingContext');
         if (ctxIdle) {
@@ -50,6 +52,7 @@ Object.assign(App, {
       }
       // Estrellas del Reproductor (§58): reflejan la nota de la pista.
       if (typeof this._syncRatingUI === 'function') this._syncRatingUI(t);
+      this._syncLyricsButton();
       document.getElementById('timeTotal').textContent = this.fmtTime(t.duration);
       document.getElementById('miniTitle').textContent = t.title;
       document.getElementById('miniArtist').textContent = t.artist;
@@ -72,11 +75,12 @@ Object.assign(App, {
         else ctxEl.removeAttribute('title');
       }
 
-      // Colores dinámicos (para el fondo y visualizador)
-      const cover = (typeof t.cover === 'object' && t.cover.from) ? t.cover : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 });
-      document.documentElement.style.setProperty('--cover-from', cover.from);
-      document.documentElement.style.setProperty('--cover-to', cover.to);
-      document.documentElement.style.setProperty('--cover-angle', (cover.angle || 135) + 'deg');
+      // Colores dinámicos (fondo y visualizador, §75): la paleta de
+      // la portada — diseñada si es generada, extraída de la imagen
+      // si la hay, y el acento por defecto si no hay nada.
+      const cover = this.coverPaletteFor(t);
+      this._applyCoverPalette(cover);
+      if (!t.coverPalette && (t.coverIsImage || t.customCover)) this._ensureCoverPalette(t);
 
       // Portada canvas (imagen si existe, si no, gradiente generado)
       if (this._shownCoverTrackId && this._shownCoverTrackId !== t.id) {
@@ -85,6 +89,12 @@ Object.assign(App, {
       this._shownCoverTrackId = t.id;
       this.drawCover('coverCanvas', t);
       this.drawCover('miniCoverCanvas', t, true);
+      // §97 (idea 3): en el modo inmersivo el título flotante
+      // reaparece con cada canción y vuelve a desvanecerse.
+      if (this._coverFs) this._pokeCoverFsMeta();
+      // §97 (idea 17): la portada SIGUIENTE se decodifica ya,
+      // en silencio, para que el cambio no parpadee en blanco.
+      this._preloadNextCover();
 
       // Vinilo en lugar de cover si está reproduciendo
       this.updateCoverA11y();
@@ -97,9 +107,43 @@ Object.assign(App, {
       this.renderQueue();
     },
 
+    /* §97 (idea 17): decodifica en segundo plano la portada de la
+     * siguiente pista de la cola (la que tocará, con repetición
+     * «todo» incluida). drawCover la reutiliza si ya está lista:
+     * cambiar de canción deja de pasar por el fondo gris de
+     * «cargando». Sin imagen (gradiente generado) no hay nada
+     * que preparar y se sale sin coste. */
+    _preloadNextCover() {
+      if (!Array.isArray(this.queue) || !this.queue.length) return;
+      let idx = (this.queueIdx || 0) + 1;
+      if (idx >= this.queue.length) {
+        if (this.repeat === 'all') idx = 0;
+        else return;
+      }
+      const id = this.queue[idx];
+      if (!id || (this.currentTrack && id === this.currentTrack.id)) return;
+      const byId = typeof this.trackMap === 'function' ? this.trackMap() : null;
+      const t = byId ? byId.get(id) : this.tracks.find(x => x.id === id);
+      if (!t) return;
+      const isImage = t.coverIsImage || (typeof t.cover === 'string' && t.cover.startsWith('data:'));
+      if (!isImage) return;
+      const src = typeof t.cover === 'string' ? t.cover
+        : (this.coverSrcForRow ? this.coverSrcForRow(t, 720) : null)
+          || (t.cover && t.cover.dataURL) || '';
+      if (!src) return;
+      if (this._nextCoverPreload && this._nextCoverPreload.src === src) return;
+      const img = new Image();
+      img.src = src;
+      if (typeof img.decode === 'function') img.decode().catch(() => {});
+      this._nextCoverPreload = { id: t.id, src, img };
+    },
+
     drawCover(canvasId, track, mini) {
       const c = document.getElementById(canvasId);
       if (!c) return;
+      // §94: cada pintado invalida los onload de imagen pendientes
+      // de ESTE lienzo (ver el uso del sello en la rama de imagen).
+      const coverToken = (c._coverToken = (c._coverToken || 0) + 1);
       const ctx = c.getContext('2d');
       const w = c.width, h = c.height;
 
@@ -115,15 +159,26 @@ Object.assign(App, {
           : (this.coverSrcForRow ? this.coverSrcForRow(track, Math.max(w, h)) : null)
             || (track.cover && track.cover.dataURL) || '';
         if (src) {
-          const img = new Image();
-          img.onload = () => {
+          // §94: el sello de la entrada manda — si el usuario
+          // salta de canción mientras esta imagen carga, el
+          // onload tardío ya no pinta sobre la portada actual.
+          // §97: si la precarga (idea 17) ya la decodificó, se
+          // pinta al momento, sin fondo gris intermedio.
+          const pre = (this._nextCoverPreload && this._nextCoverPreload.id === track.id
+            && this._nextCoverPreload.src === src) ? this._nextCoverPreload.img : null;
+          const img = pre || new Image();
+          const paint = () => {
+            if (c._coverToken !== coverToken) return; // ya hay otra pista
             ctx.clearRect(0, 0, w, h);
-            // Modo "cover"
-            const ratio = Math.max(w / img.width, h / img.height);
-            const dw = img.width * ratio, dh = img.height * ratio;
-            ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+            // Modo "cover": misma geometría que las filas (_fitRect, §63)
+            const r = typeof this._fitRect === 'function'
+              ? this._fitRect(img.width, img.height, w, h, 'cover')
+              : { x: 0, y: 0, w, h };
+            ctx.drawImage(img, r.x, r.y, r.w, r.h);
           };
-          img.src = src;
+          if (img.complete && img.naturalWidth > 0) { paint(); return; }
+          img.onload = paint;
+          if (!pre) img.src = src;
           // Fondo provisional mientras carga
           ctx.fillStyle = '#222';
           ctx.fillRect(0, 0, w, h);
@@ -155,7 +210,7 @@ Object.assign(App, {
       ctx.font = (mini ? '700 38px ' : '900 220px ') + "Outfit, ui-rounded, -apple-system, sans-serif";
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(track.title.charAt(0).toUpperCase(), cx, cy);
+      ctx.fillText(this.coverInitial(track.title), cx, cy);
       ctx.globalAlpha = 1;
     },
 
@@ -172,6 +227,10 @@ Object.assign(App, {
       const mode = this.repeat || 'off';
       btn.classList.toggle('active', mode !== 'off');
       btn.dataset.mode = mode;
+      // §72: aria-pressed no distingue «todo» de «una»; el nombre sí.
+      const repLabel = mode === 'off' ? this.t('toast_repeat_off')
+                     : mode === 'all' ? this.t('toast_repeat_all') : this.t('toast_repeat_one');
+      btn.setAttribute('aria-label', this.t('repeat') + ': ' + repLabel);
       btn.style.position = 'relative';
       btn.setAttribute('aria-pressed', mode !== 'off' ? 'true' : 'false');
       let badge = btn.querySelector('.repeat-badge');
@@ -180,6 +239,9 @@ Object.assign(App, {
           badge = document.createElement('span');
           badge.className = 'repeat-badge';
           badge.textContent = '1';
+          // §94: el «1» es decoración — el aria-label del botón
+          // ya dice «Repetir: una»; sin esto el lector lo sumaba.
+          badge.setAttribute('aria-hidden', 'true');
           btn.appendChild(badge);
         }
       } else if (badge) {
@@ -194,10 +256,80 @@ Object.assign(App, {
       const ca = document.getElementById('coverArt');
       if (!ca) return;
       ca.classList.toggle('playing', this.isPlaying);
-      const label = this.isPlaying ? this.t('pause') : this.t('play');
+      // §95: la portada ya no reproduce/pausa al tocarla — abre y
+      // cierra el modo inmersivo. El nombre accesible anuncia ESA
+      // acción y aria-pressed refleja el modo, no la reproducción
+      // (antes anunciaba «Pausar», que ya no es lo que hace).
+      const label = this.t(this._coverFs ? 'cover_exit_fullscreen' : 'cover_fullscreen');
       const title = this.currentTrack ? ' · ' + this.currentTrack.title : '';
       ca.setAttribute('aria-label', label + title);
-      ca.setAttribute('aria-pressed', this.isPlaying ? 'true' : 'false');
+      ca.setAttribute('aria-pressed', this._coverFs ? 'true' : 'false');
+    },
+
+    /* §95 — Portada a pantalla completa (modo inmersivo).
+     * Tocar la portada la agranda a toda la vista con el
+     * visualizador encima; tocarla otra vez (o Escape, o cambiar
+     * de vista) vuelve al reproductor normal. Solo cambia una
+     * clase en la vista: el lienzo y el visualizador no se mueven
+     * del DOM, así que nada se repinta ni se pierde. */
+    toggleCoverFullscreen() {
+      this.setCoverFullscreen(!this._coverFs);
+    },
+
+    setCoverFullscreen(on) {
+      const view = document.getElementById('viewPlayer');
+      if (!view) return;
+      on = !!on;
+      const was = !!this._coverFs;
+      this._coverFs = on;
+      view.classList.toggle('cover-fullscreen', on);
+      this.updateCoverA11y();
+      // El visualizador acompaña siempre al modo inmersivo, aunque
+      // el ajuste guardado sea «apagado»: updateVisualizerUI y
+      // startVisualizer respetan _coverFs sin tocar la preferencia.
+      this.updateVisualizerUI();
+      if (on) {
+        this.requestWakeLock();
+        if (this.isPlaying) this.startVisualizer();
+        else this.stopVisualizer(); // pinta la onda en reposo al nuevo tamaño
+      } else if (was) {
+        if (this.visualizerMode === 'off') this.stopVisualizer();
+        else if (this.isPlaying) this.startVisualizer(); // reencuadra la onda
+        else this.stopVisualizer();
+      }
+      if (on) this._pokeCoverFsMeta();
+      else {
+        clearTimeout(this._coverFsMetaTimer);
+        const meta = document.getElementById('coverFsMeta');
+        if (meta) meta.classList.remove('show');
+      }
+    },
+
+    /* §97 (idea 3): título y artista flotando sobre la portada
+     * inmersiva. Se muestran al entrar y al cambiar de canción
+     * (y con el gesto de volumen, desde events.js) y se
+     * desvanecen a los 3,6 s: la portada queda limpia, que es
+     * para lo que existe el modo. */
+    _pokeCoverFsMeta() {
+      const meta = document.getElementById('coverFsMeta');
+      if (!meta || !this._coverFs || !this.currentTrack) return;
+      const titleEl = document.getElementById('coverFsTitle');
+      const artistEl = document.getElementById('coverFsArtist');
+      if (titleEl) titleEl.textContent = this.currentTrack.title || '—';
+      if (artistEl) artistEl.textContent = this.currentTrack.artist || this.t('unknown_artist');
+      meta.classList.add('show');
+      clearTimeout(this._coverFsMetaTimer);
+      this._coverFsMetaTimer = setTimeout(() => meta.classList.remove('show'), 3600);
+    },
+
+    /* §72: el botón «Letras» de la barra secundaria se veía igual con y
+     * sin letra sincronizada. Un punto de acento lo anuncia (la vista
+     * sigue abriéndose igual: desde ahí se puede cargar el .lrc). */
+    _syncLyricsButton() {
+      const btn = document.getElementById('btnLyrics');
+      if (!btn) return;
+      const t = this.currentTrack;
+      btn.classList.toggle('has-lrc', !!(t && t.lrc && t.lrc.length));
     },
 
     updatePlayUI() {
@@ -229,11 +361,6 @@ Object.assign(App, {
       if (favBtn) {
         favBtn.classList.toggle('is-playing',
           this.isPlaying && !!this.playContext && this.playContext.type === 'favorites');
-      }
-      const ratedBtn = document.getElementById('btnPlayRatedNow');
-      if (ratedBtn) {
-        ratedBtn.classList.toggle('is-playing',
-          this.isPlaying && !!this.playContext && this.playContext.type === 'rated');
       }
       if (this._editingPlaylistId && typeof this.isPlaylistPlaying === 'function') {
         const pl = (this.playlists || []).find(p => p && p.id === this._editingPlaylistId);
@@ -269,12 +396,19 @@ Object.assign(App, {
 
       // Visibilidad de las acciones del menú "Más opciones" según haya pista
       // actual. Si no hay pista (estado vacío), las acciones contextuales
-      // (ir al artista, añadir a lista) no tienen sentido y se ocultan.
+      // (ir al artista, ir al álbum) no tienen sentido y se ocultan.
       const hasTrack = !!(this.currentTrack);
-      const contextualMenuIds = ['menuAddToPlaylist', 'menuGoToArtist', 'menuGoToAlbum'];
-      contextualMenuIds.forEach(id => {
+      const ct = this.currentTrack;
+      // §70 [3]: tampoco se muestran si la pista no tiene ese metadato
+      // (antes quedaban activas y solo respondían con un toast). El menú
+      // de canción ya hacía esto; aquí se iguala «Más opciones».
+      const vis = {
+        menuGoToArtist: hasTrack && !!ct.artist && !this.isPlaceholderArtist(ct.artist),
+        menuGoToAlbum: hasTrack && !!ct.album && !this.isPlaceholderAlbum(ct.album),
+      };
+      Object.keys(vis).forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.style.display = hasTrack ? '' : 'none';
+        if (el) el.style.display = vis[id] ? '' : 'none';
       });
 
       /* Cada cambio de play/pausa pasa por aquí, y la visibilidad del
@@ -323,18 +457,27 @@ Object.assign(App, {
       const mini = document.getElementById('miniProgress');
       if (mini) mini.style.width = pct + '%';
       if (curEl) curEl.textContent = this.fmtTime(cur);
+      // §72: la duración total puede enseñar el tiempo restante
+      // («-1:12») si el usuario lo eligió tocándola; se refresca aquí
+      // porque es el único sitio que conoce cur y dur a la vez.
+      const totEl = document.getElementById('timeTotal');
+      if (totEl && dur > 0) {
+        totEl.textContent = this._showRemaining
+          ? '-' + this.fmtTime(Math.max(0, dur - cur))
+          : this.fmtTime(dur);
+      }
       const track = document.getElementById('progressTrack');
       if (track) {
         track.setAttribute('aria-valuenow', String(Math.round(pct)));
         track.setAttribute('aria-valuetext', this.fmtTime(cur) + ' / ' + this.fmtTime(dur));
       }
 
-      // Buffer
+      // Buffer (§94: con duración 0/desconocida salía Infinity%)
       const buf = document.getElementById('progressBuffer');
-      if (buf && a.buffered && a.buffered.length > 0) {
+      if (buf && a.buffered && a.buffered.length > 0 && isFinite(dur) && dur > 0) {
         try {
           const end = a.buffered.end(a.buffered.length - 1);
-          buf.style.width = ((end / dur) * 100) + '%';
+          buf.style.width = Math.min(100, (end / dur) * 100) + '%';
         } catch (e) {}
       }
 

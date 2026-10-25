@@ -1965,3 +1965,1937 @@ Pendiente, sin cambios respecto a §61:
 - Decisión aplazada: si las regresiones automáticas entran en el
   repo (p. ej. `tools/`, fuera del `.xdc`) ahora que el proyecto se
   enseña en público.
+
+## 63. Inicio: portadas completas sin recorte y raíl de valoradas que no miente
+
+Primera captura real sobre `main` (ya fusionada y con release
+`v1.2.0` publicada): en Inicio, (1) la portada de Usseewa salía
+ampliada con los bordes comidos —se notaba a la izquierda— y (2) el
+subtítulo de «Más valoradas» enseñaba ★★★ de una canción valorada
+con 5. Medido sobre la propia captura con análisis de píxeles, ambos
+eran fallos distintos:
+
+- **La nota vieja**: el raíl se construye al pintar Inicio y *nada lo
+  actualizaba al valorar* (filas, reproductor, hoja y cola sí se
+  refrescan desde §58–60; el raíl era la superficie olvidada).
+  Enseñaba la nota de cuando se pintó Inicio.
+- **El recorte**: `drawRowCover` pinta «cover» (rellenar recortando)
+  y, para colmo, las miniaturas ya nacen cuadradas y recortadas al
+  importar (`thumb()`: «recorte centrado»): de la obra original solo
+  sobrevive el aspecto en `track.cover`.
+
+### Arreglos
+
+- **`_fitRect(iw, ih, W, H, modo)`** (js/playlist-ui.js): la
+  geometría de encaje, separada del pintado para poder verificarla
+  sin navegador (`cover` recorta; `contain` enseña la imagen
+  entera). Las filas y el reproductor usan `cover` con la misma
+  geometría extraída (sin cambio de comportamiento).
+- **Modo `{ fit: 'ambient' }`** en `drawRowCover`, solo para las
+  tarjetas grandes de Inicio: pinta del **original** (no de la
+  miniatura recortada) en `contain` —la obra completa— sobre fondo
+  de la misma imagen ampliada, difuminada (`ctx.filter` si el motor
+  lo soporta) y oscurecida. Las miniaturas de filas, el mini y el
+  reproductor mantienen `cover`: a 48 px, las bandas se comerían la
+  portada. Decisión documentada; si el mantenedor lo quiere también
+  en el reproductor, es un parámetro más.
+- **`_refreshRatedRail()`** (js/nav.js): al valorar, la sección de
+  «Más valoradas» se reconstruye en sitio y se re-enlazan solo sus
+  tarjetas (sin repintar Inicio ni perder el desplazamiento); si no
+  existía y ya hay valoradas, aparece; si se quita la última nota,
+  desaparece. Enlazado de Inicio extraído a `_bindSeeAll(scope)` y
+  `_bindHomeCards(scope)` para poder re-enlazar un ámbito suelto.
+- **Estrellas intocables**: el subtítulo separa
+  `.sub-stars` (doradas `#FFB84D`, `flex: 0 0 auto`, nunca se
+  recortan) de `.sub-artist` (`min-width: 0` + ellipsis: quien se
+  acorta es el nombre del artista).
+
+### Verificación
+
+- **Check §63** `/tmp/check-inicio.js` (arnés recreado otra vez tras
+  perderse `/tmp`): **15/15** — geometría cover/contain/cuadrada;
+  el escenario de la captura (3★ → valorar 5 → el raíl enseña ★★★★★
+  sin repintar Inicio); quitar la última nota hace desaparecer el
+  raíl; valorar una nueva lo crea; reordenar notas reordena el
+  raíl; tarjeta refrescada: 1 toque = 1 reproducción (sin dobles
+  enlaces); garantías CSS de las estrellas; el modo ambiente no
+  lanza con ni sin imagen; 0 errores.
+- `node --check` total; **build .xdc válido**: 27 archivos,
+  337,0 KB comprimidos (970,3 KB sin comprimir).
+
+Trabajo sobre la rama nueva `arena/9d3a6f0b-aurora-music-player`
+(desde el merge `d0ca61d`): sin fusionar a `main` sin permiso.
+
+## 64. Las estrellas mandan en el orden: fuera la lista «Más valoradas»
+
+Idea del mantenedor, sustituyendo §60: en lugar de una lista aparte
+con las mejor valoradas, **la cola y las listas se ordenan por las
+estrellas**. Decisiones suyas (preguntadas antes de tocar): orden
+**automático siempre**; en **todas** las listas (Favoritos incluida)
+con las **sin nota al final**; empate = **el orden de la lista**; y
+de «Más valoradas» **solo queda el raíl de Inicio como escaparate**.
+De paso, a petición suya, se **eliminaron el GitHub Release v1.2.0 y
+su etiqueta** (verificado: sin releases y sin tag en el remoto):
+seguimos puliendo la 1.2.0 antes de lanzar.
+
+### El orden (js/playlist-ui.js)
+
+`sortByRating(tracks)`: nota descendente sobre una copia; las sin
+nota (0) caen al final por sí solas; el sort de JS es estable, así
+que el empate conserva el orden traído. `playlistTracksSorted(pl)`
+lo aplica a una lista. **El orden guardado nunca se reescribe**: es
+el desempate invisible. Aplicado en:
+
+- **La vista**: el detalle de la lista (`renderEditPlaylist`) y
+  Favoritos (`renderFavorites`) se muestran ordenados.
+- **La cola**: `playPlaylist`, `playFavorites` y las ramas
+  `playlist`/`favorites` de `playTrack` construyen la cola ordenada.
+- **El avance**: `next()` reconstruía la cola de la lista en su
+  orden *guardado* al avanzar — habría deshecho el orden a la
+  segunda canción—; ahora reconstruye con `playlistTracksSorted`
+  (cazado por la regresión: la cola nacía ordenada y a los 400 ms
+  volvía al orden de la lista).
+
+Consecuencias de diseño, documentadas: el **asa de arrastre** del
+detalle desaparece (con la nota mandando, arrastrar no podría
+prometer nada: la fila volvería a su sitio) junto con
+`reorderPlaylistTracks`; el orden manual queda como desempate
+guardado. Álbumes, artistas y «todas» conservan su orden natural:
+son obras con orden propio, y la ordenación es de *listas*. Valorar
+no reordena la cola que está sonando (no se eligió esa opción): el
+nuevo orden se ve al abrir la lista y manda en la próxima cola.
+
+### Lo que desaparece de §60
+
+Hoja `#sheetRated` (index.html), `renderRated` (stats-ui),
+`playRated` y la tarjeta «__rated» de Biblioteca (playlist-ui, con el
+render restaurado a su forma previa), contexto `rated` (playTrack,
+etiqueta, `allowedCtx` de sesión, anillo del botón en player-ui y su
+enlace en events), rama `rated` de `goNav`, y la clave i18n
+`rated_empty` (**372 × 8 sin huecos**; `rated_title` se queda:
+titula el escaparate). El escaparate de Inicio pierde el «Ver todo»
+(no lleva a ninguna lista) y sus tarjetas suenan con el contexto de
+la lista de cada canción, como el resto de Inicio (§38); su refresco
+al valorar (§63) se conserva.
+
+### Verificación
+
+- **Check §64** `/tmp/check-orden.js`: **20/20** — orden exacto con
+  empates por lista y sin-nota al final (con reproducciones
+  desordenadas a propósito: NO desempatan); lo guardado intacto;
+  detalle y Favoritos ordenados y sin asa; colas de lista, de fila y
+  de Favoritos ordenadas; el panel de cola enseña ese orden; todo lo
+  eliminado ausente del DOM y de la API; el escaparate sigue, sin
+  «Ver todo», y suena con contexto de lista; valorar reordena la
+  próxima vista sin tocar lo guardado; 0 errores.
+- **Sin regresión §63**: 15/15 (el escaparate se comporta igual).
+- `node --check` total; **build .xdc válido**: 27 archivos,
+  335,8 KB comprimidos (963,7 KB sin comprimir; el paquete adelgaza
+  al salir la hoja).
+
+Sigue en la rama `arena/9d3a6f0b…`: ni merge ni release hasta que la
+1.2.0 se dé por buena.
+
+## 65. Inicio: Ajustes dentro de Opciones, como en el reproductor
+
+Petición del mantenedor: en el reproductor, Ajustes vive dentro del
+menú ⋮, pero en Inicio la rueda era un botón separado en la cabecera
+— dos criterios para la misma cosa.
+
+La rueda suelta (`#btnHomeSettings`) se añadió en su día con buena
+razón: entonces a Ajustes solo se llegaba desde «Más opciones» del
+reproductor, inalcanzable en una instalación nueva sin pista cargada.
+Pero desde §54 Inicio tiene su propio ⋮ abriendo **`sheetMore`** —el
+mismo menú del reproductor—, y dentro ya vive «Ajustes»
+(`#menuSettings` → `sheetSettings`). El acceso separado quedó
+duplicado: misma hoja, mismo destino, dos puertas.
+
+- **Fuera** el botón `#btnHomeSettings` de la cabecera de Inicio y su
+  enlace en `js/events.js` (sin más referencias en el repo: ni CSS
+  propio tenía). La cabecera queda con ⋮ y con el **+** de añadir
+  música, como pidió el mantenedor.
+- **Ajustes sigue a un toque** en instalación nueva: el ⋮ de Inicio
+  existe desde el minuto 0, sin pista cargada —la preocupación
+  original que motivó la rueda sigue cubierta, ahora por el menú—.
+  El comentario histórico de la cabecera se reescribe contando esto.
+
+### Verificación
+
+- **Check §65** `/tmp/check-ajustes.js`: **9/9** — la rueda ya no
+  está; ⋮ y + permanecen; «Ajustes» vive en `sheetMore`; sin pista
+  cargada, ⋮ → Ajustes abre `sheetSettings` cerrando Opciones; el
+  ⋮ del reproductor abre el mismo menú; 0 errores.
+- `node --check` total; **build .xdc válido**: 27 archivos,
+  335,8 KB comprimidos (963,4 KB sin comprimir).
+
+## 66. Colores de acento: paleta renovada (y un sexto acento)
+
+«Los colores de acento se podrían mejorar.» Diagnóstico de la
+paleta vieja: Aurora salvaba el conjunto, pero Océano nacía de un
+petróleo turbio (`#1A6A88`), Musgo de un verde pantano
+(`#2A6B48→#A8C86A`) y Ámbar de un marrón (`#C45C18`); cada degradado
+pesaba distinto y las muestras se veían apagadas. La disciplina de
+la casa (comentario en `js/settings.js`) no se toca: rellenos con
+texto blanco AA y acentos legibles como texto en oscuro y en claro.
+
+### La paleta nueva
+
+Los extremos «from» ganan luz y tono claro, y los seis comparten
+familia de luminosidad para que la app pese igual con cualquiera:
+
+| Acento | Antes | Ahora |
+|---|---|---|
+| Aurora | `#6E5CFF→#FF7AB6` | `#745CFF→#FF6FA5` (violeta→rosa, más cálido) |
+| Océano | `#1A6A88→#3EC8B8` | `#1F7AE0→#23C8B2` (azul claro→turquesa) |
+| Musgo | `#2A6B48→#A8C86A` | `#1E9E62→#9BD147` (esmeralda→lima fresco) |
+| Ámbar | `#C45C18→#E8B84A` | `#E8710A→#F5B81F` (naranja vivo→oro) |
+| Cereza | `#A61B3A→#E85A7A` | `#E01A44→#FF6B81` (carmesí→rosa) |
+| **Fucsia** (nuevo) | — | `#C22BD6→#FF5CA8` (magenta: el hueco de la rueda) |
+
+- Verificados con calculador WCAG antes de escribirlos en el
+  código: **los 6 cumplen ≥4,5:1** en las ocho combinaciones que la
+  app usa (accent/accent2 sobre `#050509`; fill/fill2 sobre blanco;
+  fillLight/fillLight2 sobre `#F4F1EA` y sobre blanco) — la mayoría
+  entre 5,4:1 y 9,8:1.
+- Las claves guardadas no cambian (`aurora/ocean/moss/amber/cherry`
+  + alias heredados): quien tuviera Océano sigue en Océano, solo que
+  más bonito. Fucsia suma su clave i18n (**373 × 8 sin huecos**).
+- El `:root` de `css/styles.css` (Aurora por defecto antes de que
+  corra JS) y los degradados de las muestras se sincronizan con la
+  paleta; la parrilla pasa a **3×2** (círculos grandes) y el nombre
+  de cada muestra lleva **pastilla oscura** detrás: antes solo
+  llevaba sombra y sobre los extremos luminosos (ámbar, musgo) casi
+  no se leía — ese contraste era ~1,8:1 ya en la paleta vieja.
+
+### Verificación
+
+- **Check §66** `/tmp/check-colores.js`: **13/13** — 6 acentos con
+  sus 8 campos; WCAG recalculado desde los datos vivos de la app
+  (≥4,5:1 ×8 combinaciones ×6 acentos); los `from` turbios fuera;
+  `setAccent` aplica variables y persiste los seis; alias heredados
+  migran; la hoja ofrece las 6 muestras y tocar Fucsia lo activa;
+  `:root` CSS = Aurora nuevo; cada muestra CSS usa el from→to de su
+  acento; parrilla 3×2 y pastilla presentes; 0 errores.
+- `node --check` total; **build .xdc válido**: 27 archivos,
+  336,4 KB comprimidos (964,7 KB sin comprimir).
+- Chuleta visual antes/ahora generada en `/home/user/paleta-66.png`
+  (fuera del repo, como material de revisión).
+
+## 67. Estadísticas honestas: solo cuenta la escucha completa
+
+Petición del mantenedor: en las estadísticas de reproducción solo
+contarán las canciones que se reproduzcan **completas**. Hasta hoy,
+`trackPlayStarted()` sumaba al *empezar* a sonar: abrir una canción
+y saltarla a los tres segundos ya contaba como reproducción (y
+alimentaba «Más escuchadas» y los tops de la pantalla de
+estadísticas).
+
+### Cómo se cuenta ahora
+
+- `trackPlayStarted()` ya no suma: solo abre el «pase» de conteo de
+  la escucha en curso (y sigue llevando el tiempo escuchado).
+- **`trackPlayCompleted()`** (js/settings.js) es el único sitio que
+  suma, con triple candado:
+  1. **Una por pase**: `_playCounted` (lo reinicia cada arranque,
+     también el entrante gapless) impide dobles conteos entre vías.
+  2. **Solo avances de verdad**: lo llaman `next(true)` —fin natural
+     o fundido— y el salto gapless al cambiar de pista. Un `next()`
+     manual nunca cuenta la saliente; un archivo que falla llega con
+     `isPlaying=false` desde `_handleDecodeFailure` y tampoco. Con
+     «repetir una», cada vuelta completa suma la suya.
+  3. **Se ha oído entera**: `_heardWholeTrack()` une los intervalos
+     realmente reproducidos (`audio.played`, inmune a pausas y
+     búsquedas) y exige todo menos los últimos 2 s. **Buscar hasta
+     el final a mano no cuenta** como escucha completa; reescuchar
+     tras buscar atrás sí suma la unión. Sin duración conocida vale
+     la llegada al final.
+- El salto gapless cuenta la saliente antes de cambiar (~80 ms
+  antes del corte) y la entrante estrena pase y base de segundos
+  (ese `play()` directo no pasaba por `trackPlayStarted()`: también
+  quedaba cojo el cómputo de tiempo en ese camino).
+- Alcance: esto es el **contador** (`stats.plays` y todo lo que
+  deriva: «Más escuchadas», tops, totales). El **historial** sigue
+  apuntando lo abierto (es un registro de actividad, como el del
+  navegador) y el **tiempo escuchado** sigue siendo tiempo real: no
+  son «canciones contadas».
+
+### Verificación
+
+- **Check §67** `/tmp/check-completas.js`: **15/15** — al empezar no
+  suma; completa suma 1 y no duplica; a medias no suma; saltar al
+  final no suma; con solapes suma la unión; `next()` manual no
+  cuenta; `next(true)` cuenta y avanza; fallo de reproducción no
+  cuenta (con asentamiento previo: el arnés sufría promesas
+  rezagadas de la IDB falsa, no era la app); repetir-una suma por
+  vuelta (con `src` en el `<audio>`, como una pista real: sin él,
+  `togglePlay` se desviaba por la guarda de arranque); gapless
+  cuenta la saliente y la entrante suma al terminar; 0 errores.
+- `node --check` total; **build .xdc válido**: 27 archivos,
+  337,5 KB comprimidos (967,6 KB sin comprimir).
+
+## 68. Fuera «Añadir a una lista» de los menús; barras del visualizador fluidas
+
+Dos peticiones del mantenedor en una sección.
+
+### «Añadir a una lista» ya no está en los menús
+
+Con las listas ordenándose solas por estrellas (§64), el atajo
+perdió su razón de ser en los menús: se elimina de los dos sitios
+donde vivía —el menú de canción (`#ctxAddPlaylist`) y «Más
+opciones» (`#menuAddToPlaylist`)—. Añadir canciones a una lista se
+sigue haciendo **desde la propia lista** («Añadir canciones»,
+`openAddTracksSheet` + la primitiva por lote
+`_addTrackIdToPlaylist`, que se queda). Y se limpia la maquinaria
+que solo servía a esos atajos: el modo «elegir lista para añadir»
+(`_selectPlaylistForAdd`/`_trackToAddId`, su rama en el clic de
+«Tus listas» y su reset al cerrar), las APIs `addTrackToPlaylist` y
+`addCurrentTrackToPlaylist` (esta última ya no tenía llamantes), el
+resto en la lista de ítems contextuales de `player-ui.js`, y dos
+claves i18n (`menu_add_to_playlist`, `toast_already_in_playlist`):
+**371 × 8 sin huecos**. Tocar una lista en «Tus listas» vuelve a
+hacer una sola cosa: abrirla.
+
+### Las barras no iban fluidas
+
+El espectro tenía tres frenos apilados: el bucle capaba el dibujo
+a **~30 fps** («bastan en móvil», decía el comentario: frente a la
+pantalla se notaba a saltos), el analizador suavizaba a **0.8** —
+con el suavizado propio de las barras encima, el conjunto respondía
+perezoso— y el ataque/caída (τ 42/175 ms) era más bien flotante.
+
+- Tope del bucle: **~60 fps** (el guardado de batería por
+  visibilidad, IntersectionObserver, se mantiene).
+- `smoothingTimeConstant`: **0,8 → 0,68** (menos inercia del FFT;
+  el carácter lo sigue poniendo `_visStepBars`).
+- Ataque/caída: τ **42→34 ms** y **175→160 ms**: suben con el golpe
+  y caen con peso, sin teletransporte (verificado por dinámica).
+
+### Verificación
+
+- **Check §68** `/tmp/check-menu-viz.js`: **13/13** — las dos filas
+  fuera y el resto del menú intacto; APIs muertas ausentes y estado
+  fantasma eliminado; la primitiva por lote añade de verdad; el
+  selector «Añadir canciones» abre; tocar una lista la abre para
+  editarla; el bucle ya no capa a 30 fps y el analizador está a
+  0,68; dinámica de barras medida (ataque entre 0,2 y 0,55 en un
+  frame de 16 ms, subida monótona, caída suave con el pico nunca
+  por debajo); 0 errores.
+- `node --check` total; **build .xdc válido**: 27 archivos,
+  336,7 KB comprimidos (963,4 KB sin comprimir).
+
+## §69. Pasada visual completa: hasta lo más mínimo
+
+«Dale una pasada a todo lo visual y detecta hasta lo más mínimo»:
+auditoría estática automatizada (sprite de iconos e i18n vinculados
+en HTML/JS, variables CSS usadas sin definir, IDs duplicados,
+objetivos táctiles, cabida de las etiquetas de navegación en los 8
+idiomas) más lectura crítica de las 5.069 líneas de CSS pantalla a
+pantalla. Sin defectos duros (ningún icono o clave ausente, ninguna
+variable indefinida, ningún ID duplicado: con el arnés no se renderiza
+en navegador, así que la cobertura es de código, declarada como tal).
+Pero la lupa encontró:
+
+### Portadas blandas en pantallas densas (lo principal)
+
+Varios canvas tenían el bitmap por debajo de lo que su caja CSS
+exige a DPR 2 — se veían *casi* nítidos, que es peor que borrosos:
+
+| Canvas | Caja CSS | Antes | Ahora |
+|---|---|---|---|
+| Filas (biblioteca, listas, cola, editar, estadísticas) | 48 px | 44 | **96** |
+| Tarjetas de Inicio | ~116 px | 120 | **240** |
+| Mini-reproductor | 48 px | 80 | **120** |
+| Menú de canción | ~48 px | 64 | **112** |
+| Portada del reproductor | hasta 360 px | 600 | **720** |
+
+`drawRowCover` pinta en función de `canvas.width`, así que basta
+subir el atributo; de propina, la fuente ahora es la miniatura
+grande (256) en vez de la pequeña, porque el umbral de 160 ya se
+supera. No se tocó el fondo ambiental (borroso a propósito).
+
+### Legibilidad y tacto
+
+- **Pestaña inactiva de la barra inferior**: en oscuro estaba a
+  `--text-4` (blanco 30 %, ~2:1) — ahora `--text-3` (48 %). El tema
+  claro ya definía su propio valor y no se toca.
+- **Agarre de la barra de progreso**: la pista mide 3 px de alto;
+  `.progress-track::before` amplía la zona táctil a ~25 px sin
+  mover el layout (el cálculo de posición usa la X).
+- `.menu-row` declaraba `color` dos veces: muerta la primera.
+
+### Higiene
+
+- Fuera el CSS huérfano del antiguo panel de tests (`.tests-*`,
+  `.ts-*` y sus dos retoques del tema claro) y un comentario que
+  aún hablaba del sistema eliminado en §57.
+- Fuera dos símbolos del sprite sin ningún uso — comprobado literal
+  y dinámicamente: `i-file-export` e `i-grip`. **ojo**: `i-volume-
+  xmark` parecía muerto y no lo está (lo compone el indicador de
+  volumen con `setIco`): se conserva.
+- *Sin tocar, a propósito*: los objetivos de 40 px generalizados
+  (por encima del mínimo WCAG y coherentes en la app), los inputs a
+  15 px (el zoom al enfocar es de Safari web, no del webview del
+  mensajero) y las etiquetas de navegación, que caben en los 8
+  idiomas incluso en francés («Bibliothèque»).
+
+### Verificación
+
+- **Check §69** `/tmp/check-vista69.js`: **19/19** — estático
+  (ninguna plantilla queda a 44/40, bitmaps nuevos en plantillas e
+  `index.html`, nav legible, agarre presente, sin CSS de tests, el
+  sprite exacto) y runtime (arranque sin errores recreando el
+  arnés, filas renderizadas con canvas de 96, tarjetas de Inicio de
+  240, buscar en la barra sin errores).
+- Batería de auditoría re-ejecutada tras los cambios, `node --check`
+  total y **build .xdc válido**: 27 archivos.
+
+## §70. Respuesta a la auditoría externa con navegador (14 puntos)
+
+Un agente con Chromium real auditó la app (375/768/1280/1440 px) y
+documentó 14 falencias. Cada una se contrastó con el código antes de
+tocar nada; la auditoría midió la build anterior a §69, así que tres
+puntos ya venían parcialmente hechos. Veredicto y arreglo:
+
+| # | Punto | Veredicto |
+|---|---|---|
+| 1 | KPI de estadísticas «3 IR AL ARTISTA» | **Real.** Usaba la clave del menú; nueva clave `stats_artists` ×8 idiomas. |
+| 2 | «Enviado a Delta Chat» tras descargar | **Real.** `exportFile` ahora devuelve `'chat' \| 'download' \| false` y cada llamante avisa con el toast que toca (nuevo `toast_downloaded` ×8). |
+| 3 | «Ir al artista/álbum» activos sin metadatos | **Real** en «Más opciones» (el menú de canción ya los ocultaba): ahora se ocultan igual cuando el artista/álbum es un marcador. |
+| 4 | Sin focus-trap en las hojas | **Real.** Trampa de Tab/Shift+Tab sobre la hoja superior de la pila, instalada una sola vez. Al escribirla apareció un bug propio: el selector `[href]` también casa los `<use>` del sprite SVG; se limita a `a[href]`/`area[href]` (también en el foco inicial de `openSheet`). |
+| 5 | Objetivos táctiles <44 px | **Real.** Estrellas de valorar a 44×44 (glifo igual), «Ver todo» a 40 px de alto y agarre de la barra de progreso de ~22 a ~31 px. |
+| 6 | Etiquetas del nav a 9 px | **Real.** A 10 px (`--fs-2xs`); la más larga («Bibliothèque») sigue cabiendo. |
+| 7 | Contraste de `--text-3` en oscuro | **Real.** 0,48 daba 4,32:1 calculado sobre tarjeta+superficie (la auditoría midió ~4,3:1); a **0,58** el peor caso sube a **5,57:1** y el mejor a 6,85:1 (cálculo WCAG en el check). |
+| 8 | Contenido estirado en escritorio | **Real.** En `aurora-wide`, cabecera y cuerpo de las hojas a pantalla completa se limitan a una columna de lectura de 680 px centrada. |
+| 9 | Toast «Letras reiniciadas» espontáneo | **No reproducido en código:** el único camino es el botón de reinicio; ningún cambio de pista lo llama. Sí era cierto que avisaba *aunque no hubiera nada que reiniciar*, pareciendo espontáneo: ahora solo avisa si algo cambió (desfase, tamaño, velocidad, bucle o pantalla completa). |
+| 10 | Tirador de hoja en escritorio | **Real.** `.sheet-handle` se oculta en `aurora-wide`. |
+| 11 | Visualizador vacío en pausa | **Real.** `stopVisualizer` pintaba un rectángulo limpio; ahora pinta el reposo: la misma retícula de barras en altura mínima con la paleta atenuada. |
+| 12 | Chip «En vivo» cortado sin aviso | **Real.** Difuminado de 28 px en el borde derecho de `.eq-presets` (mask) que anuncia el scroll. |
+| 13 | Inicial «<» en portadas generadas | **Real.** Nuevo `coverInitial()`: primera letra o número Unicode del título (o «♪»); aplicado en los tres pintores de portadas con letra. |
+| 14 | Dos «+» con funciones distintas | **No se sostiene:** ambos botones (cabecera de Inicio y del reproductor) llaman a `openFilePicker()` — la misma acción con el mismo icono, que es consistencia, no ambigüedad. Sin cambios. |
+
+### Verificación
+
+- **Check §70** `/tmp/check-vista70.js`: **40/40** — i18n **373×8**
+  sin huecos; tri-estado de exportación ejecutado (sin webxdc →
+  descarga y toast «Descargado», con webxdc → chat, rechazo →
+  error); filas fantasma ocultas y restauradas; Tab y Shift+Tab
+  atrapados dentro de la hoja; reinicio silencioso sin cambios y
+  con aviso si los hay; reposo del visualizador pintado; iniciales
+  saneadas («<img» → I, «!!!Hola» → H, «Éxitos» → É); contraste
+  calculado superficie a superficie; y arranque sin errores.
+- `node --check` total y **build .xdc válido**: 27 archivos.
+
+## §71. Portadas de Inicio con mala calidad: era el DPR, no el archivo
+
+«Las portadas que salen en inicio salen con mala calidad». En §69
+dimensioné los lienzos y las miniaturas para pantallas de DPR 2,
+pero los teléfonos actuales son DPR 2,5–3: la tarjeta de Inicio
+ocupa 116 px CSS (≈348 píxeles reales a DPR 3) y entre el lienzo de
+240 y la miniatura guardada a 256 px, el navegador estiraba la
+imagen. Blando por aritmética, no por el original (que se conserva
+a 600 px).
+
+- **Generación nueva (DPR 3)**: miniatura de fila 96 → **144**,
+  miniatura grande 256 → **384**, portada personalizada igual y
+  collage de lista 256 → **384** (hash de caché versionado `v384|`
+  para que los collages viejos se rehagan solos).
+- **Lienzos**: tarjetas de Inicio 240 → **384** (1:1 con la fuente),
+  filas 96 → **144**, héroe 160 → **216**, explorar 160 → **240**,
+  mini y menú de canción → **144**. La portada del reproductor no se
+  toca: pinta del original de 600 px y su límite es ese almacenado,
+  no el lienzo.
+- **Bibliotecas ya importadas**: `ensureCoverThumbs` ya no se
+  conforma con que existan miniaturas — decodifica el ancho real de
+  la grande una vez por sesión y, si es de la generación 256, la
+  rehace a 384 desde el original y repinta el lienzo que la pidió
+  (`drawRowCover` lo dispara en superficies ≥160 px). Sin migración
+  masiva ni coste al arrancar: cada portada se actualiza la primera
+  vez que se enseña en grande.
+
+### Verificación
+
+- **Check §71** `/tmp/check-vista71.js`: **18/18** — estático (sin
+  generación a 96/256 en ningún sitio, lienzos nuevos en plantillas
+  e `index.html`, collage y hash nuevos) y runtime (arranque limpio;
+  una pista heredada se regenera a [144, 384] una sola vez; una al
+  día no se toca; una sin miniaturas las crea; la tarjeta de Inicio
+  se renderiza con lienzo de 384).
+- `node --check` total y **build .xdc válido**: 27 archivos.
+
+Nota práctica: las portadas ya importadas se irán afinando solas a
+medida que aparezcan en Inicio/listas (primera vista en grande de
+cada una); no hay que reimportar nada.
+
+## §72. El reproductor bajo la lupa: cinco detalles
+
+«¿Crees que hallas algo mejorable en el reproductor? Cualquier
+detalle cuenta». Auditoría exclusiva de la vista de reproducción
+(marcado, `player-ui.js`, gestos, CSS). La pantalla estaba muy
+trabajada (gestos sobre la portada, buffer, A-B, marquesinas con
+reduced-motion), pero quedaban cinco cosas:
+
+1. **El progreso avanzaba a escalones.** `timeupdate` llega a
+   ~4 Hz: el relleno saltaba cada ~250 ms. Transición lineal de
+   0,3 s en `.progress-fill` — solo sonando (`:has(#coverArt.playing)`)
+   y nunca arrastrando, para que en pausa el salto al buscar siga
+   siendo inmediato.
+2. **La duración total era texto muerto.** Ahora se toca (o Enter/
+   Espacio, es `role=button`) y alterna duración ⇄ tiempo restante
+   (`-2:05`), con persistencia en `localStorage`. El refresco vive
+   en `updateProgress()` y al cargar metadatos ya no espera al
+   primer `timeupdate`. Nueva clave `time_toggle_remaining` ×8
+   (374 claves en total).
+3. **El botón «Letras» no decía si hay letra.** Un punto de acento
+   (`#btnLyrics.has-lrc`) cuando la pista trae LRC; se sincroniza al
+   cambiar de pista y al cargar/guardar una letra. La vista se abre
+   igual sin letra: desde ahí se carga el `.lrc`.
+4. **«Repetir» no distinguía modo para lectores de pantalla.**
+   `aria-pressed` era igual en «todo» y «una»: el `aria-label` ahora
+   lleva el modo (`Repetir: una`…) con las claves que ya usaba el toast.
+5. **La portada se guardaba a 600 px para un lienzo de 720.** El
+   reproductor estirara su superficie protagonista un 20%. El tope
+   de almacenamiento sube a **800 px** (`limitArtwork` y
+   `_produceArtwork`): solo beneficia a importaciones futuras — el
+   original incrustado no se conserva tras importar, así que la
+   biblioteca actual queda como está (decisión documentada, coste
+   de IndexedDB asumido).
+
+**Considerado y descartado, con motivo**: línea «A continuación: …»
+bajo los controles (la cola ya lo cubre y la pantalla vertical va
+justa), renombrar el id `btnBack` (es el «+», pero es higiene
+invisible que toca tres archivos), y buscar en pausa sin refresco
+(falso: `seekTo()` ya llama a `updateProgress()`).
+
+### Verificación
+
+- **Check §72** `/tmp/check-vista72.js`: **18/18** — i18n **374×8**;
+  estático (transición y sus dos cortes, punto de letra, tope 800
+  sin restos del 600) y runtime (arranque limpio; `aria-label` de
+  repetir cambia por modo; el punto aparece solo con LRC; tocar la
+  duración alterna `3:20` → `-2:05`, persiste y vuelve).
+- `node --check` total y **build .xdc válido**: 27 archivos.
+
+## §73. Letras sin letra: la pantalla se calla
+
+«Haz lo mismo con el menú de letras: no me gusta como se ve cuando
+no hay letras». La tarjeta de vacío ya existía y estaba centrada;
+lo que ensuciaba era todo lo demás: la barra de herramientas al
+completo (tamaño, desfase, velocidad, bucle, restablecer…: 8 de 11
+controles no hacen nada sin letra) seguía armada sobre el vacío,
+duplicando las dos acciones que la tarjeta ya ofrece en grande.
+
+- **Modo limpio**: `_setLyricsEmpty()` marca la vista con
+  `lrc-is-empty` y la barra de herramientas se oculta entera. Sus
+  únicas acciones útiles sin letra («Cargar .lrc», «Pegar o editar»)
+  son los botones grandes de la tarjeta. La barra vuelve sola en
+  cuanto hay letra que ajustar. De paso muere la clase `.emphasis`
+  que las destacaba (ya no hace falta destacar lo que no se ve).
+- **Variante «nada sonando»**: abrir Letras sin pista enseñaba la
+  misma tarjeta con dos botones que no tienen dónde aplicarse. Con
+  `lrc-no-track`, el título pasa a ser «Sin reproducción», la pista
+  «Carga una pista para empezar» y las acciones se esconden.
+- **La baldosa del icono respira con la canción**: usa la paleta de
+  la portada (`--cover-from/--cover-to`, como el fondo de la vista)
+  en vez del acento fijo, y crece un poco (72 px, glifo de 28).
+  Tarjeta algo más ancha (280 → 304 px).
+- Nota de la revisión: no había ningún `}` suelto en el CSS (lo
+  pareció por una salida de terminal concatenada; el balance de
+  llaves se verifica ahora en el check).
+
+### Verificación
+
+- **Check §73** `/tmp/check-vista73.js`: **16/16** — estático
+  (llaves balanceadas, reglas nuevas, sin `.emphasis` muerta, ids
+  del vacío) y runtime (arranque limpio; sin pista: vacío con modo
+  limpio y título adaptado; sin letra: acciones y mensaje de letra;
+  con letra: el vacío se esconde y la barra vuelve).
+- `node --check` total y **build .xdc válido**: 27 archivos.
+
+## §74. La línea resaltada, al centro
+
+«La letras resaltadas se muestren más al centro». La línea activa
+no iba al centro: en modo normal se aparcaba al **25 %** de la
+altura (`offsetUp = clientHeight * -0.25`) y solo en pantalla
+completa iba centrada — la misma canción cambiaba de encuadre al
+alternar modos. Ahora el centro de la línea activa vive en el
+centro del área visible en ambos, con la fracción aislada en
+`_lrcScrollTarget(el, sc)` (0,5 = centro) por si algún día se
+quiere otro encuadre. El relleno simétrico de 50vh ya permitía
+centrar también la primera y la última línea.
+
+### Verificación
+
+- **Check §74** `/tmp/check-vista74.js`: **8/8** — sin restos del
+  desplazamiento al 25 %; la fórmula probada con dos geometrías
+  (el centro de la línea cae exactamente en el centro del área);
+  letra sincronizada renderizada sin errores.
+- `node --check` total y **build .xdc válido**: 27 archivos.
+
+## §75. El fondo del reproductor sigue a la portada (de verdad)
+
+El usuario lo pidió y al auditar apareció el matiz: el fondo ya
+era dinámico (degradado difuminado sobre `--cover-from/--cover-to`),
+pero solo las portadas *generadas* traían paleta propia. Con
+portada de imagen — la mayoría — nadie extraía los colores y el
+fondo era siempre el acento del tema: una carátula verde botella
+sonaba sobre violeta-rosa.
+
+- **Extractor con barandillas** (`_paletteFromPixels`, puro y
+  comprobable): muestrea la miniatura grande a 48×48, agrupa por
+  tono ponderando saturación y luz media (ignora casi blancos y
+  casi negros), elige dominante y segundo tono a ≥35°, y normaliza
+  en HSL: saturación entre 0,42 y 0,85, luminosidad encerrada en
+  banda oscura (0,30–0,46 / 0,38–0,55). Portada acromática o lavada
+  (saturación <0,18): se tiñe hacia el acento en vez de pintar gris.
+  Sin color aprovechable (gris/blanco/negro puros): `null` y manda
+  el acento — el «fondo por defecto si no hay portada» de siempre,
+  que también vuelve al no quedar pista cargada.
+- **Perezoso y persistido**: al sonar una pista con imagen sin
+  paleta, `_ensureCoverPalette` la calcula una vez, la guarda con
+  la pista y, si es la que suena, el fondo se actualiza solo. La
+  guarda «en curso» vive en un Set de sesión: en el objeto pista
+  una persistencia coincidente la habría dejado encendida en la
+  base de datos para siempre. Cambiar o quitar la portada
+  personalizada invalida la paleta.
+- **Una sola fuente**: fondo, resplandor y fondo de Letras ya iban
+  por las variables; el visualizador, que con imagen caía a un
+  violeta fijo que no era ni la portada ni el acento, ahora bebe
+  de `coverPaletteFor()` como todos.
+- **Por tema**: la paleta se guarda cruda (banda oscura) y se
+  adapta al aplicarla — en claro se apastela (45 % hacia blanco),
+  en amoled se oscurece (35 % hacia negro) — y `applyTheme()` la
+  reaplica al cambiar de tema.
+
+### Verificación
+
+- **Check §75** `/tmp/check-vista75.js`: **22/22** — la función
+  pura con píxeles sintéticos (azul → `#1c4bce` en banda; rojo/verde
+  → dos tonos separados; gris, blanco y negro → `null`), las tres
+  prioridades (diseñada > extraída > acento), la adaptación por
+  tema medida en las variables, y la extracción completa simulada
+  (lienzo falso) con fondo actualizado y sin repeticiones.
+- `node --check` total y **build .xdc válido**: 27 archivos.
+
+Nota práctica: las portadas ya importadas adoptan su paleta la
+primera vez que suenan tras actualizar; no hay que reimportar.
+
+## §76. Pausar al retirar los audífonos (best-effort en webxdc)
+
+Pregunta del usuario: ¿se puede, aun siendo un webxdc aislado? El
+aviso nativo (Android `ACTION_AUDIO_BECOMING_NOISY`) no llega a la
+web; lo único disponible es `devicechange` de `mediaDevices`,
+presente en los Chromium que envuelven a Aurora (WebView de Delta
+Android, Electron de escritorio).
+
+- **Regla conservadora**: se mantiene una foto de las salidas de
+  audio conocidas y solo se pausa si, sonando música, la
+  enumeración demuestra que **desapareció** una salida conocida
+  (`gone.length > 0 && now.length < before.length`) → `togglePlay(false)`
+  + toast (`toast_unplug_paused` ×8). Conectar no pausa; en pausa
+  no actúa; si el WebView enumera IDs vacíos (inútil), no se
+  adivina y no se pausa.
+- **Interruptor** en Ajustes («Pausar al retirar los audífonos»,
+  activado por defecto), persistido en el mismo bloque
+  `aurora_playback` que el resto de ajustes de reproducción.
+- **Límites declarados al usuario antes de implementar**: puede
+  escaparse un blip de ms (el evento llega tras el cambio físico
+  de ruta), en iOS WKWebView probablemente quede inerte (pero iOS
+  ya pausa solo al cambiar de ruta) y solo la prueba con audífonos
+  reales confirma si el WebView de su Delta dispara el evento.
+
+### Verificación
+
+- **Check §76** `/tmp/check-vista76.js`: **15/15** — i18n **376×8**;
+  runtime con `mediaDevices` simulado (foto inicial; sin cambios no
+  pausa; conectar no pausa; retirar sonando pausa una vez y avisa;
+  en pausa no actúa; con el ajuste apagado no pausa; IDs vacíos no
+  inventan) y arranque sin errores en un entorno sin `mediaDevices`.
+- `node --check` total y **build .xdc válido**: 27 archivos.
+
+## §77. La pausa al retirar los audífonos no funcionaba: plan B
+
+El usuario probó §76 en su dispositivo: nada. Era el riesgo nº 1
+declarado — su WebView enumera un único «default» que no cambia al
+desenchufar, así que la «retirada demostrable» nunca se demostraba
+y la regla conservadora se quedaba esperando para siempre.
+
+Regla nueva, por orden (manejador único `_handleAudioDeviceEvent(source)`):
+
+1. **Retirada demostrable** (la foto distingue dispositivos y
+   desaparece una salida): pausa. Conectar nunca pausa. Como antes.
+2. **Foto inútil pero el sistema avisó**: un solo «default» inmóvil,
+   IDs vacíos o enumeración fallida + evento `devicechange` →
+   pausa. Si el sistema se molestó en avisar sonando música, algo
+   cambió en la ruta de audio (el precio aceptado: conectar unos
+   Bluetooth en ese WebView también pausaría; el toast lo explica
+   y el ajuste puede apagarlo).
+3. **Sondeo cada 4 s** para WebViews que enumeran bien pero no
+   disparan el evento (solo pausa por la vía 1; sin aviso no se
+   adivina), y foto fresca al empezar a sonar para comparar contra
+   lo que había al darle al play.
+
+### Verificación
+
+- **Check §77** `/tmp/check-vista77.js`: **16/16** — el caso real
+  del usuario reproducido y ya pausando («default» inmóvil +
+  evento), conectar sin pausar con enumeración útil, sondeo sin
+  falsas pausas, sondeo con retirada demostrable pausando, ajuste
+  apagado y en pausa sin actuar, arranque limpio sin mediaDevices.
+- `node --check` total y **build .xdc válido**: 27 archivos.
+
+Pendiente honesto: si ni el evento ni una enumeración útil existen
+en su WebView, no hay señal web que explotar y esto tampoco
+saltará; la prueba del usuario manda.
+
+## §78. Veredicto: en el teléfono del usuario no se puede
+
+Segunda prueba en el dispositivo real, con el plan B de §77:
+tampoco. Conclusión técnica, sin paliativos: su WebView no entrega
+a la página **ninguna** de las señales que la web puede usar — ni
+el evento `devicechange`, ni una enumeración de salidas que cambie
+al desenchufar (o directamente `mediaDevices` no está expuesto en
+ese contexto). Sin señal no hay implementación posible desde
+dentro del webxdc: el aviso que usan los reproductores nativos
+(`ACTION_AUDIO_BECOMING_NOISY`) lo recibe la app contenedora, no
+la página, y Delta Chat no lo reenvía.
+
+Decisión: el motor se queda (coste cero, inerte donde no hay
+soporte, y funcional donde la plataforma sí expone dispositivos,
+como Chromium de escritorio, vía «retirada demostrable»), el
+interruptor de Ajustes se queda (permite apagarlo donde sí
+funcione), y la documentación deja de prometerlo como universal:
+el CHANGELOG y este informe dicen ahora exactamente dónde sí y
+dónde no. Si el usuario prefiere que desaparezca también el
+interruptor por no hacer nada en su teléfono, es un commit de un
+minuto.
+
+## §79. Regresión: fuera la pausa al retirar los audífonos
+
+Por orden del usuario, se elimina TODO lo de §§76–78: el motor de
+vigilancia (`_snapshotAudioOutputs`, `_handleAudioDeviceEvent`,
+`_initHeadphoneWatch`, el sondeo y la foto al reproducir), el
+interruptor de Ajustes y su persistencia, el campo de estado y las
+dos claves i18n (`settings_pause_unplug`, `toast_unplug_paused`:
+el catálogo vuelve a **374×8**). También sale su línea del
+CHANGELOG: la 1.2.0 aún no está lanzada y no debe anunciar lo que
+no lleva. El veredicto de §78 queda en este informe como memoria
+de por qué no está: sin señal del WebView no hay pausa posible
+desde la web; si algún día Delta expone algo, se reharía desde
+aquí, no desde el código retirado.
+
+### Verificación
+
+- **Check §79** `/tmp/check-vista79.js`: **11/11** — cero restos
+  (`unplug|devicechange|_audioOutputs|…` sin coincidencias en JS ni
+  HTML), i18n de vuelta a 374×8 sin huecos, arranque limpio, la
+  fila vecina (vinilo) y el guardado de ajustes intactos, y
+  play/pausa funcionando tras la retirada.
+- `node --check` total y **build .xdc válido**: 27 archivos.
+
+## §80. Auditoría general: poda verificada de código muerto
+
+Nueva auditoría completa (estática + runtime) sobre lo acumulado
+§§63–79. Batería: sintaxis de todo el JS, catálogo i18n (claves ×8
+y referencias vivas por todas las vías: `t('…')`, `data-i18n*`
+incluido `-ph`, `addTitle('…')` y familias dinámicas
+`theme_`/`accent_`), iconos definidos/usados con escaneo exacto
+`#i-…`, variables CSS, IDs duplicados y referencias, restos de
+funciones eliminadas (§§51–57, §68, §76–79) y regresión runtime
+consolidada de los grandes flujos.
+
+### Hallazgos reales, corregidos en la misma pasada
+
+- **37 claves i18n muertas fuera** (374 → **337×8**, sin huecos y
+  con 0 referencias rotas): restos de funciones retiradas
+  (almacenamiento, Letras, búsqueda…) que solo quedaban definidas.
+  Cada candidata se verificó una a una por palabra exacta en JS,
+  HTML y CSS, descartando usos dinámicos antes de podar. La poda se
+  hizo por conteo de llaves, no por regex de líneas: el catálogo
+  conserva cierres `}\n,` de podas antiguas que tragaban claves
+  vecinas (dos intentos por regex abortaron por aserción sin tocar
+  el archivo; a la tercera, con conteo de llaves, limpio).
+- **11 clases CSS sin uso real eliminadas** de `css/styles.css`
+  (`icon-btn-large`, `lt-sep`, `exit-left`, `cover-overlay`,
+  `library-playlists`, `delete-track`, `unfav-track`,
+  `eq-manual-actions`, `add-to-pl`, `home-empty`,
+  `artist-avatar`), preservando los selectores vivos compartidos
+  (`.playlist-list`, `.sec-btn.liked svg`, `.remove-from-pl:hover`).
+  Balance de llaves tras la poda: 957/957.
+- **1 enlace JS muerto fuera** en `js/events.js`: el binding
+  guardado de `#menuRelinkAudio`, elemento que ya no existe en
+  `index.html`. `#menuFreeStorage` sí existe y su binding queda.
+
+### Falsos positivos descartados (no «corregidos»)
+
+Escaneo exacto: todos los `#i-…` usados están definidos y los
+cuatro «sin uso» de la primera pasada (`i-check`,
+`i-chevron-right`, `i-grip-vertical`, `i-lock`) sí se usan. Las
+claves «quizá sin uso» restantes viven por `data-i18n-ph`
+(`optional`, `my_new_playlist`, `search_placeholder`), por
+`addTitle()` en estadísticas (`search_section_*`) o por familias
+dinámicas. Los IDs «ausentes» nacen de plantillas JS o son el
+fallback `btnSleep` → `menuSleep`; los «TODO» eran «TODOS»; los
+objetivos <40 px son glifos `.ico`, no botones; `offerFreeStorage`
+está definido (`js/settings.js`).
+
+### Verificación
+
+- **Check §80** `/tmp/check-audit80.js`: **21/21** — arranque,
+  orden por estrellas (§64) sin tocar el guardado, Inicio a 384
+  (§71), estadísticas solo de escuchas completas (§67), seis
+  acentos (§66), restante/duración (§72), Letras sin letra y con
+  letra (§73), línea centrada (§74), paleta de portada (§75),
+  trampa de foco (§70) y play/pausa, sin errores.
+- Batería estática `/tmp/audit80.js` limpia tras la poda;
+  `node --check js/*.js` OK.
+- **Build .xdc válido**: 27 archivos.
+
+§§76–79 no reaparecen: cero restos de la pausa al retirar los
+audífonos. La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## §81. Lo que le faltaba a un reproductor «normal» + renombre roto
+
+Tras la auditoría §80 el usuario pidió implementar todo lo viable
+de la lista de carencias comparada con otros reproductores, menos
+lo descartado por orden suya (copia de seguridad §57, importar
+`.m3u` §51, sincronización) y lo imposible en WebXDC (streaming,
+segundo plano al cerrar, pausa al quitar auriculares §§76–79). Y
+arreglar el renombre de listas. Dos «carencias» resultaron no
+serlo al verificar: la cola ya se reordenaba arrastrando
+(`wireDragHandle`) y el tiempo total de escucha ya estaba en
+Estadísticas; de esos puntos solo se implementó lo que faltaba.
+
+### El fallo: renombrar sin confirmar
+
+`startRenamePlaylist()` reemplazaba el `<h4 id="editPlaylistName">`
+por un `<input>` **sin id**: al confirmar, `renderEditPlaylist()`
+ya no encontraba el título, la vista se quedaba con el campo de
+texto para siempre y no había botón de confirmar. Ahora el campo
+nace dentro de `.edit-pl-rename` con botones ✓/✗ visibles; Enter
+confirma, Escape cancela, el blur confirma, y al terminar se
+restaura el `<h4>` con su id (renombrar dos veces seguidas
+funciona; antes la segunda era imposible).
+
+### Ordenación manual (§81.2)
+
+`sortTracksBy(tracks, mode)` en `js/playlist-ui.js`: estrellas
+(§64, sigue siendo la predeterminada), título, artista, álbum,
+orden guardado, recientes y duración. `playlistTracksSorted(pl)`
+la aplica según `pl.sort`, así que listas y colas suenan como se
+ven; el orden guardado no se reescribe. Selector en la hoja de
+editar lista (persiste vía `persistPlaylist`, que ahora guarda
+`sort` y `smart`) y otro en la vista álbum/artista/género
+(`browseTracksSorted()`, también para «Reproducir Todo»).
+
+### Catálogo Álbumes / Artistas / Géneros (§81.3)
+
+Pestañas en Biblioteca sobre la vista de listas de siempre (§47:
+no vuelve «Todas las canciones»; es un índice nuevo pedido
+expresamente). `getAlbums()`/`getArtists()` ya existían;
+`getGenres()` es nuevo porque el importador **pedía género y año
+a jsmediatags y los tiraba**: ahora se guardan en la pista (ID3 y
+Vorbis `GENRE`/`DATE`), el re-etiquetado automático los recupera
+para bibliotecas antiguas, el álbum muestra su año y cada tarjeta
+abre la vista `openBrowse()` existente (tipo `genre` incluido).
+
+### Listas inteligentes (§81.4)
+
+`pl.smart = {kind, genre?}` con reglas: 4+ estrellas, un género,
+nunca reproducidas, añadidas en 30 días, olvidadas (+90 días sin
+escucha completa) y más reproducidas (50). `smartPlaylistTracks()`
+se recalcula en cada lectura: la lista se rellena sola.
+`playlistTracksSorted`, conteo, duración, portada y exportación
+usan las pistas efectivas; en la hoja de edición no se puede
+añadir/quitar/vaciar a mano (la regla manda) y llevan insignia
+«Inteligente». Se crean desde la hoja de crear lista (Normal /
+Inteligente + regla).
+
+### Cola: guardar como lista (§81.5)
+
+Botón en la hoja de cola que reutiliza la hoja de crear con la
+bandera `_queueSaveMode` (puesta DESPUÉS de abrirla:
+`openCreatePlaylistSheet()` resetea las banderas al empezar). La
+lista nace con `sort='added'` para sonar en el orden exacto de la
+cola. Reordenar la cola ya existía; no se ha tocado.
+
+### Editor LRC: sincronizar tocando (§81.6)
+
+El editor de letra existía (pegar/editar a mano); faltaba marcar
+tiempos al ritmo. Panel nuevo en la misma hoja: escribes las
+líneas sin tiempos, reproduces y tocas «Marcar línea»; las marcas
+(monótonas, con deshacer) se escriben como `[mm:ss.xx]` en el
+editor y se guardan con el Guardar de siempre. Terminar antes de
+tiempo conserva el resto de líneas sin marcar.
+
+### Estadísticas: saltadas y olvidadas (§81.7)
+
+`stats.skips` nuevo: `_registerSkip()` cuenta un salto por pase
+cuando el usuario abandona a mitad (next/prev manual o elige otra
+pista), con mínimo oído (5 s o 10 %) y sin contar escuchas
+completas (§67) ni finales buscados a mano. Al completar una
+escucha se guarda `track.lastPlayedAt`; Estadísticas gana las
+secciones «Más saltadas» y «Olvidadas» (con «hace X días»). El
+tiempo total de escucha ya existía como tarjeta.
+
+### Fundido al pausar/reanudar (§81.8)
+
+Sin fundido cruzado activo, pausar baja la ganancia a 0 en 250 ms
+antes de `pause()` (un `play()` intermedio lo invalida por token)
+y reanudar sube de 0 a la ganancia normal en 300 ms, sobre el
+`gainNode` existente. Sin grafo Web Audio, comportamiento de
+siempre.
+
+### Duplicados (§81.9)
+
+«Buscar duplicados» en Biblioteca: grupos por título+artista
+normalizados (la importación ya evitaba el mismo archivo; esto
+caza la misma canción por otro archivo). Se conserva la más
+antigua —la que suele tener estrellas y listas— y las copias se
+borran una a una con el borrado con deshacer de siempre.
+
+### i18n y verificación
+
+44 claves nuevas ×8 (381×8, 0 huecos, 0 referencias rotas por
+`t()` ni `data-i18n*`). `persistPlaylist` guarda `sort`/`smart`.
+
+- **Check §81** `/tmp/check-vista81.js`: **41/41** — renombre
+  (confirmar, cancelar, dos veces), ordenes, las 6 reglas
+  inteligentes, crear inteligente desde la hoja, catálogo
+  (pestañas, tarjetas, abrir álbum), guardar cola en orden,
+  tap-sync completo hasta guardar la letra, salto único por pase,
+  `lastPlayedAt`, secciones de stats y duplicados.
+- Regresión §80 `/tmp/check-audit80.js`: **21/21** (el orden por
+  estrellas de §64 intacto como predeterminado).
+- Batería estática limpia; `node --check js/*.js` OK; llaves CSS
+  990/990.
+- **Build .xdc válido**: 27 archivos.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## §82. Quitar una canción de la cola la resucitaba al siguiente paso
+
+**El fallo (reportado por el usuario):** reproducías una lista,
+quitabas una canción de la cola con su ✗, y al pasar a la
+siguiente canción la lista completa volvía a estar en la cola.
+
+**Causa:** en `next()` vivía desde §64 una «reconstrucción» que
+comparaba la cola con la lista ordenada y, si diferían en
+longitud u orden, sustituía la cola entera por la lista. Nacida
+para que la cola heredara el orden por estrellas, tenía el
+efecto de deshacer cualquier edición de la cola: la baja de una
+canción, el reorden por arrastre y el «vaciar siguientes» se
+perdían en el primer cambio de pista.
+
+**El arreglo — la cola manda:** al construir una cola desde una
+lista (`playTrack` con contexto, `playPlaylist`) se guarda una
+foto de la lista en `_plSyncIds`. En cada `next()` (manual o
+automático, sin shuffle), `_syncQueueWithPlaylist()` sincroniza
+contra esa foto en vez de reconstruir:
+
+- **Altas de la lista** (en la lista ahora, ni en la foto ni en
+  la cola): entran **al final** de la cola.
+- **Bajas de la lista** (en la foto, ya no en la lista): salen de
+  la cola, salvo la que está sonando, que termina y sale en la
+  siguiente sincronización.
+- Lo quitado **de la cola a mano sigue en la foto**: no es un
+  alta y no vuelve. El orden de la cola no se toca nunca: el
+  reorden por arrastre y §81 (altas al final) sobreviven.
+- Sin foto (sesión restaurada): la primera sincronización adopta
+  la lista como foto sin tocar la cola guardada.
+
+Con shuffle sigue mandando `_originalQueue`, que ya respetaba
+las bajas (§ cola). Contextos que no son lista (Favoritos,
+álbum/artista/género, radio) dejan `_plSyncIds` en `null`.
+
+### Verificación
+
+- **Check §82** `/tmp/check-vista82.js`: **17/17** — el gesto
+  exacto del usuario (✗ en la fila y «siguiente», manual y
+  automático), reorden manual que sobrevive, vaciar sin
+  restaurar, bajas/altas de la lista aplicadas, y sesión
+  restaurada sin foto.
+- Regresiones: §81 **41/41** y §80 **21/21**; `node --check`
+  total OK.
+- **Build .xdc válido**: 27 archivos.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## §83. Auditoría profunda de la cola por más valoradas
+
+El usuario reportó tres cosas en la misma zona: la reordenación
+de la cola por más valoradas «tiene serios problemas», el menú
+«Más opciones» de cada canción debía estar también en la cola, y
+«Reproducir siguiente» no funcionaba (y debía llamarse
+«Reproducir después de la canción actual»). Auditoría con sonda
+empírica (`/tmp/probe83.js`) antes de tocar nada; lo sano se
+documenta como tal y lo roto se arregla.
+
+### Lo que estaba bien (verificado, sin tocar)
+
+- La cola nace ordenada por estrellas al reproducir una lista
+  (§64), con el desempate del orden guardado; el avance gapless
+  calcula la siguiente en el momento del corte, así que una
+  inserción previa se respeta; activar/desactivar el aleatorio
+  ancla la actual y restaura sin perderla; elegir «siguiente»
+  sin nada sonando reproduce la elegida.
+
+### Fallo 1: «Reproducir siguiente» duplicaba
+
+`playNext()` insertaba tras la actual sin quitar la aparición
+que la canción ya tenía en la cola — el caso típico, porque se
+elige desde la misma lista que suena. La canción sonaba dos
+veces: el «no funciona». Ahora **mueve**: quita sus demás
+apariciones (salvo la que suena, si es ella), entra tras la
+actual y el mismo movimiento se refleja en `_originalQueue`
+con aleatorio. Y se llama **«Reproducir después de la canción
+actual»** en los 8 idiomas.
+
+### Fallo 2: la cola por valoradas no seguía las notas
+
+Valorar reordenaba la lista (vista) al instante pero la cola
+jamás: divergían hasta volver a reproducir la lista. Y las
+altas nuevas entraban al final de la cola aunque fueran de 5★
+(§82). Arreglo: `resortUpcomingQueue()` reordena **solo lo que
+queda por sonar** (la actual y lo ya sonado no se tocan; sort
+estable: a igualdad manda el puesto que ya traía cada pista, así
+el arrastre manual sobrevive entre iguales). Se llama al
+valorar (si lo que suena manda por estrellas o es Favoritos),
+cuando la sincronización de §82 trae altas (entran por nota) y
+al cambiar el criterio de orden de la lista que está sonando.
+Con aleatorio no se toca nada.
+
+### Fallo 3: la cola no tenía menú de canción
+
+Cada fila de la cola lleva ahora el botón ⋯ (y pulsación larga)
+que abre el mismo `openTrackMenu` de las listas — con su
+«Reproducir después de la actual» ya capaz de mover la pista
+dentro de la propia cola.
+
+### Fallo 4 (de la auditoría): el gapless no sincronizaba
+
+El avance sin pausa de §67 (`gaplessNext`) no pasaba por la
+sincronización con la lista de §82: una baja de la lista se
+colaba si el cambio de pista era gapless. Ahora sincroniza
+igual que `next()` (idempotente si `next()` ya lo hizo).
+
+### Verificación
+
+- **Check §83** `/tmp/check-vista83.js`: **22/22** — menú en la
+  cola y su apertura, mover sin duplicar (desde la cola, desde
+  una lista y con aleatorio, en cola y en `_originalQueue`),
+  valorar/quitar nota reordenando lo que queda sin mover la
+  actual, alta 5★ entrando por nota, cambio de criterio en vivo
+  y sincronización gapless.
+- Regresiones: §82 **17/17**, §81 **41/41**, §80 **21/21**;
+  `node --check` total OK; llaves CSS 991/991.
+- **Build .xdc válido**: 27 archivos.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## §84. Con el visualizador activo, la portada se veía muy pequeña
+
+**El problema (reportado por el usuario):** al activar el
+visualizador, la portada encogía. Causa de layout, no de dibujo:
+la columna del reproductor tiene una sola pieza flexible, la
+sección de la portada (`flex: 1 1 0; min-height: 0`), y el
+visualizador vivía en el flujo entre el progreso y los
+controles con sus 62 px + margen. Todo lo demás (barra
+superior, info, progreso, controles) es fijo, así que esos
+~64 px salían íntegros de la portada en cuanto se encendía el
+visualizador — y en pantallas bajas, donde ya mandan los topes
+`30dvh`/`36dvh`, el tijeretazo se notaba el doble.
+
+**El arreglo:** el visualizador sale del flujo y pasa a vivir
+**superpuesto sobre la parte baja de la propia portada**
+(dentro de `#coverArt`, bajo la pista de «tocar para
+reproducir»): franja de 62 px a todo el ancho de la carátula,
+con un degradado oscuro al pie para que las barras y la onda
+—colores de la propia portada desde §75— se lean sobre
+cualquier imagen. `pointer-events: none` para que los gestos
+de la portada (tocar, arrastrar para volumen) funcionen igual
+encima de la franja. Resultado: el tamaño de la portada es
+**idéntico con y sin visualizador** en cualquier pantalla, y
+la regla de tamaño de la portada no se ha tocado. El canvas ya
+se ajustaba a su tamaño CSS (`_fitVisualizerCanvas`), así que
+el motor de dibujo no cambia; mostrar/ocultar sigue siendo el
+mismo `display` de siempre.
+
+### Verificación
+
+- **Check §84** `/tmp/check-vista84.js`: **15/15** — la capa
+  vive dentro de `#coverArt`, posición absoluta sin presencia
+  en el flujo, regla de tamaño de la portada intacta, ciclo
+  bars→wave→off→bars mostrando/ocultando, y arranque/parada
+  del dibujo sin errores.
+- Regresiones: §83 **22/22**, §82 **17/17**, §81 **41/41**,
+  §80 **21/21**; `node --check` total OK; llaves CSS 991/991.
+- **Build .xdc válido**: 27 archivos.
+
+Nota honesta: jsdom no hace layout, así que la igualdad de
+tamaño se verifica por construcción (la capa ya no consume
+alto de la columna) y no por píxeles; el arreglo se confirma
+visual en el dispositivo, como el resto de la UI.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+---
+
+## 85. Carga rápida de bibliotecas grandes (auditoría §85)
+
+Auditoría pedida: «auditar carga de grandes volúmenes de
+canciones y cómo hacer que carguen rápido». La importación ya
+escalaba bien —pool de 3–6 trabajadores en `processFiles`,
+portada compartida por álbum, deduplicación O(1) por `Map` y
+guardado en una sola transacción (`persistTracksBatch`)—; los
+cuellos reales estaban en el **arranque** y en una **doble
+lectura** de los archivos más grandes:
+
+1. **Retag de arranque desbocado (el grave).** La puerta de
+   `js/init.js` consideraba «incompleta» a toda pista sin letra
+   (`!t.lrc`); como casi ninguna canción trae letra, en **cada**
+   arranque `retagExistingTracks` releía **toda** la biblioteca
+   secuencialmente y, al «mejorar» la portada, reescribía **cada
+   registro de IndexedDB con su blob** una y otra vez.
+2. **Un `objectURL` por canción** al arrancar, aunque
+   `getTrackUrl` ya crea y cachea la URL bajo demanda.
+3. **FLAC/OGG/Opus leídos dos veces:** `jsmediatags` leía el
+   archivo entero aun cuando el lector Vorbis propio ya había
+   sacado los tags del primer MB — y los FLAC son justo los
+   archivos más pesados.
+
+### Correcciones
+
+- **Retag selectivo con marca.** Nuevo `_trackNeedsRetag(t)`:
+  sin archivo no se toca; sin marca `_tagsChecked`, sin portada
+  imagen o con artista placeholder sí; **sin letra nunca** es
+  motivo. El arranque llama a `retagExistingTracks({silent,
+  onlyIncomplete: true})` y el releído usa un pool de 3 en vez
+  de secuencial; la pista queda marcada `_tagsChecked` y la
+  marca se persiste aunque nada más cambie, para que el
+  siguiente arranque la salte. La portada solo se reemplaza si
+  el dataURL difiere: **ningún registro se reescribe sin cambio
+  real**. El «Releer etiquetas» manual del menú sigue siendo
+  completo, como hasta ahora.
+- **Arranque perezoso.** `js/init.js` ya no crea `src` por
+  pista: la URL nace en `getTrackUrl` al reproducir, compartir
+  o pre-cargar la siguiente, y queda cacheada.
+- **Vorbis completo = sin `jsmediatags`.** Si el lector propio
+  trae título, `processOne` se salta `readTags` (el archivo
+  entero) y la pista nace con `_tagsChecked`.
+- **Fallo real destapado por el check:** el lector Vorbis no
+  copiaba `genre`/`date` del comentario (venían de
+  `jsmediatags`) y el mapeo `date → year` solo existía en la
+  rama con tags. Con el salto, FLAC/OGG habrían perdido género
+  y año: el lector ahora los extrae y el año se normaliza en
+  ambos caminos.
+
+### Verificación
+
+- **Check §85** `/tmp/check-vista85.js`: **21/21** — predicado
+  de retag, solo la incompleta se relee y queda marcada,
+  segundo arranque con cero relecturas, manual completo sin
+  reescrituras inútiles, FLAC sin llamar a `jsmediatags` con
+  título/género/año intactos, lector Vorbis real sobre un
+  comentario construido a mano, MP3 por `jsmediatags`, URL
+  perezosa y pool con orden conservado.
+- Regresiones: §84 **15/15**, §83 **22/22**, §82 **17/17**,
+  §81 **41/41**, §80 **21/21**.
+
+Nota de alcance: el sondeo de duración por archivo en MP3 se
+mantiene (es la única fuente fiable) y `jsmediatags` sigue
+siendo el camino de MP3/M4A/WAV; no se ha tocado el motor de
+importación, que ya era correcto.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+---
+
+## 86. Letras: sin mini reproductor en vacío, sin gesto y con foco en la línea que suena
+
+Petición del usuario, con opinión pedida antes de implementar
+y cuatro decisiones cerradas por él (ocultar mini-cabecera y
+controles sin letra; eliminar el gesto; difuminado fuerte;
+aclarar al desplazar a mano):
+
+1. **Sin letra, fuera el «mini reproductor».** La vista de
+   Letras sin letra ya ocultaba la barra de herramientas (§73),
+   pero quedaba un reproductor en miniatura: mini-cabecera
+   (portada + título/artista), tarjeta de vacío y controles
+   inferiores con progreso y anterior/play/siguiente. Con la
+   clase `.lrc-is-empty` ahora también se ocultan
+   `.lyrics-mini` y `.lyrics-controls`: solo quedan la barra
+   superior y la tarjeta con «Cargar .lrc / Pegar o editar»,
+   que es la única acción útil en esa pantalla. Con letra,
+   mini-cabecera y controles se mantienen: son la identidad de
+   la canción y el transporte dentro de la vista.
+2. **Gesto horizontal para cambiar de canción: eliminado.**
+   Solo vivía en la vista de Letras (`wireGestures` exigía que
+   estuviera activa) y causaba saltos de pista accidentales al
+   desplazar la letra en diagonal. `wireGestures` queda sin
+   listener de deslizamiento; quedan los botones, el toque en
+   una línea para saltar a ese instante y el scroll nativo.
+   Esto **revierte una decisión anterior del usuario**
+   («deslizar sobre la letra sí cambia de canción») por orden
+   expresa suya en esta sección. Fuera de alcance —y NO
+   tocado—: el deslizamiento horizontal sobre la portada del
+   reproductor, que sigue cambiando de canción.
+3. **Foco en la línea que suena.** Nueva clase `.lrc-focus`
+   sobre `#lyricsScroll` (helper `_setLrcFocus`): con letra
+   sincronizada y primera línea ya activa, la línea actual se
+   lee nítida, la vecina (±1, `.near`) queda a opacidad 0,55
+   con blur 0,7 px como contexto, la segunda (`.near-2`) a 0,3
+   con blur 1,3 px, y el resto a opacidad 0,18 con blur 2 px:
+   casi ilegible, como se pidió. Radio de desenfoque pequeño
+   a propósito (blur grande sobre ~100 líneas saldría caro en
+   el WebView) apoyado en la opacidad. Salvaguardas: sin
+   sincronía (`_setLrcFocus(false)` en la salida temprana) y
+   antes de la primera línea —intro— no hay difuminado; al
+   pasar a una canción sin letra el foco se apaga
+   (`_setLyricsEmpty`). Mientras el usuario desplaza la letra
+   a mano, `.lrc-focus.user-scrolling` aclara todas las
+   líneas (opacidad 0,85, sin blur) para poder buscar un
+   verso; al retomar el auto-scroll vuelve el foco. La
+   transición de `.lrc-line` incluye ahora `filter .25s`.
+
+### Verificación
+
+- **Check §86** `/tmp/check-vista86.js`: **28/28** — CSS de
+  vacío (mini-cabecera y controles ocultos, regla §73 intacta),
+  gesto fuera de `events.js`, graduación del difuminado en el
+  CSS y comportamiento: foco encendido con línea activa y
+  clases near/near-2/base correctas, apagado en la intro,
+  jamás presente sin sincronía y apagado al pasar a una
+  canción sin letra.
+- Regresiones: §85 **21/21**, §84 **15/15**, §83 **22/22**,
+  §82 **17/17**, §81 **41/41**, §80 **21/21**; `node --check`
+  OK y llaves CSS equilibradas.
+
+Nota honesta: jsdom no aplica el CSS ni hace layout, así que
+el difuminado se verifica por las reglas y por las clases que
+el JS pone/quita; el efecto visual se confirma en el
+dispositivo, como el resto de la UI.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+---
+
+## 87. Fallos graves al reabrir: «no se puede reproducir» en cadena (y la lista fantasma)
+
+Dos fallos reportados tras cerrar y reabrir la miniapp: (1) el
+reproductor saltaba de canción en canción avisando de que no se
+podía reproducir ninguna, y (2) al quitar una canción de la cola
+«se creó una lista con esa canción». Ambos considerables; el
+primero, regresión directa de §85.
+
+### Fallo 1 — la URL guardada estaba muerta (regresión §85)
+
+Cadena confirmada en código y reproducida con sonda
+(`/tmp/probe87.js`): `processOne` devuelve la pista con
+`src: URL.createObjectURL(file)` y `persistTrack` /
+`persistTracksBatch` guardaban ese objeto tal cual en
+IndexedDB. Un objectURL muere con su sesión: al reabrir, cada
+registro traía un `blob:` cadáver. Antes de §85 el arranque
+recreaba las URLs de todas las pistas y eso enmascaraba la
+contaminación; §85 dejó de crearlas (bien) pero `getTrackUrl`
+seguía confiando en el `src` persistido: devolvía la URL
+muerta, el `<audio>` disparaba el error de decodificación y la
+política de saltos recorría la cola entera avisando «no se
+puede reproducir» canción tras canción — exactamente lo
+reportado.
+
+Corrección en tres capas, para que no vuelva por ningún camino:
+
+- **`getTrackUrl` ya no confía en ningún `blob:` que no haya
+  acuñado esta sesión**: si la pista trae un `src` blob: ajeno,
+  se revoca/descarta y la URL se crea siempre desde `_file` /
+  `fileBlob`. Solo se respeta un `src` no-blob (http(s)). Sin
+  blob y con URL muerta devuelve `null`, sin inventar.
+- **No se vuelve a escribir**: `persistTrack` (init.js) y
+  `persistTracksBatch` (library.js) eliminan `src` del registro
+  a guardar.
+- **Saneamiento de bibliotecas ya contaminadas**: al cargar
+  (`loadAllFromStorage`) se elimina todo `src` blob: de los
+  registros leídos; a partir de ahí los registros se reescriben
+  limpios en cuanto algo los persiste. Ningún usuario tiene que
+  reimportar su biblioteca.
+
+### Fallo 2 — quitar de la cola es inocente; la lista era «Mi Música»
+
+Forense con sonda de clic real: pulsar el × de una fila de la
+cola quita la canción y **no toca `this.playlists` ni llama a
+`persistPlaylist` una sola vez**; «Vaciar» tampoco. El único
+creador automático de listas de la app es «Mi Música»: al
+arrancar, si no existía, se sembraba con **todas** las canciones
+que no estuvieran en ninguna lista. Si una canción queda fuera
+de cualquier lista (al vaciar o borrar la suya, por ejemplo),
+al siguiente arranque nacía «Mi Música» con ella y se vivía
+como «la app creó una lista sola al quitar una canción».
+
+Ajuste (§87, sin tocar la función pedida en §46): la siembra
+en frío al arrancar **solo ocurre si no hay ninguna otra
+lista** (biblioteca nueva o migrada: todo es suelto por
+definición). Con listas del usuario, «Mi Música» ya no aparece
+por sorpresa: nace en contexto cuando se importa sin lista
+destino (`_ensureMiMusica`, intacto, solo con lo importado) y
+la marca `aurora_mimusica_removed` sigue impidiendo que
+resucite si se borró a propósito. Decisión documentada ante la
+ambigüedad: se prefiere que una lista visible la cree una
+acción del usuario en contexto, no el arranque.
+
+### Verificación
+
+- **Check §87** `/tmp/check-vista87.js`: **17/17** — URL
+  muerta jamás devuelta (nueva acuñada y cacheada), sin blob
+  → `null`, http(s) respetado, `persistTrack` y
+  `persistTracksBatch` sin `src` en el registro, reapertura
+  con registros contaminados: `src` saneado y el `<audio>`
+  recibe URL viva; clic real en el × de la cola con las
+  listas intactas y cero escrituras; «Mi Música»: siembra sin
+  listas, no-siembra con listas, nacimiento por importación
+  solo con lo importado y no-resurrección tras borrado.
+- Regresiones: §86 **28/28**, §85 **21/21**, §84 **15/15**,
+  §83 **22/22**, §82 **17/17**, §81 **41/41**, §80 **21/21**.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+---
+
+## 88. Duplicados: qué copia se conserva lo elige el usuario
+
+Petición: «en duplicado el usuario elija manualmente qué copia
+dejar». Hasta §87 la hoja de duplicados protegía siempre la
+copia más antigua (la «original»: suele tener estrellas, listas
+y reproducciones) y solo dejaba borrar las demás una a una: era
+imposible quedarse con una copia mejor llegada después (p. ej.
+un FLAC en lugar del MP3 viejo).
+
+### Cambios
+
+- **`findDuplicateGroups()`** ahora expone la `key` del grupo
+  (título+artista normalizados); su `keep` queda como **valor
+  por defecto** (la más antigua), sin cambiar su contrato (§81).
+- **`renderDuplicates()`** resuelve la copia conservada con la
+  elección del usuario (`this._dupKeepSel`, un `Map` por clave
+  de grupo que sobrevive a los repintados de la hoja; si la
+  elegida ya no está en el grupo, se vuelve al defecto):
+  - La conservada lleva la insignia y **no tiene papelera**:
+    está protegida.
+  - Cada otra copia ofrece **«Conservar esta»** — la insignia
+    y la protección se mueven a esa copia — además de su
+    papelera individual de siempre (borrable con «Deshacer»).
+  - La fila enseña ahora también el **tamaño** del archivo
+    (nombre · duración · tamaño): es el dato que permite
+    decidir por calidad.
+  - Nuevo botón por grupo **«Borrar las demás (n)»**: pide
+    confirmación (`duplicates_confirm`, peligro) y borra el
+    resto en lote con `{undo:false}`, conservando la elegida.
+- **i18n**: la insignia `duplicates_keep` ya no dice
+  «Original» (la conservada puede no serlo) y se añaden
+  `duplicates_keep_this`, `duplicates_delete_others` y
+  `duplicates_confirm` en los **8 idiomas** (paridad verificada
+  por el check: 384 claves × 8).
+- CSS: `.dup-row.is-keep` con fondo de acento suave,
+  `.dup-keep-btn` discreto con borde de acento y
+  `.dup-del-others` templado en peligro, ambos ≥32 px táctiles.
+
+El detector de la importación (mismo nombre+tamaño) no se toca:
+ahí no hay «copias» entre las que elegir, es el mismo archivo.
+
+### Verificación
+
+- **Check §88** `/tmp/check-vista88.js`: **21/21** — grupo de
+  3 con defecto en la antigua (§81 intacto), insignia y
+  protecciones correctas, tamaño visible, «Conservar esta»
+  mueve la protección y persiste al repintar, cancelar el
+  lote no borra nada, «Borrar las demás» deja solo la elegida,
+  papelera individual operativa y paridad i18n 8 idiomas.
+- Regresiones: §87 **17/17**, §86 **28/28**, §85 **21/21**,
+  §84 **15/15**, §83 **22/22**, §82 **17/17**, §81 **41/41**,
+  §80 **21/21**.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+---
+
+## 89. Biblioteca: la barra de pestañas queda fija al desplazar
+
+Petición: en Biblioteca, la barra con Listas / Álbumes /
+Artistas / Géneros debe quedar fija y no moverse al desplazar
+hacia abajo. La barra vivía dentro de `.sheet-body` (la única
+región que se desplaza en la hoja), así que se iba con el
+contenido en cuanto había suficientes listas o tarjetas.
+
+### Cambio
+
+- `index.html`: `.lib-tabs` sale del cuerpo desplazable y pasa
+  a ser hija directa de `.sheet-panel`, entre la cabecera y el
+  cuerpo — el mismo patrón que ya mantiene fija la cabecera.
+  El panel es columna flexible y el cuerpo sigue siendo el
+  único que se desplaza (`flex: 1; overflow-y: auto`).
+- `css/styles.css`: `#sheetLibrary .lib-tabs` como franja fija:
+  `flex-shrink: 0`, sin margen, con el relleno lateral del
+  cuerpo (20 px) para que las pestañas no salten de sitio, el
+  filete inferior de las cabeceras y el fondo del panel
+  (`var(--bg-2)`), para que se lea como segunda cabecera y no
+  como un parche pegado.
+
+Sin cambios de JS: el cableado de pestañas trabaja por clases
+(`.lib-tab[data-libtab]`) y las secciones siguen dentro del
+cuerpo, que es lo que se desplaza.
+
+### Verificación
+
+- **Check §89** `/tmp/check-vista89.js`: **15/15** — la barra
+  ya no está en el cuerpo desplazable, es hija del panel y va
+  antes que el cuerpo; las cuatro secciones sí permanecen en
+  el cuerpo; la regla CSS fija existe con `flex-shrink: 0` y
+  filete; y el comportamiento no cambia: clics en Álbumes,
+  Géneros y Listas activan la pestaña, marcan la activa y
+  pintan el catálogo (2 álbumes).
+- Regresiones: §88 **21/21**, §87 **17/17**, §86 **28/28**,
+  §85 **21/21**, §84 **15/15**, §83 **22/22**, §82 **17/17**,
+  §81 **41/41**, §80 **21/21**; llaves CSS equilibradas.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+---
+
+## 90. Visualizador: solo la onda (las barras tapaban el cover)
+
+Petición: «en el visualizador solo deja las ondas, las barras
+tapan mucho el cover». El modo barras se retira por completo;
+el visualizador queda con un único modo, la onda fluida que ya
+vivía sobre la parte baja de la portada (§84).
+
+### Cambios (`js/audio.js`, `js/data.js`)
+
+- **Modos**: el ciclo del botón pasa de barras→onda→apagado a
+  **onda ↔ apagado**. Por defecto (sin preferencia guardada)
+  ahora arranca en onda; con «reduced-motion» sigue arrancando
+  apagado.
+- **Migración**: un `aurora_visualizer_mode` guardado como
+  `bars` se convierte a `wave` al iniciar y se re-persiste;
+  `setVisualizerMode('bars')` también normaliza a onda, por si
+  quedara cualquier llamador heredado.
+- **Código retirado**: la rama de dibujo de barras de
+  `drawVisualizerFrame` (la onda queda en línea, sin if/else),
+  los helpers exclusivos `_visLogBands`, `_visBarTargets` y
+  `_visStepBars`, los resets de su degradado en
+  `_fitVisualizerCanvas` y la clave i18n `visualizer_bars`
+  (8 idiomas; paridad verificada, 383 claves × 8). Los
+  comentarios que citaban las barras se actualizaron.
+- **Reposo también en onda**: `_drawVisualizerIdle` pintaba en
+  pausa una fila de 48 barras bajas; ahora pinta una línea
+  senoidal quieta con los colores de la portada.
+
+Sin cambios de CSS ni HTML: la capa sobre la portada (§84) y
+el botón son los mismos; la onda tapa menos porque es trazo y
+relleno translúcido, no columnas opacas.
+
+### Verificación
+
+- **Check §90** `/tmp/check-vista90.js`: **19/19** — migración
+  `bars`→`wave` con re-persistencia, defecto en onda, `off`
+  respetado, ciclo onda↔apagado mostrando/ocultando la capa,
+  normalización de `setVisualizerMode('bars')`, helpers y rama
+  de frecuencias fuera del código, reposo senoidal, i18n sin
+  la clave muerta y con paridad, y dibujo sin analizador sin
+  errores.
+- **Check §84 actualizado a 14/14**: su segmento de ciclo
+  afirmaba el contrato retirado (bars→wave→off→bars); se
+  reescribió al contrato §90 (onda↔apagado y «bars» heredado
+  migra a onda). El resto de afirmaciones §84 (estructura de
+  la capa sobre la portada) no cambian. Queda una afirmación
+  menos que las 15 originales porque el ciclo de 3 modos ya
+  no existe.
+- Regresiones: §89 **15/15**, §88 **21/21**, §87 **17/17**,
+  §86 **28/28**, §85 **21/21**, §83 **22/22**, §82 **17/17**,
+  §81 **41/41**, §80 **21/21**.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+---
+
+## 91. El «icono horrible» de los estados vacíos, domado
+
+El usuario señaló con captura el icono de «Sin búsquedas
+recientes» en Buscar: un mosaico morado sólido de 72 px con
+sombra dura, glifo blanco y un halo borroso morado detrás —
+pesaba más que el propio mensaje. Ese mosaico es `.empty-icon`,
+el componente compartido por TODOS los estados vacíos
+(bienvenida, cola, listas, duplicados, buscar…), así que el
+arreglo es global, no un parche en una pantalla.
+
+### Cambios (solo `css/styles.css`)
+
+- **`.empty-icon`**: de degradado sólido de acento
+  (`--accent-fill`) a **cristal tintado**: lavado de acento al
+  20 %/7 % sobre `--surface` con `color-mix` (con repliegue a
+  `--surface` si el WebView no lo soporta), filete de 1 px
+  teñido, glifo en `--accent` (ya no blanco sobre morado),
+  68 px y sombra neutra suave en lugar de la sombra de acento
+  `0 16px 36px`. La dirección discreta del resto de la
+  interfaz.
+- **Halo** `.empty-state::before`: opacidad 0,38 → 0,15 y
+  180 → 160 px: un respiro, no una nube morada.
+- **`.lrc-empty-icon`** (el gemelo en Letras «sin letra»):
+  mismo trato de cristal, pero el lavado lleva un susurro de
+  los colores de la portada que suena (`--cover-from/--cover-to`,
+  §75) y el glifo pasa de blanco a acento.
+- **Sin tocar**: el degradado sólido se queda donde es acción
+  — botón play, botones primarios —: ahí manda; en un estado
+  vacío, sobra.
+
+Sin cambios de HTML ni JS: el marcado (`emptyStateHtml`) y los
+glifos (el reloj de historial en Buscar) son los mismos.
+
+### Verificación
+
+- **Check §91** `/tmp/check-vista91.js`: **17/17** — mosaico
+  sin degradado sólido, cristal con `color-mix`, filete, glifo
+  en acento, halo domado, gemelo de Letras tintado con la
+  portada, play intacto, y los estados vacíos (Buscar sin
+  recientes, Duplicados vacío) pintándose igual que antes.
+  (Dos fallos iniciales fueron del propio check: hay varias
+  reglas con el mismo selector y hay que afirmar sobre la
+  cascada completa, no sobre la primera.)
+- Regresiones: §90 **19/19**, §89 **15/15**, §88 **21/21**,
+  §87 **17/17**, §86 **28/28**, §85 **21/21**, §84 **14/14**,
+  §83 **22/22**, §82 **17/17**, §81 **41/41**, §80 **21/21**.
+
+Nota honesta: jsdom no pinta CSS, así que el resultado visual
+se confirma en el dispositivo, como el resto de la UI.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## 92. Más pequeños detalles que dañaban la app (y dos que solo lo parecían)
+
+Tras §91 el usuario pidió buscar más detalles pequeños del mismo
+tipo. Auditoría dirigida: iconos usados frente a definidos
+(53 referencias, todas definidas — sin iconos invisibles),
+sombras y degradados, textos bajo la escala tipográfica, objetivos
+táctiles, cabeceras de hoja y atributos ARIA. Los degradados
+sólidos de play y botones primarios son acción deliberada y no se
+tocan; los desenfoques ambientales (resplandor de portada, fondo
+difuminado) son diseño, no defecto.
+
+### Arreglos reales
+
+- **Insignias a 10 px, fuera de la escala**: las estrellas de las
+  filas (`.row-rating`), la insignia «Inteligente» (`.smart-badge`)
+  y «Se conserva» de duplicados (`.dup-keep`) pasan a
+  `var(--fs-micro)` (11 px), la talla menor del sistema. No queda
+  ningún `font-size: 10px` en el CSS.
+- **Títulos de hoja sin elipsis**: `.sheet-header h3` podía
+  desbordar con un nombre de lista largo y empujaba el botón de
+  cerrar; ahora queda en una línea con elipsis (`nowrap` +
+  `overflow: hidden` + `text-overflow: ellipsis` + `min-width: 0`,
+  imprescindible en un hijo flex).
+- **Pestañas de Biblioteca mudas para lectores de pantalla**: el
+  contenedor ya era `role="tablist"`, pero los botones no eran
+  `role="tab"` ni anunciaban su estado. Añadidos `role="tab"` y
+  `aria-selected` inicial en `index.html`, y `setLibTab()`
+  (`js/nav.js`) sincroniza `aria-selected` con la clase `active`
+  en cada cambio.
+
+### Saneos: valores muertos que parecían botones diminutos
+
+La primera pasada de la auditoría «vio» botones de 28–30 px en la
+barra de Letras y un asa de arrastre de 28 px. La cascada completa
+demostró que el render ya era correcto: el bloque final de la
+barra impone 36 px (34 px en pantallas ≤360) y el bloque táctil
+del asa impone 40×44. Eran **valores muertos engañosos** en reglas
+intermedias — la misma trampa que sesgó el primer check de §91.
+Se alinean a 32 px para que ningún valor suelto parezca (ni
+vuelva a ser) un botón bajo el suelo táctil, y se retira la regla
+muerta `.empty-icon .ico {32px}`: la de 28 px de §91 mandaba por
+orden de cascada y la temprana solo invitaba a «corregirla».
+
+### Verificación
+
+- **Check §92** `/tmp/check-vista92.js`: **17/17** — insignias en
+  escala, elipsis, pestañas con rol y estado sincronizado vía
+  clics reales, bloque final de Letras intacto (36/32 px), asa en
+  40×44, regla muerta fuera, y las pestañas fijas de §89 en su
+  sitio. (Dos rondas de corrección fueron del propio check:
+  aserciones sobre reglas intermedias en vez de la cascada final,
+  e IDs de botones supuestos en lugar de los reales.)
+- Regresiones: §91 **17/17**, §90 **19/19**, §89 **15/15**,
+  §88 **21/21**, §87 **17/17**, §86 **28/28**, §85 **21/21**,
+  §84 **14/14**, §83 **22/22**, §82 **17/17**, §81 **41/41**,
+  §80 **21/21** (`/tmp/check-audit80.js`).
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## 93. Auditoría de código muerto: todos los cadáveres fuera
+
+El usuario pidió una auditoría de código muerto y eliminar
+«todos los cadáveres». Batería estática propia (`/tmp/audit93*.js`)
+por categorías — claves i18n, clases y variables CSS, selectores
+`#id`, iconos, IDs, funciones/métodos, locales y archivos —, con la
+regla de las §80/§92: cada candidato se verifica a mano por todas
+sus vías de uso dinámico antes de podar.
+
+### Cadáveres extirpados
+
+- **El clúster del selector de pistas** (el cadáver grande): el
+  modo «añadir a lista existente» de la hoja de crear quedó
+  inalcanzable en la §81 (las pistas se añaden desde la vista de
+  edición), pero sobrevivía entero: `openAddTracksSheet()`, el
+  campo `_addingToPlaylistId` con sus resets en tres archivos,
+  la rama «añadir» del botón Guardar, `renderPickTracks()` (se
+  seguía llamando al arrancar para pintar filas invisibles), el
+  DOM `#pickTracksSection`, las CSS `.pick-row`/`.pick-tracks-*`/
+  `.in-pl-*`/`.row-check` (su única creadora era el selector) y
+  8 claves i18n que solo ese modo usaba. La creación sigue
+  naciendo vacía y el toast «creada con pistas», inalcanzable,
+  también se fue.
+- **2 claves i18n ya muertas**: `playlist_title` y
+  `stats_never_played`. Total: 383 → **373 claves × 8 idiomas**,
+  sin huecos y con cero referencias colgadas.
+- **6 variables CSS sin un solo consumo**: `--accent-3`,
+  `--success`, `--warning`, `--gap`, `--radius-xs`, `--radius`
+  (quedan 56, todas usadas; la familia `--radius-sm/-cover/-pill`
+  sigue viva).
+- **3 métodos sin llamadores**: `findDuplicateTrack()` (la
+  deduplicación viva es el índice `_dupKey` O(1) de importar),
+  `_addTrackIdToPlaylist()` (su comentario decía «la usan el
+  flujo individual y el lote»: mentía) y el alias histórico
+  `searchPlayContextFor()`.
+- **2 variables locales muertas** en el parser ID3
+  (`js/uploader.js`): `unsync` y `frameFlags` se calculaban y
+  nadie las leía.
+- **2 archivos**: `assets/icons.svg` (el sprite vive inline en
+  `index.html`; el .svg viajaba **dentro del .xdc instalado**
+  sin que nada lo cargue) y `docs/AUDITORIA.md` (informe del
+  árbol de la 1.1.1, ya retirado; el informe vivo es este).
+
+### Sospechosos absueltos (no tocar)
+
+- **`i-volume-xmark`**: parece sin uso, pero `audio.js` lo pide
+  por nombre construido (`#i-' + name`). Vivo.
+- **29 clases CSS** que el escaneo «preciso» marcó: todas se
+  aplican vía `className`/`classList` en JS (verificadas una a
+  una). **0 IDs muertos**, 0 selectores `#id` huérfanos (los
+  «huérfanos» eran colores hex `#dc2626`…), y `.gitignore` no es
+  un cadáver, es configuración.
+- La primera versión de la batería mintió dos veces (corpus de
+  variables sin el propio CSS; extracción i18n con la estructura
+  al revés): se corrigió la batería, no la app.
+
+### Verificación
+
+- **Check §93** `/tmp/check-vista93.js`: **28/28** — los métodos
+  y el estado ya no existen en el objeto App, el selector no está
+  en el DOM, 373×8 sin referencias colgadas, iconos íntegros, y
+  los flujos vivos tras la cirugía: crear lista (nace vacía),
+  guardar cola como lista, editar lista, `_dupKey`. (Tres fallos
+  iniciales fueron del check: comentarios de documentación con
+  ejemplos `t('key')` y la cola montada con objetos en vez de
+  IDs.)
+- Re-auditoría tras la poda: 0 candidatas i18n, 0 variables,
+  0 funciones huérfanas.
+- Regresiones: §92 **17/17**, §91 **17/17**, §90 **19/19**,
+  §89 **15/15**, §88 **21/21**, §87 **17/17**, §86 **28/28**,
+  §85 **21/21**, §84 **14/14**, §83 **22/22**, §82 **17/17**,
+  §81 **41/41**, §80 **21/21**.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## 94. Informe de bugs externo sobre la 1.2.0: verificado punto a punto
+
+Llegó un «Resumen de Bugs — Aurora Music Player v1.2.0» externo. Siguiendo
+la regla de la casa, **ninguna afirmación se dio por buena**: cada punto se
+contrastó con el código de `814e383` antes de tocar nada. El informe es una
+foto anterior: cita como deuda viva cosas ya cerradas en §§92-93
+(`openAddTracksSheet`, `findDuplicateTrack`, `assets/icons.svg`, las «3
+claves i18n», `--gap`) y sus números de línea no coinciden con el árbol
+actual. Resultado del contraste: 33 correcciones reales aplicadas, 1 falso
+positivo confirmado por la especificación y los «documentados sin corregir»
+fuera de alcance (límites de plataforma). Detalle por grupos, con la clave
+del informe:
+
+- **Interacción (C1–C5):** Espacio ya no secuestra botones/enlaces/
+  `[role=button]`/`select` enfocados (solo actúa con el foco libre); Escape
+  cierra la **cima de la pila** de hojas (`_sheetStack`), no la última del
+  DOM; el parser LRC ya no crea entradas con texto en blanco ni rompe con
+  sellos múltiples; el contador de escucha tiene techo de reloj de pared
+  (ver A5) para que un `pagehide` tras horas no regale minutos fantasma
+  (C5/S3 compartían raíz).
+- **Audio (A1–A5):** un archivo corrupto provoca **un** salto, no dos
+  (candado `_decodeSkipTimer` antes de contar); la ventana del gapless
+  deja 0.35 s reales de margen; `loadTrackPaused` limpia A-B y restaura
+  las preferencias de letra (A3) y **retira el `src`** cuando la pista no
+  tiene fuente, sin arrastrar el audio anterior (A4); las bases del
+  contador de escucha se reasientan en `seekTo`/`seekToTime` (A5) y el
+  flush vive en `js/settings.js`.
+- **Eventos (E3–E5):** las teclas sobre los botones del mini-player ya no
+  abren el reproductor por accidente; un volumen guardado de 0 se restaura
+  como 0 (`>= 0`); `chkPreservePitch` tiene un solo listener `change`.
+- **Letras (Y2–Y6):** las líneas sin sello (créditos) se anclan a la
+  temporizada anterior en vez de amontonarse en t=0; los sellos se
+  escriben sin `[00:60.00]` (las centésimas redondean el total, no el
+  resto); el parser acepta `[h:mm:ss.xx]` y coma decimal; la
+  sincronización RAF se duerme a 250 ms con la pestaña oculta y se
+  despierta al volver; el arranque de la RAF es único.
+- **Reproductor/interfaz (U1, P1–P3):** cancelar el temporizador de sueño
+  ya no pausa la música (el fade comprueba su propio candado); cada
+  lienzo de portada lleva sello (`_coverToken`) que invalida las cargas
+  tardías; el buffer nunca enseña ∞ ni `NaN%`; la insignia de repetición
+  es decorativa para el lector de pantalla.
+- **Ajustes/datos (S2–S5, I1–I4):** las estadísticas se validan siempre
+  tras cargar (ya no solo al importar); el crossfade se acota a [0,12] s;
+  `text3` del tema oscuro sube a 0.58 (y el tema que lo bajaba, a la par);
+  las listas avisan si IndexedDB se queda sin cuota; se registra el tiempo
+  escuchado antes de salvar la sesión en `pagehide`; los borrados de
+  IndexedDB ya no tragan errores en silencio; y **ningún** camino de
+  persistencia guarda campos transitorios (`_lrcCache`, `_lrcCacheKey`,
+  `_thumbsHiRes`…) — conservando `_tagsChecked`, como manda §85.
+- **Biblioteca (L1–L9):** borrar una pista (confirmado o sin deshacer)
+  purga sus estadísticas y su historial; deshacer la devuelve a la cola
+  **en su posición** (y al orden original); editar una pista a mano la
+  marca `_userEdited` y el re-etiquetado ya no la pisa; el retag converge
+  (`!_tagsChecked`); `persistPlaylist` solo corre si la lista contenía la
+  pista; el historial se refresca al borrar/deshacer, usa `trackMap()` y
+  escapa su texto vacío; el toast «Procesando X archivos» sustituye la X.
+- **Cola/stats (Q1, Q2, R1, D1):** las filas de la cola resuelven pistas
+  con un solo `trackMap()`; la rama vacía desvincula la lista virtual;
+  `playNext` acota también por arriba la posición calculada; «hace X días»
+  nunca es negativo.
+- **Tema/accesibilidad (T1–T6, H1–H3):** `--radius-md: 16px` deja de ser
+  un hueco silencioso; los cinco blancos-sobre-acento usan
+  `--accent-fill`; `.empty-hint` pasa a `--text-3`; los sliders tienen
+  foco visible; los `textarea` son seleccionables; los **cuatro**
+  degradados con el rosa cableado (el informe contaba dos; el grep tras
+  la corrección halló otros dos) usan variables de acento; el indicador
+  de buffer anuncia con `role="status"`, el editor LRC tiene nombre
+  accesible y cinco lienzos puramente decorativos llevan `aria-hidden`
+  (el del visualizador ya lo tenía).
+
+**Falso positivo, no tocado:** `sendToChat({file, text})` es correcto
+según la especificación webxdc (API de GitHub, `src/spec/sendToChat.md`).
+
+**Nota de verificación:** el reinicio del entorno borró `/tmp` entero
+(arnés y checks §§80–93 incluidos). Se reconstruyó el arnés
+(jsdom 24 + fake-indexeddb 6, con tapón de canvas) y se escribió el check
+§94 desde cero; las regresiones antiguas no pudieron re-ejecutarse tal
+cual y se sustituyeron por un humo consolidado de los invariantes
+durables documentados — sin afirmar como re-ejecutados los conteos
+17/17…21/21 históricos.
+
+### Verificación
+
+- **Check §94** `/tmp/check-vista94.js`: **58/58** — runtime real para
+  C1/C2/E3 (teclado y pila de hojas con DOM adverso), C3/Y2/Y4 (parser),
+  Y3 (sellos), C5 (techo de pared), A1 (doble aviso = un salto),
+  A3/A4 (higiene de `loadTrackPaused`), S2, L1/L2/L3/L4/L5 (borrar,
+  deshacer en posición, purga, marcas), y aserciones de fuente/CSS/HTML
+  para el resto (A2/A5/U1/P1/P2/P3/E4/E5/S4/S5/I1/I2/I4/L7/Q2/R1/D1,
+  T1–T6, H1–H3), más i18n 373×8 sin colgadas y §92/§93 vivos.
+  Cuatro fallos iniciales fueron del propio check (aritmética 1:00:02,
+  `cover: null` imposible en pistas reales, el tapón de canvas del
+  arnés, y contar como listener la sincronización de UI del checkbox).
+- **Humo de regresión** `/tmp/check-regresion.js`: **20/20** —
+  invariantes §§79–93 que siguen en pie (sin `#togglePauseUnplug`,
+  `_tagsChecked` persistido, dedupe `_dupKey`, cola de IDs solo-onda,
+  `--fs-micro`, `webxdc.js` referenciado y no empaquetado, sin sistema
+  de backup de §57, sin objectURL persistidos).
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+
+## 95. Tocar la portada: pantalla completa con visualizador
+
+Petición expresa: que tocar la portada **no pause** la canción, sino que
+la ponga a pantalla completa con el visualizador, y que tocarla de nuevo
+vuelva al reproductor. La pausa queda donde siempre debió estar: en el
+botón de play (y en Espacio con el foco libre).
+
+### Cómo queda
+
+- **Nuevo modo inmersivo** `cover-fullscreen` (clase en `#viewPlayer`,
+  métodos `toggleCoverFullscreen`/`setCoverFullscreen` en
+  `js/player-ui.js`, estado `_coverFs` en `js/state.js`, no persistido:
+  es un estado de vista). Solo se oculta la interfaz que rodea a la
+  portada (barra superior, título, progreso, volumen, controles) y la
+  barra inferior de navegación; la portada crece a `min(94vw, 82dvh,
+  640px)` y el visualizador pasa del 62 px fijo a un 20 % de su altura.
+  Ni el lienzo ni la onda se mueven del DOM: cero repintados, cero
+  saltos. En modo ancho (escritorio) la portada inmersiva también
+  crece (override con la especificidad necesaria).
+- **El visualizador acompaña siempre**: aunque el ajuste guardado sea
+  «apagado», dentro del modo la onda se ve (`startVisualizer`,
+  `updateVisualizerUI` y el bucle RAF respetan `_coverFs` sin tocar la
+  preferencia; al salir, manda otra vez el ajuste). Al entrar en pausa
+  se pinta la onda en reposo al nuevo tamaño; al entrar se pide wake
+  lock, como en Letras a pantalla completa.
+- **Salidas**: tocar la portada otra vez, Escape (con prioridad para
+  las hojas abiertas: primero cierran ellas) o cambiar de vista
+  (`showView` abandona el modo; al volver al reproductor no resucita).
+- **Lo que no cambia** (verificado): deslizar sobre la portada sigue
+  cambiando de canción y su clic residual no abre el modo; arrastrar
+  en vertical sigue siendo volumen; la pulsación larga, favorito; el
+  botón de play sigue pausando. El cambio de pista dentro del modo lo
+  mantiene (la portada nueva entra ya en grande).
+- **Accesibilidad**: la portada anunciaba «Pausar/Reproducir» y ya no
+  hace eso — ahora su nombre es «Ver portada a pantalla completa» /
+  «Salir de la portada a pantalla completa» (2 claves nuevas ×8
+  idiomas, 375 en total) y `aria-pressed` refleja el modo, no la
+  reproducción. La pista visual sobre la portada deja el ▶ engañoso
+  y muestra ampliar (⤢) o salir (✕) según el estado.
+
+### Verificación
+
+- **Check §95** `/tmp/check-vista95.js`: **17/17** — tocar no pausa y
+  entra; tocar sale; `btnPlay` intacto; Enter entra; Escape respeta
+  hojas y luego sale; `showView` abandona; visualizador forzado con
+  el ajuste en «off» y restaurado al salir; deslizar = siguiente sin
+  abrir el modo; i18n 375×8 sin colgadas.
+- Regresiones: §94 **58/58** (con el conteo i18n actualizado a 375)
+  y humo consolidado **20/20**.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## 96. La insignia del modo inmersivo ya no tapa la portada
+
+Petición expresa: los iconos de entrar/salir del modo inmersivo (§95)
+interferían la visibilidad de la portada. Y era cierto por partida
+triple: la pista visual era un velo sobre **toda** la portada
+(`inset: 0` con fondo oscuro y un icono de 42 px en el centro), y en
+táctil el `:hover` se quedaba pegado tras el toque, dejando el velo
+puesto justo en el modo en que la carátula debería lucir.
+
+### Cómo queda
+
+- `.cover-play-hint` pasa de velo completo a **insignia esquinera**:
+  34 px en la esquina superior derecha (lejos del visualizador, que
+  vive al pie), fondo propio semitransparente con desenfoque, icono
+  de 16 px. La imagen queda siempre limpia; la insignia solo aparece
+  al pasar el cursor, al pulsar o dentro del modo al tocar, y sigue
+  sin interceptar toques (`pointer-events: none`), oculta al ajustar
+  volumen o mientras carga, como antes.
+- No cambia nada más: entrar/salir sigue a un toque sobre la
+  portada, con Escape o cambiando de vista, y los gestos de siempre
+  (deslizar, volumen, pulsación larga) intactos.
+
+### Verificación
+
+- **Check §96** `/tmp/check-vista96.js`: **8/8** — cero velo
+  (`inset: 0` fuera), insignia de 34 px en su esquina, icono de
+  16 px, no intercepta toques, oculta por defecto/volumen/carga, y
+  el modo entra y sale igual.
+- **Check §95 recreado** (el reinicio del entorno volvió a borrar
+  `/tmp` entero; arnés y check reescritos): **17/17**. Humo de
+  regresión §§80–95: **20/20**. El check §94 no se recreó en esta
+  ronda (cambio limitado a una regla CSS que §94 no ejercita); no
+  se afirma re-ejecutado.
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## 97. Cinco ideas de la lluvia, implementadas (3, 4, 6, 10, 17 + extra)
+
+De la lluvia de ideas de la sesión anterior, el usuario eligió por
+números: **3, 4, 6, 10, 17**, con un añadido propio («al abrir lista
+salga donde está la canción que suena») y la nota de que la **9 ya
+estaba implementada** — verificado en el código antes de tocar nada:
+tocar un verso con timestamp ya saltaba a ese instante
+(`js/lyrics.js`, «Tap en una línea con timestamp → saltar a ese
+punto (#11)»); queda cubierta por una aserción para que no
+desaparezca en silencio.
+
+- **3 · Título que respira.** En el modo inmersivo, título y
+  artista flotan sobre la parte baja de la portada
+  (`#coverFsMeta`, sobre la onda, decorativo) y se desvanecen a
+  los 3,6 s (`_pokeCoverFsMeta`). Reaparecen al entrar, al
+  cambiar de canción y con el gesto de volumen. Nunca compiten
+  con la portada: texto con sombra, sin velo (lección §96).
+- **4 · Onda con memoria.** `_visWavePoints` suavizaba con un
+  único tau de 55 ms: en cada silencio y al arrancar cada
+  canción la onda «despertaba» de cero. Ahora el ataque sigue
+  rápido (55 ms) pero la relajación es lenta (260 ms), y los
+  puntos nunca se reinician al cambiar de pista: la onda respira
+  entre frases y entre canciones.
+- **6 · Cuenta atrás del sleep sin abrir la hoja.** `#sleepStatus`
+  ya contaba dentro de la hoja de Sleep, invisible desde fuera;
+  ahora la fila «Sleep» del menú Más enseña el tiempo restante
+  (`#sleepMenuValue`, `m:ss`, o «Fin de la canción») actualizado
+  por el mismo `updateSleepStatus()` que ya corría cada segundo.
+- **10 · Cabecera de la cola.** Fila fija (`position: sticky`)
+  sobre la lista: «A continuación · N · duración» de lo que
+  queda tras la actual (1 clave nueva ×8, 376 en total). En la
+  última canción se esconde — no hay «a continuación» que contar.
+- **Extra · La lista se abre donde suena.** `openEditPlaylist`
+  ya marcaba la fila actual (`.current` + icono); ahora, solo al
+  abrir y tras la animación de la hoja, se desplaza hasta ella
+  (`scrollIntoView`, bloque centrado). Los re-pintados posteriores
+  no secuestran la posición de quien mira otra parte.
+- **17 · Portada siguiente preparada.** Al pintar la pista,
+  `_preloadNextCover()` decodifica en silencio la imagen de la
+  siguiente de la cola («todo» incluida la vuelta); `drawCover`
+  la reutiliza si es la misma fuente y pinta al momento, sin
+  pasar por el fondo gris de carga. Con gradientes generados no
+  hay nada que preparar y la llamada es inocua.
+
+### Verificación
+
+- **Check §97** `/tmp/check-vista97.js`: **19/19** — el título
+  flotante entra/cambia/se esconde; la onda sube en el acto y
+  tras 200 ms de silencio conserva >25 % del pico (y cae, no se
+  congela); la fila Sleep enseña `14:2x`, «Fin de la canción» y
+  se limpia; la cabecera dice «A continuación · 2 · 5m 0s» y se
+  esconde en la última; abrir la lista desplaza hasta `q2`; la
+  precarga deja la siguiente lista sin re-decodificar; la 9
+  sigue en su sitio; i18n 376×8 sin colgadas. (Un fallo inicial
+  fue del check: esperar `14:30` cuando el segundo ya había
+  corrido a `14:29`.)
+- Regresiones: **§95 17/17**, **§96 8/8**, humo §§80–96 **20/20**
+  (arnés y checks recreados una vez más: el entorno volvió a
+  borrar `/tmp` entero entre sesiones; el check §94 no se recreó
+  en esta ronda y no se afirma re-ejecutado).
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.
+
+## 98. Tres órdenes expresas: iconos fuera, la cola abre donde suena, resumen fuera
+
+- **Iconos del modo inmersivo, eliminados por completo.** Tras el
+  velo de §95 y la insignia esquinera de §96, el usuario decide
+  que sobre la portada no debe haber ningún icono de entrar/salir:
+  quien lo descubra, lo descubre tocando. Fuera `#coverPlayHint`
+  del HTML y las diez reglas CSS que lo pintaban (z-index y los
+  «ocultar al cargar/volumen» incluidos); quedan notas históricas
+  en su lugar. El modo sigue entrando y saliendo a un toque, con
+  Escape o cambiando de vista; el título que respira (§97-3) no
+  es un icono y se queda. Con esto §96 queda revertida por orden
+  expresa y la portada, limpia de verdad.
+- **La cola también se abre donde suena.** La §97 llevó el
+  desplazamiento a las listas; faltaba la cola del reproductor.
+  Nuevo `scrollQueueToCurrent()`: con lista corta centra la fila
+  `.current`; con lista virtual (>80) primero lleva el scroll a
+  la ventana de la fila (64 px × posición, dos de margen) y pide
+  el repintado, y al frame siguiente la centra ya creada. Se
+  llama solo al abrir la hoja (`btnQueue`, tras la animación);
+  re-pintar la cola por otros motivos no mueve la vista.
+- **El «A continuación · N · duración», eliminado por completo.**
+  La idea 10 de la §97 no ha cuajado: fuera el HTML
+  (`#queueSummary`), el bloque que lo calculaba en
+  `renderQueue`, la regla `.queue-summary` y la clave i18n
+  (376 → 375 ×8). La cabecera de la cola vuelve a ser solo el
+  contexto «Reproduciendo desde X». (El desplazamiento a la
+  canción actual, que llegó con la misma tanda, sí se queda y
+  se extiende a la cola: eran cosas distintas.)
+
+### Verificación
+
+- **Check §98** `/tmp/check-vista98.js`: **14/14** — sin
+  `#coverPlayHint` ni una sola regla `.cover-play-hint`; el modo
+  entra/sale a un toque sin iconos; sin `#queueSummary` ni
+  referencias en JS/CSS; abrir la cola desplaza hasta `q3`, y
+  con 100 pistas el scroll virtual va a los 3072 px de la fila
+  50; la onda con memoria y la cuenta atrás del sleep (§97)
+  siguen vivas; i18n 375×8 sin colgadas.
+- Humo de regresión §§80–98: **21/21** (arnés y checks recreados:
+  `/tmp` volvió a aparecer vacío al abrir la sesión; los checks
+  §95–§97 no se recrearon en esta ronda y no se afirman
+  re-ejecutados — sus supervivientes están cubiertos en §98).
+
+La 1.2.0 sigue en pulido, sin etiquetar ni publicar.

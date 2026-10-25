@@ -29,7 +29,8 @@ Object.assign(App, {
       this.audio.volume = this.volume;
 
       this.buildEqualizer();
-      this.renderPickTracks();
+      /* §93: fuera la llamada a renderPickTracks() — el selector
+       * de pistas que pintaba ya no existe (modo «añadir» §81→§93). */
 
       // Cargar tema guardado antes que nada
       this.loadTheme();
@@ -93,6 +94,9 @@ Object.assign(App, {
         // reaparezca al volver a abrirla.
         try { if (this._pendingTrackDelete) this._commitPendingTrackDelete(); } catch (err) {}
         try { if (this._pendingPlaylistDelete) this._commitPendingPlaylistDelete(); } catch (err) {}
+        // §94: vaciar los segundos escuchados aún no guardados
+        // (el flush es cada 10 s: cerrar perdía el último tramo).
+        try { if (this._currentPlayStart && typeof this._flushListening === 'function') this._flushListening(); } catch (err) {}
         try { this.saveSession(); } catch (err) {}
         try { this.releaseAllUrls(); } catch (err) {}
       };
@@ -129,13 +133,14 @@ Object.assign(App, {
 
       document.querySelectorAll('.sheet').forEach(s => s.setAttribute('aria-hidden', 'true'));
 
-      // Releer tags de pistas antiguas (sin portada / artista / letras)
+      // §85: releer SOLO las pistas a las que les falta algo. La
+      // condición anterior incluía «sin letra»: como casi ninguna
+      // canción trae letra, el retag corría en cada arranque y
+      // releía la biblioteca entera para no cambiar nada.
       const needsRetag = this.tracks.some(t =>
-        (t._file || t.fileBlob) &&
-        (!t.coverIsImage || this.isPlaceholderArtist(t.artist) || !t.lrc)
-      );
+        typeof this._trackNeedsRetag === 'function' && this._trackNeedsRetag(t));
       if (needsRetag) {
-        this.retagExistingTracks({ silent: true }).catch(() => {});
+        this.retagExistingTracks({ silent: true, onlyIncomplete: true }).catch(() => {});
       }
 
       if (typeof this.maybeShowBackgroundNotice === 'function') this.maybeShowBackgroundNotice();
@@ -187,13 +192,15 @@ Object.assign(App, {
         // Tracks
         if (!window.AuroraStorage) throw new Error('IndexedDB no disponible');
         const stored = await window.AuroraStorage.getAllTracks();
-        // Reconstruir objectURLs (no se pueden guardar en IDB)
+        // §85: nada de crear un objectURL por pista al arrancar
+        // (miles de URLs vivas antes de escuchar nada): getTrackUrl
+        // lo crea perezosamente al reproducir/compartir y lo cachea.
         this.tracks = stored.map(t => {
-          if (t._file) {
-            t.src = URL.createObjectURL(t._file);
-          } else if (t.fileBlob) {
-            t.src = URL.createObjectURL(t.fileBlob);
-          }
+          // §87: los registros guardados antes de esta corrección
+          // pueden traer el objectURL de la sesión en que se
+          // guardaron: está muerto, fuera (getTrackUrl acuñará uno
+          // nuevo desde el blob al reproducir).
+          if (t && typeof t.src === 'string' && t.src.indexOf('blob:') === 0) delete t.src;
           if (!t.addedAt) t.addedAt = 0;
           return t;
         });
@@ -263,6 +270,15 @@ Object.assign(App, {
       let removed = false;
       try { removed = localStorage.getItem('aurora_mimusica_removed') === '1'; } catch (e) {}
       if (removed) return;
+      // §87: si ya hay listas del usuario, no sembrar en frío al
+      // arrancar: las «sueltas» suelen serlo por haber vaciado o
+      // borrado una lista, y ver nacer una lista nueva al abrir la
+      // app se vivía como «la app creó una lista sola al quitar
+      // una canción». Sin ninguna otra lista (biblioteca nueva o
+      // migrada), todo es suelto y la siembra es la esperada; con
+      // listas, «Mi Música» nace en contexto, al importar sin
+      // lista destino (_ensureMiMusica), no por sorpresa.
+      if (this.playlists.some(p => p && p.id !== ID)) return;
       // Canciones «sueltas»: en la biblioteca pero en ninguna lista
       // del usuario. Las de otras listas NO entran (§46).
       const enListas = new Set();
@@ -327,6 +343,20 @@ Object.assign(App, {
       try {
         // Guardamos el File en el track para poder reconstruir el objectURL después
         const toSave = Object.assign({}, track);
+        // §87: nunca persistir el objectURL: es de sesión y al
+        // reabrir la app sería una URL muerta (fallo de «no se
+        // puede reproducir» en cadena tras §85).
+        delete toSave.src;
+        // §94: tampoco los campos de trabajo de la sesión —
+        // _lrcCache guarda la letra YA parseada (la letra quedaba
+        // dos veces en IndexedDB) y las banderas de miniatura,
+        // al volver marcadas, bloqueaban regenerarlas. Ojo:
+        // _tagsChecked (§85) SÍ persiste a propósito.
+        delete toSave._lrcCache;
+        delete toSave._lrcCacheKey;
+        delete toSave._thumbsHiRes;
+        delete toSave._thumbing;
+        delete toSave._thumbsDirty;
         if (track._file) {
           toSave.fileBlob = track._file;  // IndexedDB guarda Blobs directamente
           delete toSave._file;
@@ -349,7 +379,9 @@ Object.assign(App, {
     },
 
     async deleteTrackFromStorage(trackId) {
-      try { await window.AuroraStorage.deleteTrack(trackId); } catch (e) {}
+      // §94: el fallo no se traga en silencio (borrado fantasma).
+      try { await window.AuroraStorage.deleteTrack(trackId); }
+      catch (e) { console.warn('[Aurora] No se pudo borrar la pista de IndexedDB:', e); }
     },
 
     async persistPlaylist(pl) {
@@ -361,16 +393,28 @@ Object.assign(App, {
           trackIds: Array.isArray(pl.trackIds) ? pl.trackIds.slice() : [],
           cover: pl.cover || null,
           coverArt: pl.coverArt || pl._coverCache || null,
-          coverArtHash: pl.coverArtHash || pl._coverCacheHash || null
+          coverArtHash: pl.coverArtHash || pl._coverCacheHash || null,
+          // §81: sin estos dos, la ordenación elegida y las listas
+          // inteligentes se perdían al cerrar la app.
+          sort: pl.sort || null,
+          smart: pl.smart || null
         };
         await window.AuroraStorage.putPlaylist(toSave);
       } catch (e) {
         console.warn('[Aurora] No se pudo guardar playlist:', e);
+        // §94: mismo aviso de cuota que persistTrack — antes la
+        // lista se perdía en silencio al cerrar la app.
+        if (this._isQuotaError(e)) {
+          this.toast(this.t('toast_storage_full'));
+          if (typeof this.offerFreeStorage === 'function') this.offerFreeStorage();
+        }
       }
     },
 
     async deletePlaylistFromStorage(id) {
-      try { await window.AuroraStorage.deletePlaylist(id); } catch (e) {}
+      // §94: ídem deleteTrackFromStorage — con diagnóstico.
+      try { await window.AuroraStorage.deletePlaylist(id); }
+      catch (e) { console.warn('[Aurora] No se pudo borrar la lista de IndexedDB:', e); }
     },
 
     /* ===== Compat: loadPlaylists/savePlaylists ahora usan IndexedDB ===== */

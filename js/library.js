@@ -67,7 +67,8 @@ Object.assign(App, {
       // Dos importaciones simultáneas (arrastrar + selector, o doble toque)
       // mutaban `tracks` a la vez y duplicaban pistas. Una sola a la vez.
       if (this._importing) {
-        this.toast(this.t('toast_processing_files'));
+        // §94: la clave lleva una X por sustituir (nº de archivos).
+        this.toast(this.t('toast_processing_files').replace('X', String(fileList.length)));
         return;
       }
       this._importing = true;
@@ -338,9 +339,8 @@ Object.assign(App, {
       } else if (skelList) skelList.remove();
     },
 
-    findDuplicateTrack(fileName, fileSize) {
-      return this.tracks.find(ex => ex.fileName === fileName && ex.fileSize === fileSize) || null;
-    },
+    /* §93: findDuplicateTrack() extirpado — sin llamadores; la
+     * deduplicación al importar usa su propio índice (§85). */
 
     /* #15 #16 Obtener objectURL con cache para reutilizar */
     getTrackUrl(track) {
@@ -348,13 +348,27 @@ Object.assign(App, {
       if (this._urlCache.has(track.id)) {
         return this._urlCache.get(track.id);
       }
-      let url = track.src;
-      if (!url && track._file) {
+      // §87: un objectURL vive solo en su sesión. Los registros de
+      // IndexedDB traían guardado el src de la sesión en que se
+      // importaron/editaron, y al reabrir es una URL muerta: el
+      // <audio> fallaba y el reproductor saltaba de canción en
+      // canción avisando de que no se podía reproducir. Antes de
+      // §85 el arranque recreaba todas las URLs y lo enmascaraba;
+      // ahora la URL se acuña aquí, siempre desde el blob. Solo se
+      // respeta un src que NO sea blob: (p. ej. fuente http(s)).
+      if (track.src && typeof track.src === 'string' && track.src.startsWith('blob:')) {
+        try { URL.revokeObjectURL(track.src); } catch (e) {}
+        track.src = null; // muerta: se reconstruye desde el blob
+      }
+      let url = null;
+      if (track._file) {
         url = URL.createObjectURL(track._file);
         track.src = url;
-      } else if (!url && track.fileBlob) {
+      } else if (track.fileBlob) {
         url = URL.createObjectURL(track.fileBlob);
         track.src = url;
+      } else if (track.src) {
+        url = track.src;
       }
       if (url) this._urlCache.set(track.id, url);
       return url;
@@ -390,6 +404,12 @@ Object.assign(App, {
       if (this._sleepEndOfTrack || this._sleepFading) return false;
       if (this.crossfadeEnabled && this.crossfadeDuration > 0) return false;
       if (this.repeat === 'one') return false;
+      // §83: el avance gapless también pasa por la sincronización
+      // con la lista (antes solo la hacía next()): si no, una baja
+      // de la lista se colaba cuando el cambio era sin pausa.
+      if (!this.shuffle && typeof this._syncQueueWithPlaylist === 'function') {
+        this._syncQueueWithPlaylist();
+      }
       const nextIdx = this._nextQueueIndex(true);
       if (nextIdx == null) return false;
       const nextTrackId = this.queue[nextIdx];
@@ -400,6 +420,9 @@ Object.assign(App, {
       this._gaplessConsumed = true;
       this._ignoreEndedUntil = Date.now() + 500;
       this._gaplessArmed = false;
+      // La saliente llegó a su fin (~80 ms antes del corte): su
+      // escucha cuenta como completa ANTES de cambiar (§67).
+      if (typeof this.trackPlayCompleted === 'function') this.trackPlayCompleted();
       this.currentTrack = nextTrack;
       this.currentTrackIdx = this.tracks.findIndex(t => t.id === nextTrackId);
       this.queueIdx = nextIdx;
@@ -413,6 +436,11 @@ Object.assign(App, {
       const p = this.audio.play();
       if (p && p.catch) p.catch(() => {});
       this.isPlaying = true;
+      // La entrante no pasa por trackPlayStarted() (play() directo):
+      // estrena pase de conteo y base de segundos escuchados (§67).
+      this._playCounted = false;
+      this._currentPlayStart = Date.now();
+      this._currentPlayBaseTime = 0;
       this.addToHistory(nextTrack.id);
       this.renderCurrentTrack();
       this.renderLyrics();
@@ -514,15 +542,18 @@ Object.assign(App, {
       if (!cont) return;
       const history = this._playHistory.slice().reverse(); // más reciente primero
       if (history.length === 0) {
-        cont.innerHTML = '<p class="stats-empty">' + this.t('history_empty') + '</p>';
+        // §94: escapado como el resto de textos de la vista.
+        cont.innerHTML = '<p class="stats-empty">' + this.esc(this.t('history_empty')) + '</p>';
         return;
       }
+      // §94: índice por id (antes: find() por fila → O(n·m)).
+      const byId = typeof this.trackMap === 'function' ? this.trackMap() : null;
       let html = '<ul class="track-list">';
       history.forEach(id => {
-        const t = this.tracks.find(x => x.id === id);
+        const t = byId ? byId.get(id) : this.tracks.find(x => x.id === id);
         if (!t) return;
         html += `<li class="track-row" data-track="${t.id}">
-          <div class="row-cover"><canvas width="44" height="44"></canvas></div>
+          <div class="row-cover"><canvas width="144" height="144"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)}</div>
@@ -572,44 +603,93 @@ Object.assign(App, {
       return set.has(a);
     },
 
-    /* Relee tags de pistas ya guardadas (portada, artista, letras). */
+    /* §85: ¿le falta algo a esta pista que solo se sepa releyendo
+     * su archivo? La marca _tagsChecked la pone el importador (y
+     * este propio retag) cuando la pista ya pasó por el lector
+     * actual, género y año incluidos. Sin marca (bibliotecas
+     * anteriores) hay que leerla UNA vez; con marca, releerla en
+     * cada arranque era el cuello de botella: miles de lecturas
+     * completas + sondeos + reescrituras de IndexedDB para no
+     * cambiar nada. Ojo: que no tenga letra NO es motivo (la
+     * mayoría de canciones no traen). §94: tampoco lo son la
+     * falta de portada ni el artista placeholder — el archivo no
+     * los trae y la condición nunca convergía. */
+    _trackNeedsRetag(t) {
+      if (!t || !(t._file || t.fileBlob)) return false;
+      // §94: la marca es la única condición. Antes, una pista sin
+      // portada en el archivo (o con el artista «desconocido» de
+      // verdad) «necesitaba» retag en CADA arranque para siempre:
+      // la relectura no puede inventar lo que el archivo no trae.
+      return !t._tagsChecked;
+    },
+
+    /* Relee tags de pistas ya guardadas (portada, artista, letras).
+     * opts.onlyIncomplete (arranque): solo las que lo necesitan
+     * (§85); el menú «Releer etiquetas» sigue siendo completo.
+     * Con tres trabajadores en paralelo, como la importación. */
     async retagExistingTracks(opts) {
       const silent = !!(opts && opts.silent);
+      const onlyIncomplete = !!(opts && opts.onlyIncomplete);
       const U = window.AuroraUploader;
       if (!U || typeof U.processOne !== 'function') return 0;
+      const targets = this.tracks.filter(t =>
+        (t._file || t.fileBlob) && (!onlyIncomplete || this._trackNeedsRetag(t)));
       let updated = 0;
-      for (const t of this.tracks) {
-        const file = t._file || t.fileBlob;
-        if (!file) continue;
-        try {
-          const fresh = await U.processOne(file, null);
-          let changed = false;
-          if (fresh.title && fresh.title !== t.title) { t.title = fresh.title; changed = true; }
-          if (fresh.artist && !this.isPlaceholderArtist(fresh.artist)) {
-            if (t.artist !== fresh.artist) { t.artist = fresh.artist; changed = true; }
-          }
-          if (fresh.album && !this.isPlaceholderAlbum(fresh.album)) {
-            if (t.album !== fresh.album) { t.album = fresh.album; changed = true; }
-          }
-          if (fresh.coverIsImage && fresh.cover) {
-            t.cover = fresh.cover;
-            t.coverIsImage = true;
-            changed = true;
-          }
-          if (fresh.lrc && (!t.lrc || (Array.isArray(t.lrc) && !t.lrc.length))) {
-            t.lrc = fresh.lrc;
-            t._lrcCache = null;
-            changed = true;
-          }
-          if (fresh.src && fresh.src.startsWith('blob:')) {
-            try { URL.revokeObjectURL(fresh.src); } catch (e) {}
-          }
-          if (changed) {
-            updated++;
-            await this.persistTrack(t);
-          }
-        } catch (e) {}
-      }
+      let idx = 0;
+      const worker = async () => {
+        while (idx < targets.length) {
+          const t = targets[idx++];
+          const file = t._file || t.fileBlob;
+          try {
+            const fresh = await U.processOne(file, null);
+            let changed = false;
+            // §94: el texto que el usuario editó a mano (la hoja
+            // de edición marca _userEdited) manda sobre el
+            // archivo: releer etiquetas no debe deshacer su
+            // corrección en el siguiente arranque.
+            const userText = !!t._userEdited;
+            if (!userText && fresh.title && fresh.title !== t.title) { t.title = fresh.title; changed = true; }
+            if (!userText && fresh.artist && !this.isPlaceholderArtist(fresh.artist)) {
+              if (t.artist !== fresh.artist) { t.artist = fresh.artist; changed = true; }
+            }
+            if (!userText && fresh.album && !this.isPlaceholderAlbum(fresh.album)) {
+              if (t.album !== fresh.album) { t.album = fresh.album; changed = true; }
+            }
+            // La portada solo se toca si es otra de verdad: antes
+            // se reemplazaba siempre y cada arranque reescribía
+            // cada registro de IndexedDB con su blob (§85).
+            if (fresh.coverIsImage && fresh.cover && fresh.cover !== t.cover) {
+              t.cover = fresh.cover;
+              t.coverIsImage = true;
+              changed = true;
+            }
+            // §81: género y año también se recuperan al re-etiquetar:
+            // las bibliotecas anteriores no los guardaban y el
+            // catálogo por géneros nacería vacío para ellas.
+            if (fresh.genre && fresh.genre !== t.genre) { t.genre = fresh.genre; changed = true; }
+            if (fresh.year && fresh.year !== t.year) { t.year = fresh.year; changed = true; }
+            if (fresh.lrc && (!t.lrc || (Array.isArray(t.lrc) && !t.lrc.length))) {
+              t.lrc = fresh.lrc;
+              t._lrcCache = null;
+              changed = true;
+            }
+            if (fresh.src && fresh.src.startsWith('blob:')) {
+              try { URL.revokeObjectURL(fresh.src); } catch (e) {}
+            }
+            // Marcar revisada y guardar la marca aunque nada más
+            // cambie: es lo que hace que el próximo arranque la salte.
+            const hadFlag = !!t._tagsChecked;
+            t._tagsChecked = true;
+            if (changed) updated++;
+            if (changed || !hadFlag) {
+              try { await this.persistTrack(t); } catch (e) {}
+            }
+          } catch (e) {}
+        }
+      };
+      const workers = [];
+      for (let i = 0; i < Math.min(3, targets.length); i++) workers.push(worker());
+      await Promise.all(workers);
       if (updated) {
         this.renderPlaylists();
         this.renderQueue();
@@ -645,9 +725,11 @@ Object.assign(App, {
     },
 
     /* Utilidad para exportar archivos: usa webxdc.sendToChat en Delta
-     * Chat o descarga directa en navegador. Devuelve true solo si el
-     * archivo salió de verdad: los llamantes enseñan su toast según
-     * este resultado. */
+     * Chat o descarga directa en navegador. Devuelve 'chat' si salió
+     * por sendToChat, 'download' si fue descarga local y false si
+     * falló: los llamantes enseñan su toast según este resultado
+     * (§70: antes ambos éxitos devolvían true y «Compartir» decía
+     * «Enviado a Delta Chat» también cuando solo se descargaba). */
     async exportFile({ name, content, mimeType = 'application/json', caption = '' }) {
       if (window.webxdc && typeof window.webxdc.sendToChat === 'function') {
         /* La forma que Delta Chat acepta hoy es { name, blob }. El
@@ -660,7 +742,7 @@ Object.assign(App, {
             file: { name, blob },
             text: caption || name
           });
-          return true;
+          return 'chat';
         } catch (err) {
           console.warn('[WebXDC] sendToChat no completado:', err);
           // La spec: ante un error, la promesa se rechaza. Devolvemos
@@ -679,7 +761,15 @@ Object.assign(App, {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      return true;
+      return 'download';
+    },
+
+    /* Toast honesto tras exportFile: enviado al chat, descargado o
+     * error, según el tri-estado (§70 [2]). */
+    toastExportResult(res) {
+      if (res === 'chat') this.toast(this.t('toast_shared_chat'));
+      else if (res === 'download') this.toast(this.t('toast_downloaded'));
+      else this.toast(this.t('toast_share_error'), 'danger');
     },
 
     /* Compartir pista (audio o metadatos) en Delta Chat o descargar en navegador */
@@ -707,11 +797,15 @@ Object.assign(App, {
           } catch (e) {}
         }
 
-        if (!blob && t.src && t.src.startsWith('blob:')) {
-          try {
-            const res = await fetch(t.src);
-            blob = await res.blob();
-          } catch (e) {}
+        if (!blob) {
+          // §85: t.src ya no nace al arrancar; se crea bajo demanda.
+          const lazyUrl = typeof this.getTrackUrl === 'function' ? this.getTrackUrl(t) : t.src;
+          if (lazyUrl && lazyUrl.startsWith('blob:')) {
+            try {
+              const res = await fetch(lazyUrl);
+              blob = await res.blob();
+            } catch (e) {}
+          }
         }
 
         const safeTitle = (t.title || 'cancion').replace(/[\\/:*?"<>|]/g, '_');
@@ -730,7 +824,7 @@ Object.assign(App, {
             mimeType: blob.type || 'audio/mpeg',
             caption
           });
-          this.toast(ok ? this.t('toast_shared_chat') : this.t('toast_share_error'), ok ? undefined : 'danger');
+          this.toastExportResult(ok);
         } else {
           // Si no hay archivo de audio accesible, enviar metadatos y letra
           const txt = `${caption}\n` +
@@ -743,7 +837,7 @@ Object.assign(App, {
             mimeType: 'text/plain;charset=utf-8',
             caption
           });
-          this.toast(ok ? this.t('toast_shared_chat') : this.t('toast_share_error'), ok ? undefined : 'danger');
+          this.toastExportResult(ok);
         }
       } catch (err) {
         console.error('[Aurora] error shareTrack:', err);
@@ -774,6 +868,17 @@ Object.assign(App, {
         const promises = [];
         for (const track of tracks) {
           const toSave = Object.assign({}, track);
+          // §87: el objectURL es de sesión; si se persiste, al
+          // reabrir es una URL muerta y el reproductor salta de
+          // canción en canción sin poder reproducir ninguna.
+          delete toSave.src;
+          // §94: campos de trabajo de sesión fuera (ver
+          // persistTrack): _lrcCache duplicaba la letra guardada.
+          delete toSave._lrcCache;
+          delete toSave._lrcCacheKey;
+          delete toSave._thumbsHiRes;
+          delete toSave._thumbing;
+          delete toSave._thumbsDirty;
           if (track._file) {
             toSave.fileBlob = track._file;
             delete toSave._file;
@@ -839,6 +944,10 @@ Object.assign(App, {
           cachedUrl,
           favorite: this.favorites.has(trackId),
           playlistIds: this.playlists.filter(pl => pl.trackIds.indexOf(trackId) >= 0).map(pl => pl.id),
+          // §94: posición en la cola (y en la original si hay
+          // aleatorio) para que «Deshacer» la devuelva también ahí.
+          queuePos: this.queue ? this.queue.indexOf(trackId) : -1,
+          origPos: Array.isArray(this._originalQueue) ? this._originalQueue.indexOf(trackId) : -1,
           timer: null
         };
       } else {
@@ -851,6 +960,7 @@ Object.assign(App, {
           try { URL.revokeObjectURL(t.src); } catch (e) {}
         }
         this.deleteTrackFromStorage(trackId);
+        this._purgeTrackTraces(trackId); // §94: borrado sin deshacer
       }
       // Limpiar también la cache de ganancia normalizada (#6)
       this._trackGainCache.delete(trackId);
@@ -866,14 +976,16 @@ Object.assign(App, {
         else if (qIdx === this.queueIdx) this.queueIdx = Math.min(this.queueIdx, this.queue.length - 1);
       }
       if (typeof this._removeFromOriginalQueue === 'function') this._removeFromOriginalQueue(trackId);
-      // Quitar de playlists
+      // Quitar de playlists. §94: persistPlaylist va DENTRO del
+      // if — antes se guardaban en IndexedDB todas las listas de
+      // la app por cada pista borrada, contuviera o no la pista.
       this.playlists.forEach(pl => {
         const i = pl.trackIds.indexOf(trackId);
         if (i >= 0) {
           pl.trackIds.splice(i, 1);
           if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
+          this.persistPlaylist(pl);
         }
-        this.persistPlaylist(pl);
       });
       // Quitar de favoritos
       this.favorites.delete(trackId);
@@ -888,6 +1000,8 @@ Object.assign(App, {
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();
+      // §94: el historial, si está a la vista, también se entera.
+      if (typeof this.renderHistory === 'function') this.renderHistory();
       if (typeof this.renderHome === 'function') this.renderHome();
       if (typeof this.updateChrome === 'function') this.updateChrome();
       if (canUndo) {
@@ -900,6 +1014,24 @@ Object.assign(App, {
         });
       } else {
         this.toast(this.t('toast_track_deleted'), 'danger');
+      }
+    },
+
+    /* §94: al confirmar un borrado se purgan también sus
+     * huellas: contadores de estadísticas e historial quedaban
+     * huérfanos para siempre (y «las más escuchadas» sumaban
+     * fantasmas). Con «Deshacer» aún posible NO se toca nada. */
+    _purgeTrackTraces(trackId) {
+      if (this.stats) {
+        let dirty = false;
+        if (this.stats.plays && trackId in this.stats.plays) { delete this.stats.plays[trackId]; dirty = true; }
+        if (this.stats.skips && trackId in this.stats.skips) { delete this.stats.skips[trackId]; dirty = true; }
+        if (dirty && typeof this.saveStats === 'function') this.saveStats();
+      }
+      if (Array.isArray(this._playHistory) && this._playHistory.indexOf(trackId) >= 0) {
+        this._playHistory = this._playHistory.filter(id => id !== trackId);
+        try { window.AuroraStorage.setSetting('history', this._playHistory); } catch (e) {}
+        if (typeof this.renderHistory === 'function') this.renderHistory();
       }
     },
 
@@ -920,6 +1052,7 @@ Object.assign(App, {
       } catch (e) {}
       this._urlCache.delete(p.track.id);
       this.deleteTrackFromStorage(p.track.id);
+      this._purgeTrackTraces(p.track.id); // §94
     },
 
     /* Deshace el borrado: devuelve la pista a la biblioteca, a sus listas
@@ -948,10 +1081,22 @@ Object.assign(App, {
         this.favorites.add(t.id);
         this.saveFavorites();
       }
+      // §94: …y a la cola, en su posición: antes el «Deshacer»
+      // devolvía la canción a la biblioteca y a sus listas,
+      // pero la cola la perdía para siempre.
+      if (p.queuePos >= 0 && Array.isArray(this.queue) && this.queue.indexOf(t.id) < 0) {
+        const atQ = Math.min(p.queuePos, this.queue.length);
+        this.queue.splice(atQ, 0, t.id);
+        if (atQ <= this.queueIdx) this.queueIdx++;
+      }
+      if (p.origPos >= 0 && Array.isArray(this._originalQueue) && this._originalQueue.indexOf(t.id) < 0) {
+        this._originalQueue.splice(Math.min(p.origPos, this._originalQueue.length), 0, t.id);
+      }
       if (this.currentTrack && this.currentTrack.id === t.id) this.updateFavoriteUI();
       this.renderPlaylists();
       this.renderQueue();
       this.renderFavorites();
+      if (typeof this.renderHistory === 'function') this.renderHistory(); // §94
       if (typeof this.renderHome === 'function') this.renderHome();
       if (typeof this.updateChrome === 'function') this.updateChrome();
       this.toast(this.t('toast_restored'));
@@ -1094,4 +1239,144 @@ Object.assign(App, {
           .forEach(sel => { const e = v.querySelector(sel); if (e) e.style.display = ''; });
       }
     },
+    /* ============================================================
+     *  §81/§88: canciones duplicadas (mismo título y artista)
+     *  La importación ya omite el mismo archivo dos veces; lo que
+     *  aquí se busca es la misma canción llegada por caminos
+     *  distintos (otro archivo, otra copia). Qué copia se conserva
+     *  lo elige el usuario en la hoja (§88): por defecto se propone
+     *  la más antigua (la «original»: es la que suele tener
+     *  estrellas, listas y reproducciones), pero puede marcarse
+     *  cualquier otra como «la que se conserva» y borrar el resto
+     *  una a una o todas de una vez.
+     * ============================================================ */
+    findDuplicateGroups() {
+      const norm = (v) => (typeof this.cleanSearchStr === 'function')
+        ? this.cleanSearchStr(v || '')
+        : String(v || '').trim().toLowerCase();
+      const map = new Map();
+      this.tracks.forEach(t => {
+        const key = norm(t.title) + '\u0000' + norm(t.artist);
+        if (!key.trim()) return;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key).push(t);
+      });
+      const groups = [];
+      map.forEach((list, key) => {
+        if (list.length < 2) return;
+        const sorted = list.slice().sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
+        // §88: «keep» es solo el valor por defecto (la más antigua);
+        // la copia que se conserva la elige el usuario en la hoja.
+        groups.push({ key, keep: sorted[0], dups: sorted.slice(1) });
+      });
+      return groups.sort((a, b) => String(a.keep.title || '').localeCompare(String(b.keep.title || '')));
+    },
+
+    renderDuplicates() {
+      const cont = document.getElementById('duplicatesContent');
+      if (!cont) return;
+      const groups = this.findDuplicateGroups();
+      cont.innerHTML = '';
+      if (!groups.length) {
+        const div = document.createElement('div');
+        div.className = 'empty-state compact';
+        div.innerHTML = this.emptyStateHtml({ icon: 'check', title: this.t('duplicates_none') });
+        cont.appendChild(div);
+        return;
+      }
+      // §88: qué copia se conserva lo elige el usuario, no la
+      // antigüedad. La elección vive por grupo (clave título+artista)
+      // y sobrevive a los repintados de la hoja; si la elegida ya no
+      // está en el grupo, se vuelve al valor por defecto (la más
+      // antigua, g.keep). Antes la «original» era intocable y solo
+      // se podían borrar las demás: imposible quedarse con una
+      // copia mejor (p. ej. un FLAC en vez del MP3 viejo).
+      if (!(this._dupKeepSel instanceof Map)) this._dupKeepSel = new Map();
+      const sel = this._dupKeepSel;
+      const refresh = () => {
+        this.renderDuplicates();
+        if (typeof this.renderLibrarySections === 'function') this.renderLibrarySections();
+      };
+      groups.forEach(g => {
+        const all = [g.keep].concat(g.dups);
+        const chosenId = sel.get(g.key);
+        const keeper = all.find(t => t.id === chosenId) || g.keep;
+        const others = all.filter(t => t.id !== keeper.id);
+        const box = document.createElement('div');
+        box.className = 'dup-group';
+        const title = document.createElement('p');
+        title.className = 'dup-group-title';
+        title.textContent = keeper.title + ' · ' + keeper.artist;
+        box.appendChild(title);
+        const row = (t, isKeep) => {
+          const div = document.createElement('div');
+          div.className = 'dup-row' + (isKeep ? ' is-keep' : '');
+          div.dataset.trackId = t.id;
+          // Nombre + duración + tamaño: lo que se necesita para
+          // decidir qué copia vale más (calidad ≈ tamaño).
+          div.innerHTML = '<div class="row-cover"><canvas width="144" height="144"></canvas></div>' +
+            '<div class="row-text"><div class="row-title">' + this.esc(t.title) + '</div>' +
+            '<div class="row-sub">' + this.esc(t.fileName || '') +
+            (t.duration ? ' · ' + this.fmtTime(t.duration) : '') +
+            (t.fileSize && typeof this.fmtBytes === 'function' ? ' · ' + this.fmtBytes(t.fileSize) : '') +
+            '</div></div>' +
+            (isKeep ? '<span class="dup-keep">' + this.esc(this.t('duplicates_keep')) + '</span>' : '');
+          if (!isKeep) {
+            // «Conservar esta»: la insignia (y la protección) se
+            // mueve a esta copia; la anterior pasa a ser borrable.
+            const keepBtn = document.createElement('button');
+            keepBtn.type = 'button';
+            keepBtn.className = 'dup-keep-btn';
+            keepBtn.textContent = this.t('duplicates_keep_this');
+            keepBtn.addEventListener('click', () => {
+              sel.set(g.key, t.id);
+              this.renderDuplicates();
+            });
+            div.appendChild(keepBtn);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'row-action';
+            btn.setAttribute('aria-label', this.t('confirm_delete'));
+            btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>';
+            btn.addEventListener('click', async () => {
+              await this.deleteTrack(t.id);
+              refresh();
+            });
+            div.appendChild(btn);
+          }
+          const cv = div.querySelector('canvas');
+          if (cv) this.drawRowCover(cv, t);
+          return div;
+        };
+        box.appendChild(row(keeper, true));
+        others.forEach(t => box.appendChild(row(t, false)));
+        // Borrado del grupo de una vez: se conserva la elegida y
+        // caen las demás. Con confirmación y sin «Deshacer»
+        // individual (es un lote deliberado, como «borrar todo»).
+        if (others.length) {
+          const delBtn = document.createElement('button');
+          delBtn.type = 'button';
+          delBtn.className = 'dup-del-others';
+          delBtn.textContent = this.t('duplicates_delete_others') + ' (' + others.length + ')';
+          delBtn.addEventListener('click', async () => {
+            const ok = await this.showConfirm({
+              message: this.t('duplicates_confirm').replace('X', String(others.length)),
+              okLabel: this.t('confirm_delete'),
+              danger: true
+            });
+            if (!ok) return;
+            for (const t of others) await this.deleteTrack(t.id, { undo: false });
+            refresh();
+          });
+          box.appendChild(delBtn);
+        }
+        cont.appendChild(box);
+      });
+    },
+
+    openDuplicates() {
+      this.renderDuplicates();
+      this.openSheet('sheetDuplicates');
+    },
+
 });

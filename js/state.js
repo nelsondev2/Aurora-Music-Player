@@ -40,8 +40,11 @@
     preservesPitch: true,
 
     /* Visualizador de frecuencias y repetición A-B */
-    visualizerMode: 'bars', // 'bars' | 'wave' | 'off'
+    visualizerMode: 'wave', // §90: solo onda — 'wave' | 'off'
     _visRafId: null,
+    /* §95: portada a pantalla completa (modo inmersivo al tocarla).
+     * No se persiste: es un estado de vista, no una preferencia. */
+    _coverFs: false,
     abRepeat: { active: false, a: null, b: null },
 
     /* Selección múltiple / lote */
@@ -67,6 +70,7 @@
     _trackGainCache: new Map(), // trackId → gain normalizado
     _playHistory: [],         // #11 historial de reproducción
     _originalQueue: null,     // cola sin barajar (para deshacer shuffle)
+    _plSyncIds: null,         // §82: ids de la lista al construir la cola (base de sincronización)
     _normGain: 1,
     _decodeSkipCount: 0,
 
@@ -85,6 +89,7 @@
     /* Estadísticas de reproducción */
     stats: {
       plays: {},        // {trackId: count}
+      skips: {},        // {trackId: count} — §81: saltos a mitad de canción
       totalSeconds: 0,
       lastPlayed: null,  // ISO string
       sessionStart: Date.now()
@@ -92,6 +97,8 @@
     _statsFlushTimer: null,
     _currentPlayStart: null,
     _currentPlayBaseTime: 0,
+    _playCounted: false,   // §67: la escucha en curso ya sumó (o no)
+    _skipCounted: false,   // §81: el salto de este pase ya contó (o no)
 
     /* Crossfade opt-in (0 / 3 / 6 / 12 s). 0 = off; no retrasa el next manual. */
     crossfadeEnabled: false,
@@ -106,16 +113,9 @@
 
     /* Edición de playlist:
      *   _editingPlaylistId = ID de playlist que se está editando (en sheetEditPlaylist)
-     *   _addingToPlaylistId = ID de playlist a la que se van a añadir pistas (modo "add" en sheetCreatePlaylist)
-     *   _selectPlaylistForAdd = true cuando el sheet de listas se abrió para elegir
-     *                            a qué playlist añadir una pista (menú "Más" o botón por fila)
-     *   _trackToAddId = ID de la pista concreta a añadir (desde el botón por fila
-     *                   de la biblioteca); si es null se usa la pista actual
-     * Todos null/false cuando no hay edición en curso. */
+     * Null cuando no hay edición en curso.
+     * (§93: _addingToPlaylistId extirpado con el modo «añadir».) */
     _editingPlaylistId: null,
-    _addingToPlaylistId: null,
-    _selectPlaylistForAdd: false,
-    _trackToAddId: null,
 
     /* Contexto de reproducción actual: indica desde qué lista se está
      * reproduciendo. Puede ser:
@@ -129,6 +129,7 @@
 
     /* Biblioteca: orden de la lista de canciones.
      * Ya no hay pestañas: la vista muestra listas + todas las canciones. */
+    _libTab: 'playlists', // §81: pestaña activa de la biblioteca
     _menuTrackId: null,
     _editTrackId: null,
     _browse: null,
@@ -152,10 +153,18 @@
     VERSION: '1.2.0',
     _marqueeEnabled: true,
     _vinylEnabled: false,
+    _showRemaining: false, // §72: la duración total alterna a «tiempo restante» al tocarla
 
     ico(name, extra) {
       const cls = extra ? ('ico ' + extra) : 'ico';
       return '<svg class="' + cls + '" aria-hidden="true"><use href="#i-' + name + '"></use></svg>';
+    },
+    /* Inicial para portadas generadas: primera letra o número del
+     * texto (§70 [13]: antes era el primer carácter literal y un
+     * título como «<img…» pintaba «<»). Sin letra válida, una nota. */
+    coverInitial(text) {
+      const m = String(text || '').match(/[\p{L}\p{N}]/u);
+      return m ? m[0].toUpperCase() : '♪';
     },
     setIco(el, name) {
       if (!el) return;

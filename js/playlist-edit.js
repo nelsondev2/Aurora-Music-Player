@@ -17,19 +17,25 @@ Object.assign(App, {
     /* Abre el sheet "Crear playlist" en modo creación (vacío).
      * Las pistas son opcionales: se puede crear una lista vacía. */
     openCreatePlaylistSheet() {
-      this._addingToPlaylistId = null;
+      // §81: cada apertura empieza en lista normal y sin bandera de
+      // «guardar cola» (openSaveQueueSheet la pone después de llamar).
+      this._queueSaveMode = false;
+      this._plSmartMode = false;
+      const smartFields = document.getElementById('smartRuleFields');
+      if (smartFields) smartFields.hidden = true;
+      const btnN = document.getElementById('plTypeNormal');
+      const btnS = document.getElementById('plTypeSmart');
+      if (btnN) btnN.classList.add('active');
+      if (btnS) btnS.classList.remove('active');
+      if (typeof this._fillSmartGenreSelect === 'function') this._fillSmartGenreSelect();
       // Reset del formulario
       const nameInput = document.getElementById('playlistName');
       const descInput = document.getElementById('playlistDesc');
       if (nameInput) nameInput.value = '';
       if (descInput) descInput.value = '';
-      // Mostrar campos de nombre/descripción (en modo "add" se ocultan)
-      const fields = document.getElementById('createPlaylistFields');
-      if (fields) fields.style.display = '';
-      // OCULTAR la sección "Selecciona pistas" — al crear una lista nueva
-      // no se eligen pistas; se añaden después desde la vista de edición.
-      const pickSection = document.getElementById('pickTracksSection');
-      if (pickSection) pickSection.style.display = 'none';
+      // §93: al crear no se eligen pistas (se añaden después desde
+      // la vista de edición); el selector que aquí se ocultaba era
+      // del modo «añadir» retirado y ya no existe en la hoja.
       // Título
       const titleEl = document.getElementById('createPlaylistTitle');
       if (titleEl) titleEl.textContent = this.t('create_playlist_title');
@@ -39,34 +45,11 @@ Object.assign(App, {
       this.openSheet('sheetCreatePlaylist');
     },
 
-    /* Abre el sheet "Crear playlist" en modo "añadir a existente".
-     * Oculta los campos de nombre/descripción y muestra el selector de pistas. */
-    openAddTracksSheet(playlistId) {
-      const pl = this.playlists.find(p => p.id === playlistId);
-      if (!pl) return;
-      this._addingToPlaylistId = playlistId;
-      // Ocultar campos de nombre/descripción
-      const fields = document.getElementById('createPlaylistFields');
-      if (fields) fields.style.display = 'none';
-      // MOSTRAR la sección "Selecciona pistas" en modo "add"
-      const pickSection = document.getElementById('pickTracksSection');
-      if (pickSection) pickSection.style.display = '';
-      // Título dinámico: "Añadir a <nombre>"
-      const titleEl = document.getElementById('createPlaylistTitle');
-      if (titleEl) titleEl.textContent = this.t('add_tracks_btn') + ' · ' + pl.name;
-      const pickTitle = document.getElementById('pickTracksTitle');
-      if (pickTitle) pickTitle.textContent = this.t('pick_tracks_for_playlist');
-      const pickHint = document.getElementById('pickTracksHint');
-      if (pickHint) pickHint.textContent = this.t('add_tracks_btn') + ' → ' + pl.name;
-      // Botón primario: "Añadir"
-      const btn = document.getElementById('btnSavePlaylist');
-      if (btn) btn.textContent = this.t('add_to_existing_btn');
-      // Limpiar selección previa
-      document.querySelectorAll('.pick-row').forEach(r => r.classList.remove('checked'));
-      // Render del picker
-      this.renderPickTracks();
-      this.openSheet('sheetCreatePlaylist');
-    },
+    /* §93: aquí vivía openAddTracksSheet() — el modo «añadir a
+     * existente» de esta hoja, inalcanzable desde la §81 (las
+     * pistas se añaden desde la vista de edición). Cadáver
+     * extirpado con todo su clúster: _addingToPlaylistId,
+     * renderPickTracks y el selector de pistas de la hoja. */
 
     /* Abre el sheet "Editar playlist" con el detalle de una playlist */
     openEditPlaylist(playlistId) {
@@ -81,6 +64,41 @@ Object.assign(App, {
       if (btnDeleteFull) btnDeleteFull.style.display = '';
       this.closeSheet('sheetPlaylists');
       this.openSheet('sheetEditPlaylist');
+      // §97: abrir la lista DONDE suena — si la canción actual
+      // está en ella (su fila ya sale marcada con .current), se
+      // desplaza hasta ella al terminar la animación de apertura.
+      // Solo al abrir: los re-pintados posteriores no secuestran
+      // la posición de quien está mirando otra parte de la lista.
+      if (this.currentTrack) {
+        const curId = this.currentTrack.id;
+        setTimeout(() => {
+          if (this._editingPlaylistId !== playlistId) return;
+          const ul = document.getElementById('editPlaylistTracks');
+          const row = ul && ul.querySelector('li[data-track-id="' + curId + '"]');
+          if (row) {
+            try { row.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+          }
+        }, 380);
+      }
+    },
+
+    /* §81: rellena el <select> de géneros de la regla inteligente con
+     * los géneros reales de la biblioteca. */
+    _fillSmartGenreSelect() {
+      const sel = document.getElementById('smartRuleGenre');
+      if (!sel) return;
+      const prev = sel.value;
+      sel.innerHTML = '';
+      this.getGenres().forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.name;
+        opt.textContent = g.name + ' (' + g.tracks.length + ')';
+        sel.appendChild(opt);
+      });
+      if (prev) sel.value = prev;
+      const field = document.getElementById('smartGenreField');
+      const kind = document.getElementById('smartRuleKind');
+      if (field && kind) field.hidden = kind.value !== 'genre';
     },
 
     /* Pinta el contenido del sheet "Editar playlist" */
@@ -97,6 +115,18 @@ Object.assign(App, {
         nameEl.onclick = () => this.startRenamePlaylist();
       }
       if (metaEl) metaEl.textContent = this.playlistMetaLabel(pl);
+      // §81: selector de orden sincronizado con la lista, y aviso en
+      // las inteligentes (sin añadir/quitar a mano: manda la regla).
+      const sortSel = document.getElementById('plSortSelect');
+      if (sortSel) sortSel.value = pl.sort || 'stars';
+      const smartHint = document.getElementById('editSmartHint');
+      if (smartHint) smartHint.hidden = !pl.smart;
+      const btnUpload = document.getElementById('btnUploadToPlaylist');
+      if (btnUpload) btnUpload.style.display = pl.smart ? 'none' : '';
+      // Vaciar una inteligente no vaciaría nada (la regla la rellena):
+      // se oculta también; eliminar la lista sí sigue disponible.
+      const btnClear = document.getElementById('btnClearPlaylist');
+      if (btnClear) btnClear.style.display = pl.smart ? 'none' : '';
       // El botón «hero» de reproducir refleja si esta lista es la que
       // suena (anillo de acento), igual que la portada.
       const heroPlay = document.getElementById('btnPlayPlaylistNow');
@@ -121,34 +151,35 @@ Object.assign(App, {
       }
       if (!ul) return;
       ul.innerHTML = '';
-      if (pl.trackIds.length === 0) {
+      const sortedTracks = this.playlistTracksSorted(pl);
+      if (sortedTracks.length === 0) {
         const li = document.createElement('li');
         li.className = 'pl-empty-tracks';
         li.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-cloud-arrow-up"></use></svg><p>' + this.esc(this.t('no_tracks_in_playlist')) + '</p>';
         ul.appendChild(li);
         return;
       }
-      pl.trackIds.forEach((id, i) => {
-        const t = this.tracks.find(x => x.id === id);
-        if (!t) return;
+      // La lista se ve en el orden elegido (§81; por defecto el de
+      // estrellas de §64). El orden guardado no se reescribe.
+      sortedTracks.forEach((t, i) => {
+        const id = t.id;
         const isCurrent = this.currentTrack && this.currentTrack.id === id;
         const li = document.createElement('li');
         li.className = 'track-row' + (isCurrent ? ' current' : '');
         li.dataset.trackId = id;
         li.dataset.idx = String(i);
         li.innerHTML = `
-          <button class="drag-handle" type="button" aria-label="${this.esc(this.t('move'))}"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
-          <div class="row-cover"><canvas width="44" height="44"></canvas></div>
+          <div class="row-cover"><canvas width="144" height="144"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>
           </div>
           <div class="row-duration">${isCurrent ? '<svg class="ico now-eq" aria-hidden="true"><use href="#i-volume-high"></use></svg> ' : ''}${this.fmtRowDuration(t)}</div>
           <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>
-          <button class="row-action remove-from-pl" aria-label="${this.esc(this.t('remove_from_playlist'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          ${pl.smart ? '' : `<button class="row-action remove-from-pl" aria-label="${this.esc(this.t('remove_from_playlist'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>`}
         `;
         li.addEventListener('click', (e) => {
-          if (e.target.closest('.remove-from-pl, .track-menu-btn, .drag-handle')) return;
+          if (e.target.closest('.remove-from-pl, .track-menu-btn')) return;
           // Reproducir esta pista dentro del contexto de la playlist.
           // playTrack se encarga de setear la cola = pistas de la playlist.
           this.playTrack(t.id, { type: 'playlist', id: pl.id, name: pl.name });
@@ -161,63 +192,87 @@ Object.assign(App, {
           this.openTrackMenu(t.id);
         });
         if (typeof this.wireTrackLongPress === 'function') this.wireTrackLongPress(li, t.id);
-        li.querySelector('.remove-from-pl').addEventListener('click', (e) => {
+        const removeBtn = li.querySelector('.remove-from-pl');
+        if (removeBtn) removeBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           this.removeFromPlaylist(pl.id, t.id);
         });
-        if (typeof this.wireDragHandle === 'function') {
-          this.wireDragHandle(li, i, ul, '.track-row', {
-            maxIndex: pl.trackIds.length - 1,
-            onReorder: (from, to) => this.reorderPlaylistTracks(pl.id, from, to)
-          });
-        }
         ul.appendChild(li);
         const cv = li.querySelector('canvas');
         if (cv) this.drawRowCover(cv, t);
       });
     },
 
-    reorderPlaylistTracks(playlistId, from, to) {
-      const pl = this.playlists.find(p => p.id === playlistId);
-      if (!pl || from === to) return;
-      if (from < 0 || to < 0 || from >= pl.trackIds.length || to >= pl.trackIds.length) return;
-      const moved = pl.trackIds.splice(from, 1)[0];
-      pl.trackIds.splice(to, 0, moved);
-      this.persistPlaylist(pl);
-      this.renderEditPlaylist();
-    },
-
+    /* Renombrar la lista (§81: arreglo del fallo «no hay forma de
+     * confirmar el renombre»).
+     * Antes el <input> reemplazaba al <h4 id="editPlaylistName"> SIN
+     * conservar el id: al confirmar, renderEditPlaylist() ya no
+     * encontraba el título, la vista se quedaba con el campo de texto
+     * para siempre y no existía ningún botón de confirmar.
+     * Ahora el campo nace con botones ✓ (confirmar) y ✗ (cancelar)
+     * bien visibles; Enter confirma, Escape cancela, y al terminar se
+     * restaura el <h4> con su id para que la vista vuelva a pintar el
+     * nombre (y se pueda renombrar otra vez). */
     startRenamePlaylist() {
       const pl = this.playlists.find(p => p.id === this._editingPlaylistId);
       if (!pl) return;
       const nameEl = document.getElementById('editPlaylistName');
-      if (!nameEl || nameEl.tagName === 'INPUT') return;
+      if (!nameEl) return;
+      // Ya hay un renombre en curso (el nombre vive dentro del wrap).
+      if (nameEl.closest && nameEl.closest('.edit-pl-rename')) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'edit-pl-rename';
       const input = document.createElement('input');
       input.type = 'text';
       input.className = 'edit-pl-name-input';
       input.value = pl.name;
       input.maxLength = 80;
-      nameEl.replaceWith(input);
+      input.setAttribute('aria-label', this.t('rename_playlist_btn'));
+      const btnOk = document.createElement('button');
+      btnOk.type = 'button';
+      btnOk.className = 'edit-pl-rename-btn confirm';
+      btnOk.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-check"></use></svg>';
+      btnOk.setAttribute('aria-label', this.t('rename_confirm'));
+      btnOk.title = this.t('rename_confirm');
+      const btnCancel = document.createElement('button');
+      btnCancel.type = 'button';
+      btnCancel.className = 'edit-pl-rename-btn';
+      btnCancel.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg>';
+      btnCancel.setAttribute('aria-label', this.t('cancel'));
+      btnCancel.title = this.t('cancel');
+      wrap.append(input, btnOk, btnCancel);
+      nameEl.replaceWith(wrap);
       input.focus();
       input.select();
       let done = false;
-      const commit = () => {
+      // Sin preventDefault en mousedown, tocar ✓/✗ dispararía el blur
+      // del input y confirmaría antes de saber qué botón se tocó.
+      [btnOk, btnCancel].forEach(b => b.addEventListener('mousedown', (e) => e.preventDefault()));
+      const finish = (save) => {
         if (done) return;
         done = true;
         const v = input.value.trim();
-        if (v && v !== pl.name) {
+        if (save && v && v !== pl.name) {
           pl.name = v;
           this.persistPlaylist(pl);
           this.renderPlaylists();
           if (typeof this.renderHome === 'function') this.renderHome();
           this.toast(this.t('toast_playlist_renamed'));
         }
+        // Restaurar el <h4 id="editPlaylistName"> ANTES de repintar:
+        // es el elemento que renderEditPlaylist() busca por id.
+        const h = document.createElement('h4');
+        h.id = 'editPlaylistName';
+        h.textContent = pl.name;
+        wrap.replaceWith(h);
         this.renderEditPlaylist();
       };
-      input.addEventListener('blur', commit);
+      btnOk.addEventListener('click', () => finish(true));
+      btnCancel.addEventListener('click', () => finish(false));
+      input.addEventListener('blur', () => finish(true));
       input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
-        if (e.key === 'Escape') { input.value = pl.name; input.blur(); }
+        if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+        if (e.key === 'Escape') { e.preventDefault(); finish(false); }
       });
     },
 
@@ -370,7 +425,8 @@ Object.assign(App, {
       if (!id) return;
       const pl = this.playlists.find(p => p.id === id);
       if (!pl) return;
-      const tracks = (pl.trackIds || []).map(tId => this.tracks.find(x => x.id === tId)).filter(Boolean);
+      // §81: las inteligentes exportan sus pistas efectivas (trackIds va vacío).
+      const tracks = this.playlistTracksSorted(pl);
       const safeName = (pl.name || 'playlist').replace(/[\\/:*?"<>|]/g, '_');
 
       // Generar archivo M3U8 estándar con directivas de playlist y tracks
@@ -397,7 +453,7 @@ Object.assign(App, {
         });
         // Antes: toast de éxito incondicional aunque Delta no hubiera
         // enviado nada — el «no funciona» de compartir lista (§51).
-        this.toast(ok ? this.t('toast_playlist_shared') : this.t('toast_share_error'), ok ? undefined : 'danger');
+        this.toast(ok === 'chat' ? this.t('toast_playlist_shared') : ok === 'download' ? this.t('toast_downloaded') : this.t('toast_share_error'), ok ? undefined : 'danger');
       } catch (e) {
         this.toast(this.t('toast_share_error'), 'danger');
       }

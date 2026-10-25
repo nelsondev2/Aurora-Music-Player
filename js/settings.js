@@ -113,7 +113,7 @@ Object.assign(App, {
         }
         // playContext se usa para decidir la cola y se pinta en la barra:
         // aceptar solo formas conocidas evita objetos arbitrarios de datos guardados.
-        const allowedCtx = ['all', 'queue', 'playlist', 'favorites', 'rated', 'album', 'artist', 'radio'];
+        const allowedCtx = ['all', 'queue', 'playlist', 'favorites', 'album', 'artist', 'radio'];
         if (session.playContext && typeof session.playContext === 'object' && allowedCtx.includes(session.playContext.type)) {
           this.playContext = {
             type: session.playContext.type,
@@ -173,14 +173,26 @@ Object.assign(App, {
           const raw = localStorage.getItem('aurora_stats');
           if (raw) this.stats = JSON.parse(raw);
         }
-        if (!this.stats.plays) this.stats.plays = {};
-        if (typeof this.stats.totalSeconds !== 'number') this.stats.totalSeconds = 0;
       } catch (e) {
         try {
           const raw = localStorage.getItem('aurora_stats');
           if (raw) this.stats = JSON.parse(raw);
         } catch (e2) {}
       }
+      this._normalizeStats();
+    },
+
+    /* §94: validar la FORMA de las estadísticas vengan de donde
+     * vengan (IndexedDB o fallback): corruptas (un número, una
+     * lista, plays que no es objeto) se colaban tal cual y luego
+     * cada conteo sumaba NaN o lanzaba hasta parar la música. */
+    _normalizeStats() {
+      if (!this.stats || typeof this.stats !== 'object' || Array.isArray(this.stats)) {
+        this.stats = { plays: {}, skips: {}, totalSeconds: 0 };
+      }
+      if (!this.stats.plays || typeof this.stats.plays !== 'object' || Array.isArray(this.stats.plays)) this.stats.plays = {};
+      if (!this.stats.skips || typeof this.stats.skips !== 'object' || Array.isArray(this.stats.skips)) this.stats.skips = {}; // §81
+      if (typeof this.stats.totalSeconds !== 'number' || !isFinite(this.stats.totalSeconds) || this.stats.totalSeconds < 0) this.stats.totalSeconds = 0;
     },
     async saveStats() {
       try {
@@ -195,6 +207,7 @@ Object.assign(App, {
     async resetStats() {
       this.stats = {
         plays: {},
+        skips: {},
         totalSeconds: 0,
         lastPlayed: null,
         sessionStart: Date.now()
@@ -216,24 +229,108 @@ Object.assign(App, {
     trackPlayStarted() {
       this._currentPlayStart = Date.now();
       this._currentPlayBaseTime = this.audio.currentTime || 0;
-      // Incrementar contador de reproducciones
-      if (this.currentTrack) {
-        const id = this.currentTrack.id;
-        this.stats.plays[id] = (this.stats.plays[id] || 0) + 1;
-        this.saveStats();
-      }
+      // El contador de reproducciones ya NO suma al empezar (§67):
+      // una canción solo cuenta cuando suena entera. Aquí empieza
+      // su «pase» de conteo; lo cierra trackPlayCompleted().
+      this._playCounted = false;
+      this._skipCounted = false; // §81: un salto por pase, como el conteo
       // Iniciar flush periódico de tiempo escuchado
       if (this._statsFlushTimer) clearInterval(this._statsFlushTimer);
+      this._statsWallBase = Date.now(); // §94: reloj de pared del flush
       this._statsFlushTimer = setInterval(() => {
-        if (this.isPlaying && this.audio) {
-          const elapsed = (this.audio.currentTime - this._currentPlayBaseTime);
-          if (elapsed > 0) {
-            this.stats.totalSeconds += elapsed;
-            this._currentPlayBaseTime = this.audio.currentTime;
-            this.saveStats();
-          }
-        }
+        if (this.isPlaying && this.audio) this._flushListening();
       }, 10000);  // cada 10s
+    },
+
+    /* §94: vacía los segundos escuchados desde la última base.
+     * Techo de cordura: nunca contar más que el tiempo real
+     * transcurrido (× velocidad de reproducción + margen). Sin
+     * él, un salto de currentTime (seek no interceptado, pestaña
+     * congelada que despierta) inflaba el «tiempo escuchado». */
+    _flushListening() {
+      if (!this._currentPlayStart || !this.audio) return;
+      const now = Date.now();
+      const heard = (this.audio.currentTime || 0) - (this._currentPlayBaseTime || 0);
+      const wall = this._statsWallBase ? (now - this._statsWallBase) / 1000 : 0;
+      const cap = wall > 0 ? wall * (this.audio.playbackRate || 1) + 2 : heard;
+      const add = Math.max(0, Math.min(heard, cap));
+      this._currentPlayBaseTime = this.audio.currentTime || 0;
+      this._statsWallBase = now;
+      if (add > 0) {
+        this.stats.totalSeconds += add;
+        this.saveStats();
+      }
+    },
+
+    /* Registrar que la pista sonó ENTERA (§67): el único sitio donde
+     * suma el contador de reproducciones. Lo llaman el avance
+     * automático al terminar (fin natural o fundido, vía next(true))
+     * y el salto gapless al cambiar de pista; nunca un salto manual
+     * ni un archivo que falla al cargar. Una escucha por pase: el
+     * candado _playCounted lo pone trackPlayStarted() (o el propio
+     * gapless para la pista entrante). */
+    trackPlayCompleted() {
+      if (!this.currentTrack || this._playCounted) return;
+      if (!this._heardWholeTrack()) return;
+      this._playCounted = true;
+      const id = this.currentTrack.id;
+      this.stats.plays[id] = (this.stats.plays[id] || 0) + 1;
+      // §81: fecha de última escucha completa en la propia pista:
+      // alimenta «Olvidadas» y la lista inteligente homónima.
+      this.currentTrack.lastPlayedAt = Date.now();
+      if (typeof this.persistTrack === 'function') {
+        try { this.persistTrack(this.currentTrack); } catch (e) {}
+      }
+      this.saveStats();
+    },
+
+    /* §81: registrar un salto: el usuario abandona la pista a mitad
+     * (next/prev manual o elige otra). No cuenta si ya sonó entera
+     * (eso es una reproducción, §67), si se buscaron los últimos
+     * segundos a mano, ni dos veces en el mismo pase. Hace falta
+     * haber oído un mínimo (5 s o el 10 %): cambiar de opinión al
+     * instante no es «saltarla», es no haberla empezado. */
+    _registerSkip() {
+      if (!this.currentTrack || !this.isPlaying || this._skipCounted || this._playCounted) return;
+      if (typeof this._heardWholeTrack === 'function' && this._heardWholeTrack()) return;
+      const a = this.audio;
+      const pos = a ? (a.currentTime || 0) : 0;
+      const dur = a ? a.duration : 0;
+      const minimo = Math.max(5, (isFinite(dur) && dur > 0) ? dur * 0.1 : 5);
+      if (pos < minimo) return;
+      this._skipCounted = true;
+      if (!this.stats.skips) this.stats.skips = {};
+      const id = this.currentTrack.id;
+      this.stats.skips[id] = (this.stats.skips[id] || 0) + 1;
+      this.saveStats();
+    },
+
+    /* ¿Se ha oído (casi) toda la pista actual? La unión de los
+     * intervalos realmente reproducidos (audio.played) lo sabe pese
+     * a pausas y búsquedas; buscar hasta el final a mano NO cuenta
+     * como escucha completa. Sin duración conocida (p. ej. al
+     * principio de cargar), vale la llegada al final. Se perdonan
+     * los últimos 2 s (silencios de cierre y el corte gapless). */
+    _heardWholeTrack() {
+      const a = this.audio;
+      if (!a) return false;
+      const dur = a.duration;
+      if (!isFinite(dur) || dur <= 0) return true;
+      let heard = 0;
+      try {
+        const played = a.played;
+        const iv = [];
+        for (let i = 0; i < played.length; i++) iv.push([played.start(i), played.end(i)]);
+        iv.sort((x, y) => x[0] - y[0]);
+        let cs = null, ce = null;
+        for (const [ini, fin] of iv) {
+          if (cs === null) { cs = ini; ce = fin; }
+          else if (ini <= ce) { ce = Math.max(ce, fin); }
+          else { heard += ce - cs; cs = ini; ce = fin; }
+        }
+        if (cs !== null) heard += ce - cs;
+      } catch (e) { return true; }
+      return heard >= Math.max(0, dur - 2);
     },
 
     trackPlayStopped() {
@@ -241,15 +338,8 @@ Object.assign(App, {
         clearInterval(this._statsFlushTimer);
         this._statsFlushTimer = null;
       }
-      // Última actualización
-      if (this._currentPlayStart && this.audio) {
-        const elapsed = (this.audio.currentTime - this._currentPlayBaseTime);
-        if (elapsed > 0) {
-          this.stats.totalSeconds += elapsed;
-          this._currentPlayBaseTime = this.audio.currentTime;
-          this.saveStats();
-        }
-      }
+      // Última actualización (§94: con el mismo techo que el flush)
+      this._flushListening();
       this._currentPlayStart = null;
     },
 
@@ -301,7 +391,10 @@ Object.assign(App, {
         bg0: '#050509', bg1: '#0a0a12', bg2: '#14141f', bg3: '#1d1d2b',
         text1: '#ffffff',
         text2: 'rgba(255,255,255,0.72)',
-        text3: 'rgba(255,255,255,0.48)',
+        /* §94: 0.58 como en el CSS (§70) — applyTheme pisa la
+         * variable con este valor, así que el 0,48 de aquí dejaba
+         * el ajuste de contraste del CSS en papel mojado. */
+        text3: 'rgba(255,255,255,0.58)',
         text4: 'rgba(255,255,255,0.36)',
         surface: 'rgba(255,255,255,0.05)',
         surface2: 'rgba(255,255,255,0.08)',
@@ -331,7 +424,7 @@ Object.assign(App, {
         bg0: '#000000', bg1: '#000000', bg2: '#0a0a0a', bg3: '#141414',
         text1: '#ffffff',
         text2: 'rgba(255,255,255,0.72)',
-        text3: 'rgba(255,255,255,0.50)',
+        text3: 'rgba(255,255,255,0.58)', /* §94: en línea con dark */
         text4: 'rgba(255,255,255,0.40)',
         surface: 'rgba(255,255,255,0.06)',
         surface2: 'rgba(255,255,255,0.09)',
@@ -346,17 +439,24 @@ Object.assign(App, {
     /* Rellenos (fill/fill2) deliberadamente oscuros: sobre ellos va texto
      * e iconos BLANCOS (--accent-on-fill). Un degradado con el extremo
      * claro de antes (rosa, turquesa, amarillo) dejaba el texto en 1.6–2.4:1.
-     * Ahora ambos extremos cumplen AA (≥4.5:1 con blanco) en los 5 acentos.
+     * Ahora ambos extremos cumplen AA (≥4.5:1 con blanco) en los 6 acentos.
      * Los tonos brillantes siguen en from/to/accent/accent2, que se usan
      * como color de texto sobre fondo oscuro o en portadas (sin texto).
      * fillLight/fillLight2 se usan en tema claro y también cumplen AA
      * sobre --bg-0/bg-1 claros. */
+    // Paleta renovada (§66): los extremos «from» viejos eran turbios
+    // (petróleo en Océano, pantano en Musgo, marrón en Ámbar) y cada
+    // acento pesaba distinto. Ahora los seis comparten familia de
+    // luz —degradados luminosos y con el tono claro— manteniendo la
+    // disciplina AA de arriba (verificado con calculador WCAG: los
+    // 6 acentos cumplen ≥4.5:1 en texto y rellenos, oscuro y claro).
     ACCENTS: {
-      aurora: { from: '#6E5CFF', to: '#FF7AB6', accent: '#8B7CFF', accent2: '#FF7AB6', fill: '#5B49D6', fill2: '#4A3BBF', fillLight: '#4E3FC8', fillLight2: '#3E32A8' },
-      ocean:  { from: '#1A6A88', to: '#3EC8B8', accent: '#3AA8C0', accent2: '#5ED4C4', fill: '#1A6B80', fill2: '#146173', fillLight: '#146173', fillLight2: '#0F5867' },
-      moss:   { from: '#2A6B48', to: '#A8C86A', accent: '#5A9A68', accent2: '#B4D07A', fill: '#2F6844', fill2: '#2A5C3B', fillLight: '#2A5C3B', fillLight2: '#24502F' },
-      amber:  { from: '#C45C18', to: '#E8B84A', accent: '#E09438', accent2: '#F0C46A', fill: '#A86218', fill2: '#8A4E0E', fillLight: '#91520F', fillLight2: '#7A440C' },
-      cherry: { from: '#A61B3A', to: '#E85A7A', accent: '#D44A68', accent2: '#F090A0', fill: '#B83852', fill2: '#99243D', fillLight: '#9A2E44', fillLight2: '#8E2036' }
+      aurora: { from: '#745CFF', to: '#FF6FA5', accent: '#9D8BFF', accent2: '#FF8FB8', fill: '#5B45D6', fill2: '#4836B4', fillLight: '#4E3FC8', fillLight2: '#3E32A8' },
+      ocean:  { from: '#1F7AE0', to: '#23C8B2', accent: '#5EAAE8', accent2: '#4FE0C3', fill: '#1763B8', fill2: '#12559F', fillLight: '#145FA8', fillLight2: '#0F4C8C' },
+      moss:   { from: '#1E9E62', to: '#9BD147', accent: '#5FBF7A', accent2: '#B9E26B', fill: '#177A45', fill2: '#12653A', fillLight: '#146C3E', fillLight2: '#0F5A33' },
+      amber:  { from: '#E8710A', to: '#F5B81F', accent: '#F5A623', accent2: '#FFCF4D', fill: '#B85C0E', fill2: '#9A4D0B', fillLight: '#9C550C', fillLight2: '#854708' },
+      cherry: { from: '#E01A44', to: '#FF6B81', accent: '#FB5E7E', accent2: '#FF9FB0', fill: '#C21840', fill2: '#A31236', fillLight: '#A8163A', fillLight2: '#8F1130' },
+      fuchsia:{ from: '#C22BD6', to: '#FF5CA8', accent: '#EE6BE8', accent2: '#FF8FD0', fill: '#A61FB8', fill2: '#8C169C', fillLight: '#9315A8', fillLight2: '#7A118C' }
     },
     _ACCENT_ALIASES: { purple: 'aurora', blue: 'ocean', green: 'moss', orange: 'amber', pink: 'cherry' },
 
@@ -477,6 +577,11 @@ Object.assign(App, {
 
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta) meta.setAttribute('content', t.bg0);
+      // §75: la paleta de portada se adapta al tema (pastel en claro,
+      // más negra en amoled); hay que reaplicarla al cambiar.
+      if (this.currentTrack && typeof this._applyCoverPalette === 'function') {
+        this._applyCoverPalette(this.coverPaletteFor(this.currentTrack));
+      }
     },
 
     setTheme(theme) {
@@ -637,8 +742,11 @@ Object.assign(App, {
           if (typeof s.gapless === 'boolean') this._gaplessEnabled = s.gapless;
           if (typeof s.normalize === 'boolean') this._normalizeVolume = s.normalize;
           if (typeof s.crossfade === 'number') {
-            this.crossfadeDuration = s.crossfade;
-            this.crossfadeEnabled = s.crossfade > 0;
+            // §94: acotado al rango que ofrece la UI (0–12 s): un
+            // valor corrupto o heredado (p. ej. 999) arrancaba el
+            // fundido casi al empezar cada canción.
+            this.crossfadeDuration = Math.max(0, Math.min(12, s.crossfade));
+            this.crossfadeEnabled = this.crossfadeDuration > 0;
           }
           if (typeof s.marquee === 'boolean') this._marqueeEnabled = s.marquee;
           if (typeof s.vinyl === 'boolean') this._vinylEnabled = s.vinyl;

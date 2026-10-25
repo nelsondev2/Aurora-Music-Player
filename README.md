@@ -12,19 +12,28 @@ Reproductor de música **offline-first** pensado para **WebXDC**: se comparte co
   cuenta y sin servidor.
 - **Letras sincronizadas**: archivos `.lrc` o letras incrustadas, con
   desplazamiento automático y pantalla de letras a lo grande.
-- **Listas para todo**: crea y edita listas, marca **Favoritos**, y
-  deja que la app mantenga solas «Mi Música» (lo añadido fuera de
-  listas) y **«Más valoradas»** (tus canciones con estrellas, de mejor
-  nota a menor).
+- **Listas para todo**: crea y edita listas, marca **Favoritos** y
+  deja que la app mantenga sola «Mi Música» (lo añadido fuera de
+  listas). Todas las listas —Favoritos incluida— **se ordenan solas
+  por tus estrellas**: las mejores arriba, las sin nota al final, y
+  la cola suena en ese mismo orden.
 - **Estrellas de 1 a 5** en el menú de cada canción, en el reproductor
-  y en las filas, para valorar sin salir de donde estás.
+  y en las filas, para valorar sin salir de donde estás. En Inicio,
+  el escaparate «Más valoradas» enseña tus mejores notas.
 - **Reproducción seria**: cola, aleatorio de verdad, repetir,
   «Reproducir desde…» con su contexto, reproducción continua
   (gapless/crossfade), ecualizador, visualizador y temporizador de
   apagado.
-- **Estadísticas**: recientes, más reproducidas e historial.
+- **Estadísticas**: recientes, más reproducidas e historial (las reproducciones solo cuentan cuando la canción suena entera).
 - **Comparte por el chat**: envía canciones, listas (`.m3u8`) y letras
   con `sendToChat`, sin salir de Delta Chat.
+- **Ordena y explora a tu manera**: cada lista se puede ordenar por
+  título, artista, álbum o duración (además del orden por estrellas),
+  y Biblioteca explora tu colección por Álbumes, Artistas y Géneros.
+  Hay **listas inteligentes** que se rellenan solas (4+ estrellas, un
+  género, nunca reproducidas, olvidadas…), la cola se puede guardar
+  como lista, la letra se sincroniza tocando al ritmo de la canción
+  y Estadísticas también cuenta saltadas y olvidadas.
 - **8 idiomas** (es, en, pt, zh, ja, fr, it, ru), temas y colores de
   acento.
 

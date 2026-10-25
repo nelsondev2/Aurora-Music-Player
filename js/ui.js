@@ -107,11 +107,38 @@ Object.assign(App, {
           }
         }
       }
-      const focusable = s.querySelector('button, [href], input:not([type="hidden"]), textarea, select, [tabindex]:not([tabindex="-1"])');
+      const focusable = s.querySelector('button, a[href], input:not([type="hidden"]), textarea, select, [tabindex]:not([tabindex="-1"])');
       setTimeout(() => {
         try { (focusable || panel).focus({ preventScroll: true }); } catch (e) {}
       }, 40);
+      // §70 [4]: las hojas declaran aria-modal pero el Tab escapaba al
+      // fondo (medido por auditoría externa). Se instala una sola vez
+      // la trampa de foco sobre la hoja superior de la pila.
+      if (!this._tabTrapBound) {
+        this._tabTrapBound = true;
+        document.addEventListener('keydown', (e) => this._sheetTabTrap(e), true);
+      }
       if (typeof this.updateChrome === 'function') this.updateChrome();
+    },
+    /* Trampa de foco (§70 [4]): con una hoja abierta, Tab/Shift+Tab
+     * ciclan dentro de su panel; si el foco ya está fuera (p. ej. tras
+     * cerrar una hoja hija), lo devuelve al primer/último control. */
+    _sheetTabTrap(e) {
+      if (e.key !== 'Tab' || !this._sheetStack || !this._sheetStack.length) return;
+      const s = document.getElementById(this._sheetStack[this._sheetStack.length - 1]);
+      if (!s || !s.classList.contains('open')) return;
+      const panel = s.querySelector('.sheet-panel') || s;
+      const sel = 'button:not([disabled]), a[href], area[href], input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      let f = Array.from(panel.querySelectorAll(sel)).filter(el => el.getClientRects().length > 0);
+      if (!f.length) f = Array.from(panel.querySelectorAll(sel));
+      if (!f.length) { e.preventDefault(); try { panel.focus({ preventScroll: true }); } catch (err) {} return; }
+      const first = f[0], last = f[f.length - 1];
+      const inside = panel.contains(document.activeElement);
+      if (e.shiftKey && (!inside || document.activeElement === first)) {
+        e.preventDefault(); try { last.focus({ preventScroll: true }); } catch (err) {}
+      } else if (!e.shiftKey && (!inside || document.activeElement === last)) {
+        e.preventDefault(); try { first.focus({ preventScroll: true }); } catch (err) {}
+      }
     },
     closeSheet(id) {
       const s = document.getElementById(id);
@@ -138,15 +165,8 @@ Object.assign(App, {
       if (id === 'sheetConfirm' && this._confirmResolver) {
         this._confirmResolver(false);
       }
-      // Reset del flag de selección si se cierra el sheet de listas
-      if (id === 'sheetPlaylists') {
-        this._selectPlaylistForAdd = false;
-        this._trackToAddId = null;
-      }
-      // Si se cierra el sheet de creación, limpiar modo "add"
-      if (id === 'sheetCreatePlaylist') {
-        this._addingToPlaylistId = null;
-      }
+      // (§93: al cerrar la hoja de creación ya no hay «modo add»
+      // que limpiar: _addingToPlaylistId fue extirpado.)
       // Si se cierra el sheet de edición, limpiar editing
       if (id === 'sheetEditPlaylist') {
         this._editingPlaylistId = null;
@@ -207,6 +227,11 @@ Object.assign(App, {
      *  Cambio de vista (player ↔ lyrics)
      * ============================================================ */
     showView(name) {
+      // §95: el modo inmersivo de portada pertenece al reproductor;
+      // al ir a otra vista se abandona (y al volver no resucita).
+      if (name !== 'player' && this._coverFs && typeof this.setCoverFullscreen === 'function') {
+        this.setCoverFullscreen(false);
+      }
       const views = document.querySelectorAll('.view');
       const wide = document.documentElement.classList.contains('aurora-wide');
       views.forEach(v => {
@@ -351,7 +376,7 @@ Object.assign(App, {
       ctx.fillStyle = 'rgba(255,255,255,0.9)';
       ctx.font = `900 ${size*0.45}px Outfit, ui-rounded, -apple-system, sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText((track.title || '?').charAt(0).toUpperCase(), size/2, size/2);
+      ctx.fillText(this.coverInitial(track.title), size/2, size/2);
       return c.toDataURL('image/png');
     },
 
@@ -446,6 +471,9 @@ Object.assign(App, {
               await new Promise(r => setTimeout(r, fadeSec * 1000 / steps));
             }
           }
+          // §94: ¿cancelado durante el fundido? cancelSleep ya
+          // restauró ganancia y volumen: no pausar ni seguir.
+          if (!this._sleepFading) return;
           this.togglePlay(false);
           try { this.audio.volume = this.volume; } catch (e) {}
           this._setPlaybackGain(this._normGain || 1, true);
@@ -475,10 +503,15 @@ Object.assign(App, {
       // «Sleep» del menú Más (y en el sheet si está abierto).
       const btn = document.getElementById('btnSleep') || document.getElementById('menuSleep');
       const menu = document.getElementById('menuSleep');
+      // §97 (idea 6): la fila «Sleep» del menú enseña la cuenta
+      // atrás sin abrir su hoja (este método ya corre cada
+      // segundo mientras el temporizador vive).
+      const menuVal = document.getElementById('sleepMenuValue');
       if (this._sleepEndOfTrack) {
         if (el) el.textContent = this.t('sleep_eot_status');
         if (btn) btn.classList.add('active');
         if (menu) menu.classList.add('active');
+        if (menuVal) menuVal.textContent = this.t('sleep_end_of_track');
         return;
       }
       if (this.sleepEndAt) {
@@ -489,10 +522,12 @@ Object.assign(App, {
         if (el) el.textContent = label;
         if (btn) btn.classList.add('active');
         if (menu) menu.classList.add('active');
+        if (menuVal) menuVal.textContent = m + ':' + String(s).padStart(2, '0');
       } else {
         if (el) el.textContent = '';
         if (btn) btn.classList.remove('active');
         if (menu) menu.classList.remove('active');
+        if (menuVal) menuVal.textContent = '';
       }
     },
 
