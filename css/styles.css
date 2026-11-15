@@ -1413,7 +1413,7 @@ svg { display: block; }
 }
 
 /* ---------- Listas ---------- */
-.queue-list, .track-list, .playlist-list {
+.queue-list, .track-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1483,130 +1483,6 @@ svg { display: block; }
 .row-action:active { background: var(--surface); }
 /* .row-check fuera — su único creador era el selector de
  * pistas retirado (la casilla circular de las filas.pick-row). */
-
-/* ---------- Playlist list ---------- */
-.playlist-list { gap: 8px; }
-.playlist-list .pl-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 8px;
-  border-radius: 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  transition: background .15s, transform .15s, border-color .15s;
-}
-.playlist-list .pl-row:active { background: var(--surface-2); transform: scale(0.99); }
-.playlist-list .pl-row.is-playing {
-  border-color: rgba(var(--accent-rgb), 0.45);
-  /*  el segundo tono era rosa cableado (#EC4899) aunque el
- * usuario hubiera elegido otro acento; ahora es el suyo. */
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.14), color-mix(in srgb, var(--accent-2) 8%, transparent));
-}
-.pl-cover {
-  width: 58px; height: 58px;
-  border-radius: 12px;
-  flex-shrink: 0;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 8px 18px rgba(0,0,0,0.28);
-}
-.pl-cover .pl-cover-grad { position: absolute; inset: 0; }
-/* Inicial de la lista sin carátula: antes todas las listas mostraban el
- * mismo icono de lista sobre un color plano y solo se distinguían por el
- * nombre. La letra las hace reconocibles de un vistazo, igual que la
- * portada generada de una pista. */
-.pl-cover-letter {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.55rem;
-  line-height: 1;
-  color: #fff;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
-  pointer-events: none;
-  user-select: none;
-}
-.home-card-cover .pl-cover-letter { font-size: 3.1rem; }
-.pl-cover-icon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 38%;
-  height: 38%;
-  color: rgba(255,255,255,0.92);
-}
-/* Play de las tarjetas de lista. Antes era un círculo blanco grande que
- * tapaba la portada y competía con ella; ahora es un disco de acento
- * (texto/icono blanco con contraste AA) integrado en la esquina. */
-.pl-play-fab {
-  position: absolute;
-  right: 6px;
-  bottom: 6px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent-fill);
-  color: var(--accent-on-fill);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.38),
-              inset 0 1px 0 rgba(255,255,255,0.18);
-  z-index: 2;
-  transition: transform .15s, background .2s;
-}
-.pl-play-fab .ico { width: 14px; height: 14px; margin-left: 1px; }
-.pl-play-fab:active { transform: scale(0.9); }
-@media (hover: hover) and (pointer: fine) {
-  .pl-card:hover .pl-play-fab { transform: scale(1.07); }
-}
-
-/* Acciones de cada fila de lista en «Tus listas»: el play sale de la
- * miniatura (donde un disco de 36 px tapaba casi toda la portada) y se
- * coloca en una columna propia, junto al borrado. */
-.pl-row-actions {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-.pl-row-play {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(var(--accent-rgb), 0.14);
-  color: var(--accent);
-  transition: background .15s, color .15s, transform .15s;
-}
-.pl-row-play .ico { width: 16px; height: 16px; margin-left: 2px; }
-.pl-row-play:active { transform: scale(0.92); }
-@media (hover: hover) and (pointer: fine) {
-  .pl-row-play:hover {
-    background: var(--accent-fill);
-    color: var(--accent-on-fill);
-  }
-  /* En escritorio el borrado aparece al pasar por la fila: menos ruido
-   * por defecto. En táctil (sin hover) sigue siempre visible. */
-  .playlist-list .pl-row .pl-row-delete {
-    opacity: 0;
-    transition: opacity .15s, color .15s, background .15s;
-  }
-  .playlist-list .pl-row:hover .pl-row-delete,
-  .playlist-list .pl-row:focus-within .pl-row-delete { opacity: 1; }
-  .playlist-list .pl-row .pl-row-delete:hover {
-    color: var(--danger);
-    background: rgba(239, 68, 68, 0.12);
-  }
-}
 .pl-live {
   position: absolute;
   top: 6px;
@@ -1730,8 +1606,6 @@ svg { display: block; }
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-/* .pick-tracks-title fuera con el selector de pistas. */
-
 /* ---------- EQ ---------- */
 .eq-presets {
   display: flex;
@@ -2308,8 +2182,7 @@ svg { display: block; }
   color: var(--text-3);
   padding: 20px;
 }
-.stats-reset-wrap,
-.history-reset-wrap {
+.stats-reset-wrap {
   display: flex;
   gap: 8px;
   margin-top: 20px;
