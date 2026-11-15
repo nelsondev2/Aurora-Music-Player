@@ -2,6 +2,44 @@
 
 Historial de versiones **publicadas** de Aurora Music Player.
 
+## 1.5.0 — Copia de respaldo que no rompe el enlace canción ↔ audio
+
+- **Vuelve la copia de seguridad, esta vez probada.** Ajustes → **Copia de
+  respaldo** con dos botones: «Crear copia de respaldo» e «Importar copia
+  de respaldo». El archivo `.aurora` lleva **todo**: las canciones con su
+  audio, las listas, los favoritos, las estrellas y las estadísticas.
+- **Qué se arregló respecto a la 1.4.0.** Lo que se perdía al mover la
+  biblioteca entre versiones era el **enlace entre la canción y su
+  almacenamiento**: la lista quedaba con canciones que no sonaban. Ahora
+  cada audio se escribe en el almacén `blobs` con el **mismo id** que su
+  pista, así que al restaurar las listas apuntan a canciones que suenan.
+  Y si la misma canción ya entró a mano en la versión nueva (con otro id),
+  se reconoce por su **huella de contenido** y las listas de la copia se
+  reapuntan a la que ya existe: ni duplicados ni listas rotas.
+- **Al chat, como manda la spec webxdc.** Crear la copia la envía con
+  `sendToChat({ file: { name, blob } })` (en navegador se descarga) e
+  importarla abre el selector del cliente con `importFiles`, filtrado por
+  `.aurora`: la copia que acabas de recibir se elige sin salir del chat.
+  También se restaura eligiéndola con el «+» de la app.
+- **Formato sin librerías:** cabecera de texto con la longitud del
+  manifiesto JSON y, detrás, los audios **en crudo** (nada de base64, que
+  engordaría un tercio; nada de comprimir un MP3, que ya está comprimido).
+  Al restaurar se lee la cabecera y cada audio se corta con `slice()`, sin
+  cargar el archivo entero en memoria. Una copia truncada o de un formato
+  más nuevo se rechaza **antes** de tocar nada.
+- **Restaurar fusiona, nunca borra:** lo que ya hay se queda, las pistas
+  que faltan se añaden, las listas y los favoritos se completan y las
+  estadísticas toman el máximo (restaurar dos veces no infla los números).
+- **La portada del reproductor, más grande:** pasa de `min(86vw, 36dvh,
+  320px)` a `min(90vw, 42dvh, 380px)` (y crece igual en las pantallas
+  bajas y en la columna ancha de escritorio), sin empujar los controles.
+- 9 pruebas nuevas (52 en total): que la copia lleve el audio, que
+  restaurar deje las canciones enlazadas y reproduciéndose, que no pise lo
+  que hay, la huella con otro id, el rechazo de archivos ajenos o
+  truncados, el envío por `sendToChat`, la importación con `importFiles`,
+  la copia elegida con el «+» y la ida y vuelta completa por el chat entre
+  dos instancias.
+
 ## 1.4.1 — Fuera la copia de seguridad
 
 - **Se retira la exportación e importación de copias `.aurora`** (Ajustes →

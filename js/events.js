@@ -258,6 +258,19 @@ Object.assign(App, {
       if (btnFree) btnFree.addEventListener('click', () => {
         if (typeof this.offerFreeStorage === 'function') this.offerFreeStorage();
       });
+      /* Copia de respaldo: el sheet se cierra antes de abrir el selector
+       * del cliente (sendToChat/importFiles pueden devolver el control a
+       * Delta Chat y una hoja abierta taparía el aviso al volver). */
+      const btnExportBackup = document.getElementById('menuExportBackup');
+      if (btnExportBackup) btnExportBackup.addEventListener('click', () => {
+        this.closeSheet('sheetSettings');
+        if (typeof this.exportBackup === 'function') this.exportBackup().catch(() => {});
+      });
+      const btnImportBackup = document.getElementById('menuImportBackup');
+      if (btnImportBackup) btnImportBackup.addEventListener('click', () => {
+        this.closeSheet('sheetSettings');
+        if (typeof this.importBackup === 'function') this.importBackup().catch(() => {});
+      });
       const btnCopyDiag = document.getElementById('aboutCopyDiag');
       if (btnCopyDiag) btnCopyDiag.addEventListener('click', () => {
         this.copyDiagnostics().catch(() => this.toast(this.t('toast_diag_failed'), 'danger'));

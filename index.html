@@ -859,6 +859,17 @@
               <svg class="ico" aria-hidden="true"><use href="#i-keyboard"></use></svg>
               <span data-i18n="settings_shortcuts">Atajos de teclado</span>
             </button>
+            <h4 class="section-title" data-i18n="settings_backup">Copia de respaldo</h4>
+            <p class="settings-hint" id="backupHint" data-i18n="settings_backup_hint">Guarda TODA la biblioteca —canciones con su audio, listas, favoritos y estrellas— en un solo archivo .aurora. Se envía al chat, así que sobrevive a borrar la app, cambiar de teléfono o actualizar de versión.</p>
+            <button class="menu-row" id="menuExportBackup" type="button" aria-describedby="backupHint">
+              <svg class="ico" aria-hidden="true"><use href="#i-cloud-arrow-up"></use></svg>
+              <span data-i18n="settings_backup_export">Crear copia de respaldo</span>
+            </button>
+            <button class="menu-row" id="menuImportBackup" type="button">
+              <svg class="ico" aria-hidden="true"><use href="#i-file-import"></use></svg>
+              <span data-i18n="settings_backup_import">Importar copia de respaldo</span>
+            </button>
+            <p class="settings-hint" data-i18n="settings_backup_restore_hint">Restaurar añade lo que falte y no borra nada de lo que ya tienes: cada audio vuelve con su canción y sus listas quedan enlazadas.</p>
             <h4 class="section-title" data-i18n="settings_maintenance">Mantenimiento</h4>
             <button class="menu-row" id="menuRetagTracks">
               <svg class="ico" aria-hidden="true"><use href="#i-tags"></use></svg>
@@ -879,7 +890,7 @@
             <p class="settings-hint" data-i18n="settings_sleep_fade">El temporizador sleep hace un fade-out de 10 s al apagar.</p>
             <h4 class="section-title" data-i18n="settings_about">Acerca de</h4>
             <div class="about-block">
-              <p class="about-line"><span data-i18n="settings_version">Versión</span> <strong id="aboutVersion">1.4.1</strong></p>
+              <p class="about-line"><span data-i18n="settings_version">Versión</span> <strong id="aboutVersion">1.5.0</strong></p>
               <p class="about-line" data-i18n="settings_license">Licencia MIT</p>
               <a class="menu-row" id="aboutSource" href="https://github.com/nelsondev2/Aurora-Music-Player" target="_blank" rel="noopener">
                 <svg class="ico" aria-hidden="true"><use href="#i-arrow-up-right-from-square"></use></svg>
@@ -1160,7 +1171,9 @@
 
       <div class="import-overlay" id="importOverlay" hidden>
         <div class="import-card" role="status" aria-live="polite">
-          <h3 data-i18n="import_title">Importando música</h3>
+          <!-- id para poder reescribir el título: la misma tarjeta sirve
+               para importar música, preparar una copia y restaurarla. -->
+          <h3 id="importTitle" data-i18n="import_title">Importando música</h3>
           <p class="import-file" id="importFileName"></p>
           <div class="import-bar"><div id="importBarFill"></div></div>
           <p class="import-count" id="importCount">0 / 0</p>
@@ -1189,6 +1202,7 @@
   <script src="js/init.js"></script>
   <script src="js/settings.js"></script>
   <script src="js/library.js"></script>
+  <script src="js/backup.js"></script>
   <script src="js/queue.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/portadas.js"></script>

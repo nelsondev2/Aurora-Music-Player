@@ -55,7 +55,9 @@ Object.assign(App, {
         const exts = ((U0 && typeof U0.ACCEPTED === 'string')
           ? U0.ACCEPTED : '.mp3,.m4a,.flac,.wav,.ogg,.webm,.opus')
           .split(',').map(x => x.trim()).filter(x => x.charAt(0) === '.');
-        exts.push('.lrc', '.txt');
+        // Una copia de respaldo también se puede elegir aquí: al
+        // soltarla o elegirla se restaura (ver handleFileInput).
+        exts.push('.lrc', '.txt', '.aurora');
         const nativeFiles = await this.pickFilesWebxdc({ extensions: exts, multiple: true });
         if (nativeFiles) {
           if (nativeFiles.length > 0) {
@@ -83,8 +85,9 @@ Object.assign(App, {
         input.setAttribute('mozdirectory', '');
         input.setAttribute('nwdirectory', '');
       } else {
-        // Audio y letras sueltas (.lrc se enlaza con su canción).
-        input.accept = acceptedTypes + ',.lrc,.txt';
+        // Audio y letras sueltas (.lrc se enlaza con su canción), más
+        // la copia de respaldo para restaurarla desde el propio «+».
+        input.accept = acceptedTypes + ',.lrc,.txt,.aurora';
       }
 
       document.body.appendChild(input);
@@ -122,7 +125,7 @@ Object.assign(App, {
             ? arr.filter(f => {
                 const name = f.name.toLowerCase();
                 return f.type.startsWith('audio/') ||
-                       /\.(mp3|m4a|flac|wav|ogg|webm|opus|lrc|txt)$/i.test(name);
+                       /\.(mp3|m4a|flac|wav|ogg|webm|opus|lrc|txt|aurora)$/i.test(name);
               })
             : arr;
           if (filtered.length > 0) {

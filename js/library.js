@@ -76,6 +76,19 @@ Object.assign(App, {
       // nombre (ver _attachLrcFiles) en vez de ir al importador. (La
       // (La importación de listas .m3u no existe.)
       const allFiles = Array.from(fileList);
+      /* Una copia de respaldo elegida con el «+» (o soltada) se
+       * restaura en vez de intentar importarse como música: es la vía
+       * natural cuando la copia llega al chat y se abre desde ahí. */
+      const backupFile = allFiles.find(f => /\.aurora$/i.test(f.name || ''));
+      if (backupFile && typeof this.restoreBackupFromFile === 'function') {
+        this._importing = false;
+        // Si además venían canciones sueltas, se importan después de
+        // restaurar (la lista sin el .aurora ya no se muerde la cola).
+        const resto = allFiles.filter(f => !/\.aurora$/i.test(f.name || ''));
+        const ok = await this.restoreBackupFromFile(backupFile);
+        if (!resto.length) return ok;
+        return this.handleFileInput(resto, fromDirectory, targetPlaylistId);
+      }
       const lrcFiles = allFiles.filter(f => /\.lrc$/i.test(f.name || ''));
       const mediaFiles = allFiles.filter(f => !/\.m3u8?$/i.test(f.name || '') && !/\.lrc$/i.test(f.name || ''));
       if (!mediaFiles.length) {

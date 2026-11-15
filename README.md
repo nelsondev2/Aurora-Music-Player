@@ -2,7 +2,7 @@
 
 Reproductor de música **offline-first** pensado para **WebXDC**: se comparte como archivo `.xdc` en un chat de Delta Chat y funciona sin red, sin cuenta y sin servidor. Carga archivos locales (MP3, M4A, FLAC, WAV, OGG, Opus), lee ID3 y letras LRC.
 
-**Versión:** 1.4.1 · licencia MIT
+**Versión:** 1.5.0 · licencia MIT
 
 > **Nota:** Aurora es un proyecto **generado con inteligencia
 > artificial**. Todo su código —y las traducciones de la
@@ -36,6 +36,14 @@ Reproductor de música **offline-first** pensado para **WebXDC**: se comparte co
   entera).
 - **Comparte por el chat**: envía canciones, listas (`.m3u8`) y letras
   con `sendToChat`, sin salir de Delta Chat.
+- **Copia de respaldo de verdad**: Ajustes → Copia de respaldo guarda
+  **toda** la biblioteca —canciones con su audio, listas, favoritos,
+  estrellas y estadísticas— en un solo archivo `.aurora` que se manda al
+  chat. Al restaurarlo, cada audio vuelve a su canción **con su mismo
+  id**, así que las listas quedan enlazadas y la música suena: lo que no
+  hacían las listas `.m3u8`, que solo llevan nombres de archivo.
+  Restaurar **fusiona** (añade lo que falta, nunca borra) y reconoce la
+  misma canción por su huella aunque en la otra versión tuviera otro id.
 - **Ordena y explora a tu manera**: cada lista se puede ordenar por
   título, artista, álbum o duración (además del orden por estrellas),
   y Biblioteca explora tu colección por Álbumes, Artistas y Géneros.
@@ -62,7 +70,7 @@ El script comprueba antes de comprimir:
 - que ningún `webxdc.js` viaje en el paquete (lo inyecta el cliente)
 - que `App.VERSION`, el README y el CHANGELOG digan la misma versión
 
-El resultado es un ZIP con compresión Deflate, **28 archivos y ~392 KB**, reproducible (mismo contenido → mismo SHA-256).
+El resultado es un ZIP con compresión Deflate, **29 archivos y ~407 KB**, reproducible (mismo contenido → mismo SHA-256).
 
 ### Probar en Delta Chat
 
@@ -86,12 +94,13 @@ Dichas en voz alta, para que nadie se lleve una sorpresa:
 
 - **Cada copia del `.xdc` guarda su propia biblioteca** (ya avisado
   arriba): reenviar el archivo crea una instancia nueva y vacía. No
-  hay sincronización entre copias ni entre dispositivos, y no hay
-  copia de seguridad de la biblioteca: tu música, tus listas y tus
-  ajustes viven en los datos de esa instancia dentro de la app de
-  mensajería, y si se borran no se pueden recuperar dentro de la app
-  (las listas exportadas a `.m3u8` guardan los nombres de los
-  archivos, no el audio).
+  hay sincronización entre copias ni entre dispositivos. Para llevarte
+  la biblioteca a otra versión, a otro teléfono o para recuperarla si
+  se borra la instancia, está la **copia de respaldo** (Ajustes → Copia
+  de respaldo → Crear copia): un `.aurora` con el audio dentro que se
+  envía al chat y se restaura con «Importar copia de respaldo». Ojo: el
+  `.aurora` ocupa lo que ocupe tu música, así que en bibliotecas muy
+  grandes el chat tendrá que aceptar un archivo grande.
 - **La música se detiene al cerrar la app.** Las WebXDC se ejecutan
   dentro del cliente y este no ofrece reproducción en segundo plano
   tras cerrar la ventana; es un límite de la plataforma, no un fallo.
@@ -130,7 +139,7 @@ Requiere Node 20 o superior:
 
 ```bash
 npm install     # una vez: jsdom y fake-indexeddb
-npm test        # 43 pruebas
+npm test        # 52 pruebas
 ```
 
 Los 54 iconos de la interfaz son un sprite SVG inline en `index.html` (un
@@ -166,6 +175,7 @@ Nada de esto viaja en el `.xdc`: `build-xdc.py` empaqueta solo `APP_ENTRIES`
 | `js/portadas.js` | Portada generada: un solo pintor para reproductor, filas, tarjetas y listas |
 | `js/data.js` | Catálogo inicial, paleta de portadas y configuración |
 | `js/storage.js` | Persistencia en IndexedDB: metadatos de las pistas, audio aparte (`blobs`), listas y ajustes |
+| `js/backup.js` | Copia de respaldo `.aurora`: cabecera + manifiesto JSON + audios en crudo; restaurar fusiona |
 | `js/uploader.js` | Lectura de archivos, ID3 y LRC |
 | `js/` | Todo el JavaScript propio: módulos de la app (audio, UI, listas, letras, ajustes…) |
 | `assets/` | Fuente Outfit, iconos y jsmediatags (`assets/js/`) |
