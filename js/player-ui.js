@@ -185,32 +185,10 @@ Object.assign(App, {
         }
       }
 
-      // Generar gradiente dinámico
-      const cover = (track.cover && typeof track.cover === 'object' && track.cover.from) ? track.cover : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6' });
-      const grad = ctx.createLinearGradient(0, 0, w, h);
-      grad.addColorStop(0, cover.from);
-      grad.addColorStop(1, cover.to);
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, w, h);
-
-      // Patrón de ondas circulares
-      ctx.globalAlpha = 0.18;
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = mini ? 1 : 2;
-      const cx = w / 2, cy = h / 2;
-      for (let r = 30; r < Math.max(w, h); r += 30) {
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-      // Letra inicial
-      ctx.globalAlpha = 0.85;
-      ctx.fillStyle = '#fff';
-      ctx.font = (mini ? '700 38px ' : '900 220px ') + "Outfit, ui-rounded, -apple-system, sans-serif";
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(this.coverInitial(track.title), cx, cy);
-      ctx.globalAlpha = 1;
+      // Portada generada: el pintor común (js/portadas.js). Antes tenía
+      // aquí su propia copia y la misma canción se veía distinta en el
+      // reproductor que en las filas.
+      this._paintLetterCover(ctx, w, h, track);
     },
 
     setShuffleUI() {

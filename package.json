@@ -9,7 +9,8 @@
     "test:watch": "node --test --watch",
     "check:xdc": "python3 build-xdc.py",
     "check:xdc:validate": "python3 build-xdc.py --check",
-    "icons:preview": "node tools/preview-iconos.mjs"
+    "icons:preview": "node tools/preview-iconos.mjs",
+    "covers:preview": "node tools/preview-portadas.mjs"
   },
   "devDependencies": {
     "@resvg/resvg-js": "^2.6.2",

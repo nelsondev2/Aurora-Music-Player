@@ -112,7 +112,7 @@ En un proyecto que se apoya tanto en comentarios, un comentario mentiroso cuesta
 
 ### 3.9 Nits reales pero menores
 
-- **Dos `<h1>` en el mismo documento** (`index.html:165` el título de la pista, `index.html:258` «Inicio»). La jerarquía de encabezados es ambigua para lectores de pantalla.
+- ~~**Dos `<h1>` en el mismo documento**~~ — **revisado y descartado:** las vistas inactivas llevan `visibility: hidden` (`.view` en `css/styles.css`) e `inert`, así que nunca hay dos encabezados expuestos a la vez. No se toca.
 - **`webxdc.js` da 404 en navegador** (`index.html:24`). Documentado y esperado, pero ensucia la consola.
 - **26 `!important`** en CSS: casi todos para `[hidden]` (legítimo), pero es una costura que conviene no dejar crecer.
 - **`js/data.js` con 4 320 líneas** mezcla datos, paletas y 4 718 cadenas de traducción. Funciona, pero revisar una traducción ahí es incómodo: separar `i18n/*.js` por idioma haría las revisión nativa mucho más fácil (y el paquete sigue sin cargar nada por red).
@@ -186,5 +186,5 @@ borraba o paraba la pista justo después de arrancar, la promesa pendiente
 devolvía `isPlaying = true` (y arrancaba el conteo de estadísticas) sobre una
 pista ya parada. Corregido con `_invalidatePendingPlay()`.
 
-**Verificación final:** `npm test` → 37/37 en verde · `python3 build-xdc.py` →
-27 archivos, `.xdc` válido · dos builds con el mismo SHA-256.
+**Verificación final:** `npm test` → 41/41 en verde · `python3 build-xdc.py` →
+28 archivos, `.xdc` válido · dos builds con el mismo SHA-256.

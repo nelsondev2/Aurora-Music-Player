@@ -134,14 +134,18 @@ Los 54 iconos de la interfaz son un sprite SVG inline en `index.html` (un
 `<symbol>` por icono, trazo de 1,9 sobre rejilla de 24, `currentColor`), así se
 tiñen solos con el tema y el acento. `npm run icons:preview` regenera
 `docs/iconos-sprite.png` con todos los símbolos y los tres temas; las reglas del
-sistema están en [`docs/ICONOS.md`](docs/ICONOS.md).
+sistema están en [`docs/ICONOS.md`](docs/ICONOS.md). La portada que se dibuja
+cuando una pista no trae carátula tiene su propio pintor y su vista previa:
+`npm run covers:preview` → `docs/portadas.png`
+([`docs/PORTADAS.md`](docs/PORTADAS.md)).
 
 Las pruebas arrancan la app **de verdad** —`index.html` y todos los `js/` en un DOM
 real, con IndexedDB, `<audio>` y Web Audio— y comprueban lo que más duele si se
 rompe: cola por contexto, aleatorio, repetición, borrado con «Deshacer»,
 estadísticas, sesión, caché de `objectURL`, los 14 idiomas, el escapado de
 metadatos, la apertura de las 20 hojas, la coherencia de la versión y que el
-`.xdc` se construya igual dos veces. Otra tanda vigila el formato de guardado:
+`.xdc` se construya igual dos veces. Otra comprueba que la portada generada sale
+siempre del mismo pintor. Otra tanda vigila el formato de guardado:
 que el audio no se cuele en el registro de la pista, que abrir la app no cargue
 ningún Blob, que borrar no deje huérfanos y que la migración se haga una vez. Y
 otra, la detección de duplicados por huella de contenido.
@@ -156,6 +160,7 @@ Nada de esto viaja en el `.xdc`: `build-xdc.py` empaqueta solo `APP_ENTRIES`
 | `index.html` | Markup de la app (vistas, hojas, sprite de iconos) |
 | `css/styles.css` | Estilos, temas y acentos (toda la CSS vive en `css/`) |
 | `js/i18n.js` | Traducciones de los 14 idiomas (solo texto: aquí se revisa un idioma) |
+| `js/portadas.js` | Portada generada: un solo pintor para reproductor, filas y tarjetas |
 | `js/data.js` | Catálogo inicial, paleta de portadas y configuración |
 | `js/storage.js` | Persistencia en IndexedDB: metadatos de las pistas, audio aparte (`blobs`), listas y ajustes |
 | `js/uploader.js` | Lectura de archivos, ID3 y LRC |

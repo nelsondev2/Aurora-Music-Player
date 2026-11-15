@@ -284,27 +284,25 @@ Object.assign(App, {
     },
 
     _paintLetterCover(ctx, W, H, track) {
-      const cover = (track.cover && typeof track.cover === 'object' && track.cover.from) ? track.cover : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6' });
-      const g = ctx.createLinearGradient(0,0,W,H);
-      g.addColorStop(0, cover.from); g.addColorStop(1, cover.to);
-      ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-      // Surcos concéntricos sutiles (misma familia que la portada grande)
-      ctx.save();
-      ctx.globalAlpha = 0.14;
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 1;
-      const cx = W / 2, cy = H / 2;
-      const step = Math.max(6, Math.min(W, H) / 7);
-      for (let r = step; r < Math.max(W, H); r += step) {
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.stroke();
+      //  Un solo pintor para toda la app (js/portadas.js): antes el
+      //  reproductor y las filas dibujaban la misma canción con distinto
+      //  grosor de surco y distinto cuerpo de letra.
+      const cover = this.coverPaletteFor
+        ? this.coverPaletteFor(track)
+        : (track.cover && track.cover.from) || { from: '#6E5CFF', to: '#FF7AB6' };
+      if (window.AuroraCover && typeof window.AuroraCover.paint === 'function') {
+        window.AuroraCover.paint(ctx, W, H, {
+          from: cover.from,
+          to: cover.to,
+          text: track.title,
+          letter: this.coverInitial(track.title)
+        });
+        return;
       }
-      ctx.restore();
-      ctx.fillStyle = 'rgba(255,255,255,0.92)';
-      ctx.font = "700 " + Math.floor(H*0.48) + "px Outfit, ui-rounded, sans-serif";
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(this.coverInitial(track.title), W/2, H/2 + Math.floor(H*0.02));
+      //  Sin el módulo (no debería pasar: se carga antes) no se deja el
+      //  lienzo en blanco.
+      ctx.fillStyle = cover.from || '#6E5CFF';
+      ctx.fillRect(0, 0, W, H);
     },
 
     /* Genera las miniaturas si faltan y, desde, ACTUALIZA las de

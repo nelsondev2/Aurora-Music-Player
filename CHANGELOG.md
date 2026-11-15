@@ -18,6 +18,15 @@ Historial de versiones **publicadas** de Aurora Music Player.
 - Borrar una pista se lleva también su audio, y «borrar la biblioteca»
   vacía el almacén de audio: el formato nuevo no debe dejar Blobs sin
   dueño ocupando espacio.
+- **Una sola portada generada.** Cuando una pista no trae carátula, la app
+  dibuja una: degradado de la paleta de la pista, un resplandor desplazado
+  según el título, surcos tenues y la inicial. Antes había dos pintores —uno
+  en el reproductor y otro en las filas— con distinto grosor de surco, otro
+  cuerpo de letra y otro alfa, así que la misma canción se veía distinta
+  según dónde miraras; ahora los dos llaman a `js/portadas.js`. La semilla es
+  el título (misma canción, misma portada) y por debajo de 48 px se suprimen
+  los adornos, que a ese tamaño solo ensucian. Vista previa en
+  `docs/portadas.png` (`npm run covers:preview`), pintada con el código real.
 - **Los duplicados se detectan por contenido, no por nombre.** La
   importación comparaba nombre y tamaño: dos archivos distintos que
   coincidían en ambos se daban por el mismo y uno se descartaba sin
