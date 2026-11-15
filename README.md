@@ -143,7 +143,8 @@ estadísticas, sesión, caché de `objectURL`, los 14 idiomas, el escapado de
 metadatos, la apertura de las 20 hojas, la coherencia de la versión y que el
 `.xdc` se construya igual dos veces. Otra tanda vigila el formato de guardado:
 que el audio no se cuele en el registro de la pista, que abrir la app no cargue
-ningún Blob, que borrar no deje huérfanos y que la migración se haga una vez.
+ningún Blob, que borrar no deje huérfanos y que la migración se haga una vez. Y
+otra, la detección de duplicados por huella de contenido.
 
 Nada de esto viaja en el `.xdc`: `build-xdc.py` empaqueta solo `APP_ENTRIES`
 (la app, sus estilos, el icono y el manifiesto).

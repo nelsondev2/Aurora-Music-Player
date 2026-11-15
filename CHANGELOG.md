@@ -18,10 +18,21 @@ Historial de versiones **publicadas** de Aurora Music Player.
 - Borrar una pista se lleva también su audio, y «borrar la biblioteca»
   vacía el almacén de audio: el formato nuevo no debe dejar Blobs sin
   dueño ocupando espacio.
+- **Los duplicados se detectan por contenido, no por nombre.** La
+  importación comparaba nombre y tamaño: dos archivos distintos que
+  coincidían en ambos se daban por el mismo y uno se descartaba sin
+  avisar, mientras que la misma canción renombrada entraba duplicada.
+  Ahora se compara una huella (tamaño + SHA-256 de los primeros 256 KB,
+  con hash propio si el WebView no tiene `crypto.subtle`); nombre y
+  tamaño solo acotan los candidatos. Las pistas antiguas sin huella se
+  comprueban en el momento de la colisión, y la van guardando cuando se
+  reproducen o se releen sus etiquetas.
 - Ocho pruebas nuevas (30 en total) para esa separación: que el Blob no
   se cuele en el registro, que reabrir no cargue audio, que reproducir lo
   traiga, que borrar no deje huérfanos y que la migración se haga una
-  sola vez.
+  sola vez. Otras siete cubren la huella de duplicados: mismo contenido,
+  contenido distinto con el mismo nombre, archivo renombrado y registros
+  sin audio legible.
 - **La versión que se ve es la versión que es.** Acerca de enseñaba
   «1.2.0» en la 1.2.5 porque `App.VERSION` se quedó atrás: ahora dice
   1.2.5, el README también, y no puede volver a pasar — `build-xdc.py`

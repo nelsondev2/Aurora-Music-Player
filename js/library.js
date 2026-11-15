@@ -105,15 +105,16 @@ Object.assign(App, {
           return;
         }
 
-        // #10 Detección de duplicados: comparar por fileName + fileSize.
-        // Índice O(1) por clave para que importar 500 archivos no sea O(n²).
+        // #10 Duplicados: nombre y tamaño acotan los candidatos, pero
+        // decide el contenido (huella). Así no se descarta un archivo
+        // ajeno que solo coincide en nombre y tamaño, y una canción
+        // renombrada se reconoce como la que ya está.
         let dupCount = 0;
         const uniqueTracks = [];
         const existingForPlaylist = [];
-        const byKey = new Map();
-        for (const ex of this.tracks) byKey.set(this._dupKey(ex.fileName, ex.fileSize), ex);
+        const dupIdx = this._buildDupIndex(this.tracks);
         for (const t of newTracks) {
-          const existing = byKey.get(this._dupKey(t.fileName, t.fileSize)) || null;
+          const existing = await this.findDuplicateFor(t, dupIdx);
           if (existing) {
             dupCount++;
             if (t.src && t.src.startsWith('blob:')) {
@@ -124,7 +125,7 @@ Object.assign(App, {
             existingForPlaylist.push(existing);
           } else {
             uniqueTracks.push(t);
-            byKey.set(this._dupKey(t.fileName, t.fileSize), t);
+            this._indexDupTrack(dupIdx, t);
           }
         }
         // Letras .lrc traídas junto al audio: se enlazan por nombre
@@ -285,9 +286,113 @@ Object.assign(App, {
       } catch (e) {}
     },
 
-    /* Clave de duplicado tolerante a mayúsculas/espacios del nombre. */
+    /* Clave de duplicado tolerante a mayúsculas/espacios del nombre.
+     *  Solo sirve para ACOTAR candidatos: nombre y tamaño no
+     * identifican un archivo (dos ediciones distintas del mismo tema
+     * pueden coincidir en ambos y la importación descartaba una sin
+     * avisar). La decisión final la toma la huella de contenido. */
     _dupKey(fileName, fileSize) {
       return String(fileName || '').trim().toLowerCase() + '|' + (Number(fileSize) || 0);
+    },
+
+    /* ---------- Huella de contenido ----------
+     * Tamaño + SHA-256 de los primeros 256 KB (o un hash propio si no
+     * hay crypto.subtle, p. ej. WebView antiguo). Con eso: dos archivos
+     * que solo comparten nombre y tamaño dejan de confundirse, y la
+     * misma canción renombrada se reconoce como la misma. No se leen
+     * discos enteros: una canción típica se distingue por sus primeros
+     * 256 KB y una importación de 500 archivos no se eterniza. */
+    _FP_BYTES: 256 * 1024,
+    _fileFingerprint(file) {
+      if (!file || typeof file.size !== 'number' || typeof file.slice !== 'function') {
+        return Promise.resolve(null);
+      }
+      let head;
+      try {
+        head = file.slice(0, Math.min(file.size, this._FP_BYTES));
+      } catch (e) {
+        return Promise.resolve(null);
+      }
+      return head.arrayBuffer().then((buf) => {
+        const bytes = new Uint8Array(buf);
+        const finish = (hash) => (file.size + ':' + hash).toLowerCase();
+        const subtle = (typeof crypto !== 'undefined' && crypto && crypto.subtle) ? crypto.subtle : null;
+        if (subtle && typeof subtle.digest === 'function') {
+          return subtle.digest('SHA-256', bytes).then((d) => {
+            let hex = '';
+            const arr = new Uint8Array(d);
+            for (let i = 0; i < 16; i++) hex += arr[i].toString(16).padStart(2, '0');
+            return finish(hex);
+          });
+        }
+        //  Sin criptografía: dos FNV-1a de 32 bits con semillas distintas.
+        return finish(this._fnv1a32(bytes, 0x811c9dc5) + '-' + this._fnv1a32(bytes, 0x9e3779b9));
+      }).catch(() => null);
+    },
+    _fnv1a32(bytes, seed) {
+      let h = seed >>> 0;
+      for (let i = 0; i < bytes.length; i++) {
+        h ^= bytes[i];
+        h = Math.imul(h, 0x01000193) >>> 0;
+      }
+      return h.toString(16).padStart(8, '0');
+    },
+
+    /* Huella de una pista que ya está (o puede estar) en la biblioteca.
+     * Su audio puede no estar en memoria; se trae del almacén. Devuelve
+     * null si no hay forma de leerlo. */
+    async _fingerprintExisting(track) {
+      if (!track) return null;
+      if (track.fp) return track.fp;
+      if (typeof this.ensureTrackBlob === 'function') await this.ensureTrackBlob(track);
+      const blob = track._file || track.fileBlob;
+      const fp = await this._fileFingerprint(blob);
+      if (fp) {
+        track.fp = fp;
+        //  Se guarda para no repetir la lectura (y para que el índice de
+        //  huellas de la próxima importación lo tenga).
+        try { if (typeof this.persistTrack === 'function') this.persistTrack(track); } catch (e) {}
+      }
+      return fp;
+    },
+
+    /* Índice para detectar duplicados en O(1) al importar. */
+    _buildDupIndex(tracks) {
+      const byKey = new Map();
+      const byFp = new Map();
+      (tracks || []).forEach((t) => this._indexDupTrack({ byKey, byFp }, t));
+      return { byKey, byFp };
+    },
+    _indexDupTrack(idx, t) {
+      if (!idx || !t) return;
+      const k = this._dupKey(t.fileName, t.fileSize);
+      if (!idx.byKey.has(k)) idx.byKey.set(k, []);
+      idx.byKey.get(k).push(t);
+      if (t.fp && !idx.byFp.has(t.fp)) idx.byFp.set(t.fp, t);
+    },
+
+    /* ¿Esta pista recién leída ya está en la biblioteca? Devuelve la
+     * pista existente o null. El contenido manda; nombre y tamaño solo
+     * acotan los candidatos, y si la pista vieja no tiene huella se
+     * calcula en el momento (es una lectura corta, no del archivo
+     * entero). */
+    async findDuplicateFor(track, idx) {
+      if (!track) return null;
+      const fp = track.fp || await this._fileFingerprint(track._file || track.fileBlob);
+      if (fp) track.fp = fp;
+      if (fp && idx.byFp.has(fp)) return idx.byFp.get(fp);
+      const candidates = idx.byKey.get(this._dupKey(track.fileName, track.fileSize)) || [];
+      for (const cand of candidates) {
+        if (fp && cand.fp) {
+          if (cand.fp === fp) return cand;
+          continue; // huellas distintas: son dos archivos, no un duplicado
+        }
+        const candFp = fp ? await this._fingerprintExisting(cand) : null;
+        //  Sin huella de una de las dos partes no se puede prometer que
+        //  sea el mismo archivo: se mantiene el criterio antiguo.
+        if (!fp || !candFp || candFp === fp) return cand;
+      }
+      return null;
     },
 
     showImportOverlay(done, total, name) {
@@ -374,6 +479,16 @@ Object.assign(App, {
           //  La pista pudo borrarse mientras se leía.
           if (typeof this.getTrackById === 'function' && this.getTrackById(id) !== track) return false;
           track.fileBlob = blob;
+          //  Aprovechar que el audio ya está en memoria para dejar su
+          //  huella si aún no la tiene (las bibliotecas anteriores a la
+          //  1.3.0 no la guardaban). No retrasa la reproducción.
+          if (!track.fp) {
+            this._fileFingerprint(blob).then((fp) => {
+              if (!fp || track.fp) return;
+              track.fp = fp;
+              if (typeof this.persistTrack === 'function') this.persistTrack(track);
+            }).catch(() => {});
+          }
           return true;
         }).catch((e) => {
           this._blobLoads.delete(id);
@@ -675,6 +790,14 @@ Object.assign(App, {
           try {
             const fresh = await U.processOne(file, null);
             let changed = false;
+            //  Ya que se lee el archivo, se deja su huella: las pistas
+            //  viejas sin huella solo pueden compararse por nombre y
+            //  tamaño, y así la próxima importación reconoce el mismo
+            //  archivo aunque venga renombrado.
+            if (!t.fp) {
+              const fp = await this._fileFingerprint(file);
+              if (fp) { t.fp = fp; changed = true; }
+            }
             //  el texto que el usuario editó a mano (la hoja
             // de edición marca _userEdited) manda sobre el
             // archivo: releer etiquetas no debe deshacer su
