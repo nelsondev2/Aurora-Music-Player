@@ -213,7 +213,7 @@ Object.assign(App, {
         this.lrcLines = t._lrcCache;
         this.lrcHasTimed = !!t._lrcCache.hasTimed;
       } else {
-        this.lrcLines = this.parseLrc(t.lrc);
+        this.lrcLines = this.parseLyrics(t.lrc, t.lrcFormat);
         this.lrcHasTimed = !!this.lrcLines.hasTimed;
         t._lrcCache = this.lrcLines;
         t._lrcCacheKey = JSON.stringify(t.lrc);
@@ -825,5 +825,111 @@ Object.assign(App, {
         this.clearLyricsLoop();
         this._lrcLoopTrackId = trackId;
       }
+    },
+
+    /* ============================================================
+     *  Parser SRT (SubRip) — archivos .srt
+     *  Formato:
+     *    1
+     *    00:00:20,000 --> 00:00:24,400
+     *    Texto de la línea
+     *
+     *  Devuelve el mismo formato que parseLrc: [{time, text, timed}]
+     * ============================================================ */
+    parseSrt(text) {
+      if (!text || !text.trim()) return [];
+      const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+      const result = [];
+      let i = 0;
+      // Timestamp: HH:MM:SS,mmm o MM:SS,mmm
+      const tsRe = /^(\d{1,2}):(\d{2}):(\d{2})[,.](\d{3})\s*-->\s*(\d{1,2}):(\d{2}):(\d{2})[,.](\d{3})/;
+      while (i < lines.length) {
+        const line = lines[i].trim();
+        // Saltar números de bloque y líneas vacías
+        if (!line || /^\d+$/.test(line)) {
+          i++;
+          continue;
+        }
+        const m = line.match(tsRe);
+        if (m) {
+          const start =
+            parseInt(m[1], 10) * 3600 +
+            parseInt(m[2], 10) * 60 +
+            parseInt(m[3], 10) +
+            parseInt(m[4], 10) / 1000;
+          // Recoger texto hasta línea vacía o siguiente bloque
+          const textLines = [];
+          i++;
+          while (i < lines.length && lines[i].trim() !== '' && !tsRe.test(lines[i].trim())) {
+            textLines.push(lines[i].trim());
+            i++;
+          }
+          result.push({
+            time: Math.max(0, start),
+            text: textLines.join(' '),
+            timed: true
+          });
+        } else {
+          i++;
+        }
+      }
+      return result;
+    },
+
+    /* ============================================================
+     *  Parser VTT (WebVTT) — archivos .vtt
+     *  Formato:
+     *    WEBVTT
+     *
+     *    00:00:20.000 --> 00:00:24.400
+     *    Texto de la línea
+     *
+     *  Devuelve el mismo formato que parseLrc: [{time, text, timed}]
+     * ============================================================ */
+    parseVtt(text) {
+      if (!text || !text.trim()) return [];
+      const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+      const result = [];
+      // Saltar cabecera WEBVTT y notas
+      let started = false;
+      // Timestamp: HH:MM:SS.mmm o MM:SS.mmm
+      const tsRe = /^(\d{1,2}):(\d{2}):(\d{2})[.](\d{3})\s*-->\s*(\d{1,2}):(\d{2}):(\d{2})[.](\d{3})/;
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!started) {
+          if (/^WEBVTT/i.test(trimmed)) started = true;
+          continue;
+        }
+        if (!trimmed) continue;
+        const m = trimmed.match(tsRe);
+        if (m) {
+          const start =
+            parseInt(m[1], 10) * 3600 +
+            parseInt(m[2], 10) * 60 +
+            parseInt(m[3], 10) +
+            parseInt(m[4], 10) / 1000;
+          result.push({
+            time: Math.max(0, start),
+            text: '',
+            timed: true
+          });
+          // El texto está en la siguiente línea (o líneas hasta vacío)
+        } else if (result.length && result[result.length - 1].text === '') {
+          // Línea de texto para la última entrada
+          result[result.length - 1].text = trimmed;
+        }
+      }
+      return result;
+    },
+
+    /* Detecta el formato de letra por extensión y parsea.
+     * Soporta: .lrc, .txt (texto plano), .srt, .vtt */
+    parseLyrics(text, format) {
+      if (!text) return [];
+      const fmt = (format || '').toLowerCase();
+      if (fmt === 'srt' || /\.[sS][rR][tT]$/.test(fmt)) return this.parseSrt(text);
+      if (fmt === 'vtt' || /\.[vV][tT][tT]$/.test(fmt)) return this.parseVtt(text);
+      // LRC / texto plano: delegar al parser LRC existente
+      return this.parseLrc(text);
     },
 });

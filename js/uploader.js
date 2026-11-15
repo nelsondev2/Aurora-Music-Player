@@ -43,8 +43,8 @@
       const lrcs = {};
       Array.from(fileList).forEach(f => {
         const name = f.name.toLowerCase();
-        if (name.endsWith('.lrc') || name.endsWith('.txt')) {
-          const key = name.replace(/\.(lrc|txt)$/, '');
+        if (name.endsWith('.lrc') || name.endsWith('.txt') || name.endsWith('.srt') || name.endsWith('.vtt')) {
+          const key = name.replace(/\.(lrc|txt|srt|vtt)$/, '');
           lrcs[key] = f;
         } else if (f.type.startsWith('audio/') || /\.(mp3|m4a|flac|wav|ogg|webm|opus)$/i.test(name)) {
           audios.push(f);
@@ -111,6 +111,7 @@
       };
 
       const lrcFile = this.findMatchingLrc(file.name, lrcsMap);
+      const lrcExt = lrcFile ? '.' + lrcFile.name.split('.').pop().toLowerCase() : null;
       /* FLAC/OGG/Opus guardan sus metadatos como Vorbis Comment, no
        * como ID3: se leen primero con el lector propio (lee como
        * mucho 1 MB) porque el STREAMINFO de FLAC ya trae la duración
@@ -187,7 +188,10 @@
         } catch (e) {}
       }
 
-      if (lrcText) meta.lrc = this.normalizeLyrics(lrcText);
+      if (lrcText) {
+        meta.lrc = this.normalizeLyrics(lrcText);
+        meta.lrcFormat = lrcExt;
+      }
       if (!meta.cover) meta.cover = this.randomCover();
 
       const coverIsImage = typeof meta.cover === 'string' && (meta.cover.startsWith('data:') || meta.cover.startsWith('blob:'));

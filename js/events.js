@@ -460,16 +460,63 @@ Object.assign(App, {
         const name = $('playlistName').value.trim();
         const desc = $('playlistDesc').value.trim();
         if (!name) { this.toast(this.t('toast_name_required')); return; }
-        const created = this.createPlaylist(name, desc, []);
+
+        // Reglas de lista inteligente (si el toggle está marcado)
+        let smart = null;
+        const tgSmart = document.getElementById('toggleSmartPlaylist');
+        if (tgSmart && tgSmart.checked) {
+          const genreEl = document.getElementById('smartGenre');
+          const minRatingEl = document.getElementById('smartMinRating');
+          const maxTracksEl = document.getElementById('smartMaxTracks');
+          const orderEl = document.getElementById('smartOrder');
+          smart = {
+            genre: (genreEl && genreEl.value) || null,
+            minRating: Number(minRatingEl && minRatingEl.value) || 0,
+            maxTracks: (maxTracksEl && maxTracksEl.value) ? Number(maxTracksEl.value) : null,
+            order: (orderEl && orderEl.value) || 'stars'
+          };
+        }
+
+        const created = this.createPlaylist(name, desc, [], { smart });
         if (!created) return; // nombre duplicado: createPlaylist ya avisó
         $('playlistName').value = '';
         $('playlistDesc').value = '';
+        if (tgSmart) tgSmart.checked = false;
+        const sf = document.getElementById('smartFields');
+        if (sf) sf.setAttribute('hidden', '');
         this.closeSheet('sheetCreatePlaylist');
         //  desde esta hoja la lista siempre nace vacía (sin
         // selector de pistas); antes había un toast alternativo
         // para «creada con pistas» que ya nunca podía sonar.
         this.toast(this.t('toast_playlist_empty_created') + ': ' + name);
       });
+
+      // Toggle: lista inteligente → mostrar u ocultar campos de reglas
+      const tgSmart2 = document.getElementById('toggleSmartPlaylist');
+      const sf2 = document.getElementById('smartFields');
+      if (tgSmart2 && sf2) {
+        tgSmart2.addEventListener('change', () => {
+          sf2.hidden = !tgSmart2.checked;
+        });
+      }
+
+      // Rellenar géneros al hacer click en el selector de listas inteligentes
+      const sgSel = document.getElementById('smartGenre');
+      if (sgSel) {
+        sgSel.addEventListener('click', () => {
+          if (sgSel.options.length > 1) return; // ya poblado
+          const cur = sgSel.value;
+          sgSel.innerHTML = '<option value=""><span data-i18n="genre_unknown">Sin género</span></option>';
+          const genres = typeof this.getGenres === 'function' ? this.getGenres() : [];
+          for (const g of genres) {
+            const o = document.createElement('option');
+            o.value = g.name;
+            o.textContent = g.name;
+            sgSel.appendChild(o);
+          }
+          sgSel.value = cur;
+        });
+      }
 
       // Botones del sheet "Editar playlist"
       const btnPlayNow = document.getElementById('btnPlayPlaylistNow');

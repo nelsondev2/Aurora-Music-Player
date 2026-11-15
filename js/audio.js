@@ -51,6 +51,11 @@ Object.assign(App, {
         this.gainNode.gain.value = 1;
         this.analyser.connect(this.gainNode);
         this.gainNode.connect(this.audioCtx.destination);
+
+        /* Gain node para crossfade real (pista entrante). Empieza en 0. */
+        this._xfadeGainNode = this.audioCtx.createGain();
+        this._xfadeGainNode.gain.value = 0;
+        this._xfadeGainNode.connect(this.audioCtx.destination);
         this.applySavedEq();
       } catch (e) {
         console.warn('[Aurora] Web Audio no disponible:', e.message);
@@ -926,7 +931,13 @@ Object.assign(App, {
         return;
       }
       if (!t) return;
-      const g = await this.computeTrackGain(t);
+      // Usar ReplayGain persistido si existe, sin decodificar audio.
+      let g;
+      if (typeof t.replayGain === 'number' && isFinite(t.replayGain)) {
+        g = t.replayGain;
+      } else {
+        g = await this.computeTrackGain(t);
+      }
       if (this.currentTrack && t.id !== this.currentTrack.id) return;
       this._normGain = g;
       this._setPlaybackGain(g, false);
@@ -938,13 +949,132 @@ Object.assign(App, {
         this._xfadeTimer = null;
       }
       this._xfadeStarted = false;
+      // Limpiar recursos de crossfade real si los hay
+      if (this._xfadeAudio) {
+        try { this._xfadeAudio.pause(); this._xfadeAudio.removeAttribute('src'); this._xfadeAudio.load(); } catch (e) {}
+        this._xfadeAudio = null;
+      }
+      if (this._xfadeSourceNode) {
+        try { this._xfadeSourceNode.disconnect(); } catch (e) {}
+        this._xfadeSourceNode = null;
+      }
       if (this.gainNode && this.audioCtx && !this._xfadeIncoming && !this._sleepFading) {
         this._setPlaybackGain(this._normGain || 1, true);
       }
     },
 
-    _startCrossfadeOut(remain) {
+    /* Crossfade real: mientras la pista actual se desvanece, la siguiente
+     * ya suena en paralelo. Al terminar, se intercambian los roles. */
+    async _startCrossfadeOut(remain) {
       this._xfadeStarted = true;
+      const dur = Math.max(0.05, remain);
+      const now = this.audioCtx.currentTime;
+      const nextIdx = this._nextQueueIndex(true);
+      if (nextIdx == null) return;
+      const nextId = this.queue[nextIdx];
+      const nextTrack = this.tracks.find(t => t.id === nextId);
+      if (!nextTrack) return;
+
+      // Preparar segundo audio con la pista entrante
+      if (!this._xfadeAudio) {
+        this._xfadeAudio = document.createElement('audio');
+        this._xfadeAudio.preload = 'auto';
+      }
+      const nextUrl = this.getTrackUrl(nextTrack);
+      if (!nextUrl) return;
+      this._xfadeAudio.src = nextUrl;
+      try { this._xfadeAudio.volume = this.volume; } catch (e) {}
+
+      // Crear source node para el segundo audio y conectar al gain de crossfade
+      try {
+        this._xfadeSourceNode = this.audioCtx.createMediaElementSource(this._xfadeAudio);
+        // Reutilizar los filtros EQ existentes para la pista entrante
+        let node = this._xfadeSourceNode;
+        for (const f of this.eqFilters) { node.connect(f); node = f; }
+        node.connect(this._xfadeGainNode);
+
+        // Empezar a reproducir la pista entrante
+        this._xfadeAudio.currentTime = 0;
+        await this._xfadeAudio.play();
+      } catch (e) {
+        console.warn('[Aurora] Crossfade real no disponible:', e.message);
+        this._xfadeStarted = false;
+        this._fallbackCrossfade(remain);
+        return;
+      }
+
+      // Fade out de la pista actual + fade in de la entrante, simultáneos
+      try {
+        const g1 = this.gainNode.gain;
+        g1.cancelScheduledValues(now);
+        g1.setValueAtTime(g1.value, now);
+        g1.linearRampToValueAtTime(0.001, now + dur);
+
+        const g2 = this._xfadeGainNode.gain;
+        g2.cancelScheduledValues(now);
+        g2.setValueAtTime(0, now);
+        g2.linearRampToValueAtTime(this._normGain || 1, now + dur);
+      } catch (e) {}
+
+      // Cuando termine el crossfade: pausar la saliente, intercambiar roles
+      const ms = Math.max(40, dur * 1000 - 30);
+      this._xfadeTimer = setTimeout(() => {
+        this._xfadeTimer = null;
+        this._finishCrossfade(nextTrack);
+      }, ms);
+    },
+
+    /* Finaliza el crossfade real: pausa la pista saliente, la entrante
+     * se convierte en la principal y se reconstruye el grafo. */
+    _finishCrossfade(nextTrack) {
+      try {
+        if (this.audio) {
+          this.audio.pause();
+          try { this.audio.removeAttribute('src'); this.audio.load(); } catch (e) {}
+        }
+        // Desconectar source node de la pista saliente si existe
+        if (this.sourceNode) {
+          try { this.sourceNode.disconnect(); } catch (e) {}
+        }
+        // Intercambiar: el audio entrante se vuelve el principal
+        this.audio = this._xfadeAudio;
+        this._xfadeAudio = null;
+        // Reconectar el source node del nuevo audio al grafo
+        if (this.audioCtx && this.sourceNode) {
+          try {
+            this.sourceNode = this.audioCtx.createMediaElementSource(this.audio);
+            let node = this.sourceNode;
+            for (const f of this.eqFilters) { node.connect(f); node = f; }
+            node.connect(this.analyser);
+            this.analyser.connect(this.gainNode);
+          } catch (e) {}
+        }
+        // El gain de crossfade ya está en su valor final; asegurar consistencia
+        if (this.gainNode) {
+          try { this.gainNode.gain.setValueAtTime(this._normGain || 1, this.audioCtx.currentTime); } catch (e) {}
+        }
+        this._xfadeStarted = false;
+        this._xfadeSourceNode = null;
+        this._xfadeIncoming = false;
+        this._xfadeTimer = null;
+        // Actualizar estado de reproducción
+        this.currentTrack = nextTrack;
+        this.currentTrackIdx = this.tracks.findIndex(t => t.id === nextTrack.id);
+        this.queueIdx = this._nextQueueIndex(true) ?? 0;
+        this.isPlaying = true;
+        this.updatePlayUI();
+        this.renderCurrentTrack();
+        this.updateMediaPosition(true);
+        this.preloadNextTrack();
+        this.applyNormalization(nextTrack);
+      } catch (e) {
+        console.warn('[Aurora] Error al finalizar crossfade:', e.message);
+      }
+    },
+
+    /* Fallback al crossfade de ganancia simple si Web Audio no permite
+     * crear dos source nodes simultáneos. */
+    _fallbackCrossfade(remain) {
       const dur = Math.max(0.05, remain);
       if (this.gainNode && this.audioCtx) {
         try {

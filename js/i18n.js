@@ -4247,6 +4247,83 @@ const I18N = {
     id: 'Tanpa genre',
     'zh-TW': '無流派'
   },
+  smart_dynamic: {
+    es: 'Dinámica', en: 'Dynamic', pt: 'Dinâmica',
+    zh: '动态', ja: '動的', fr: 'Dynamique',
+    it: 'Dinamica', ru: 'Динамическая',
+    de: 'Dynamisch',
+    uk: 'Динамічна',
+    pl: 'Dynamiczna',
+    tr: 'Dinamik',
+    id: 'Dinamis',
+    'zh-TW': '動態'
+  },
+  smart_playlist_title: {
+    es: 'Lista inteligente', en: 'Smart playlist', pt: 'Lista inteligente',
+    zh: '智能歌单', ja: 'スマートプレイリスト', fr: 'Liste intelligente',
+    it: 'Playlist intelligente', ru: 'Умный плейлист',
+    de: 'Smart Playlist',
+    uk: 'Розумний плейлист',
+    pl: 'Inteligentna playlista',
+    tr: 'Akıllı liste',
+    id: 'Daftar putar pintar',
+    'zh-TW': '智能歌單'
+  },
+  smart_genre: {
+    es: 'Género', en: 'Genre', pt: 'Gênero',
+    zh: '流派', ja: 'ジャンル', fr: 'Genre',
+    it: 'Genere', ru: 'Жанр',
+    de: 'Genre',
+    uk: 'Жанр',
+    pl: 'Gatunek',
+    tr: 'Tür',
+    id: 'Genre',
+    'zh-TW': '流派'
+  },
+  smart_min_rating: {
+    es: 'Valoración mínima', en: 'Minimum rating', pt: 'Avaliação mínima',
+    zh: '最低评分', ja: '最低評価', fr: 'Note minimum',
+    it: 'Valutazione minima', ru: 'Минимальный рейтинг',
+    de: 'Mindestbewertung',
+    uk: 'Мінімальний рейтинг',
+    pl: 'Minimalna ocena',
+    tr: 'Minimum puan',
+    id: 'Penilaian minimum',
+    'zh-TW': '最低評分'
+  },
+  smart_max_tracks: {
+    es: 'Máximo de pistas', en: 'Max tracks', pt: 'Máx. faixas',
+    zh: '最多曲目数', ja: '最大トラック数', fr: 'Nombre max de pistes',
+    it: 'Tracce max', ru: 'Макс. треков',
+    de: 'Max. Tracks',
+    uk: 'Макс. треків',
+    pl: 'Maks. utwory',
+    tr: 'Maks. şarkı',
+    id: 'Maks. lagu',
+    'zh-TW': '最多曲目數'
+  },
+  smart_order: {
+    es: 'Orden', en: 'Order', pt: 'Ordem',
+    zh: '排序', ja: '並び替え', fr: 'Ordre',
+    it: 'Ordine', ru: 'Порядок',
+    de: 'Reihenfolge',
+    uk: 'Порядок',
+    pl: 'Kolejność',
+    tr: 'Sıralama',
+    id: 'Urutan',
+    'zh-TW': '排序'
+  },
+  smart_random: {
+    es: 'Aleatorio', en: 'Random', pt: 'Aleatório',
+    zh: '随机', ja: 'ランダム', fr: 'Aléatoire',
+    it: 'Casuale', ru: 'Случайный',
+    de: 'Zufällig',
+    uk: 'Випадковий',
+    pl: 'Losowe',
+    tr: 'Rastgele',
+    id: 'Acak',
+    'zh-TW': '隨機'
+  },
   save_queue_btn: {
     es: 'Guardar cola como lista', en: 'Save queue as playlist', pt: 'Salvar fila como lista',
     zh: '将队列存为歌单', ja: 'キューをリストに保存', fr: 'Enregistrer la file comme liste',

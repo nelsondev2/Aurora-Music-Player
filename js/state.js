@@ -107,6 +107,11 @@
     /* Crossfade opt-in (0 / 3 / 6 / 12 s). 0 = off; no retrasa el next manual. */
     crossfadeEnabled: false,
     crossfadeDuration: 0,
+    /* Crossfade real: segundo <audio> y su gain node para mezclar
+     * la pista entrante mientras la saliente se desvanece. */
+    _xfadeAudio: null,
+    _xfadeGainNode: null,
+    _xfadeSourceNode: null,
 
     /* Tema */
     theme: 'dark',  // 'dark' | 'light' | 'amoled'

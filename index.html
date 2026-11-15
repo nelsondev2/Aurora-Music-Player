@@ -446,6 +446,42 @@
             </div>
             <!--  sin selector de pistas al crear — la lista
  nace vacía y se rellena desde su vista de edición. -->
+
+            <!-- Lista inteligente: reglas que se aplican a toda la biblioteca
+                 al reproducir (género, rating, tope, orden). Se calculan
+                 dinámicamente; no guarda trackIds. -->
+            <div class="smart-options" id="smartOptions" hidden>
+              <label class="settings-row" for="toggleSmartPlaylist">
+                <span data-i18n="smart_playlist_title">Lista inteligente</span>
+                <input type="checkbox" id="toggleSmartPlaylist" />
+              </label>
+              <div id="smartFields" hidden>
+                <label class="field">
+                  <span data-i18n="smart_genre">Género</span>
+                  <select id="smartGenre" class="aurora-select">
+                    <option value=""><span data-i18n="genre_unknown">Sin género</span></option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span data-i18n="smart_min_rating">Valoración mínima</span>
+                  <input type="number" id="smartMinRating" min="0" max="5" value="0" />
+                </label>
+                <label class="field">
+                  <span data-i18n="smart_max_tracks">Máximo de pistas</span>
+                  <input type="number" id="smartMaxTracks" min="1" value="" placeholder="Sin límite" />
+                </label>
+                <label class="field">
+                  <span data-i18n="smart_order">Orden</span>
+                  <select id="smartOrder" class="aurora-select">
+                    <option value="stars"><span data-i18n="sort_stars">Estrellas</span></option>
+                    <option value="recent"><span data-i18n="sort_recent">Añadidas hace poco</span></option>
+                    <option value="title"><span data-i18n="sort_title">Título A–Z</span></option>
+                    <option value="random"><span data-i18n="smart_random">Aleatorio</span></option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
             <button class="primary-btn" id="btnSavePlaylist" data-i18n="save_playlist">Guardar lista</button>
           </div>
         </div>
