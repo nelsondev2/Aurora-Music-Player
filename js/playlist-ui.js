@@ -542,7 +542,9 @@ Object.assign(App, {
       this._hydratePlaylistCover(pl);
       // Con el índice id->pista: buscar cada id con find() sobre miles
       // de pistas hacía renderPlaylists cuadrático (medido en el estrés).
-      const tracks = (pl.trackIds || []).map(id => this.getTrackById(id)).filter(Boolean);
+      const tracks = pl && pl.smart
+        ? this.playlistTracksSorted(pl)
+        : (pl.trackIds || []).map(id => this.getTrackById(id)).filter(Boolean);
       const withImage = tracks.filter(t => this._playlistTrackArtSrc(t));
 
       if (withImage.length === 0) {
@@ -1148,9 +1150,9 @@ Object.assign(App, {
     },
 
     playlistMetaLabel(pl) {
-      const n = (pl.trackIds || []).length;
+      const n = pl && pl.smart ? this.t('smart_dynamic') : this.fmtTracksCount((pl.trackIds || []).length);
       const dur = this.fmtDurationLabel(this.playlistDuration(pl));
-      let s = this.fmtTracksCount(n);
+      let s = n;
       if (dur) s += ' · ' + dur;
       if (pl.description) s += ' · ' + pl.description;
       return s;
@@ -1355,12 +1357,74 @@ Object.assign(App, {
     /*  aquí vivía smartPlaylistTracks — el motor de las
  * listas inteligentes, retirado con ellas. */
 
-    /* Las pistas de una lista, en el orden en que se ven y suenan. */
+    /* Las pistas de una lista, en el orden en que se ven y suenan.
+     * Si la lista es inteligente (pl.smart), las pistas se calculan
+     * dinámicamente aplicando las reglas a toda la biblioteca.
+     * Las listas normales (pl.trackIds) siguen funcionando igual. */
     playlistTracksSorted(pl) {
       if (!pl) return [];
+      if (pl && pl.smart) return this.smartPlaylistTracks(pl);
       const byId = this.trackMap();
       const stored = ((pl && pl.trackIds) || []).map(id => byId.get(id)).filter(Boolean);
       return this.sortTracksBy(stored, (pl && pl.sort) || 'stars');
+    },
+
+    /* Motor de listas inteligentes: devuelve las pistas de la biblioteca
+     * que cumplen las reglas de pl.smart, ordenadas según pl.smart.order.
+     * Reglas soportadas:
+     *   genre    — género exacto, o null/'' para cualquier género
+     *   minRating — nota mínima (0-5), 0 = sin filtro
+     *   maxTracks — tope de pistas, o null = sin límite
+     *   order   — 'stars' | 'recent' | 'random' | 'title'
+     * Las pistas se re-evalúan en cada llamada: añadir o quitar canciones
+     * de la biblioteca se refleja al instante en la lista inteligente. */
+    smartPlaylistTracks(pl) {
+      if (!pl || !pl.smart) return [];
+      const s = pl.smart;
+      const byId = this.trackMap();
+      const all = Array.from(byId.values()).filter(Boolean);
+
+      let result = all;
+
+      // Filtro por género
+      if (s.genre && String(s.genre).trim()) {
+        const g = String(s.genre).trim();
+        result = result.filter(t => String((t && t.genre) || '').trim() === g);
+      }
+
+      // Filtro por rating mínimo
+      const minRating = Number(s.minRating) || 0;
+      if (minRating > 0) {
+        result = result.filter(t => this._ratingOf(t) >= minRating);
+      }
+
+      // Tope de pistas
+      const maxTracks = Number(s.maxTracks) || 0;
+
+      // Orden
+      const order = s.order || 'stars';
+      let sorted;
+      switch (order) {
+        case 'recent':
+          sorted = this.sortTracksBy(result, 'recent');
+          break;
+        case 'title':
+          sorted = this.sortTracksBy(result, 'title');
+          break;
+        case 'random':
+          sorted = result.slice();
+          this._fisherYates(sorted);
+          break;
+        case 'stars':
+        default:
+          sorted = this.sortTracksBy(result, 'stars');
+          break;
+      }
+
+      if (maxTracks > 0 && sorted.length > maxTracks) {
+        sorted = sorted.slice(0, maxTracks);
+      }
+      return sorted;
     },
 
     playPlaylist(playlistId) {

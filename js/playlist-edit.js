@@ -417,7 +417,7 @@ Object.assign(App, {
       });
     },
 
-    createPlaylist(name, desc, trackIds) {
+    createPlaylist(name, desc, trackIds, opts) {
       // Validación defensiva: la función es pública y también la usa el
       // sheet; sin límites un nombre enorme rompía la cabecera y el M3U.
       const cleanName = String(name == null ? '' : name).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 80);
@@ -430,11 +430,13 @@ Object.assign(App, {
       const colors = ['#6E5CFF','#FF7AB6','#1A6A88','#3EC8B8','#2A6B48','#A8C86A','#C45C18','#E8B84A','#A61B3A','#E85A7A'];
       const from = colors[Math.floor(Math.random() * colors.length)];
       const to = colors[Math.floor(Math.random() * colors.length)];
+      const smart = (opts && opts.smart) || null;
       const pl = {
         id,
         name: cleanName || this.t('create_playlist_title'),
         description: cleanDesc,
-        trackIds: Array.isArray(trackIds) ? trackIds.filter(x => this.trackMap().has(x)) : [],
+        trackIds: smart ? [] : (Array.isArray(trackIds) ? trackIds.filter(x => this.trackMap().has(x)) : []),
+        smart,
         cover: { from, to, angle: 135 }
       };
       this.playlists.push(pl);
