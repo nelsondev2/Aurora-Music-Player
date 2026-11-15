@@ -2,7 +2,7 @@
 
 Reproductor de música **offline-first** pensado para **WebXDC**: se comparte como archivo `.xdc` en un chat de Delta Chat y funciona sin red, sin cuenta y sin servidor. Carga archivos locales (MP3, M4A, FLAC, WAV, OGG, Opus), lee ID3 y letras LRC.
 
-**Versión:** 1.4.0 · licencia MIT
+**Versión:** 1.4.1 · licencia MIT
 
 > **Nota:** Aurora es un proyecto **generado con inteligencia
 > artificial**. Todo su código —y las traducciones de la
@@ -62,7 +62,7 @@ El script comprueba antes de comprimir:
 - que ningún `webxdc.js` viaje en el paquete (lo inyecta el cliente)
 - que `App.VERSION`, el README y el CHANGELOG digan la misma versión
 
-El resultado es un ZIP con compresión Deflate, **26 archivos y ~385 KB**, reproducible (mismo contenido → mismo SHA-256).
+El resultado es un ZIP con compresión Deflate, **28 archivos y ~392 KB**, reproducible (mismo contenido → mismo SHA-256).
 
 ### Probar en Delta Chat
 
@@ -87,8 +87,11 @@ Dichas en voz alta, para que nadie se lleve una sorpresa:
 - **Cada copia del `.xdc` guarda su propia biblioteca** (ya avisado
   arriba): reenviar el archivo crea una instancia nueva y vacía. No
   hay sincronización entre copias ni entre dispositivos, y no hay
-  copia de seguridad integrada: tu biblioteca vive en los datos de
-  esa instancia dentro de la app de mensajería.
+  copia de seguridad de la biblioteca: tu música, tus listas y tus
+  ajustes viven en los datos de esa instancia dentro de la app de
+  mensajería, y si se borran no se pueden recuperar dentro de la app
+  (las listas exportadas a `.m3u8` guardan los nombres de los
+  archivos, no el audio).
 - **La música se detiene al cerrar la app.** Las WebXDC se ejecutan
   dentro del cliente y este no ofrece reproducción en segundo plano
   tras cerrar la ventana; es un límite de la plataforma, no un fallo.
@@ -127,7 +130,7 @@ Requiere Node 20 o superior:
 
 ```bash
 npm install     # una vez: jsdom y fake-indexeddb
-npm test        # 22 pruebas
+npm test        # 43 pruebas
 ```
 
 Los 54 iconos de la interfaz son un sprite SVG inline en `index.html` (un
@@ -144,9 +147,7 @@ real, con IndexedDB, `<audio>` y Web Audio— y comprueban lo que más duele si 
 rompe: cola por contexto, aleatorio, repetición, borrado con «Deshacer»,
 estadísticas, sesión, caché de `objectURL`, los 14 idiomas, el escapado de
 metadatos, la apertura de las 20 hojas, la coherencia de la versión y que el
-`.xdc` se construya igual dos veces. Otra hace el viaje completo de una copia de
-seguridad (crear, leer, restaurar y comprobar que suena). Otra comprueba que la
-portada generada sale
+`.xdc` se construya igual dos veces. Otra comprueba que la portada generada sale
 siempre del mismo pintor. Otra tanda vigila el formato de guardado:
 que el audio no se cuele en el registro de la pista, que abrir la app no cargue
 ningún Blob, que borrar no deje huérfanos y que la migración se haga una vez. Y
@@ -163,7 +164,6 @@ Nada de esto viaja en el `.xdc`: `build-xdc.py` empaqueta solo `APP_ENTRIES`
 | `css/styles.css` | Estilos, temas y acentos (toda la CSS vive en `css/`) |
 | `js/i18n.js` | Traducciones de los 14 idiomas (solo texto: aquí se revisa un idioma) |
 | `js/portadas.js` | Portada generada: un solo pintor para reproductor, filas, tarjetas y listas |
-| `js/backup.js` | Copia de seguridad de la biblioteca con el audio dentro (formato propio, sin dependencias) |
 | `js/data.js` | Catálogo inicial, paleta de portadas y configuración |
 | `js/storage.js` | Persistencia en IndexedDB: metadatos de las pistas, audio aparte (`blobs`), listas y ajustes |
 | `js/uploader.js` | Lectura de archivos, ID3 y LRC |

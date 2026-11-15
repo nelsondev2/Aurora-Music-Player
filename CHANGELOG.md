@@ -2,6 +2,18 @@
 
 Historial de versiones **publicadas** de Aurora Music Player.
 
+## 1.4.1 — Fuera la copia de seguridad
+
+- **Se retira la exportación e importación de copias `.aurora`** (Ajustes →
+  Copia de seguridad): la sección desaparece de Ajustes, junto con
+  `js/backup.js`, sus manejadores y sus textos en los 14 idiomas. La copia
+  no llegó a publicarse; la app vuelve a guardar la biblioteca solo en la
+  instancia del `.xdc`.
+- Siguen intactas las dos cosas con las que ya contaba la app: **importar
+  archivos de audio** con **+** y **exportar listas** (`.m3u8`) o canciones
+  por el chat.
+- Se van las 5 pruebas de la copia (43 en total), todas en verde.
+
 ## 1.4.0 — Copia de seguridad con la música dentro
 
 - **Guardar y restaurar la biblioteca entera, con el audio.** Ajustes →

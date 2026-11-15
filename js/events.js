@@ -258,31 +258,6 @@ Object.assign(App, {
       if (btnFree) btnFree.addEventListener('click', () => {
         if (typeof this.offerFreeStorage === 'function') this.offerFreeStorage();
       });
-      const btnExportBackup = document.getElementById('menuExportBackup');
-      if (btnExportBackup) btnExportBackup.addEventListener('click', () => {
-        this.closeSheet('sheetSettings');
-        this.exportBackup().catch(() => {});
-      });
-      const btnImportBackup = document.getElementById('menuImportBackup');
-      const backupInput = document.getElementById('backupInput');
-      if (btnImportBackup && backupInput) {
-        btnImportBackup.addEventListener('click', () => backupInput.click());
-        backupInput.addEventListener('change', () => {
-          const f = backupInput.files && backupInput.files[0];
-          backupInput.value = ''; //  misma copia dos veces seguidas
-          if (!f) return;
-          this.closeSheet('sheetSettings');
-          this.importBackup(f).then((info) => {
-            this.toast(this.t('toast_backup_restored')
-              .replace('X', String(info.tracks))
-              .replace('Y', String(info.playlists)), 'success');
-          }).catch((e) => {
-            console.warn('[Aurora] Copia no restaurada:', e);
-            this._lastError = { msg: 'restore: ' + e.message, ts: Date.now() };
-            this.toast(this.t('toast_backup_bad'), 'danger');
-          });
-        });
-      }
       const btnCopyDiag = document.getElementById('aboutCopyDiag');
       if (btnCopyDiag) btnCopyDiag.addEventListener('click', () => {
         this.copyDiagnostics().catch(() => this.toast(this.t('toast_diag_failed'), 'danger'));
