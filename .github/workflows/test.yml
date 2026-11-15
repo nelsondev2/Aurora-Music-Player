@@ -6,10 +6,11 @@
 
 name: Pruebas
 
+# En cualquier rama: una regresión en una rama de trabajo cuesta lo mismo
+# de encontrar que en main, y la suite tarda segundos.
 on:
   push:
-    branches:
-      - main
+    branches: ['**']
   pull_request:
   workflow_dispatch:
 
