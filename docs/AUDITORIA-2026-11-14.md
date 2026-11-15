@@ -176,7 +176,7 @@ alcance de producto), a petición expresa:
 | 4 | `_lastError` sin leer (§3.7) | ✅ Ajustes → Acerca de → Diagnóstico, con «Copiar diagnóstico» |
 | 5 | Caché de `objectURL` sin tope (§3.5) | ✅ tope de 12, sin revocar la pista en curso ni la precargada |
 | 6 | Copia de seguridad (§3.3) | ⏸ pendiente (excluida a petición) |
-| 7 | Blobs fuera del listado de arranque (§3.4) | ⏸ pendiente: exige almacén aparte y volver asíncrona toda la ruta de reproducción; ahora hay pruebas para hacerlo con red |
+| 7 | Blobs fuera del listado de arranque (§3.4) | ✅ almacén `blobs` aparte (BD v2), lectura bajo demanda en reproducir/precargar/compartir/releer etiquetas, migración con cursor y 8 pruebas |
 | 8 | Huella de contenido en duplicados (§3.6) | ⏸ pendiente: cualquier cambio ahí puede descartar archivos del usuario, merece su propia iteración con pruebas |
 
 **Efecto secundario de las pruebas:** encontraron un fallo real que no había
@@ -186,5 +186,5 @@ borraba o paraba la pista justo después de arrancar, la promesa pendiente
 devolvía `isPlaying = true` (y arrancaba el conteo de estadísticas) sobre una
 pista ya parada. Corregido con `_invalidatePendingPlay()`.
 
-**Verificación final:** `npm test` → 22/22 en verde · `python3 build-xdc.py` →
-26 archivos, 384,7 KB, `.xdc` válido · dos builds con el mismo SHA-256.
+**Verificación final:** `npm test` → 30/30 en verde · `python3 build-xdc.py` →
+26 archivos, `.xdc` válido · dos builds con el mismo SHA-256.

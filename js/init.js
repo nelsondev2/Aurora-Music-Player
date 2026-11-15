@@ -190,6 +190,16 @@ Object.assign(App, {
       try {
         // Tracks
         if (!window.AuroraStorage) throw new Error('IndexedDB no disponible');
+        //  Bibliotecas de antes de la 1.3: el audio venía dentro de cada
+        //  registro de pista. Se mueve a su propio almacén ANTES de leer
+        //  nada; si no, este arranque seguiría cargando todos los Blobs
+        //  (justo lo que se quiere evitar) y la migración no serviría.
+        try {
+          const moved = await window.AuroraStorage.migrateBlobsToStore();
+          if (moved) console.info('[Aurora] Audio movido a su almacén:', moved, 'pistas');
+        } catch (e) {
+          console.warn('[Aurora] No se pudo separar el audio de los metadatos:', e);
+        }
         const stored = await window.AuroraStorage.getAllTracks();
         //  nada de crear un objectURL por pista al arrancar
         // (miles de URLs vivas antes de escuchar nada): getTrackUrl
@@ -357,10 +367,21 @@ Object.assign(App, {
         delete toSave._thumbsHiRes;
         delete toSave._thumbing;
         delete toSave._thumbsDirty;
-        if (track._file) {
-          toSave.fileBlob = track._file;  // IndexedDB guarda Blobs directamente
-          delete toSave._file;
+        //  El audio ya no va dentro del registro de la pista: vive en el
+        //  almacén "blobs", clave = id. Así leer la biblioteca al arrancar
+        //  no arrastra el audio de todas las canciones.
+        //  Solo se escribe si aún no está guardado: sin esta comprobación
+        //  cada edición de título reescribía los megas del archivo.
+        if (!track.hasAudio) {
+          const audio = track._file || track.fileBlob;
+          if (audio) {
+            await window.AuroraStorage.putBlob(track.id, audio);
+            track.hasAudio = true;
+            toSave.hasAudio = true;
+          }
         }
+        delete toSave.fileBlob;
+        delete toSave._file;
         await window.AuroraStorage.putTrack(toSave);
         return true;
       } catch (e) {

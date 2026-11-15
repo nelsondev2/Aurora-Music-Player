@@ -3,11 +3,17 @@
  *  Reproductor de música profesional · mobile-first
  *
  *  Guarda:
- *    - store "tracks": metadatos + objectURL del blob de audio
+ *    - store "tracks": SOLO metadatos (título, artista, portada…)
+ *    - store "blobs": el audio de cada pista, en su propio almacén
  *    - store "playlists": listas del usuario
  *    - store "settings": favoritos, volumen, etc.
  *
- *  Los blobs de audio se almacenan como File/Blob para crear
+ *  El audio vive aparte desde la versión 1.3: al arrancar la app lee
+ *  los metadatos de toda la biblioteca (ligero) y trae el Blob de una
+ *  pista solo cuando hace falta reproducirla, compartirla o releer sus
+ *  etiquetas. Antes cada registro de "tracks" llevaba dentro su audio y
+ *  abrir la app con 500 canciones deserializaba 500 Blobs antes de
+ *  pintar nada. Los blobs se guardan como File/Blob para crear
  *  objectURLs que el <audio> pueda reproducir sin red.
  * ===================================================================== */
 
@@ -16,8 +22,10 @@
   'use strict';
 
   const DB_NAME = 'aurora-db';
-  const DB_VERSION = 1;
+  //  2: almacén "blobs" (el audio deja de viajar dentro de la pista).
+  const DB_VERSION = 2;
   const STORE_TRACKS = 'tracks';
+  const STORE_BLOBS = 'blobs';
   const STORE_PLAYLISTS = 'playlists';
   const STORE_SETTINGS = 'settings';
 
@@ -71,6 +79,10 @@
           if (!db.objectStoreNames.contains(STORE_PLAYLISTS)) {
             db.createObjectStore(STORE_PLAYLISTS, { keyPath: 'id' });
           }
+          if (!db.objectStoreNames.contains(STORE_BLOBS)) {
+            //  clave externa (el id de la pista): el valor es el Blob.
+            db.createObjectStore(STORE_BLOBS);
+          }
           if (!db.objectStoreNames.contains(STORE_SETTINGS)) {
             db.createObjectStore(STORE_SETTINGS);
           }
@@ -117,6 +129,27 @@
       throw new Error('AuroraStorage: operación imposible: ' + store);
     },
 
+    /* Transacción sobre varios almacenes. Hace falta cuando el cambio
+     * tiene que ser atómico: borrar una pista y su audio a la vez (si
+     * solo se borrara una mitad quedaría un huérfano que ocupa sitio). */
+    async _txn(stores, mode, fn) {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        await this.open();
+        try {
+          return await fn(this.db.transaction(stores, mode));
+        } catch (err) {
+          const stale = err && (err.name === 'InvalidStateError' ||
+            /not open|closed/i.test(String(err.message || '')));
+          if (attempt === 0 && stale) {
+            this.db = null;
+            continue;
+          }
+          throw err;
+        }
+      }
+      throw new Error('AuroraStorage: transacción imposible: ' + stores.join(','));
+    },
+
     /* ---------- Tracks ---------- */
     async putTrack(track) {
       return this._run(STORE_TRACKS, 'readwrite', (os) => os.put(track));
@@ -128,10 +161,77 @@
       return this._run(STORE_TRACKS, 'readonly', (os) => os.getAll());
     },
     async deleteTrack(id) {
-      return this._run(STORE_TRACKS, 'readwrite', (os) => os.delete(id));
+      //  metadatos + audio: si se borrara solo la pista, su Blob se
+      // quedaría ocupando espacio para siempre.
+      //  Las dos peticiones se lanzan sin esperar: si se encadenaran con
+      //  .then() la transacción podría cerrarse entre una y otra.
+      return this._txn([STORE_TRACKS, STORE_BLOBS], 'readwrite', (tx) => Promise.all([
+        this._req(tx.objectStore(STORE_BLOBS).delete(id)),
+        this._req(tx.objectStore(STORE_TRACKS).delete(id))
+      ]));
     },
     async clearTracks() {
-      return this._run(STORE_TRACKS, 'readwrite', (os) => os.clear());
+      return this._txn([STORE_TRACKS, STORE_BLOBS], 'readwrite', (tx) => Promise.all([
+        this._req(tx.objectStore(STORE_BLOBS).clear()),
+        this._req(tx.objectStore(STORE_TRACKS).clear())
+      ]));
+    },
+
+    /* ---------- Blobs (el audio, aparte de sus metadatos) ---------- */
+    async putBlob(id, blob) {
+      return this._run(STORE_BLOBS, 'readwrite', (os) => os.put(blob, id));
+    },
+    /* Devuelve el Blob de una pista o undefined si no hay audio guardado. */
+    async getBlob(id) {
+      return this._run(STORE_BLOBS, 'readonly', (os) => os.get(id));
+    },
+    async deleteBlob(id) {
+      return this._run(STORE_BLOBS, 'readwrite', (os) => os.delete(id));
+    },
+    async clearBlobs() {
+      return this._run(STORE_BLOBS, 'readwrite', (os) => os.clear());
+    },
+
+    /* ---------- Migración: sacar el audio de los registros de pista ----
+     * Las bibliotecas anteriores a la 1.3 guardaban el Blob dentro del
+     * registro de la pista. Esta pasada, con cursor (no carga la
+     * biblioteca entera en memoria), mueve cada audio a "blobs" y
+     * reescribe el registro sin él. Es idempotente: si se corta a
+     * medias, la siguiente ejecución sigue donde lo dejó; el testigo
+     * evita repetirla en cada arranque. Devuelve cuántas movió. */
+    async migrateBlobsToStore() {
+      let done = null;
+      try { done = await this.getSetting('blob_store_v2'); } catch (e) {}
+      if (done) return 0;
+      let moved = 0;
+      await this._txn([STORE_TRACKS, STORE_BLOBS], 'readwrite', (tx) => {
+        const store = tx.objectStore(STORE_TRACKS);
+        const blobs = tx.objectStore(STORE_BLOBS);
+        return new Promise((resolve, reject) => {
+          const req = store.openCursor();
+          req.onerror = () => reject(req.error);
+          req.onsuccess = () => {
+            const cur = req.result;
+            if (!cur) return resolve();
+            const rec = cur.value;
+            try {
+              if (rec && rec.fileBlob) {
+                blobs.put(rec.fileBlob, rec.id);
+                delete rec.fileBlob;
+                rec.hasAudio = true;
+                cur.update(rec);
+                moved++;
+              }
+            } catch (e) {
+              // Un registro corrupto no debe impedir migrar el resto.
+              console.warn('AuroraStorage: registro ilegible al migrar:', e);
+            }
+            cur.continue();
+          };
+        });
+      });
+      try { await this.setSetting('blob_store_v2', true); } catch (e) {}
+      return moved;
     },
 
     /* ---------- Playlists ---------- */

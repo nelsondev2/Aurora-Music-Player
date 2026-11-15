@@ -2,7 +2,7 @@
 
 Reproductor de música **offline-first** pensado para **WebXDC**: se comparte como archivo `.xdc` en un chat de Delta Chat y funciona sin red, sin cuenta y sin servidor. Carga archivos locales (MP3, M4A, FLAC, WAV, OGG, Opus), lee ID3 y letras LRC.
 
-**Versión:** 1.2.5 · licencia MIT
+**Versión:** 1.3.0 · licencia MIT
 
 > **Nota:** Aurora es un proyecto **generado con inteligencia
 > artificial**. Todo su código —y las traducciones de la
@@ -141,7 +141,9 @@ real, con IndexedDB, `<audio>` y Web Audio— y comprueban lo que más duele si 
 rompe: cola por contexto, aleatorio, repetición, borrado con «Deshacer»,
 estadísticas, sesión, caché de `objectURL`, los 14 idiomas, el escapado de
 metadatos, la apertura de las 20 hojas, la coherencia de la versión y que el
-`.xdc` se construya igual dos veces.
+`.xdc` se construya igual dos veces. Otra tanda vigila el formato de guardado:
+que el audio no se cuele en el registro de la pista, que abrir la app no cargue
+ningún Blob, que borrar no deje huérfanos y que la migración se haga una vez.
 
 Nada de esto viaja en el `.xdc`: `build-xdc.py` empaqueta solo `APP_ENTRIES`
 (la app, sus estilos, el icono y el manifiesto).
@@ -153,7 +155,7 @@ Nada de esto viaja en el `.xdc`: `build-xdc.py` empaqueta solo `APP_ENTRIES`
 | `index.html` | Markup de la app (vistas, hojas, sprite de iconos) |
 | `css/styles.css` | Estilos, temas y acentos (toda la CSS vive en `css/`) |
 | `js/data.js` | Traducciones (14 idiomas) y utilidades de datos |
-| `js/storage.js` | Persistencia en IndexedDB |
+| `js/storage.js` | Persistencia en IndexedDB: metadatos de las pistas, audio aparte (`blobs`), listas y ajustes |
 | `js/uploader.js` | Lectura de archivos, ID3 y LRC |
 | `js/` | Todo el JavaScript propio: módulos de la app (audio, UI, listas, letras, ajustes…) |
 | `assets/` | Fuente Outfit, iconos y jsmediatags (`assets/js/`) |

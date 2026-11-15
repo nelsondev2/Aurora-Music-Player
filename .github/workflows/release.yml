@@ -25,7 +25,7 @@ on:
       tag:
         description: 'Etiqueta a publicar (p. ej. v1.2.0)'
         required: true
-        default: 'v1.2.5'
+        default: 'v1.3.0'
 
 # Crear releases y subir adjuntos exige escribir en el repo.
 permissions:

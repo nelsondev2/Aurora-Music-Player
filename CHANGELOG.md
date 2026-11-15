@@ -2,8 +2,26 @@
 
 Historial de versiones **publicadas** de Aurora Music Player.
 
-## Sin publicar
+## 1.3.0 — La biblioteca abre sin cargar el audio
 
+- **El audio deja de viajar dentro de la pista.** Los registros de
+  `tracks` guardan solo metadatos; cada archivo se va a un almacén
+  `blobs` aparte (base de datos versión 2). Antes, abrir la app con la
+  biblioteca llena deserializaba un Blob por canción antes de pintar
+  nada; ahora el audio se lee cuando de verdad hace falta —reproducir,
+  precargar para el cambio sin pausa, compartir, releer etiquetas— y se
+  suelta en cuanto su `objectURL` sale de la caché, así que una sesión
+  larga tampoco se queda con toda la biblioteca en memoria. Las
+  bibliotecas anteriores se migran solas la primera vez, con cursor
+  (sin cargar la biblioteca entera en RAM) y de forma idempotente: si
+  la migración se corta, el arranque siguiente la termina.
+- Borrar una pista se lleva también su audio, y «borrar la biblioteca»
+  vacía el almacén de audio: el formato nuevo no debe dejar Blobs sin
+  dueño ocupando espacio.
+- Ocho pruebas nuevas (30 en total) para esa separación: que el Blob no
+  se cuele en el registro, que reabrir no cargue audio, que reproducir lo
+  traiga, que borrar no deje huérfanos y que la migración se haga una
+  sola vez.
 - **La versión que se ve es la versión que es.** Acerca de enseñaba
   «1.2.0» en la 1.2.5 porque `App.VERSION` se quedó atrás: ahora dice
   1.2.5, el README también, y no puede volver a pasar — `build-xdc.py`

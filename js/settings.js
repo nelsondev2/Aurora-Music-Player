@@ -127,6 +127,11 @@ Object.assign(App, {
         // play). Se resuelve la URL con getTrackUrl(): asignar
         // currentTrack.src a ciegas convertía las pistas restauradas de
         // una copia (sin blob todavía) en la URL literal «undefined».
+        //  El audio de la pista restaurada se trae del almacén (el
+        //  registro ya no lo lleva dentro) antes de pedir su URL.
+        if (typeof this.ensureTrackBlob === 'function') {
+          await this.ensureTrackBlob(this.currentTrack);
+        }
         const restoreUrl = typeof this.getTrackUrl === 'function'
           ? this.getTrackUrl(this.currentTrack)
           : (this.currentTrack && this.currentTrack.src) || null;
