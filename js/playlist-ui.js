@@ -471,6 +471,33 @@ Object.assign(App, {
         : (this.coverFallback ? this.coverFallback() : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 });
     },
 
+    /* Color de una lista acotado a hex: lo guardado sale de la paleta de
+     * la app, pero un registro manipulado no debe poder colar CSS. */
+    _safeCoverColor(v, fallback) {
+      return (typeof v === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(v)) ? v : fallback;
+    },
+
+    /* Fondo de la portada de una lista SIN carátula. Mismo lenguaje que
+     * la portada generada de una pista (luz arriba, degradado en
+     * diagonal, la semilla decide el ángulo y dónde cae la luz) para que
+     * dos listas del mismo acento no se vean idénticas. Devuelve la
+     * declaración `background-image` completa. */
+    playlistCoverStyle(pl) {
+      const base = { from: '#6E5CFF', to: '#FF7AB6' };
+      const fb = (this.coverFallback && this.coverFallback()) || base;
+      const pal = this._playlistCoverFallback(pl) || fb;
+      const from = this._safeCoverColor(pal.from, this._safeCoverColor(fb.from, base.from));
+      const to = this._safeCoverColor(pal.to, this._safeCoverColor(fb.to, base.to));
+      //  La cuenta vive en js/portadas.js: la usan la app y la vista previa.
+      const p = (window.AuroraCover && typeof window.AuroraCover.listParams === 'function')
+        ? window.AuroraCover.listParams((pl && (pl.name || pl.id)) || '', { from, to })
+        : { angle: 135, gx: 30, gy: 24, from, to };
+      const angle = p.angle, gx = p.gx, gy = p.gy;
+      return 'background-image:' +
+        'radial-gradient(125% 125% at ' + gx + '% ' + gy + '%, rgba(255,255,255,0.26), rgba(255,255,255,0) 62%),' +
+        'linear-gradient(' + angle + 'deg, ' + from + ', ' + to + ');';
+    },
+
     _hydratePlaylistCover(pl) {
       if (!pl) return;
       if (pl.coverArt && !pl._coverCache) {
@@ -688,6 +715,8 @@ Object.assign(App, {
         el.classList.add('has-art');
         const icon = el.querySelector('.pl-cover-icon');
         if (icon) icon.remove();
+        const letter = el.querySelector('.pl-cover-letter');
+        if (letter) letter.remove();
       });
       if (this._editingPlaylistId === pl.id) {
         const edit = document.getElementById('editPlaylistCover');
@@ -1166,10 +1195,9 @@ Object.assign(App, {
           const hasArt = typeof cover === 'string' && this._safeImageDataUrl(cover);
           const coverBg = hasArt
             ? `background-image:url('${cover}');background-size:cover;background-position:center;`
-            : `background:linear-gradient(135deg, ${cover.from || '#6E5CFF'}, ${cover.to || '#FF7AB6'});`;
+            : this.playlistCoverStyle(pl);
           //  Favoritos vive solo en su vista; en Listas ya no
           // hay lista con trato de favorita.
-          const fallbackIcon = 'list-ul';
           const tracksLabel = this.playlistMetaLabel(pl);
           // Ya no hay lista predefinida: ninguna lleva insignia.
           const badge = '';
@@ -1184,7 +1212,7 @@ Object.assign(App, {
           const coverHtml = `
             <div class="pl-cover${hasArt ? ' has-art' : ''}" data-pl-cover="${this.esc(pl.id)}">
               <div class="pl-cover-grad" style="${coverBg}" data-pl-cover="${this.esc(pl.id)}"></div>
-              ${hasArt ? '' : this.ico(fallbackIcon, 'pl-cover-icon')}
+              ${hasArt ? '' : `<span class="pl-cover-letter" aria-hidden="true">${this.esc(this.coverInitial(pl.name))}</span>`}
               ${live}
               ${fabHtml}
             </div>

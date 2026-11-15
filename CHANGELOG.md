@@ -18,6 +18,13 @@ Historial de versiones **publicadas** de Aurora Music Player.
 - Borrar una pista se lleva también su audio, y «borrar la biblioteca»
   vacía el almacén de audio: el formato nuevo no debe dejar Blobs sin
   dueño ocupando espacio.
+- **Las listas sin carátula se reconocen de un vistazo.** Todas llevaban el
+  mismo icono de lista sobre un degradado plano: se distinguían leyendo el
+  nombre. Ahora llevan su inicial y la misma luz que la portada de una pista,
+  con el ángulo y el sitio del resplandor derivados del nombre de la lista
+  (mismos números en Listas, en Inicio y en la hoja de edición, que pinta con
+  el pintor común). Los colores guardados se acotan a hex antes de entrar en
+  el `style`.
 - **Una sola portada generada.** Cuando una pista no trae carátula, la app
   dibuja una: degradado de la paleta de la pista, un resplandor desplazado
   según el título, surcos tenues y la inicial. Antes había dos pintores —uno

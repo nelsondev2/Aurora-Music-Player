@@ -97,3 +97,43 @@ test('sin el módulo de portadas el lienzo no queda en blanco', async () => {
     assert.ok(ctx.llamadas.some((c) => c[0] === 'fillRect'), 'se pinta al menos el fondo');
   } finally { teardown(); }
 });
+
+/* ------------------------------------------------------------------
+ *  Portada de una lista sin carátula
+ * ------------------------------------------------------------------ */
+
+test('la lista sin carátula se distingue por su inicial y su luz', async () => {
+  const { App, window, teardown } = await bootApp();
+  try {
+    setLibrary(App, []);
+    App.playlists = [
+      { id: 'p1', name: 'Noche larga', trackIds: [], cover: { from: '#123456', to: '#654321' } },
+      { id: 'p2', name: 'Mañana', trackIds: [], cover: { from: '#123456', to: '#654321' } },
+    ];
+    App.renderPlaylists();
+
+    const cards = [...window.document.querySelectorAll('#libraryPlaylists .pl-card')];
+    assert.equal(cards.length, 2);
+
+    const letras = cards.map((c) => c.querySelector('.pl-cover-letter'));
+    assert.ok(letras.every(Boolean), 'cada lista lleva su inicial');
+    assert.deepEqual(letras.map((l) => l.textContent), ['N', 'M']);
+
+    const fondos = cards.map((c) => c.querySelector('.pl-cover-grad').getAttribute('style') || '');
+    assert.ok(fondos.every((f) => /radial-gradient/.test(f)), 'el fondo lleva la luz, no solo el degradado');
+    assert.ok(fondos.every((f) => /linear-gradient/.test(f)));
+    assert.notEqual(fondos[0], fondos[1], 'dos nombres distintos no dan el mismo fondo');
+  } finally { teardown(); }
+});
+
+test('un color guardado que no es hex no llega al estilo', async () => {
+  const { App, teardown } = await bootApp();
+  try {
+    const style = App.playlistCoverStyle({
+      id: 'x', name: 'x',
+      cover: { from: "red; background:url('http://malo')", to: '#ABCDEF' },
+    });
+    assert.equal(/url\(|http|;background/i.test(style), false, 'nada raro dentro del fondo');
+    assert.match(style, /#ABCDEF/);
+  } finally { teardown(); }
+});

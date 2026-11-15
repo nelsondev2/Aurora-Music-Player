@@ -133,9 +133,20 @@ Object.assign(App, {
         } else {
           const from = (cover && cover.from) || ((this.coverFallback && this.coverFallback().from) || '#6E5CFF');
           const to = (cover && cover.to) || ((this.coverFallback && this.coverFallback().to) || '#FF7AB6');
-          coverEl.style.background = 'linear-gradient(135deg, ' + from + ', ' + to + ')';
-          const iconName = 'list-ul'; //  sin lista favorita especial
-          coverEl.innerHTML = this.ico(iconName);
+          //  La portada de la lista se pinta con el mismo pintor que la de
+          //  una pista (luz, surcos e inicial del nombre).
+          coverEl.textContent = '';
+          const cv = document.createElement('canvas');
+          cv.width = 240; cv.height = 240;
+          coverEl.appendChild(cv);
+          const ctx = cv.getContext('2d');
+          if (ctx && window.AuroraCover) {
+            window.AuroraCover.paint(ctx, 240, 240, {
+              from, to, text: pl.name, letter: this.coverInitial(pl.name)
+            });
+          } else if (ctx) {
+            ctx.fillStyle = from; ctx.fillRect(0, 0, 240, 240);
+          }
         }
       }
       if (!ul) return;

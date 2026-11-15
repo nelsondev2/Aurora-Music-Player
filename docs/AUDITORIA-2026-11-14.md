@@ -186,5 +186,5 @@ borraba o paraba la pista justo después de arrancar, la promesa pendiente
 devolvía `isPlaying = true` (y arrancaba el conteo de estadísticas) sobre una
 pista ya parada. Corregido con `_invalidatePendingPlay()`.
 
-**Verificación final:** `npm test` → 41/41 en verde · `python3 build-xdc.py` →
+**Verificación final:** `npm test` → 43/43 en verde · `python3 build-xdc.py` →
 28 archivos, `.xdc` válido · dos builds con el mismo SHA-256.

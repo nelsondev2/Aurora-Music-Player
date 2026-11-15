@@ -1512,6 +1512,26 @@ svg { display: block; }
   box-shadow: 0 8px 18px rgba(0,0,0,0.28);
 }
 .pl-cover .pl-cover-grad { position: absolute; inset: 0; }
+/* Inicial de la lista sin carátula: antes todas las listas mostraban el
+ * mismo icono de lista sobre un color plano y solo se distinguían por el
+ * nombre. La letra las hace reconocibles de un vistazo, igual que la
+ * portada generada de una pista. */
+.pl-cover-letter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.55rem;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  user-select: none;
+}
+.home-card-cover .pl-cover-letter { font-size: 3.1rem; }
 .pl-cover-icon {
   position: absolute;
   top: 50%;

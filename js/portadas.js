@@ -32,6 +32,23 @@
     seedOf,
 
     /**
+     * Números del fondo de una lista sin carátula: el ángulo del
+     * degradado y dónde cae la luz. La app lo pasa a CSS
+     * (`playlistCoverStyle`) y la vista previa a SVG, con los mismos
+     * valores y sin duplicar la cuenta.
+     */
+    listParams(name, palette) {
+      const seed = seedOf(name || '');
+      return {
+        angle: 115 + (seed % 5) * 10,        // 115…155°
+        gx: 18 + ((seed >>> 3) % 64),        // 18…82 %
+        gy: 14 + ((seed >>> 11) % 52),       // 14…66 %
+        from: (palette && palette.from) || '#6E5CFF',
+        to: (palette && palette.to) || '#FF7AB6'
+      };
+    },
+
+    /**
      * Pinta la portada generada.
      * @param {CanvasRenderingContext2D} ctx
      * @param {number} W  ancho del lienzo en píxeles reales

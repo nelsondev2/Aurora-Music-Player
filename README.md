@@ -160,7 +160,7 @@ Nada de esto viaja en el `.xdc`: `build-xdc.py` empaqueta solo `APP_ENTRIES`
 | `index.html` | Markup de la app (vistas, hojas, sprite de iconos) |
 | `css/styles.css` | Estilos, temas y acentos (toda la CSS vive en `css/`) |
 | `js/i18n.js` | Traducciones de los 14 idiomas (solo texto: aquí se revisa un idioma) |
-| `js/portadas.js` | Portada generada: un solo pintor para reproductor, filas y tarjetas |
+| `js/portadas.js` | Portada generada: un solo pintor para reproductor, filas, tarjetas y listas |
 | `js/data.js` | Catálogo inicial, paleta de portadas y configuración |
 | `js/storage.js` | Persistencia en IndexedDB: metadatos de las pistas, audio aparte (`blobs`), listas y ajustes |
 | `js/uploader.js` | Lectura de archivos, ID3 y LRC |
