@@ -1,0 +1,65 @@
+# =====================================================================
+#  Pruebas — Aurora Music Player
+#  Arranca index.html + js/ en jsdom con IndexedDB real y comprueba el
+#  comportamiento del reproductor. No empaqueta nada: eso es release.yml.
+# =====================================================================
+
+name: Pruebas
+
+# En cualquier rama: una regresión en una rama de trabajo cuesta lo mismo
+# de encontrar que en main, y la suite tarda segundos.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Arranque, reproductor y paquete
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Preparar Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependencias de prueba
+        run: npm ci
+
+      - name: Ejecutar las pruebas
+        run: npm test
+
+      - name: Preparar Python (empaquetado)
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+
+      - name: Empaquetar y validar el .xdc
+        run: |
+          python3 build-xdc.py
+          python3 build-xdc.py --check
+
+      - name: Comprobar que el paquete no arrastra las pruebas
+        run: |
+          python3 - <<'PY'
+          import sys, zipfile
+          names = zipfile.ZipFile('aurora-music-player.xdc').namelist()
+          sueltos = [n for n in names if n.startswith(('test/', 'node_modules/', 'docs/'))]
+          if sueltos or any(n.rsplit('/', 1)[-1] == 'webxdc.js' for n in names):
+              print('ERROR: el .xdc lleva archivos que no son de la app:', sueltos, file=sys.stderr)
+              sys.exit(1)
+          print('OK: %d archivos, solo lo que la app necesita' % len(names))
+          PY

@@ -258,6 +258,10 @@ Object.assign(App, {
       if (btnFree) btnFree.addEventListener('click', () => {
         if (typeof this.offerFreeStorage === 'function') this.offerFreeStorage();
       });
+      const btnCopyDiag = document.getElementById('aboutCopyDiag');
+      if (btnCopyDiag) btnCopyDiag.addEventListener('click', () => {
+        this.copyDiagnostics().catch(() => this.toast(this.t('toast_diag_failed'), 'danger'));
+      });
       const btnCancelImport = document.getElementById('btnCancelImport');
       if (btnCancelImport) btnCancelImport.addEventListener('click', () => {
         this._importCancelled = true;

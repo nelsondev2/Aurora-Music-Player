@@ -2,9 +2,129 @@
 
 Historial de versiones **publicadas** de Aurora Music Player.
 
-## Sin publicar
+## 1.4.1 — Fuera la copia de seguridad
 
-_(nada por ahora)_
+- **Se retira la exportación e importación de copias `.aurora`** (Ajustes →
+  Copia de seguridad): la sección desaparece de Ajustes, junto con
+  `js/backup.js`, sus manejadores y sus textos en los 14 idiomas. La copia
+  no llegó a publicarse; la app vuelve a guardar la biblioteca solo en la
+  instancia del `.xdc`.
+- Siguen intactas las dos cosas con las que ya contaba la app: **importar
+  archivos de audio** con **+** y **exportar listas** (`.m3u8`) o canciones
+  por el chat.
+- Se van las 5 pruebas de la copia (43 en total), todas en verde.
+
+## 1.4.0 — Copia de seguridad con la música dentro
+
+- **Guardar y restaurar la biblioteca entera, con el audio.** Ajustes →
+  Copia de seguridad: un solo archivo `.aurora` que lleva las canciones, las
+  listas, los favoritos y las portadas. Al restaurarlo, cada audio se escribe
+  en el almacén de blobs con su mismo id, así que **las canciones vuelven
+  vinculadas** a sus listas y no hay que volver a buscarlas en el
+  dispositivo, que es justo lo que pasaba con las listas exportadas a
+  `.m3u8` (guardan nombres, no música).
+- El formato no necesita librerías: cabecera de texto con un JSON (pistas,
+  listas, favoritos y dónde empieza cada audio) y después los audios en
+  crudo, sin base64 (lo engordaría un tercio) y sin comprimir (un MP3 ya
+  está comprimido). Al restaurar se lee la cabecera y se corta el archivo
+  con `slice()`, sin cargarlo entero en memoria.
+- **Restaurar fusiona, nunca borra:** lo que ya hay en la biblioteca se
+  queda, las pistas que faltan se añaden, las listas con el mismo nombre o
+  id se completan y los favoritos se unen. Una copia vieja no puede
+  destruir la biblioteca actual.
+- 5 pruebas nuevas (48 en total): la copia se lee y trae el audio, restaurar
+  vuelve a dejar las canciones vinculadas y reproducibles, no pisa lo que ya
+  hay, funciona sin audio y rechaza lo que no es una copia.
+
+## 1.3.0 — La biblioteca abre sin cargar el audio
+
+- **El audio deja de viajar dentro de la pista.** Los registros de
+  `tracks` guardan solo metadatos; cada archivo se va a un almacén
+  `blobs` aparte (base de datos versión 2). Antes, abrir la app con la
+  biblioteca llena deserializaba un Blob por canción antes de pintar
+  nada; ahora el audio se lee cuando de verdad hace falta —reproducir,
+  precargar para el cambio sin pausa, compartir, releer etiquetas— y se
+  suelta en cuanto su `objectURL` sale de la caché, así que una sesión
+  larga tampoco se queda con toda la biblioteca en memoria. Las
+  bibliotecas anteriores se migran solas la primera vez, con cursor
+  (sin cargar la biblioteca entera en RAM) y de forma idempotente: si
+  la migración se corta, el arranque siguiente la termina.
+- Borrar una pista se lleva también su audio, y «borrar la biblioteca»
+  vacía el almacén de audio: el formato nuevo no debe dejar Blobs sin
+  dueño ocupando espacio.
+- **Las listas sin carátula se reconocen de un vistazo.** Todas llevaban el
+  mismo icono de lista sobre un degradado plano: se distinguían leyendo el
+  nombre. Ahora llevan su inicial y la misma luz que la portada de una pista,
+  con el ángulo y el sitio del resplandor derivados del nombre de la lista
+  (mismos números en Listas, en Inicio y en la hoja de edición, que pinta con
+  el pintor común). Los colores guardados se acotan a hex antes de entrar en
+  el `style`.
+- **Una sola portada generada.** Cuando una pista no trae carátula, la app
+  dibuja una: degradado de la paleta de la pista, un resplandor desplazado
+  según el título, surcos tenues y la inicial. Antes había dos pintores —uno
+  en el reproductor y otro en las filas— con distinto grosor de surco, otro
+  cuerpo de letra y otro alfa, así que la misma canción se veía distinta
+  según dónde miraras; ahora los dos llaman a `js/portadas.js`. La semilla es
+  el título (misma canción, misma portada) y por debajo de 48 px se suprimen
+  los adornos, que a ese tamaño solo ensucian. Vista previa en
+  `docs/portadas.png` (`npm run covers:preview`), pintada con el código real.
+- **Los duplicados se detectan por contenido, no por nombre.** La
+  importación comparaba nombre y tamaño: dos archivos distintos que
+  coincidían en ambos se daban por el mismo y uno se descartaba sin
+  avisar, mientras que la misma canción renombrada entraba duplicada.
+  Ahora se compara una huella (tamaño + SHA-256 de los primeros 256 KB,
+  con hash propio si el WebView no tiene `crypto.subtle`); nombre y
+  tamaño solo acotan los candidatos. Las pistas antiguas sin huella se
+  comprueban en el momento de la colisión, y la van guardando cuando se
+  reproducen o se releen sus etiquetas.
+- **Las traducciones salen de `data.js`.** 4.300 de sus 4.400 líneas eran
+  los 14 idiomas: ahora están en `js/i18n.js`, junto a la lista de idiomas,
+  y `data.js` se queda con el catálogo y la paleta. Revisar un idioma deja
+  de ser buscar texto entre el catálogo y las utilidades.
+- Ocho pruebas nuevas (30 en total) para esa separación: que el Blob no
+  se cuele en el registro, que reabrir no cargue audio, que reproducir lo
+  traiga, que borrar no deje huérfanos y que la migración se haga una
+  sola vez. Otras siete cubren la huella de duplicados: mismo contenido,
+  contenido distinto con el mismo nombre, archivo renombrado y registros
+  sin audio legible.
+- **La versión que se ve es la versión que es.** Acerca de enseñaba
+  «1.2.0» en la 1.2.5 porque `App.VERSION` se quedó atrás: ahora dice
+  1.2.5, el README también, y no puede volver a pasar — `build-xdc.py`
+  se niega a empaquetar si la app, el README y el CHANGELOG no
+  coinciden, y el flujo de publicación rechaza una etiqueta que no
+  cuadre con `App.VERSION`.
+- **Vuelven las pruebas al repositorio.** `npm test` arranca la app
+  real (jsdom + IndexedDB de verdad, audio instrumentado) y comprueba
+  lo que más duele si se rompe: cola por contexto, aleatorio,
+  repetición, borrado con «Deshacer», estadísticas, sesión, caché de
+  objectURL, i18n de los 14 idiomas, escapado de metadatos, apertura de
+  las 20 hojas y coherencia de versión. 22 pruebas, cero dependencias
+  en el `.xdc` (el paquete no lleva `test/` ni `node_modules/`), y un
+  flujo de GitHub Actions que las pasa en cada *push* y *pull request*.
+  La primera pasada encontró un fallo de verdad: un `play()` pendiente
+  podía devolver el estado «reproduciendo» después de parar o borrar
+  la pista en curso.
+- **Ajustes → Acerca de → Diagnóstico.** En Delta Chat no hay consola:
+  el último error se guarda y ahora se puede ver y copiar en un texto
+  con versión, idioma, tema, plataforma, tamaño de la biblioteca, uso
+  de disco y navegador, para pegarlo en un informe. Antes se anotaba
+  en `_lastError` y no lo leía nadie.
+- **La caché de `objectURL` tiene tope** (12): una sesión larga ya no
+  se queda con una URL viva por cada canción escuchada. Nunca se
+  revoca la que está sonando ni la precargada.
+- **El uso de disco de Ajustes se refresca siempre**, también al abrir
+  Ajustes desde Inicio (antes solo se calculaba desde el menú ⋯ y
+  podía quedar en blanco).
+- Comentarios corregidos: el diccionario ya no dice «8 idiomas» (son 14).
+- **Sprite de iconos redibujado entero.** Los 54 iconos pasan a un sistema
+  único: rejilla de 24, trazo de 1,9 con extremos y uniones redondeadas y
+  `currentColor`. Antes convivían rellenos Material, trazos sueltos y algún
+  trazado heredado de otra familia; ahora la navegación, el transporte, los
+  menús y las listas comparten grosor y proporción, se leen a 16 px y se
+  tiñen solos con los tres temas y los cinco acentos. Los sólidos quedan
+  reservados a lo que marca estado (play, pausa, saltos, estrella, corazón
+  lleno). Vista previa en `docs/iconos-sprite.png`; reglas en
+  `docs/ICONOS.md`; se regenera con `npm run icons:preview`.
 
 ## 1.2.5 — Más ligera, en 14 idiomas
 

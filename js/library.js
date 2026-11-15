@@ -105,15 +105,16 @@ Object.assign(App, {
           return;
         }
 
-        // #10 Detección de duplicados: comparar por fileName + fileSize.
-        // Índice O(1) por clave para que importar 500 archivos no sea O(n²).
+        // #10 Duplicados: nombre y tamaño acotan los candidatos, pero
+        // decide el contenido (huella). Así no se descarta un archivo
+        // ajeno que solo coincide en nombre y tamaño, y una canción
+        // renombrada se reconoce como la que ya está.
         let dupCount = 0;
         const uniqueTracks = [];
         const existingForPlaylist = [];
-        const byKey = new Map();
-        for (const ex of this.tracks) byKey.set(this._dupKey(ex.fileName, ex.fileSize), ex);
+        const dupIdx = this._buildDupIndex(this.tracks);
         for (const t of newTracks) {
-          const existing = byKey.get(this._dupKey(t.fileName, t.fileSize)) || null;
+          const existing = await this.findDuplicateFor(t, dupIdx);
           if (existing) {
             dupCount++;
             if (t.src && t.src.startsWith('blob:')) {
@@ -124,7 +125,7 @@ Object.assign(App, {
             existingForPlaylist.push(existing);
           } else {
             uniqueTracks.push(t);
-            byKey.set(this._dupKey(t.fileName, t.fileSize), t);
+            this._indexDupTrack(dupIdx, t);
           }
         }
         // Letras .lrc traídas junto al audio: se enlazan por nombre
@@ -285,9 +286,113 @@ Object.assign(App, {
       } catch (e) {}
     },
 
-    /* Clave de duplicado tolerante a mayúsculas/espacios del nombre. */
+    /* Clave de duplicado tolerante a mayúsculas/espacios del nombre.
+     *  Solo sirve para ACOTAR candidatos: nombre y tamaño no
+     * identifican un archivo (dos ediciones distintas del mismo tema
+     * pueden coincidir en ambos y la importación descartaba una sin
+     * avisar). La decisión final la toma la huella de contenido. */
     _dupKey(fileName, fileSize) {
       return String(fileName || '').trim().toLowerCase() + '|' + (Number(fileSize) || 0);
+    },
+
+    /* ---------- Huella de contenido ----------
+     * Tamaño + SHA-256 de los primeros 256 KB (o un hash propio si no
+     * hay crypto.subtle, p. ej. WebView antiguo). Con eso: dos archivos
+     * que solo comparten nombre y tamaño dejan de confundirse, y la
+     * misma canción renombrada se reconoce como la misma. No se leen
+     * discos enteros: una canción típica se distingue por sus primeros
+     * 256 KB y una importación de 500 archivos no se eterniza. */
+    _FP_BYTES: 256 * 1024,
+    _fileFingerprint(file) {
+      if (!file || typeof file.size !== 'number' || typeof file.slice !== 'function') {
+        return Promise.resolve(null);
+      }
+      let head;
+      try {
+        head = file.slice(0, Math.min(file.size, this._FP_BYTES));
+      } catch (e) {
+        return Promise.resolve(null);
+      }
+      return head.arrayBuffer().then((buf) => {
+        const bytes = new Uint8Array(buf);
+        const finish = (hash) => (file.size + ':' + hash).toLowerCase();
+        const subtle = (typeof crypto !== 'undefined' && crypto && crypto.subtle) ? crypto.subtle : null;
+        if (subtle && typeof subtle.digest === 'function') {
+          return subtle.digest('SHA-256', bytes).then((d) => {
+            let hex = '';
+            const arr = new Uint8Array(d);
+            for (let i = 0; i < 16; i++) hex += arr[i].toString(16).padStart(2, '0');
+            return finish(hex);
+          });
+        }
+        //  Sin criptografía: dos FNV-1a de 32 bits con semillas distintas.
+        return finish(this._fnv1a32(bytes, 0x811c9dc5) + '-' + this._fnv1a32(bytes, 0x9e3779b9));
+      }).catch(() => null);
+    },
+    _fnv1a32(bytes, seed) {
+      let h = seed >>> 0;
+      for (let i = 0; i < bytes.length; i++) {
+        h ^= bytes[i];
+        h = Math.imul(h, 0x01000193) >>> 0;
+      }
+      return h.toString(16).padStart(8, '0');
+    },
+
+    /* Huella de una pista que ya está (o puede estar) en la biblioteca.
+     * Su audio puede no estar en memoria; se trae del almacén. Devuelve
+     * null si no hay forma de leerlo. */
+    async _fingerprintExisting(track) {
+      if (!track) return null;
+      if (track.fp) return track.fp;
+      if (typeof this.ensureTrackBlob === 'function') await this.ensureTrackBlob(track);
+      const blob = track._file || track.fileBlob;
+      const fp = await this._fileFingerprint(blob);
+      if (fp) {
+        track.fp = fp;
+        //  Se guarda para no repetir la lectura (y para que el índice de
+        //  huellas de la próxima importación lo tenga).
+        try { if (typeof this.persistTrack === 'function') this.persistTrack(track); } catch (e) {}
+      }
+      return fp;
+    },
+
+    /* Índice para detectar duplicados en O(1) al importar. */
+    _buildDupIndex(tracks) {
+      const byKey = new Map();
+      const byFp = new Map();
+      (tracks || []).forEach((t) => this._indexDupTrack({ byKey, byFp }, t));
+      return { byKey, byFp };
+    },
+    _indexDupTrack(idx, t) {
+      if (!idx || !t) return;
+      const k = this._dupKey(t.fileName, t.fileSize);
+      if (!idx.byKey.has(k)) idx.byKey.set(k, []);
+      idx.byKey.get(k).push(t);
+      if (t.fp && !idx.byFp.has(t.fp)) idx.byFp.set(t.fp, t);
+    },
+
+    /* ¿Esta pista recién leída ya está en la biblioteca? Devuelve la
+     * pista existente o null. El contenido manda; nombre y tamaño solo
+     * acotan los candidatos, y si la pista vieja no tiene huella se
+     * calcula en el momento (es una lectura corta, no del archivo
+     * entero). */
+    async findDuplicateFor(track, idx) {
+      if (!track) return null;
+      const fp = track.fp || await this._fileFingerprint(track._file || track.fileBlob);
+      if (fp) track.fp = fp;
+      if (fp && idx.byFp.has(fp)) return idx.byFp.get(fp);
+      const candidates = idx.byKey.get(this._dupKey(track.fileName, track.fileSize)) || [];
+      for (const cand of candidates) {
+        if (fp && cand.fp) {
+          if (cand.fp === fp) return cand;
+          continue; // huellas distintas: son dos archivos, no un duplicado
+        }
+        const candFp = fp ? await this._fingerprintExisting(cand) : null;
+        //  Sin huella de una de las dos partes no se puede prometer que
+        //  sea el mismo archivo: se mantiene el criterio antiguo.
+        if (!fp || !candFp || candFp === fp) return cand;
+      }
+      return null;
     },
 
     showImportOverlay(done, total, name) {
@@ -342,6 +447,59 @@ Object.assign(App, {
     /* Sin findDuplicateTrack (quedó sin llamadores): la
      * deduplicación al importar usa su propio índice. */
 
+    /* ---------- Audio bajo demanda ----------
+     * El registro guardado de una pista ya no lleva el audio (ver
+     * storage.js): al arrancar solo hay metadatos. El Blob se trae del
+     * almacén "blobs" cuando de verdad se necesita —reproducir,
+     * precargar, compartir, releer etiquetas— y se deja en memoria en la
+     * pista, que es lo que getTrackUrl() convierte en objectURL. */
+    _hasAudioInMemory(track) {
+      return !!(track && (track._file || track.fileBlob));
+    },
+    /* true si al final hay audio disponible. Dos llamadas simultáneas
+     * para la misma pista comparten la lectura (el play y la precarga
+     * piden el mismo Blob). */
+    async ensureTrackBlob(track) {
+      if (!track) return false;
+      if (this._hasAudioInMemory(track)) return true;
+      if (!track.hasAudio) return false;
+      if (!window.AuroraStorage || typeof window.AuroraStorage.getBlob !== 'function') return false;
+      if (!this._blobLoads) this._blobLoads = new Map();
+      const id = track.id;
+      let p = this._blobLoads.get(id);
+      if (!p) {
+        p = window.AuroraStorage.getBlob(id).then((blob) => {
+          this._blobLoads.delete(id);
+          if (!blob) {
+            //  Metadato sin audio detrás (registro huérfano): que no se
+            //  vuelva a intentar en cada reproducción.
+            track.hasAudio = false;
+            return false;
+          }
+          //  La pista pudo borrarse mientras se leía.
+          if (typeof this.getTrackById === 'function' && this.getTrackById(id) !== track) return false;
+          track.fileBlob = blob;
+          //  Aprovechar que el audio ya está en memoria para dejar su
+          //  huella si aún no la tiene (las bibliotecas anteriores a la
+          //  1.3.0 no la guardaban). No retrasa la reproducción.
+          if (!track.fp) {
+            this._fileFingerprint(blob).then((fp) => {
+              if (!fp || track.fp) return;
+              track.fp = fp;
+              if (typeof this.persistTrack === 'function') this.persistTrack(track);
+            }).catch(() => {});
+          }
+          return true;
+        }).catch((e) => {
+          this._blobLoads.delete(id);
+          console.warn('[Aurora] No se pudo leer el audio guardado de', id, e);
+          return false;
+        });
+        this._blobLoads.set(id, p);
+      }
+      return p;
+    },
+
     /* #15 #16 Obtener objectURL con cache para reutilizar */
     getTrackUrl(track) {
       if (!track) return null;
@@ -370,8 +528,47 @@ Object.assign(App, {
       } else if (track.src) {
         url = track.src;
       }
-      if (url) this._urlCache.set(track.id, url);
+      if (url) {
+        this._urlCache.set(track.id, url);
+        this._evictUrlCache(track.id);
+      }
       return url;
+    },
+
+    /* Tope de la caché de objectURL: hasta ahora vivía entera hasta
+     * cerrar la app, así que una sesión larga acumulaba una URL (y su
+     * blob) por cada canción escuchada. Se conservan la actual, la
+     * precargada y las últimas; el resto se revoca. Nunca se revoca una
+     * URL que el <audio> esté usando: sería cortar la canción en curso. */
+    _URL_CACHE_MAX: 12,
+    _evictUrlCache(keepId) {
+      if (!this._urlCache || this._urlCache.size <= this._URL_CACHE_MAX) return;
+      const keep = new Set();
+      if (keepId) keep.add(keepId);
+      if (this.currentTrack && this.currentTrack.id) keep.add(this.currentTrack.id);
+      // Lo que suena y lo que está precargado se identifican por su src,
+      // no por id: el id puede haberse creado antes de sonar.
+      const inUse = new Set();
+      try { if (this.audio && this.audio.src) inUse.add(this.audio.src); } catch (e) {}
+      try { if (this._preloadAudio && this._preloadAudio.src) inUse.add(this._preloadAudio.src); } catch (e) {}
+      for (const [id, url] of this._urlCache) {
+        if (inUse.has(url)) keep.add(id);
+      }
+      // Map respeta el orden de inserción: los más viejos van primero.
+      for (const [id, url] of this._urlCache) {
+        if (this._urlCache.size <= this._URL_CACHE_MAX) break;
+        if (keep.has(id) || inUse.has(url)) continue;
+        try { URL.revokeObjectURL(url); } catch (e) {}
+        this._urlCache.delete(id);
+        const t = this.getTrackById(id);
+        if (t && t.src === url) t.src = null; // se recreará desde el blob
+        //  El Blob en memoria sigue la misma vida que su objectURL: si no
+        //  se suelta, la sesión acaba con toda la biblioteca en RAM (lo
+        //  que el arranque perezoso acaba de evitar). Se vuelve a leer del
+        //  almacén la próxima vez que suene. Un File recién importado
+        //  (_file) no se toca: aún no ha pasado por el importador.
+        if (t && t.hasAudio && !t._file && t.fileBlob) delete t.fileBlob;
+      }
     },
 
     /* Precarga la siguiente pista en un <audio> NO conectado al grafo EQ. */
@@ -386,6 +583,17 @@ Object.assign(App, {
       const nextTrackId = this.queue[nextIdx];
       const nextTrack = this.tracks.find(t => t.id === nextTrackId);
       if (!nextTrack) return;
+      //  Si el audio aún no está en memoria se trae y se reintenta: la
+      //  precarga es lo que hace posible el cambio sin pausa, y sin Blob
+      //  no hay objectURL que asignar.
+      if (!this._hasAudioInMemory(nextTrack)) {
+        this.ensureTrackBlob(nextTrack).then((ok) => {
+          if (!ok || this._preloadingRetry) return;
+          this._preloadingRetry = true;
+          try { this.preloadNextTrack(); } finally { this._preloadingRetry = false; }
+        });
+        return;
+      }
       const url = this.getTrackUrl(nextTrack);
       if (!url) return;
       if (!this._preloadAudio) {
@@ -416,7 +624,13 @@ Object.assign(App, {
       const nextTrack = this.tracks.find(t => t.id === nextTrackId);
       if (!nextTrack) return false;
       const url = this.getTrackUrl(nextTrack);
-      if (!url || !this.audio) return false;
+      if (!url || !this.audio) {
+        //  Sin audio en memoria no hay empalme sin pausa: se pide el Blob
+        //  para la próxima y se deja que el cambio normal (que espera la
+        //  lectura) haga el corte.
+        if (!url && !this._hasAudioInMemory(nextTrack)) this.ensureTrackBlob(nextTrack);
+        return false;
+      }
       this._gaplessConsumed = true;
       this._ignoreEndedUntil = Date.now() + 500;
       this._gaplessArmed = false;
@@ -459,6 +673,7 @@ Object.assign(App, {
       try {
         if (!this.audioCtx) this.initAudioGraph();
         if (!this.audioCtx) return 1.0;
+        await this.ensureTrackBlob(track);
         const file = track._file || track.fileBlob;
         if (!file) return 1.0;
         // No decodificar archivos grandes: decodeAudioData reserva del orden
@@ -544,7 +759,7 @@ Object.assign(App, {
  * falta de portada ni el artista placeholder — el archivo no
  * los trae y la condición nunca convergía. */
     _trackNeedsRetag(t) {
-      if (!t || !(t._file || t.fileBlob)) return false;
+      if (!t || !(this._hasAudioInMemory(t) || t.hasAudio)) return false;
       //  la marca es la única condición. Antes, una pista sin
       // portada en el archivo (o con el artista «desconocido» de
       // verdad) «necesitaba» retag en CADA arranque para siempre:
@@ -562,16 +777,27 @@ Object.assign(App, {
       const U = window.AuroraUploader;
       if (!U || typeof U.processOne !== 'function') return 0;
       const targets = this.tracks.filter(t =>
-        (t._file || t.fileBlob) && (!onlyIncomplete || this._trackNeedsRetag(t)));
+        (this._hasAudioInMemory(t) || t.hasAudio) && (!onlyIncomplete || this._trackNeedsRetag(t)));
       let updated = 0;
       let idx = 0;
       const worker = async () => {
         while (idx < targets.length) {
           const t = targets[idx++];
+          //  El audio puede no estar en memoria: se trae del almacén.
+          await this.ensureTrackBlob(t);
           const file = t._file || t.fileBlob;
+          if (!file) continue;
           try {
             const fresh = await U.processOne(file, null);
             let changed = false;
+            //  Ya que se lee el archivo, se deja su huella: las pistas
+            //  viejas sin huella solo pueden compararse por nombre y
+            //  tamaño, y así la próxima importación reconoce el mismo
+            //  archivo aunque venga renombrado.
+            if (!t.fp) {
+              const fp = await this._fileFingerprint(file);
+              if (fp) { t.fp = fp; changed = true; }
+            }
             //  el texto que el usuario editó a mano (la hoja
             // de edición marca _userEdited) manda sobre el
             // archivo: releer etiquetas no debe deshacer su
@@ -717,12 +943,10 @@ Object.assign(App, {
           blob = t._file;
         } else if (t.fileBlob instanceof Blob) {
           blob = t.fileBlob;
-        } else if (window.AuroraStorage) {
+        } else if (window.AuroraStorage && typeof window.AuroraStorage.getBlob === 'function') {
           try {
-            const stored = await window.AuroraStorage.getTrack(t.id);
-            if (stored && stored.fileBlob instanceof Blob) {
-              blob = stored.fileBlob;
-            }
+            const stored = await window.AuroraStorage.getBlob(t.id);
+            if (stored instanceof Blob) blob = stored;
           } catch (e) {}
         }
 
@@ -792,8 +1016,9 @@ Object.assign(App, {
           for (const t of tracks) await this.persistTrack(t);
           return;
         }
-        const tx = db.transaction('tracks', 'readwrite');
+        const tx = db.transaction(['tracks', 'blobs'], 'readwrite');
         const store = tx.objectStore('tracks');
+        const blobStore = tx.objectStore('blobs');
         const promises = [];
         for (const track of tracks) {
           const toSave = Object.assign({}, track);
@@ -808,10 +1033,18 @@ Object.assign(App, {
           delete toSave._thumbsHiRes;
           delete toSave._thumbing;
           delete toSave._thumbsDirty;
-          if (track._file) {
-            toSave.fileBlob = track._file;
-            delete toSave._file;
+          //  El audio va a su propio almacén (ver storage.js); si ya
+          //  estaba guardado no se reescribe.
+          if (!track.hasAudio) {
+            const audio = track._file || track.fileBlob;
+            if (audio) {
+              blobStore.put(audio, track.id);
+              track.hasAudio = true;
+              toSave.hasAudio = true;
+            }
           }
+          delete toSave.fileBlob;
+          delete toSave._file;
           promises.push(new Promise((resolve, reject) => {
             const req = store.put(toSave);
             req.onsuccess = resolve;

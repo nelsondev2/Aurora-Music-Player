@@ -25,7 +25,7 @@ on:
       tag:
         description: 'Etiqueta a publicar (p. ej. v1.2.0)'
         required: true
-        default: 'v1.2.0'
+        default: 'v1.4.1'
 
 # Crear releases y subir adjuntos exige escribir en el repo.
 permissions:
@@ -42,10 +42,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Descargar el código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Preparar Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -65,7 +65,7 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Publicando $TAG desde ${GITHUB_SHA}"
 
-      - name: Comprobar que la versión está en el CHANGELOG
+      - name: Comprobar que la versión está en el CHANGELOG y en la app
         shell: bash
         env:
           TAG: ${{ steps.tag.outputs.tag }}
@@ -75,6 +75,14 @@ jobs:
             echo "::error::El CHANGELOG no tiene sección «## ${VERSION} …»: documéntala antes de etiquetar."
             exit 1
           fi
+          # La app publicada debe decir la versión que se está publicando:
+          # la 1.2.5 salió anunciándose como 1.2.0.
+          APP_VERSION="$(sed -n "s/.*VERSION: '\([0-9.]*\)'.*/\1/p" js/state.js | head -1)"
+          if [ "$APP_VERSION" != "$VERSION" ]; then
+            echo "::error::js/state.js dice «$APP_VERSION» y la etiqueta es «$VERSION»: actualiza App.VERSION antes de publicar."
+            exit 1
+          fi
+          echo "Versión coherente: $VERSION"
 
       - name: Empaquetar y validar el .xdc
         run: python3 build-xdc.py

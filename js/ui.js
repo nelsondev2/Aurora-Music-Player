@@ -69,6 +69,14 @@ Object.assign(App, {
     openSheet(id) {
       const s = document.getElementById(id);
       if (!s) return;
+      // Ajustes se abre desde tres sitios (Inicio, menú ⋯ y la
+      // bienvenida); lo que se calcula al vuelo se refresca aquí y no en
+      // cada botón, que es como el uso de disco se quedaba en blanco al
+      // entrar desde Inicio.
+      if (id === 'sheetSettings') {
+        if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
+        if (typeof this.renderAboutDiagnostics === 'function') this.renderAboutDiagnostics();
+      }
       if (!this._sheetStack) this._sheetStack = [];
       if (!s.classList.contains('open')) {
         s._prevFocus = document.activeElement;

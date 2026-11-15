@@ -322,7 +322,7 @@ Object.assign(App, {
       const items = lists.map(pl => {
         const n = (pl.trackIds || []).length;
         return `<button class="home-card" type="button" data-kind="playlist" data-id="${this.esc(pl.id)}">
-          <div class="home-card-cover" data-pl="${this.esc(pl.id)}" data-pl-cover="${this.esc(pl.id)}"></div>
+          <div class="home-card-cover" data-pl="${this.esc(pl.id)}" data-pl-cover="${this.esc(pl.id)}"><span class="pl-cover-letter" aria-hidden="true">${this.esc(this.coverInitial(pl.name))}</span></div>
           <span class="home-card-title">${this.esc(pl.name)}</span>
           <span class="home-card-sub">${this.esc(this.fmtTracksCount(n))}</span>
         </button>`;
@@ -376,6 +376,10 @@ Object.assign(App, {
             if (typeof cover === 'string' && cover.startsWith('data:')) {
               coverEl.style.backgroundImage = 'url(' + cover + ')';
               coverEl.style.backgroundSize = 'cover';
+            } else if (typeof this.playlistCoverStyle === 'function') {
+              //  mismo fondo que en Listas (luz + degradado), no un color
+              //  plano: cinco listas del mismo acento eran indistinguibles.
+              coverEl.style.cssText += this.playlistCoverStyle(pl);
             } else {
               const from = (cover && cover.from) || ((this.coverFallback && this.coverFallback().from) || '#6E5CFF');
               const to = (cover && cover.to) || ((this.coverFallback && this.coverFallback().to) || '#FF7AB6');

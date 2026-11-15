@@ -1,3 +1,4 @@
 # Artefacto generado por build-xdc.py
 *.xdc
 __pycache__/
+node_modules/

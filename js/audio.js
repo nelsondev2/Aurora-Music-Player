@@ -271,9 +271,18 @@ Object.assign(App, {
       this.loadAndPlay();
     },
 
-    loadAndPlay() {
+    async loadAndPlay() {
       const t = this.currentTrack;
       if (!t) return;
+      //  El audio ya no viaja dentro del registro de la pista: se trae
+      //  del almacén antes de tocar el <audio> (unos milisegundos). Si
+      //  mientras se lee el usuario cambia de pista, esta carga se
+      //  abandona para no pisar la nueva; si no hay audio detrás, el
+      //  camino de «sin URL» avisa y salta.
+      if (typeof this.ensureTrackBlob === 'function' && !this._hasAudioInMemory(t)) {
+        await this.ensureTrackBlob(t);
+        if (this.currentTrack !== t) return;
+      }
       this._gaplessArmed = false;
       if (!this._xfadeIncoming) this._cancelCrossfade();
       const targetGain = this._normGain || 1;
@@ -333,8 +342,15 @@ Object.assign(App, {
     /* Carga la pista actual en el elemento <audio> pero SIN reproducir.
      * Usado al eliminar la pista en reproducción: salta a la siguiente
      * y queda en modo pausa (ready to play). */
-    loadTrackPaused() {
+    async loadTrackPaused() {
+      // Igual que en stopPlayback(): cargar en pausa invalida cualquier
+      // play() que siguiera en vuelo de la pista anterior.
+      this._invalidatePendingPlay();
       const t = this.currentTrack;
+      if (t && typeof this.ensureTrackBlob === 'function' && !this._hasAudioInMemory(t)) {
+        await this.ensureTrackBlob(t);
+        if (this.currentTrack !== t) return;
+      }
       if (!t) {
         // Sin pista: limpiar
         if (this.audio) {
@@ -385,6 +401,7 @@ Object.assign(App, {
      * avisa en el primer fallo y al rendirse: nada de un toast por
      * cada archivo roto. Devuelve true si ya actuó. */
     _handleDecodeFailure() {
+      this._invalidatePendingPlay();
       if (typeof this.setBuffering === 'function') this.setBuffering(false);
       this.isPlaying = false;
       if (typeof this.updatePlayUI === 'function') this.updatePlayUI();
@@ -453,6 +470,13 @@ Object.assign(App, {
         bg.style.opacity = '0.4';
         setTimeout(() => { bg.style.opacity = ''; }, 200);
       }
+    },
+
+    /* Cada intento de play() lleva un token; solo el último puede tocar
+     * la UI. Se sube al parar para que una promesa antigua no resucite el
+     * estado «reproduciendo» encima de una pista ya parada. */
+    _invalidatePendingPlay() {
+      this._playToken = (this._playToken || 0) + 1;
     },
 
     async togglePlay(forcePlay) {
@@ -571,6 +595,10 @@ Object.assign(App, {
     /* Detener la reproducción por completo (pausa + reset a 0) sin tocar la cola.
      * Usado cuando la pista actual se quita manualmente de la cola. */
     stopPlayback() {
+      // Un play() pendiente resolvía después y volvía a poner
+      // isPlaying = true (y a arrancar el conteo de estadísticas) sobre
+      // una pista que ya se había parado o borrado.
+      this._invalidatePendingPlay();
       try {
         if (this.audio) {
           this.audio.pause();
