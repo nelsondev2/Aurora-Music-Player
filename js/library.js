@@ -370,8 +370,41 @@ Object.assign(App, {
       } else if (track.src) {
         url = track.src;
       }
-      if (url) this._urlCache.set(track.id, url);
+      if (url) {
+        this._urlCache.set(track.id, url);
+        this._evictUrlCache(track.id);
+      }
       return url;
+    },
+
+    /* Tope de la caché de objectURL: hasta ahora vivía entera hasta
+     * cerrar la app, así que una sesión larga acumulaba una URL (y su
+     * blob) por cada canción escuchada. Se conservan la actual, la
+     * precargada y las últimas; el resto se revoca. Nunca se revoca una
+     * URL que el <audio> esté usando: sería cortar la canción en curso. */
+    _URL_CACHE_MAX: 12,
+    _evictUrlCache(keepId) {
+      if (!this._urlCache || this._urlCache.size <= this._URL_CACHE_MAX) return;
+      const keep = new Set();
+      if (keepId) keep.add(keepId);
+      if (this.currentTrack && this.currentTrack.id) keep.add(this.currentTrack.id);
+      // Lo que suena y lo que está precargado se identifican por su src,
+      // no por id: el id puede haberse creado antes de sonar.
+      const inUse = new Set();
+      try { if (this.audio && this.audio.src) inUse.add(this.audio.src); } catch (e) {}
+      try { if (this._preloadAudio && this._preloadAudio.src) inUse.add(this._preloadAudio.src); } catch (e) {}
+      for (const [id, url] of this._urlCache) {
+        if (inUse.has(url)) keep.add(id);
+      }
+      // Map respeta el orden de inserción: los más viejos van primero.
+      for (const [id, url] of this._urlCache) {
+        if (this._urlCache.size <= this._URL_CACHE_MAX) break;
+        if (keep.has(id) || inUse.has(url)) continue;
+        try { URL.revokeObjectURL(url); } catch (e) {}
+        this._urlCache.delete(id);
+        const t = this.getTrackById(id);
+        if (t && t.src === url) t.src = null; // se recreará desde el blob
+      }
     },
 
     /* Precarga la siguiente pista en un <audio> NO conectado al grafo EQ. */

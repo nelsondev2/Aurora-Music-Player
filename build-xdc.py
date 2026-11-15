@@ -197,11 +197,48 @@ def validate_sources(files):
     return ok
 
 
+def validate_version():
+    """Una sola versión, en tres sitios que deben coincidir.
+
+    La 1.2.5 salió con `App.VERSION = '1.2.0'`: la app decía una versión
+    y el CHANGELOG otra, así que los informes de error llegaban
+    atribuidos a la versión equivocada. Este control lo impide.
+    """
+    ok = True
+    try:
+        state = read_text("js/state.js")
+        readme = read_text("README.md")
+        changelog = read_text("CHANGELOG.md")
+    except OSError as exc:
+        return fail("no se pudo leer la versión: %s" % exc)
+
+    match = re.search(r"VERSION:\s*'([0-9]+\.[0-9]+\.[0-9]+)'", state)
+    if not match:
+        return fail("js/state.js no declara «VERSION: 'x.y.z'»")
+    version = match.group(1)
+
+    publicadas = re.findall(r"^## ([0-9]+\.[0-9]+\.[0-9]+)", changelog, re.M)
+    if version not in publicadas:
+        ok = fail("App.VERSION es %s y el CHANGELOG no tiene una sección "
+                  "«## %s» (últimas: %s)"
+                  % (version, version, ", ".join(publicadas[:3]) or "ninguna"))
+
+    readme_version = re.search(r"\*\*Versión:\*\* ([0-9]+\.[0-9]+\.[0-9]+)", readme)
+    if readme_version and readme_version.group(1) != version:
+        ok = fail("el README dice %s y App.VERSION es %s"
+                  % (readme_version.group(1), version))
+
+    print("    versión: %s" % version)
+    return ok
+
+
 def build(out_path):
     files = collect_files()
     if not files:
         return False
     if not validate_sources(files):
+        return False
+    if not validate_version():
         return False
 
     with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as archive:

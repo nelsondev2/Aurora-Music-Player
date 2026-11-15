@@ -1,0 +1,22 @@
+{
+  "name": "aurora-music-player",
+  "private": true,
+  "description": "Reproductor de música offline-first para WebXDC (sin build, sin dependencias de ejecución)",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "test:watch": "node --test --watch",
+    "check:xdc": "python3 build-xdc.py",
+    "check:xdc:validate": "python3 build-xdc.py --check",
+    "icons:preview": "node tools/preview-iconos.mjs"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "fake-indexeddb": "^6.0.0",
+    "jsdom": "^25.0.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

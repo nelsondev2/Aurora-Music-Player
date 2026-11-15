@@ -334,6 +334,9 @@ Object.assign(App, {
      * Usado al eliminar la pista en reproducción: salta a la siguiente
      * y queda en modo pausa (ready to play). */
     loadTrackPaused() {
+      // Igual que en stopPlayback(): cargar en pausa invalida cualquier
+      // play() que siguiera en vuelo de la pista anterior.
+      this._invalidatePendingPlay();
       const t = this.currentTrack;
       if (!t) {
         // Sin pista: limpiar
@@ -385,6 +388,7 @@ Object.assign(App, {
      * avisa en el primer fallo y al rendirse: nada de un toast por
      * cada archivo roto. Devuelve true si ya actuó. */
     _handleDecodeFailure() {
+      this._invalidatePendingPlay();
       if (typeof this.setBuffering === 'function') this.setBuffering(false);
       this.isPlaying = false;
       if (typeof this.updatePlayUI === 'function') this.updatePlayUI();
@@ -453,6 +457,13 @@ Object.assign(App, {
         bg.style.opacity = '0.4';
         setTimeout(() => { bg.style.opacity = ''; }, 200);
       }
+    },
+
+    /* Cada intento de play() lleva un token; solo el último puede tocar
+     * la UI. Se sube al parar para que una promesa antigua no resucite el
+     * estado «reproduciendo» encima de una pista ya parada. */
+    _invalidatePendingPlay() {
+      this._playToken = (this._playToken || 0) + 1;
     },
 
     async togglePlay(forcePlay) {
@@ -571,6 +582,10 @@ Object.assign(App, {
     /* Detener la reproducción por completo (pausa + reset a 0) sin tocar la cola.
      * Usado cuando la pista actual se quita manualmente de la cola. */
     stopPlayback() {
+      // Un play() pendiente resolvía después y volvía a poner
+      // isPlaying = true (y a arrancar el conteo de estadísticas) sobre
+      // una pista que ya se había parado o borrado.
+      this._invalidatePendingPlay();
       try {
         if (this.audio) {
           this.audio.pause();

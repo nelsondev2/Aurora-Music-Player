@@ -4,7 +4,44 @@ Historial de versiones **publicadas** de Aurora Music Player.
 
 ## Sin publicar
 
-_(nada por ahora)_
+- **La versión que se ve es la versión que es.** Acerca de enseñaba
+  «1.2.0» en la 1.2.5 porque `App.VERSION` se quedó atrás: ahora dice
+  1.2.5, el README también, y no puede volver a pasar — `build-xdc.py`
+  se niega a empaquetar si la app, el README y el CHANGELOG no
+  coinciden, y el flujo de publicación rechaza una etiqueta que no
+  cuadre con `App.VERSION`.
+- **Vuelven las pruebas al repositorio.** `npm test` arranca la app
+  real (jsdom + IndexedDB de verdad, audio instrumentado) y comprueba
+  lo que más duele si se rompe: cola por contexto, aleatorio,
+  repetición, borrado con «Deshacer», estadísticas, sesión, caché de
+  objectURL, i18n de los 14 idiomas, escapado de metadatos, apertura de
+  las 20 hojas y coherencia de versión. 22 pruebas, cero dependencias
+  en el `.xdc` (el paquete no lleva `test/` ni `node_modules/`), y un
+  flujo de GitHub Actions que las pasa en cada *push* y *pull request*.
+  La primera pasada encontró un fallo de verdad: un `play()` pendiente
+  podía devolver el estado «reproduciendo» después de parar o borrar
+  la pista en curso.
+- **Ajustes → Acerca de → Diagnóstico.** En Delta Chat no hay consola:
+  el último error se guarda y ahora se puede ver y copiar en un texto
+  con versión, idioma, tema, plataforma, tamaño de la biblioteca, uso
+  de disco y navegador, para pegarlo en un informe. Antes se anotaba
+  en `_lastError` y no lo leía nadie.
+- **La caché de `objectURL` tiene tope** (12): una sesión larga ya no
+  se queda con una URL viva por cada canción escuchada. Nunca se
+  revoca la que está sonando ni la precargada.
+- **El uso de disco de Ajustes se refresca siempre**, también al abrir
+  Ajustes desde Inicio (antes solo se calculaba desde el menú ⋯ y
+  podía quedar en blanco).
+- Comentarios corregidos: el diccionario ya no dice «8 idiomas» (son 14).
+- **Sprite de iconos redibujado entero.** Los 54 iconos pasan a un sistema
+  único: rejilla de 24, trazo de 1,9 con extremos y uniones redondeadas y
+  `currentColor`. Antes convivían rellenos Material, trazos sueltos y algún
+  trazado heredado de otra familia; ahora la navegación, el transporte, los
+  menús y las listas comparten grosor y proporción, se leen a 16 px y se
+  tiñen solos con los tres temas y los cinco acentos. Los sólidos quedan
+  reservados a lo que marca estado (play, pausa, saltos, estrella, corazón
+  lleno). Vista previa en `docs/iconos-sprite.png`; reglas en
+  `docs/ICONOS.md`; se regenera con `npm run icons:preview`.
 
 ## 1.2.5 — Más ligera, en 14 idiomas
 

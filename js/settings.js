@@ -602,7 +602,7 @@ Object.assign(App, {
       return v;
     },
 
-    /* Idioma del sistema, limitado a los 8 soportados.
+    /* Idioma del sistema, limitado a los 14 soportados (SUPPORTED_LANGS).
      * Se miran todas las preferencias (navigator.languages) para acertar
      * con casos como «es-419», «zh-CN» o «pt-BR». */
     _detectSystemLang() {
@@ -727,6 +727,7 @@ Object.assign(App, {
       this.buildLangList();
       // Refrescar etiquetas dinámicas (no data-i18n) en el nuevo idioma
       if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
+      if (typeof this.renderAboutDiagnostics === 'function') this.renderAboutDiagnostics();
       this.toast(this.t('toast_lang_applied'));
     },
 
@@ -913,6 +914,88 @@ Object.assign(App, {
       } catch (e) {
         label.style.display = 'none';
       }
+    },
+
+    /* ---------- Diagnóstico (Ajustes → Acerca de) ---------- */
+    /* En Delta Chat no hay consola: `_lastError` se escribía en tres
+     * sitios y no se leía en ninguno, así que un fallo se perdía sin
+     * dejar rastro visible. Se muestra aquí y se puede copiar entero
+     * para pegarlo en un informe de error. */
+    renderAboutDiagnostics() {
+      const el = document.getElementById('aboutLastError');
+      if (!el) return;
+      const err = this._lastError;
+      if (err && err.msg) {
+        let when = '';
+        try { when = new Date(err.ts || Date.now()).toLocaleString(); } catch (e) {}
+        el.textContent = this.t('about_last_error') + ': ' + err.msg + (when ? ' · ' + when : '');
+        el.hidden = false;
+      } else {
+        el.textContent = '';
+        el.hidden = true;
+      }
+    },
+
+    /* Texto plano para pegar en un informe: lo que hace falta saber y
+     * no se puede preguntar a una WebView sin consola. */
+    async diagnosticsText() {
+      const lines = [];
+      const isWebxdc = !!(window.webxdc && !window.webxdc._isStub);
+      lines.push('Aurora Music Player ' + (this.VERSION || '?'));
+      lines.push('lang=' + this.lang + ' theme=' + this.theme + ' accent=' + this.accent);
+      lines.push('plataforma=' + (isWebxdc ? 'webxdc' : 'navegador'));
+      try {
+        lines.push('pantalla=' + window.screen.width + 'x' + window.screen.height
+          + ' dpr=' + (window.devicePixelRatio || 1));
+      } catch (e) {}
+      lines.push('biblioteca=' + this.tracks.length + ' pistas · '
+        + this.playlists.length + ' listas · ' + this.favorites.size + ' favoritos');
+      try {
+        if (navigator.storage && typeof navigator.storage.estimate === 'function') {
+          const { usage, quota } = await navigator.storage.estimate();
+          lines.push('almacenamiento=' + this.fmtBytes(usage || 0) + ' / ' + this.fmtBytes(quota || 0));
+        }
+      } catch (e) {}
+      if (this._lastError && this._lastError.msg) {
+        const ts = this._lastError.ts ? new Date(this._lastError.ts).toISOString() : '?';
+        lines.push('ultimo_error=' + this._lastError.msg + ' (' + ts + ')');
+      } else {
+        lines.push('ultimo_error=' + this.t('about_no_error'));
+      }
+      try { lines.push('ua=' + navigator.userAgent); } catch (e) {}
+      return lines.join('\n');
+    },
+
+    async copyDiagnostics() {
+      const text = await this.diagnosticsText();
+      let ok = false;
+      try {
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+          await navigator.clipboard.writeText(text);
+          ok = true;
+        }
+      } catch (e) { ok = false; }
+      if (!ok) {
+        // Reserva para WebViews sin API de portapapeles (o sin contexto
+        // seguro, que es el caso de muchos clientes webxdc).
+        const prevFocus = document.activeElement;
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.top = '-1000px';
+          document.body.appendChild(ta);
+          ta.select();
+          ok = document.execCommand('copy');
+          ta.remove();
+        } catch (e) { ok = false; }
+        if (prevFocus && typeof prevFocus.focus === 'function') {
+          try { prevFocus.focus({ preventScroll: true }); } catch (e) {}
+        }
+      }
+      this.toast(ok ? this.t('toast_diag_copied') : this.t('toast_diag_failed'),
+        ok ? undefined : 'danger');
     },
 
     fmtBytes(n) {

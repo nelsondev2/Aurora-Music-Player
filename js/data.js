@@ -35,7 +35,8 @@ const SAMPLE_LRC = null;
 
 /* =====================================================================
  *  Diccionario i18n
- *  Idiomas soportados: es, en, pt, zh, ja, fr, it, ru
+ *  Idiomas soportados: es, en, pt, zh, ja, fr, it, ru, de, uk, pl, tr,
+ *  id y zh-TW (los 14 de SUPPORTED_LANGS; la lista manda, no este comentario)
  *  Cada clave contiene un objeto con la traducción por idioma.
  *  Las claves se referencian desde el HTML con data-i18n="key"
  *  y desde JS con App.t('key').
@@ -3500,6 +3501,93 @@ const I18N = {
     tr: 'Kaynak kodu',
     id: 'Kode sumber',
     'zh-TW': '源代碼'
+  },
+  about_diagnostics: {
+    es: 'Diagnóstico', en: 'Diagnostics', pt: 'Diagnóstico',
+    zh: '诊断', ja: '診断情報', fr: 'Diagnostic',
+    it: 'Diagnostica', ru: 'Диагностика',
+    de: 'Diagnose',
+    uk: 'Діагностика',
+    pl: 'Diagnostyka',
+    tr: 'Tanılama',
+    id: 'Diagnostik',
+    'zh-TW': '診斷'
+  },
+  about_last_error: {
+    es: 'Último error', en: 'Last error', pt: 'Último erro',
+    zh: '最近的错误', ja: '最後のエラー', fr: 'Dernière erreur',
+    it: 'Ultimo errore', ru: 'Последняя ошибка',
+    de: 'Letzter Fehler',
+    uk: 'Остання помилка',
+    pl: 'Ostatni błąd',
+    tr: 'Son hata',
+    id: 'Kesalahan terakhir',
+    'zh-TW': '最近的錯誤'
+  },
+  about_no_error: {
+    es: 'Ningún error registrado', en: 'No errors logged', pt: 'Nenhum erro registado',
+    zh: '没有记录到错误', ja: 'エラーは記録されていません', fr: 'Aucune erreur enregistrée',
+    it: 'Nessun errore registrato', ru: 'Ошибок не зафиксировано',
+    de: 'Keine Fehler aufgezeichnet',
+    uk: 'Помилок не зафіксовано',
+    pl: 'Brak zapisanych błędów',
+    tr: 'Kayıtlı hata yok',
+    id: 'Tidak ada kesalahan tercatat',
+    'zh-TW': '沒有記錄到錯誤'
+  },
+  about_diagnostics_hint: {
+    es: 'Se guarda solo en este dispositivo; no se envía a ningún sitio.',
+    en: 'Stored on this device only; nothing is sent anywhere.',
+    pt: 'Guardado apenas neste dispositivo; não é enviado a nenhum lugar.',
+    zh: '仅保存在本设备，不会发送到任何地方。',
+    ja: 'この端末にのみ保存され、どこにも送信されません。',
+    fr: 'Conservé uniquement sur cet appareil ; rien n’est envoyé.',
+    it: 'Salvato solo su questo dispositivo; non viene inviato da nessuna parte.',
+    ru: 'Хранится только на этом устройстве и никуда не отправляется.',
+    de: 'Wird nur auf diesem Gerät gespeichert; nichts wird gesendet.',
+    uk: 'Зберігається лише на цьому пристрої; нікуди не надсилається.',
+    pl: 'Zapisywane tylko na tym urządzeniu; nigdzie nie jest wysyłane.',
+    tr: 'Yalnızca bu cihazda saklanır; hiçbir yere gönderilmez.',
+    id: 'Hanya disimpan di perangkat ini; tidak dikirim ke mana pun.',
+    'zh-TW': '僅儲存在本裝置，不會傳送到任何地方。'
+  },
+  about_copy_diag: {
+    es: 'Copiar diagnóstico', en: 'Copy diagnostics', pt: 'Copiar diagnóstico',
+    zh: '复制诊断信息', ja: '診断情報をコピー', fr: 'Copier le diagnostic',
+    it: 'Copia diagnostica', ru: 'Скопировать диагностику',
+    de: 'Diagnose kopieren',
+    uk: 'Скопіювати діагностику',
+    pl: 'Kopiuj diagnostykę',
+    tr: 'Tanılamayı kopyala',
+    id: 'Salin diagnostik',
+    'zh-TW': '複製診斷資訊'
+  },
+  toast_diag_copied: {
+    es: 'Diagnóstico copiado', en: 'Diagnostics copied', pt: 'Diagnóstico copiado',
+    zh: '诊断信息已复制', ja: '診断情報をコピーしました', fr: 'Diagnostic copié',
+    it: 'Diagnostica copiata', ru: 'Диагностика скопирована',
+    de: 'Diagnose kopiert',
+    uk: 'Діагностику скопійовано',
+    pl: 'Diagnostyka skopiowana',
+    tr: 'Tanılama kopyalandı',
+    id: 'Diagnostik disalin',
+    'zh-TW': '診斷資訊已複製'
+  },
+  toast_diag_failed: {
+    es: 'No se pudo copiar; selecciona el texto a mano.',
+    en: 'Could not copy; select the text manually.',
+    pt: 'Não foi possível copiar; selecione o texto manualmente.',
+    zh: '无法复制，请手动选择文本。',
+    ja: 'コピーできませんでした。テキストを手動で選択してください。',
+    fr: 'Copie impossible ; sélectionnez le texte manuellement.',
+    it: 'Impossibile copiare; seleziona il testo a mano.',
+    ru: 'Не удалось скопировать; выделите текст вручную.',
+    de: 'Kopieren fehlgeschlagen; markiere den Text von Hand.',
+    uk: 'Не вдалося скопіювати; виділи текст вручну.',
+    pl: 'Nie udało się skopiować; zaznacz tekst ręcznie.',
+    tr: 'Kopyalanamadı; metni elle seç.',
+    id: 'Tidak dapat menyalin; pilih teks secara manual.',
+    'zh-TW': '無法複製，請手動選取文字。'
   },
   settings_marquee: {
     es: 'Marquee en títulos largos', en: 'Marquee for long titles', pt: 'Marquee em títulos longos',

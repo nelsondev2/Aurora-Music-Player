@@ -2,7 +2,7 @@
 
 Reproductor de música **offline-first** pensado para **WebXDC**: se comparte como archivo `.xdc` en un chat de Delta Chat y funciona sin red, sin cuenta y sin servidor. Carga archivos locales (MP3, M4A, FLAC, WAV, OGG, Opus), lee ID3 y letras LRC.
 
-**Versión:** 1.2.0 · licencia MIT
+**Versión:** 1.2.5 · licencia MIT
 
 > **Nota:** Aurora es un proyecto **generado con inteligencia
 > artificial**. Todo su código —y las traducciones de la
@@ -60,8 +60,9 @@ El script comprueba antes de comprimir:
 - todas las rutas relativas y presentes en el paquete
 - ninguna carga remota (un `.xdc` no tiene red)
 - que ningún `webxdc.js` viaje en el paquete (lo inyecta el cliente)
+- que `App.VERSION`, el README y el CHANGELOG digan la misma versión
 
-El resultado es un ZIP con compresión Deflate, **26 archivos y ~383 KB**, reproducible (mismo contenido → mismo SHA-256).
+El resultado es un ZIP con compresión Deflate, **26 archivos y ~385 KB**, reproducible (mismo contenido → mismo SHA-256).
 
 ### Probar en Delta Chat
 
@@ -119,6 +120,32 @@ python3 -m http.server 8000
 
 En navegador no hay API webxdc (la referencia a `webxdc.js` no resuelve): las exportaciones se descargan como archivos y la selección de archivos usa el selector del navegador. Para simular Delta Chat, el simulador oficial `webxdc-dev` o el `webxdc.js` de Hello funcionan sin tocar el paquete.
 
+## Pruebas
+
+La app no tiene dependencias de ejecución; las pruebas sí (solo para desarrollo).
+Requiere Node 20 o superior:
+
+```bash
+npm install     # una vez: jsdom y fake-indexeddb
+npm test        # 22 pruebas
+```
+
+Los 54 iconos de la interfaz son un sprite SVG inline en `index.html` (un
+`<symbol>` por icono, trazo de 1,9 sobre rejilla de 24, `currentColor`), así se
+tiñen solos con el tema y el acento. `npm run icons:preview` regenera
+`docs/iconos-sprite.png` con todos los símbolos y los tres temas; las reglas del
+sistema están en [`docs/ICONOS.md`](docs/ICONOS.md).
+
+Las pruebas arrancan la app **de verdad** —`index.html` y todos los `js/` en un DOM
+real, con IndexedDB, `<audio>` y Web Audio— y comprueban lo que más duele si se
+rompe: cola por contexto, aleatorio, repetición, borrado con «Deshacer»,
+estadísticas, sesión, caché de `objectURL`, los 14 idiomas, el escapado de
+metadatos, la apertura de las 20 hojas, la coherencia de la versión y que el
+`.xdc` se construya igual dos veces.
+
+Nada de esto viaja en el `.xdc`: `build-xdc.py` empaqueta solo `APP_ENTRIES`
+(la app, sus estilos, el icono y el manifiesto).
+
 ## Contenido
 
 | Ruta | Qué es |
@@ -134,5 +161,9 @@ En navegador no hay API webxdc (la referencia a `webxdc.js` no resuelve): las ex
 | `manifest.toml`, `icon.png` | Metadatos e icono del WebXDC |
 | `README.md`, `LICENSE` | Documentación y licencia |
 | `CHANGELOG.md` | Historial de versiones publicadas |
+| `docs/` | Informes de auditoría y vista previa del sprite de iconos |
+| `test/` | Pruebas de comportamiento (`npm test`) |
+| `tools/` | Utilidades de desarrollo (vista previa de iconos) |
+| `.github/workflows/` | CI: pruebas en cada push y publicación del `.xdc` al etiquetar |
 
-El repositorio contiene únicamente la aplicación y su empaquetador: no incluye servidor Node, suite de pruebas, CI ni dependencias externas. Antes de empaquetar, `build-xdc.py` valida el paquete contra las reglas de Delta Chat.
+La aplicación no tiene dependencias externas ni build: el navegador carga `index.html` y los `js/` tal cual. Las dependencias de `package.json` son **solo para las pruebas** (jsdom y fake-indexeddb) y no viajan en el `.xdc`. Antes de empaquetar, `build-xdc.py` valida el paquete contra las reglas de Delta Chat.
