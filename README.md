@@ -2,7 +2,7 @@
 
 Reproductor de música **offline-first** pensado para **WebXDC**: se comparte como archivo `.xdc` en un chat de Delta Chat y funciona sin red, sin cuenta y sin servidor. Carga archivos locales (MP3, M4A, FLAC, WAV, OGG, Opus), lee ID3 y letras LRC.
 
-**Versión:** 1.3.0 · licencia MIT
+**Versión:** 1.4.0 · licencia MIT
 
 > **Nota:** Aurora es un proyecto **generado con inteligencia
 > artificial**. Todo su código —y las traducciones de la
@@ -144,7 +144,9 @@ real, con IndexedDB, `<audio>` y Web Audio— y comprueban lo que más duele si 
 rompe: cola por contexto, aleatorio, repetición, borrado con «Deshacer»,
 estadísticas, sesión, caché de `objectURL`, los 14 idiomas, el escapado de
 metadatos, la apertura de las 20 hojas, la coherencia de la versión y que el
-`.xdc` se construya igual dos veces. Otra comprueba que la portada generada sale
+`.xdc` se construya igual dos veces. Otra hace el viaje completo de una copia de
+seguridad (crear, leer, restaurar y comprobar que suena). Otra comprueba que la
+portada generada sale
 siempre del mismo pintor. Otra tanda vigila el formato de guardado:
 que el audio no se cuele en el registro de la pista, que abrir la app no cargue
 ningún Blob, que borrar no deje huérfanos y que la migración se haga una vez. Y
@@ -161,6 +163,7 @@ Nada de esto viaja en el `.xdc`: `build-xdc.py` empaqueta solo `APP_ENTRIES`
 | `css/styles.css` | Estilos, temas y acentos (toda la CSS vive en `css/`) |
 | `js/i18n.js` | Traducciones de los 14 idiomas (solo texto: aquí se revisa un idioma) |
 | `js/portadas.js` | Portada generada: un solo pintor para reproductor, filas, tarjetas y listas |
+| `js/backup.js` | Copia de seguridad de la biblioteca con el audio dentro (formato propio, sin dependencias) |
 | `js/data.js` | Catálogo inicial, paleta de portadas y configuración |
 | `js/storage.js` | Persistencia en IndexedDB: metadatos de las pistas, audio aparte (`blobs`), listas y ajustes |
 | `js/uploader.js` | Lectura de archivos, ID3 y LRC |

@@ -2,6 +2,28 @@
 
 Historial de versiones **publicadas** de Aurora Music Player.
 
+## 1.4.0 — Copia de seguridad con la música dentro
+
+- **Guardar y restaurar la biblioteca entera, con el audio.** Ajustes →
+  Copia de seguridad: un solo archivo `.aurora` que lleva las canciones, las
+  listas, los favoritos y las portadas. Al restaurarlo, cada audio se escribe
+  en el almacén de blobs con su mismo id, así que **las canciones vuelven
+  vinculadas** a sus listas y no hay que volver a buscarlas en el
+  dispositivo, que es justo lo que pasaba con las listas exportadas a
+  `.m3u8` (guardan nombres, no música).
+- El formato no necesita librerías: cabecera de texto con un JSON (pistas,
+  listas, favoritos y dónde empieza cada audio) y después los audios en
+  crudo, sin base64 (lo engordaría un tercio) y sin comprimir (un MP3 ya
+  está comprimido). Al restaurar se lee la cabecera y se corta el archivo
+  con `slice()`, sin cargarlo entero en memoria.
+- **Restaurar fusiona, nunca borra:** lo que ya hay en la biblioteca se
+  queda, las pistas que faltan se añaden, las listas con el mismo nombre o
+  id se completan y los favoritos se unen. Una copia vieja no puede
+  destruir la biblioteca actual.
+- 5 pruebas nuevas (48 en total): la copia se lee y trae el audio, restaurar
+  vuelve a dejar las canciones vinculadas y reproducibles, no pisa lo que ya
+  hay, funciona sin audio y rechaza lo que no es una copia.
+
 ## 1.3.0 — La biblioteca abre sin cargar el audio
 
 - **El audio deja de viajar dentro de la pista.** Los registros de

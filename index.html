@@ -859,6 +859,17 @@
               <svg class="ico" aria-hidden="true"><use href="#i-keyboard"></use></svg>
               <span data-i18n="settings_shortcuts">Atajos de teclado</span>
             </button>
+            <h4 class="section-title" data-i18n="settings_backup">Copia de seguridad</h4>
+            <button class="menu-row" id="menuExportBackup" type="button">
+              <svg class="ico" aria-hidden="true"><use href="#i-cloud-arrow-up"></use></svg>
+              <span data-i18n="settings_backup_export">Guardar copia (con la música)</span>
+            </button>
+            <button class="menu-row" id="menuImportBackup" type="button">
+              <svg class="ico" aria-hidden="true"><use href="#i-file-import"></use></svg>
+              <span data-i18n="settings_backup_import">Restaurar una copia</span>
+            </button>
+            <p class="settings-hint" data-i18n="settings_backup_hint">La copia lleva la música, las listas, los favoritos y las portadas: al restaurarla, las canciones vuelven vinculadas y no hay que cargarlas otra vez. Ocupa lo mismo que tu biblioteca, así que guárdala donde tengas sitio.</p>
+            <input type="file" id="backupInput" accept=".aurora,application/x-aurora-backup" hidden>
             <h4 class="section-title" data-i18n="settings_maintenance">Mantenimiento</h4>
             <button class="menu-row" id="menuRetagTracks">
               <svg class="ico" aria-hidden="true"><use href="#i-tags"></use></svg>
@@ -879,7 +890,7 @@
             <p class="settings-hint" data-i18n="settings_sleep_fade">El temporizador sleep hace un fade-out de 10 s al apagar.</p>
             <h4 class="section-title" data-i18n="settings_about">Acerca de</h4>
             <div class="about-block">
-              <p class="about-line"><span data-i18n="settings_version">Versión</span> <strong id="aboutVersion">1.3.0</strong></p>
+              <p class="about-line"><span data-i18n="settings_version">Versión</span> <strong id="aboutVersion">1.4.0</strong></p>
               <p class="about-line" data-i18n="settings_license">Licencia MIT</p>
               <a class="menu-row" id="aboutSource" href="https://github.com/nelsondev2/Aurora-Music-Player" target="_blank" rel="noopener">
                 <svg class="ico" aria-hidden="true"><use href="#i-arrow-up-right-from-square"></use></svg>
@@ -1193,6 +1204,7 @@
   <script src="js/audio.js"></script>
   <script src="js/portadas.js"></script>
   <script src="js/player-ui.js"></script>
+  <script src="js/backup.js"></script>
   <script src="js/lyrics.js"></script>
   <script src="js/playlist-ui.js"></script>
   <script src="js/playlist-edit.js"></script>

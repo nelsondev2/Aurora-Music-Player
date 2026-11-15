@@ -4374,6 +4374,30 @@ const I18N = {
     'zh-TW': '確認'
   },
 
+  /* ---------- Copia de seguridad ---------- */
+  settings_backup: { es: 'Copia de seguridad', en: 'Backup', pt: 'Cópia de segurança', zh: '备份', ja: 'バックアップ', fr: 'Sauvegarde', it: 'Copia di sicurezza', ru: 'Резервная копия', de: 'Sicherung', uk: 'Резервна копія', pl: 'Kopia zapasowa', tr: 'Yedekleme', id: 'Cadangan', 'zh-TW': '備份' },
+  settings_backup_export: { es: 'Guardar copia (con la música)', en: 'Save backup (with music)', pt: 'Guardar cópia (com a música)', zh: '保存备份（含音乐）', ja: 'バックアップを保存（音楽込み）', fr: 'Enregistrer une sauvegarde (avec la musique)', it: 'Salva copia (con la musica)', ru: 'Сохранить копию (с музыкой)', de: 'Sicherung speichern (mit Musik)', uk: 'Зберегти копію (з музикою)', pl: 'Zapisz kopię (z muzyką)', tr: 'Yedekle (müzikle)', id: 'Simpan cadangan (dengan musik)', 'zh-TW': '儲存備份（含音樂）' },
+  settings_backup_import: { es: 'Restaurar una copia', en: 'Restore a backup', pt: 'Restaurar uma cópia', zh: '恢复备份', ja: 'バックアップを復元', fr: 'Restaurer une sauvegarde', it: 'Ripristina una copia', ru: 'Восстановить копию', de: 'Sicherung wiederherstellen', uk: 'Відновити копію', pl: 'Przywróć kopię', tr: 'Yedeği geri yükle', id: 'Pulihkan cadangan', 'zh-TW': '還原備份' },
+  settings_backup_hint: {
+    es: 'La copia lleva la música, las listas, los favoritos y las portadas: al restaurarla, las canciones vuelven vinculadas y no hay que cargarlas otra vez. Ocupa lo mismo que tu biblioteca.',
+    en: 'The backup carries the music, playlists, favourites and covers: restoring it brings the songs back already linked, so you do not have to load them again. It is as big as your library.',
+    pt: 'A cópia leva a música, as listas, os favoritos e as capas: ao restaurá-la, as faixas voltam vinculadas e não é preciso carregá-las outra vez. Ocupa o mesmo que a tua biblioteca.',
+    zh: '备份包含音乐、播放列表、收藏和封面：恢复后歌曲会自动关联，无需重新加载。大小与你的音乐库相当。',
+    ja: 'バックアップには音楽・プレイリスト・お気に入り・カバーが入ります。復元すれば曲は関連付いたまま戻り、読み込み直す必要はありません。サイズはライブラリと同じくらいです。',
+    fr: 'La sauvegarde contient la musique, les listes, les favoris et les pochettes : à la restauration, les morceaux reviennent déjà liés, sans avoir à les recharger. Elle pèse autant que votre bibliothèque.',
+    it: 'La copia contiene la musica, le playlist, i preferiti e le copertine: al ripristino i brani tornano già collegati, senza ricaricarli. Occupa quanto la tua libreria.',
+    ru: 'Копия содержит музыку, плейлисты, избранное и обложки: при восстановлении треки возвращаются уже связанными, загружать их заново не нужно. Размер — как у вашей библиотеки.',
+    de: 'Die Sicherung enthält Musik, Playlists, Favoriten und Cover: Beim Wiederherstellen sind die Titel sofort verknüpft, du musst sie nicht neu laden. Sie ist so groß wie deine Bibliothek.',
+    uk: 'Копія містить музику, списки, обране та обкладинки: після відновлення треки вже пов’язані, завантажувати їх заново не потрібно. Розмір — як у вашої бібліотеки.',
+    pl: 'Kopia zawiera muzykę, listy, ulubione i okładki: po przywróceniu utwory są już powiązane, nie trzeba ich wczytywać ponownie. Rozmiar jest taki jak biblioteka.',
+    tr: 'Yedek müziği, listeleri, favorileri ve kapakları içerir: geri yüklediğinizde şarkılar bağlı olarak döner, yeniden yüklemeniz gerekmez. Boyutu kitaplığınız kadardır.',
+    id: 'Cadangan berisi musik, daftar putar, favorit, dan sampul: saat dipulihkan, lagu kembali tertaut tanpa memuat ulang. Ukurannya sebesar pustaka Anda.',
+    'zh-TW': '備份包含音樂、播放清單、收藏與封面：還原後歌曲會自動關聯，無須重新載入。大小與你的音樂庫相當。'
+  },
+  toast_backup_restored: { es: 'Restaurado: X canciones y Y listas', en: 'Restored: X songs and Y playlists', pt: 'Restaurado: X faixas e Y listas', zh: '已恢复：X 首歌曲、Y 个列表', ja: '復元しました：曲 X 件・リスト Y 件', fr: 'Restauré : X morceaux et Y listes', it: 'Ripristinato: X brani e Y playlist', ru: 'Восстановлено: X треков и Y списков', de: 'Wiederhergestellt: X Titel und Y Listen', uk: 'Відновлено: X треків і Y списків', pl: 'Przywrócono: X utworów i Y list', tr: 'Geri yüklendi: X şarkı, Y liste', id: 'Dipulihkan: X lagu dan Y daftar', 'zh-TW': '已還原：X 首歌曲、Y 個清單' },
+  toast_backup_bad: { es: 'Esa copia no se pudo leer', en: 'That backup could not be read', pt: 'Não foi possível ler essa cópia', zh: '无法读取该备份', ja: 'そのバックアップは読み込めません', fr: 'Impossible de lire cette sauvegarde', it: 'Impossibile leggere quella copia', ru: 'Не удалось прочитать эту копию', de: 'Diese Sicherung ließ sich nicht lesen', uk: 'Не вдалося прочитати цю копію', pl: 'Nie udało się odczytać tej kopii', tr: 'Bu yedek okunamadı', id: 'Cadangan itu tidak dapat dibaca', 'zh-TW': '無法讀取該備份' },
+  toast_backup_empty: { es: 'Todavía no hay nada que copiar', en: 'There is nothing to back up yet', pt: 'Ainda não há nada para copiar', zh: '目前还没有可备份的内容', ja: 'まだバックアップするものがありません', fr: 'Il n’y a encore rien à sauvegarder', it: 'Non c’è ancora nulla da copiare', ru: 'Пока нечего копировать', de: 'Es gibt noch nichts zu sichern', uk: 'Поки немає чого копіювати', pl: 'Nie ma jeszcze czego kopiować', tr: 'Henüz yedeklenecek bir şey yok', id: 'Belum ada yang bisa dicadangkan', 'zh-TW': '目前還沒有可備份的內容' },
+
 };
 
 window.SUPPORTED_LANGS = SUPPORTED_LANGS;
