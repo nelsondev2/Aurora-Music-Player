@@ -665,10 +665,18 @@ Object.assign(App, {
       return true;
     },
 
-    /* #6 Normalización de volumen: calcular gain para una pista */
+    /* #6 Normalización de volumen (ReplayGain): calcular gain para una pista.
+     * Sube pistas silenciosas y atenúa las fuertes hacia un target RMS.
+     * El resultado se persiste en track.replayGain para no recalcular. */
     async computeTrackGain(track) {
-      if (!track || this._trackGainCache.has(track.id)) {
-        return this._trackGainCache.get(track.id) || 1.0;
+      if (!track) return 1.0;
+      // Si ya se calculó y persistió, reutilizarlo sin decodificar de nuevo.
+      if (typeof track.replayGain === 'number' && isFinite(track.replayGain)) {
+        this._trackGainCache.set(track.id, track.replayGain);
+        return track.replayGain;
+      }
+      if (this._trackGainCache.has(track.id)) {
+        return this._trackGainCache.get(track.id);
       }
       try {
         if (!this.audioCtx) this.initAudioGraph();
@@ -691,13 +699,17 @@ Object.assign(App, {
           count++;
         }
         const rms = Math.sqrt(sum / count);
-        // Solo subir pistas muy bajas. Nunca atenuar: el target 0.1
-        // dejaba la música comercial a la mitad de volumen.
-        const targetRms = 0.22;
+        // Target RMS 0.25: pistas más suaves se suben, más fuertes se atenúan.
+        // Límite ±6 dB (factor 0.5 a 2.0) para evitar distorsión.
+        const targetRms = 0.25;
         let gain = 1.0;
-        if (rms > 0.001 && rms < targetRms) {
-          gain = Math.min(1.8, targetRms / rms);
+        if (rms > 0.001) {
+          gain = targetRms / rms;
+          gain = Math.max(0.5, Math.min(2.0, gain));
         }
+        // Persistir en el track para futuras reproducciones.
+        track.replayGain = gain;
+        try { this.persistTrack(track); } catch (e) {}
         this._trackGainCache.set(track.id, gain);
         return gain;
       } catch (e) {

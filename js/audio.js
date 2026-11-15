@@ -926,7 +926,13 @@ Object.assign(App, {
         return;
       }
       if (!t) return;
-      const g = await this.computeTrackGain(t);
+      // Usar ReplayGain persistido si existe, sin decodificar audio.
+      let g;
+      if (typeof t.replayGain === 'number' && isFinite(t.replayGain)) {
+        g = t.replayGain;
+      } else {
+        g = await this.computeTrackGain(t);
+      }
       if (this.currentTrack && t.id !== this.currentTrack.id) return;
       this._normGain = g;
       this._setPlaybackGain(g, false);
