@@ -27,6 +27,10 @@ Historial de versiones **publicadas** de Aurora Music Player.
   tamaño solo acotan los candidatos. Las pistas antiguas sin huella se
   comprueban en el momento de la colisión, y la van guardando cuando se
   reproducen o se releen sus etiquetas.
+- **Las traducciones salen de `data.js`.** 4.300 de sus 4.400 líneas eran
+  los 14 idiomas: ahora están en `js/i18n.js`, junto a la lista de idiomas,
+  y `data.js` se queda con el catálogo y la paleta. Revisar un idioma deja
+  de ser buscar texto entre el catálogo y las utilidades.
 - Ocho pruebas nuevas (30 en total) para esa separación: que el Blob no
   se cuele en el registro, que reabrir no cargue audio, que reproducir lo
   traiga, que borrar no deje huérfanos y que la migración se haga una

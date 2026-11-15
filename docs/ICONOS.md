@@ -14,7 +14,7 @@ mover a `assets/icons.svg` y referenciar desde fuera:
 - un `<symbol>` inline se hereda con `currentColor` sin coste: el mismo icono
   sirve para los tres temas y los cinco acentos sin duplicar archivos.
 
-Coste real: el sprite pesa ~9 KB de los 385 KB del paquete.
+Coste real: el sprite pesa ~16 KB de los ~386 KB del paquete.
 
 ## Reglas de dibujo
 
@@ -29,6 +29,11 @@ Coste real: el sprite pesa ~9 KB de los 385 KB del paquete.
 
 Los sólidos llevan `fill` **y** `stroke` del mismo color con `linejoin="round"`:
 es lo que redondea las puntas del triángulo de play sin dibujar una curva a mano.
+
+**Un icono, un significado.** Cuando dos símbolos sirven para lo mismo sobra uno:
+`file-import` es «traer un archivo» (también las letras `.lrc`) y `folder` es
+«traer una carpeta entera». El antiguo `file-arrow-up` hacía lo mismo que
+`file-import` con la flecha al revés y se retiró.
 
 ## Anatomía de un símbolo
 

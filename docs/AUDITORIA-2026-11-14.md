@@ -187,4 +187,4 @@ devolvía `isPlaying = true` (y arrancaba el conteo de estadísticas) sobre una
 pista ya parada. Corregido con `_invalidatePendingPlay()`.
 
 **Verificación final:** `npm test` → 37/37 en verde · `python3 build-xdc.py` →
-26 archivos, `.xdc` válido · dos builds con el mismo SHA-256.
+27 archivos, `.xdc` válido · dos builds con el mismo SHA-256.
