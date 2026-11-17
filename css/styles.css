@@ -4976,7 +4976,18 @@ html.aurora-wide .toast {
   border-bottom: 1px solid var(--border);
   background: var(--bg-2);
 }
-.lib-tools { margin: 14px 0 4px; display: flex; gap: 8px; flex-wrap: wrap; }
+.lib-tools { margin: 16px 0 4px; display: flex; gap: 8px; flex-wrap: wrap; }
+#btnFindDuplicates {
+  width: auto;
+  min-height: 40px;
+  margin: 0;
+  padding: 8px 15px 8px 13px;
+  border-radius: var(--radius-pill);
+  color: var(--text-2);
+  font-weight: 600;
+  transition: background .15s, border-color .15s, color .15s, transform .15s;
+}
+#btnFindDuplicates .ico { width: 15px; height: 15px; color: var(--accent); }
 .catalog-grid {
   list-style: none; margin: 0; padding: 0;
   display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 14px;
@@ -5014,31 +5025,372 @@ html.aurora-wide .toast {
 }
 .edit-pl-rename-btn.confirm { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; } /*  contraste */
 /* Editor LRC por toques */
-/* Duplicados */
-.dup-group { margin-bottom: 18px; }
-.dup-group-title { font-size: var(--fs-sm); font-weight: 700; color: var(--text-2); margin: 0 0 6px; }
-.dup-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
-.dup-row .row-text { flex: 1; min-width: 0; }
-.dup-keep {
-  font-size: var(--fs-micro); font-weight: 700; color: var(--accent);
-  border: 1px solid var(--accent); border-radius: 999px; padding: 1px 7px; white-space: nowrap;
+/* ---------- Canciones duplicadas (sheetDuplicates) ---------- */
+.dup-view {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 100%;
+  padding-bottom: 8px;
 }
-/*  elección manual de la copia a conservar. La elegida se
- * distingue con un fondo de acento suave; «Conservar esta» es un
- * botón discreto (dirección de diseño del proyecto) y «Borrar las
- * demás» cierra el grupo como acción de peligro templada. */
-.dup-row.is-keep { background: rgba(var(--accent-rgb), 0.08); border-radius: 12px; padding: 6px 8px; margin: 0 -8px; }
-.dup-keep-btn {
-  flex: 0 0 auto; min-height: 32px; padding: 4px 10px;
-  font-size: var(--fs-caption); font-weight: 600; color: var(--accent);
-  background: transparent; border: 1px solid var(--accent); border-radius: 999px;
-  cursor: pointer; white-space: nowrap;
+.dup-empty {
+  margin: auto 0;
+  padding: 36px 20px;
+}
+.dup-summary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dup-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+}
+.dup-stats.has-space {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.dup-stat-box {
+  min-width: 0;
+  padding: 2px 8px;
+  text-align: center;
+}
+.dup-stat-box + .dup-stat-box {
+  border-left: 1px solid var(--border);
+}
+.dup-stat-val {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(135deg, var(--accent), var(--accent-text-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dup-stat-val.dup-stat-size {
+  font-size: var(--fs-subtitle);
+  line-height: 1.35;
+}
+.dup-stat-lbl {
+  margin-top: 4px;
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  color: var(--text-3);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dup-hint {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--text-3);
+  text-align: center;
+  line-height: 1.4;
+}
+.dup-clean-all {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 16px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--danger);
+  background: rgba(232, 90, 90, 0.10);
+  border: 1px solid rgba(232, 90, 90, 0.28);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.dup-clean-all .ico { width: 15px; height: 15px; }
+.dup-clean-all:active {
+  transform: scale(0.98);
+  background: rgba(232, 90, 90, 0.18);
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+}
+.dup-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dup-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.dup-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.dup-cover {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+}
+:root[data-theme="light"] .dup-cover {
+  box-shadow: 0 3px 10px rgba(20, 16, 12, 0.12);
+}
+.dup-head-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dup-group-title {
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--text-1);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dup-group-sub {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--text-3);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dup-count-badge {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.dup-rows {
+  display: flex;
+  flex-direction: column;
+}
+.dup-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  transition: background .15s;
+}
+.dup-row + .dup-row {
+  border-top: 1px solid var(--border);
+}
+.dup-row.is-keep {
+  background: rgba(var(--accent-rgb), 0.11);
+}
+:root[data-theme="light"] .dup-row.is-keep {
+  background: rgba(var(--accent-rgb), 0.08);
+}
+.dup-pick {
+  flex: 1;
+  min-width: 0;
+  min-height: 50px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  text-align: left;
+  transition: background .15s;
+}
+.dup-row.is-keep .dup-pick { cursor: default; }
+.dup-row:not(.is-keep) .dup-pick:active { background: var(--surface); }
+.dup-pick:focus-visible { outline-offset: -2px; }
+.dup-radio {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.8px solid var(--text-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.dup-radio .ico { width: 12px; height: 12px; }
+.dup-row.is-keep .dup-radio {
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
+  color: var(--accent-on-fill);
+  box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.32);
+}
+.dup-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dup-file {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-2);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dup-row.is-keep .dup-file { color: var(--text-1); }
+.dup-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  font-size: var(--fs-micro);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+.dup-keep {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.16);
+  border: 1px solid rgba(var(--accent-rgb), 0.30);
+  white-space: nowrap;
+}
+.dup-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.dup-detail {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dup-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.dup-flag .ico { width: 11px; height: 11px; }
+.dup-del-btn {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+  transition: background .15s, color .15s, transform .15s;
+}
+.dup-del-btn .ico { width: 16px; height: 16px; }
+.dup-del-btn:active {
+  color: var(--danger);
+  background: rgba(232, 90, 90, 0.14);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  transform: scale(0.92);
+}
+.dup-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
 }
 .dup-del-others {
-  display: block; margin: 8px 0 2px auto; min-height: 32px; padding: 4px 12px;
-  font-size: var(--fs-caption); font-weight: 600; color: var(--danger, #e5484d);
-  background: transparent; border: 1px solid var(--border); border-radius: 999px;
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--danger);
+  background: transparent;
+  border: 1px solid rgba(232, 90, 90, 0.28);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.dup-del-others .ico { width: 14px; height: 14px; }
+.dup-del-others:active {
+  transform: scale(0.97);
+  background: rgba(232, 90, 90, 0.12);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+@media (hover: hover) and (pointer: fine) {
+  #btnFindDuplicates:hover {
+    color: var(--text-1);
+    background: var(--surface-2);
+    border-color: var(--surface-hi);
+  }
+  .dup-row:not(.is-keep) .dup-pick:hover {
+    background: var(--surface);
+  }
+  .dup-row:not(.is-keep) .dup-pick:hover .dup-radio {
+    border-color: var(--accent);
+  }
+  .dup-del-btn:hover {
+    color: var(--danger);
+    background: rgba(232, 90, 90, 0.12);
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
+  }
+  .dup-clean-all:hover {
+    background: rgba(232, 90, 90, 0.16);
+    border-color: rgba(232, 90, 90, 0.42);
+    background: color-mix(in srgb, var(--danger) 16%, transparent);
+    border-color: color-mix(in srgb, var(--danger) 44%, transparent);
+  }
+  .dup-del-others:hover {
+    background: rgba(232, 90, 90, 0.10);
+    border-color: rgba(232, 90, 90, 0.42);
+    background: color-mix(in srgb, var(--danger) 10%, transparent);
+    border-color: color-mix(in srgb, var(--danger) 44%, transparent);
+  }
+}
+@media (max-width: 359px) {
+  .dup-summary { padding: 14px 12px; }
+  .dup-head { padding: 10px 12px; gap: 10px; }
+  .dup-cover { width: 40px; height: 40px; flex-basis: 40px; }
+  .dup-pick { gap: 9px; padding: 6px; }
 }
 /*  botón «Más opciones» en las filas de la cola */
 .queue-item .queue-menu { flex: 0 0 auto; }

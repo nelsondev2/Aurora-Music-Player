@@ -130,7 +130,7 @@ Requiere Node 20 o superior:
 
 ```bash
 npm install     # una vez: jsdom y fake-indexeddb
-npm test        # 43 pruebas
+npm test        # 46 pruebas
 ```
 
 Los 54 iconos de la interfaz son un sprite SVG inline en `index.html` (un

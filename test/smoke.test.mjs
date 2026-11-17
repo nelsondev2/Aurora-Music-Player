@@ -171,3 +171,51 @@ test('el diagnóstico enseña el último error y se puede copiar', async () => {
     assert.equal(copiado, true, 'no se intentó la copia de reserva');
   } finally { teardown(); }
 });
+
+test('no existe sistema de importar ni exportar copias de respaldo', async () => {
+  const { App, window, teardown } = await bootApp();
+  try {
+    // 1. Sin módulos ni pruebas de copia de respaldo en el repositorio.
+    const jsFiles = fs.readdirSync(path.join(ROOT, 'js')).filter((f) => /backup|respald/i.test(f));
+    assert.deepEqual(jsFiles, [], 'no debe existir ningún módulo de backup en js/');
+    const testFiles = fs.readdirSync(path.join(ROOT, 'test')).filter((f) => /backup|respald/i.test(f));
+    assert.deepEqual(testFiles, [], 'no debe existir test de backup en test/');
+
+    // 2. Sin scripts, controles, inputs ni etiquetas de respaldo/re-enlace en el DOM.
+    const doc = window.document;
+    assert.equal(doc.querySelector('script[src*="backup"]'), null);
+    for (const id of [
+      'menuExportBackup', 'menuImportBackup', 'backupInput', 'backupHint',
+      'btnHomeImportBackup', 'menuRelinkAudio',
+    ]) {
+      assert.equal(doc.getElementById(id), null, `no debe existir #${id}`);
+    }
+    assert.equal(doc.querySelectorAll('[data-i18n*="backup"], [data-i18n*="relink"]').length, 0);
+    assert.equal(doc.querySelectorAll('input[accept*=".aurora"]').length, 0);
+
+    // 3. Sin API de respaldo, re-enlace ni marcador huérfano en App ni en window.
+    assert.equal(window.AuroraBackup, undefined);
+    for (const fn of [
+      'exportBackup', 'importBackup', 'createBackup', 'buildBackup',
+      'restoreBackup', 'restoreBackupFromFile', 'parseBackup',
+      'exportLibrary', 'importLibrary', '_importLibraryFromFile', '_importLibraryData',
+      '_backupSettings', '_backupSession', '_applyBackupSettings',
+      'promptRelinkTrack', '_cureRelinkedTrack', 'pendingRelinkCount', 'updateRelinkUI',
+      'syncLibCountMarker',
+    ]) {
+      assert.equal(App[fn], undefined, `App.${fn} no debe existir`);
+    }
+
+    // 4. Sin claves huérfanas de copia de respaldo ni de re-enlace en i18n.
+    const backupKeys = Object.keys(window.I18N).filter((k) =>
+      /(?:^|_)backup(?:_|$)|^relink_|^library_missing/.test(k));
+    assert.deepEqual(backupKeys, [], 'no deben quedar claves i18n de respaldo');
+
+    // 5. El selector e importador de audio no aceptan archivos .aurora ni escriben marcadores.
+    const queueSrc = fs.readFileSync(path.join(ROOT, 'js/queue.js'), 'utf8');
+    const libSrc = fs.readFileSync(path.join(ROOT, 'js/library.js'), 'utf8');
+    assert.equal(/\.aurora\b/i.test(queueSrc), false, 'queue.js no debe aceptar .aurora');
+    assert.equal(/\.aurora\b/i.test(libSrc), false, 'library.js no debe tratar .aurora');
+    assert.equal(window.localStorage.getItem('aurora_lib_count'), null);
+  } finally { teardown(); }
+});

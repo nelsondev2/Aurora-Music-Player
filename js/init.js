@@ -222,11 +222,6 @@ Object.assign(App, {
         this.tracks = [];
         this._storageOk = false;
       }
-      // Refrescar el marcador «la biblioteca tenía N pistas» (solo si hay):
-      // en el próximo arranque, 0 pistas + marcador > 0 = posible pérdida.
-      if (this.tracks.length > 0 && typeof this.syncLibCountMarker === 'function') {
-        this.syncLibCountMarker();
-      }
 
       // Playlists (IndexedDB). No hay ninguna lista predefinida: la
       // biblioteca arranca con cero listas y el usuario crea las que quiera.

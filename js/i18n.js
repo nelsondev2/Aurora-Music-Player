@@ -4351,6 +4351,66 @@ const I18N = {
     id: 'X salinan duplikat akan dihapus dan yang dipilih dipertahankan. Lanjut?',
     'zh-TW': '將刪除 X 個重複副本，只保留所選的一個。繼續嗎？'
   },
+  duplicates_none_sub: {
+    es: 'Tu biblioteca está al día, sin copias repetidas.',
+    en: 'Your library is clean, with no repeated copies.',
+    pt: 'Sua biblioteca está em dia, sem cópias repetidas.',
+    zh: '音乐库很整洁，没有重复副本。',
+    ja: 'ライブラリに重複コピーはありません。',
+    fr: 'Votre bibliothèque est propre, sans copies en double.',
+    it: 'La tua libreria è in ordine, senza copie ripetute.',
+    ru: 'В медиатеке порядок, повторяющихся копий нет.',
+    de: 'Deine Mediathek ist sauber, ohne doppelte Kopien.',
+    uk: 'У медіатеці лад, повторюваних копій немає.',
+    pl: 'Biblioteka jest uporządkowana, bez powtórzonych kopii.',
+    tr: 'Kitaplığın düzenli, yinelenen kopya yok.',
+    id: 'Pustaka rapi, tidak ada salinan berulang.',
+    'zh-TW': '音樂庫很整潔，沒有重複副本。'
+  },
+  duplicates_stat_groups: {
+    es: 'Canciones', en: 'Songs', pt: 'Músicas',
+    zh: '歌曲', ja: '曲', fr: 'Titres',
+    it: 'Brani', ru: 'Треки', de: 'Songs',
+    uk: 'Пісні', pl: 'Utwory', tr: 'Şarkılar',
+    id: 'Lagu', 'zh-TW': '歌曲'
+  },
+  duplicates_stat_extra: {
+    es: 'Sobrantes', en: 'Extras', pt: 'Extras',
+    zh: '多余副本', ja: '重複分', fr: 'En trop',
+    it: 'In più', ru: 'Лишние', de: 'Überzählig',
+    uk: 'Зайві', pl: 'Nadmiarowe', tr: 'Fazlalık',
+    id: 'Duplikat', 'zh-TW': '多餘副本'
+  },
+  duplicates_stat_space: {
+    es: 'A liberar', en: 'Reclaimable', pt: 'A liberar',
+    zh: '可释放', ja: '削減可能', fr: 'Libérable',
+    it: 'Liberabili', ru: 'Освободится', de: 'Freigebbar',
+    uk: 'Звільниться', pl: 'Do zwolnienia', tr: 'Açılacak yer',
+    id: 'Dapat dihemat', 'zh-TW': '可釋放'
+  },
+  duplicates_hint: {
+    es: 'Toca la copia que quieras conservar en cada canción.',
+    en: 'Tap the copy you want to keep for each song.',
+    pt: 'Toque na cópia que deseja manter em cada música.',
+    zh: '点选每首歌中要保留的副本。',
+    ja: '曲ごとに残したいコピーをタップしてください。',
+    fr: 'Touchez la copie à conserver pour chaque titre.',
+    it: 'Tocca la copia che vuoi tenere per ogni brano.',
+    ru: 'Нажмите на копию, которую хотите оставить для каждого трека.',
+    de: 'Tippe pro Song auf die Kopie, die du behalten möchtest.',
+    uk: 'Торкніться копії, яку хочете зберегти для кожної пісні.',
+    pl: 'Dotknij kopii, którą chcesz zachować dla każdego utworu.',
+    tr: 'Her şarkıda korumak istediğin kopyaya dokun.',
+    id: 'Ketuk salinan yang ingin dipertahankan di setiap lagu.',
+    'zh-TW': '點選每首歌中要保留的副本。'
+  },
+  duplicates_delete_all: {
+    es: 'Eliminar sobrantes (X)', en: 'Delete extras (X)', pt: 'Excluir extras (X)',
+    zh: '删除多余副本 (X)', ja: '重複分を削除 (X)', fr: 'Supprimer les doublons (X)',
+    it: 'Elimina copie in più (X)', ru: 'Удалить лишние (X)', de: 'Überzählige löschen (X)',
+    uk: 'Видалити зайві (X)', pl: 'Usuń nadmiarowe (X)', tr: 'Fazlalıkları sil (X)',
+    id: 'Hapus duplikat (X)', 'zh-TW': '刪除多餘副本 (X)'
+  },
   toast_sort_saved: {
     es: 'Orden guardado', en: 'Sort order saved', pt: 'Ordem salva',
     zh: '排序已保存', ja: '並び順を保存', fr: 'Ordre enregistré',

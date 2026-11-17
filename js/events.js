@@ -57,9 +57,7 @@ Object.assign(App, {
       }
       const btnHomeAdd = document.getElementById('btnHomeAdd');
       if (btnHomeAdd) btnHomeAdd.addEventListener('click', () => this.openFilePicker());
-      // Ajustes desde Inicio: no depende de tener una pista cargada.
-      // Opciones desde Inicio: mismo motivo —la copia de
-      // seguridad se importa también en una instalación vacía—.
+      // Opciones y Ajustes desde Inicio: accesibles sin depender de tener una pista cargada.
       const btnHomeMore = document.getElementById('btnHomeMore');
       if (btnHomeMore) btnHomeMore.addEventListener('click', () => this.openSheet('sheetMore'));
       const coverArt = document.getElementById('coverArt');

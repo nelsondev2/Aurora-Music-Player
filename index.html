@@ -629,7 +629,7 @@
             </section>
             <div class="lib-tools">
               <button class="primary-btn ghost compact" id="btnFindDuplicates" type="button">
-                <svg class="ico" aria-hidden="true"><use href="#i-list-ul"></use></svg>
+                <svg class="ico" aria-hidden="true"><use href="#i-copy"></use></svg>
                 <span data-i18n="find_duplicates">Buscar duplicados</span>
               </button>
             </div>
@@ -950,17 +950,17 @@
       </div>
 
       <!--  Canciones duplicadas (mismo título y artista) -->
-      <div class="sheet" id="sheetDuplicates">
+      <div class="sheet sheet-full" id="sheetDuplicates">
         <div class="sheet-backdrop" data-close-sheet="sheetDuplicates"></div>
         <div class="sheet-panel">
           <div class="sheet-handle"></div>
           <header class="sheet-header" role="presentation">
             <button class="icon-btn-sm" data-close-sheet="sheetDuplicates" data-i18n-aria="close_btn" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
             <h3 data-i18n="duplicates_title">Canciones duplicadas</h3>
-            <span class="sheet-header-spacer"></span>
+            <span class="sheet-header-spacer" aria-hidden="true"></span>
           </header>
           <div class="sheet-body">
-            <div id="duplicatesContent"></div>
+            <div id="duplicatesContent" class="dup-view"></div>
           </div>
         </div>
       </div>

@@ -165,20 +165,19 @@ Nada de esto exige cambiar la arquitectura: la base es buena.
 
 ## 6. Estado de implementación (misma fecha, después de la auditoría)
 
-Implementado **todo el plan**. La copia de seguridad (punto 6, el de mayor
-alcance de producto) se excluyó primero a petición expresa y se ha acabado
-haciendo después, cuando quedó claro el requisito que faltaba: que la copia
-lleve **el audio dentro**, para que al restaurar no haya que volver a cargar las
-canciones desde el dispositivo (eso es lo que dejaba a medias el `.m3u8`).
+Implementado **todo el plan salvo la copia de seguridad** (punto 6), que se
+retiró por completo a petición expresa (sin módulo `js/backup.js`, sin sección
+en Ajustes, sin formato `.aurora` y sin marcadores huérfanos en
+`localStorage`):
 
 | # | Punto del informe | Estado |
 |---|---|---|
-| 1 | Versión desincronizada (§3.1) | ✅ `App.VERSION`, README y HTML en 1.2.5 · `build-xdc.py` rechaza el paquete si no coinciden · el flujo de publicación rechaza una etiqueta que no cuadre con `App.VERSION` |
+| 1 | Versión desincronizada (§3.1) | ✅ `App.VERSION`, README y HTML sincronizados · `build-xdc.py` rechaza el paquete si no coinciden · el flujo de publicación rechaza una etiqueta que no cuadre con `App.VERSION` |
 | 2 | Comentarios «8 idiomas» (§3.8) | ✅ corregidos a 14 |
-| 3 | Sin pruebas ni CI (§3.2) | ✅ `npm test`: 22 pruebas sobre la app real + flujo de GitHub Actions |
+| 3 | Sin pruebas ni CI (§3.2) | ✅ `npm test`: suite sobre la app real + flujo de GitHub Actions |
 | 4 | `_lastError` sin leer (§3.7) | ✅ Ajustes → Acerca de → Diagnóstico, con «Copiar diagnóstico» |
 | 5 | Caché de `objectURL` sin tope (§3.5) | ✅ tope de 12, sin revocar la pista en curso ni la precargada |
-| 6 | Copia de seguridad (§3.3) | ✅ archivo `.aurora` con metadatos + audio (sin base64 ni dependencias) · restaurar fusiona y deja las canciones vinculadas · 5 pruebas |
+| 6 | Copia de seguridad (§3.3) | ❌ retirada por completo a petición (la biblioteca vive únicamente en la instancia del `.xdc`) |
 | 7 | Blobs fuera del listado de arranque (§3.4) | ✅ almacén `blobs` aparte (BD v2), lectura bajo demanda en reproducir/precargar/compartir/releer etiquetas, migración con cursor y 8 pruebas |
 | 8 | Huella de contenido en duplicados (§3.6) | ✅ huella = tamaño + SHA-256 de los primeros 256 KB (hash propio sin `crypto.subtle`); nombre y tamaño solo acotan candidatos; 7 pruebas |
 
@@ -189,5 +188,5 @@ borraba o paraba la pista justo después de arrancar, la promesa pendiente
 devolvía `isPlaying = true` (y arrancaba el conteo de estadísticas) sobre una
 pista ya parada. Corregido con `_invalidatePendingPlay()`.
 
-**Verificación final:** `npm test` → 48/48 en verde · `python3 build-xdc.py` →
-29 archivos, `.xdc` válido · dos builds con el mismo SHA-256.
+**Verificación final:** `npm test` → 46/46 en verde · `python3 build-xdc.py` →
+28 archivos, `.xdc` válido · dos builds con el mismo SHA-256.

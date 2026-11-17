@@ -124,11 +124,8 @@ Object.assign(App, {
         }
 
         // Cargar la pista en el audio SIN reproducir (el usuario debe tocar
-        // play). Se resuelve la URL con getTrackUrl(): asignar
-        // currentTrack.src a ciegas convertía las pistas restauradas de
-        // una copia (sin blob todavía) en la URL literal «undefined».
-        //  El audio de la pista restaurada se trae del almacén (el
-        //  registro ya no lo lleva dentro) antes de pedir su URL.
+        // play). El audio se trae del almacén de blobs (el registro solo
+        // guarda metadatos) antes de resolver su URL con getTrackUrl().
         if (typeof this.ensureTrackBlob === 'function') {
           await this.ensureTrackBlob(this.currentTrack);
         }
@@ -733,6 +730,10 @@ Object.assign(App, {
       // Refrescar etiquetas dinámicas (no data-i18n) en el nuevo idioma
       if (typeof this.updateStorageUsage === 'function') this.updateStorageUsage();
       if (typeof this.renderAboutDiagnostics === 'function') this.renderAboutDiagnostics();
+      const dupSheet = document.getElementById('sheetDuplicates');
+      if (dupSheet && dupSheet.classList.contains('open') && typeof this.renderDuplicates === 'function') {
+        this.renderDuplicates();
+      }
       this.toast(this.t('toast_lang_applied'));
     },
 
