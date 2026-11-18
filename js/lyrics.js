@@ -245,11 +245,21 @@ Object.assign(App, {
           div.textContent = l.text || '♪';
         }
         div.dataset.idx = i;
-        // Tap en una línea con timestamp → saltar a ese punto (#11)
+        // Tap o Enter/Espacio en una línea con timestamp → saltar a ese punto (#11)
         if (l.timed && l.time >= 0) {
-          div.addEventListener('click', () => {
+          div.tabIndex = 0;
+          div.setAttribute('role', 'button');
+          const jump = () => {
             this.seekToTime(l.time + (this.lrcOffset || 0));
             if (navigator.vibrate) navigator.vibrate(10);
+          };
+          div.addEventListener('click', jump);
+          div.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              jump();
+            }
           });
         }
         cont.appendChild(div);
@@ -260,12 +270,11 @@ Object.assign(App, {
       this._lrcLineEls = null;  // invalidar caché de elementos DOM
       // Detectar scroll manual del usuario (#13)
       this.wireLyricsUserScroll();
-      // Iniciar sincronización con RAF (#22), solo con la vista
-      // de letras activa.: antes había DOS llamadas seguidas
-      // (una incondicional y otra con guardia) — la segunda
-      // cancelaba y rearrancaba la primera en el mismo pintado.
       const lv = document.getElementById('viewLyrics');
-      if (lv && lv.classList.contains('active')) this.startLrcRafSync();
+      if (lv && lv.classList.contains('active')) {
+        this.startLrcRafSync();
+        if (typeof this.syncAllScrollFades === 'function') this.syncAllScrollFades(lv);
+      }
     },
 
     /* Sincronización precisa con requestAnimationFrame (#22) */
@@ -429,9 +438,10 @@ Object.assign(App, {
             const targetTop = this._lrcScrollTarget(firstActiveEl, sc);
             const current = sc.scrollTop;
             const diff = targetTop - current;
+            const reduced = typeof this.prefersReducedMotion === 'function' && this.prefersReducedMotion();
             if (Math.abs(diff) > 0.5) {
               this._autoScrolling = true;
-              sc.scrollTop = current + diff * 0.5;
+              sc.scrollTop = reduced ? targetTop : (current + diff * 0.5);
             } else {
               this._autoScrolling = false;
             }
@@ -630,6 +640,8 @@ Object.assign(App, {
       const view = document.getElementById('viewLyrics');
       if (view && view.classList.contains('lyrics-fullscreen')) {
         view.classList.remove('lyrics-fullscreen');
+        const fsBtn = document.getElementById('btnLrcFullscreen');
+        if (fsBtn) fsBtn.setAttribute('aria-pressed', 'false');
       }
       // Re-renderizar para aplicar cambios visuales
       this.renderLyrics();
@@ -666,13 +678,21 @@ Object.assign(App, {
     /* ============================================================
      *  Pantalla completa / modo inmersivo (#14)
      * ============================================================ */
-    toggleLyricsFullscreen() {
+    toggleLyricsFullscreen(force) {
       const view = document.getElementById('viewLyrics');
       if (!view) return;
-      view.classList.toggle('lyrics-fullscreen');
-      // Asegurar wake lock (#15)
-      if (view.classList.contains('lyrics-fullscreen')) {
+      const next = typeof force === 'boolean' ? force : !view.classList.contains('lyrics-fullscreen');
+      view.classList.toggle('lyrics-fullscreen', next);
+      const fsBtn = document.getElementById('btnLrcFullscreen');
+      if (fsBtn) fsBtn.setAttribute('aria-pressed', next ? 'true' : 'false');
+      if (next) {
         this.requestWakeLock();
+        const exitBtn = document.getElementById('btnLrcExitFs');
+        if (exitBtn && typeof exitBtn.focus === 'function') {
+          try { exitBtn.focus({ preventScroll: true }); } catch (e) {}
+        }
+      } else if (fsBtn && typeof fsBtn.focus === 'function') {
+        try { fsBtn.focus({ preventScroll: true }); } catch (e) {}
       }
     },
 
@@ -764,6 +784,7 @@ Object.assign(App, {
       if (btn) {
         btn.classList.toggle('active', !!this.lrcLoop);
         btn.classList.toggle('setting-b', hasA);
+        btn.setAttribute('aria-pressed', (this.lrcLoop || hasA) ? 'true' : 'false');
       }
       if (clearBtn) clearBtn.hidden = !(hasA || this.lrcLoop);
       if (!indicator || !text) return;

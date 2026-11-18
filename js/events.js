@@ -215,8 +215,11 @@ Object.assign(App, {
       this._searchFilter = 'all';
       document.querySelectorAll('.search-filter').forEach(b => {
         b.addEventListener('click', () => {
-          document.querySelectorAll('.search-filter').forEach(x => x.classList.remove('active'));
-          b.classList.add('active');
+          document.querySelectorAll('.search-filter').forEach(x => {
+            const on = x === b;
+            x.classList.toggle('active', on);
+            x.setAttribute('aria-pressed', on ? 'true' : 'false');
+          });
           this._searchFilter = b.dataset.filter;
           const q = document.getElementById('searchInput').value;
           this.runSearch(q, this._searchFilter);
@@ -252,9 +255,14 @@ Object.assign(App, {
         this.toast(this.t('toast_retag_start'));
         this.retagExistingTracks().catch(() => {});
       });
+      const btnPersist = document.getElementById('menuPersistStorage');
+      if (btnPersist) btnPersist.addEventListener('click', () => {
+        if (typeof this.requestStorageProtection === 'function') this.requestStorageProtection();
+      });
       const btnFree = document.getElementById('menuFreeStorage');
       if (btnFree) btnFree.addEventListener('click', () => {
-        if (typeof this.offerFreeStorage === 'function') this.offerFreeStorage();
+        if (typeof this.freeStorageCaches === 'function') this.freeStorageCaches();
+        else if (typeof this.offerFreeStorage === 'function') this.offerFreeStorage();
       });
       const btnCopyDiag = document.getElementById('aboutCopyDiag');
       if (btnCopyDiag) btnCopyDiag.addEventListener('click', () => {
@@ -411,14 +419,16 @@ Object.assign(App, {
       // Sleep (el acceso es la fila #menuSleep del menú ···, cableada arriba)
       document.querySelectorAll('.sleep-opt').forEach(b => {
         b.addEventListener('click', () => {
-          document.querySelectorAll('.sleep-opt').forEach(x => x.classList.remove('active'));
-          b.classList.add('active');
           if (b.dataset.sleep === 'eot') this.startSleepEndOfTrack();
           else this.startSleep(parseInt(b.dataset.min, 10));
+          document.querySelectorAll('.sleep-opt').forEach(x => {
+            const on = x === b;
+            x.classList.toggle('active', on);
+            x.setAttribute('aria-pressed', on ? 'true' : 'false');
+          });
         });
       });
       $('btnCancelSleep').addEventListener('click', () => {
-        document.querySelectorAll('.sleep-opt').forEach(x => x.classList.remove('active'));
         this.cancelSleep();
       });
 
@@ -554,9 +564,25 @@ Object.assign(App, {
       });
       //  «Iniciar radio» retirado del menú de pista (solapaba
       // con aleatorio y listas inteligentes); startRadio fuera.
-      //  pestañas de la biblioteca y buscador de duplicados
-      document.querySelectorAll('.lib-tab').forEach(b => {
+      //  pestañas de la biblioteca (con navegación por flechas WAI-ARIA) y buscador de duplicados
+      const libTabs = Array.from(document.querySelectorAll('.lib-tab'));
+      libTabs.forEach((b, idx) => {
         b.addEventListener('click', () => this.setLibTab(b.dataset.libtab));
+        b.addEventListener('keydown', (e) => {
+          let nextIdx = -1;
+          if (e.key === 'ArrowRight') nextIdx = (idx + 1) % libTabs.length;
+          else if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + libTabs.length) % libTabs.length;
+          else if (e.key === 'Home') nextIdx = 0;
+          else if (e.key === 'End') nextIdx = libTabs.length - 1;
+          if (nextIdx < 0) return;
+          e.preventDefault();
+          e.stopPropagation();
+          const target = libTabs[nextIdx];
+          if (target) {
+            this.setLibTab(target.dataset.libtab);
+            try { target.focus({ preventScroll: true }); } catch (err) {}
+          }
+        });
       });
       const btnDup = document.getElementById('btnFindDuplicates');
       if (btnDup) btnDup.addEventListener('click', () => this.openDuplicates());
@@ -676,53 +702,62 @@ Object.assign(App, {
 
       this.bindAudioElement(this.audio);
 
-      // Progress bar seek
-      const pt = $('progressTrack');
-      let dragging = false;
-      const seekFromEvent = (e) => {
-        const rect = pt.getBoundingClientRect();
-        const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-        const ratio = Math.max(0, Math.min(1, x / rect.width));
-        this.seekTo(ratio);
+      // Barras de progreso interactivas (Reproductor + Letras)
+      const wireSeekBar = (bar) => {
+        if (!bar) return;
+        let dragging = false;
+        const seekFromEvent = (e) => {
+          const rect = bar.getBoundingClientRect();
+          if (!rect.width) return;
+          const x = (e.touches && e.touches.length ? e.touches[0].clientX : e.clientX) - rect.left;
+          const ratio = Math.max(0, Math.min(1, x / rect.width));
+          this.seekTo(ratio);
+        };
+        bar.addEventListener('touchstart', (e) => { dragging = true; bar.classList.add('dragging'); seekFromEvent(e); e.preventDefault(); }, { passive: false });
+        bar.addEventListener('touchmove',  (e) => { if (dragging) { seekFromEvent(e); e.preventDefault(); } }, { passive: false });
+        bar.addEventListener('touchend',   () => { if (dragging) { dragging = false; bar.classList.remove('dragging'); } });
+        bar.addEventListener('touchcancel',() => { if (dragging) { dragging = false; bar.classList.remove('dragging'); } });
+        bar.addEventListener('mousedown',  (e) => { if (e.button && e.button !== 0) return; dragging = true; bar.classList.add('dragging'); seekFromEvent(e); });
+        window.addEventListener('mousemove', (e) => { if (dragging) seekFromEvent(e); });
+        window.addEventListener('mouseup',   () => { if (dragging) { dragging = false; bar.classList.remove('dragging'); } });
+        bar.addEventListener('keydown', (e) => {
+          const dur = (this.audio && this.audio.duration) || (this.currentTrack && this.currentTrack.duration) || 0;
+          if (!dur) return;
+          if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            e.stopPropagation();
+            this.seekToTime((this.audio.currentTime || 0) + 5);
+          } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            e.stopPropagation();
+            this.seekToTime((this.audio.currentTime || 0) - 5);
+          } else if (e.key === 'Home') {
+            e.preventDefault();
+            e.stopPropagation();
+            this.seekTo(0);
+          } else if (e.key === 'End') {
+            e.preventDefault();
+            e.stopPropagation();
+            this.seekTo(0.99);
+          }
+        });
       };
-      pt.addEventListener('touchstart', (e) => { dragging = true; pt.classList.add('dragging'); seekFromEvent(e); e.preventDefault(); }, { passive: false });
-      pt.addEventListener('touchmove',  (e) => { if (dragging) seekFromEvent(e); e.preventDefault(); }, { passive: false });
-      pt.addEventListener('touchend',   () => { dragging = false; pt.classList.remove('dragging'); });
-      pt.addEventListener('mousedown',  (e) => { dragging = true; pt.classList.add('dragging'); seekFromEvent(e); });
-      window.addEventListener('mousemove', (e) => { if (dragging) seekFromEvent(e); });
-      window.addEventListener('mouseup',   () => { dragging = false; pt.classList.remove('dragging'); });
-      pt.addEventListener('keydown', (e) => {
-        if (!this.audio || !this.audio.duration) return;
-        if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
-          e.preventDefault();
-          this.seekToTime((this.audio.currentTime || 0) + 5);
-        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
-          e.preventDefault();
-          this.seekToTime((this.audio.currentTime || 0) - 5);
-        } else if (e.key === 'Home') {
-          e.preventDefault(); this.seekTo(0);
-        } else if (e.key === 'End') {
-          e.preventDefault(); this.seekTo(0.99);
-        }
-      });
+      wireSeekBar(document.getElementById('progressTrack'));
+      wireSeekBar(document.getElementById('lyricsProgressTrack'));
 
-      //  tocar la duración total alterna duración ⇄ restante.
+      //  tocar o pulsar la duración total (<button>) alterna duración ⇄ restante.
       const timeTotalEl = document.getElementById('timeTotal');
       if (timeTotalEl) {
         try { this._showRemaining = localStorage.getItem('aurora_show_remaining') === '1'; } catch (e) {}
         timeTotalEl.classList.add('time-toggle');
-        timeTotalEl.setAttribute('role', 'button');
-        timeTotalEl.setAttribute('tabindex', '0');
+        timeTotalEl.setAttribute('aria-pressed', this._showRemaining ? 'true' : 'false');
         timeTotalEl.setAttribute('title', this.t('time_toggle_remaining'));
         timeTotalEl.setAttribute('aria-label', this.t('time_toggle_remaining'));
-        const flipRemaining = () => {
+        timeTotalEl.addEventListener('click', () => {
           this._showRemaining = !this._showRemaining;
+          timeTotalEl.setAttribute('aria-pressed', this._showRemaining ? 'true' : 'false');
           try { localStorage.setItem('aurora_show_remaining', this._showRemaining ? '1' : '0'); } catch (e) {}
           this.updateProgress();
-        };
-        timeTotalEl.addEventListener('click', flipRemaining);
-        timeTotalEl.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flipRemaining(); }
         });
       }
 
@@ -743,13 +778,25 @@ Object.assign(App, {
         this.openSheet('sheetStats');
       });
       // Theme buttons — usar .theme-opt (no [data-theme]) porque applyTheme()
-      // setea data-theme en <html>, y [data-theme] también coincidiría con <html>,
-      // añadiendo un listener de click a <html> que dispararía setTheme en cada click.
+      // setea data-theme en <html>, y [data-theme] también coincidiría con <html>.
+      const syncThemePressed = () => {
+        document.querySelectorAll('.theme-opt').forEach(x => {
+          const on = x.dataset.theme === this.theme;
+          x.classList.toggle('active', on);
+          x.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+      };
+      const syncAccentPressed = () => {
+        document.querySelectorAll('.accent-opt').forEach(x => {
+          const on = x.dataset.accent === this.accent;
+          x.classList.toggle('active', on);
+          x.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+      };
       document.querySelectorAll('.theme-opt').forEach(b => {
         b.addEventListener('click', () => {
           this.setTheme(b.dataset.theme);
-          document.querySelectorAll('.theme-opt').forEach(x => x.classList.remove('active'));
-          b.classList.add('active');
+          syncThemePressed();
         });
       });
 
@@ -757,14 +804,13 @@ Object.assign(App, {
       document.querySelectorAll('.accent-opt').forEach(b => {
         b.addEventListener('click', () => {
           this.setAccent(b.dataset.accent);
-          document.querySelectorAll('.accent-opt').forEach(x => x.classList.remove('active'));
-          b.classList.add('active');
+          syncAccentPressed();
         });
       });
 
       // Marcar tema/acento activos al inicio
-      document.querySelectorAll('.theme-opt').forEach(b => b.classList.toggle('active', b.dataset.theme === this.theme));
-      document.querySelectorAll('.accent-opt').forEach(b => b.classList.toggle('active', b.dataset.accent === this.accent));
+      syncThemePressed();
+      syncAccentPressed();
 
       window.addEventListener('resize', () => {
         if (typeof this.syncDesktopLayout === 'function') this.syncDesktopLayout();
@@ -781,47 +827,73 @@ Object.assign(App, {
       // Atajos de teclado (desktop)
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-          //  cerrar la hoja de ENCIMA de la pila (la última
-          // abierta), no la última en orden del DOM: con dos hojas
-          // abiertas cuyo orden en el HTML difiere del de apertura,
-          // Escape cerraba la de abajo y dejaba la visible abierta.
+          // 1) Superposición de importación activa: cancelar importación.
+          const impOv = document.getElementById('importOverlay');
+          if (impOv && !impOv.hidden) {
+            e.preventDefault();
+            this._importCancelled = true;
+            const cancelImp = document.getElementById('btnCancelImport');
+            if (cancelImp) cancelImp.disabled = true;
+            return;
+          }
+          // 2) Cerrar la hoja de ENCIMA de la pila (no la última del DOM).
           const stack = this._sheetStack || [];
           const topId = stack.length ? stack[stack.length - 1] : null;
           const top = topId ? document.getElementById(topId) : null;
           if (top && top.classList.contains('open')) {
             e.preventDefault();
             this.closeSheet(topId);
-          } else if (this._coverFs) {
-            //  sin hojas abiertas, Escape sale de la portada
-            // a pantalla completa (las hojas tienen prioridad).
+            return;
+          }
+          // 3) Salir de Letras a pantalla completa.
+          const lrcView = document.getElementById('viewLyrics');
+          if (lrcView && lrcView.classList.contains('lyrics-fullscreen') && typeof this.toggleLyricsFullscreen === 'function') {
+            e.preventDefault();
+            this.toggleLyricsFullscreen(false);
+            return;
+          }
+          // 4) Salir de la portada a pantalla completa.
+          if (this._coverFs && typeof this.setCoverFullscreen === 'function') {
             e.preventDefault();
             this.setCoverFullscreen(false);
           }
           return;
         }
-        if (e.key === 'Tab' && document.querySelector('.sheet.open')) {
-          this._trapSheetFocus(e);
-          return;
-        }
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-        // El slider de progreso es un div[role=slider] con su propio
-        // manejo de flechas (±5 s): si el evento también llega aquí, el
-        // salto se duplica (hallazgo A2 de la revisión externa).
-        if (e.target.closest && e.target.closest('[role="slider"]')) return;
-        //  si el foco está sobre un botón/enlace/control, la
-        // tecla Espacio es suya (el navegador lo activa con ella):
-        // secuestrarla para play/pausa dejaba el botón enfocado
-        // sin responder. Los atajos solo mandan con el foco libre.
+        // La trampa de Tab la gestiona en exclusiva _sheetTabTrap (ui.js)
+        // sobre la hoja modal superior de _sheetStack.
+        if (e.key === 'Tab') return;
+        // No secuestrar atajos del navegador/sistema (Ctrl/Cmd+L, Ctrl+P,
+        // Ctrl+N, Alt+←/→, etc.).
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        const tag = e.target && e.target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
+        const impOv = document.getElementById('importOverlay');
+        if (impOv && !impOv.hidden) return;
+        // El slider de progreso es un div[role=slider] con su propio manejo de flechas (±5 s).
+        if (e.target && e.target.closest && e.target.closest('[role="slider"]')) return;
+        // Si el foco está sobre un control interactivo, Espacio le pertenece.
         if (e.key === ' ' && e.target && e.target.closest &&
-            e.target.closest('button, a[href], [role="button"], select')) return;
-        if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
+            e.target.closest('button, a[href], [role="button"], [role="tab"], [role="radio"], select, [tabindex="0"]')) return;
+        // Solo e.key === '?': (e.key === '/' && e.shiftKey) abría la ayuda al
+        // escribir «/» (Shift+7) en teclados ES/DE/IT/PT/PL/TR.
+        if (e.key === '?') {
           e.preventDefault();
           const sh = document.getElementById('sheetShortcuts');
           if (sh && sh.classList.contains('open')) this.closeSheet('sheetShortcuts');
           else this.openSheet('sheetShortcuts');
           return;
         }
-        if (document.querySelector('.sheet.open')) return;
+        // Bloquear atajos solo si hay un MODAL abierto; en las pestañas de
+        // navegación (.sheet-tab: Biblioteca, Buscar, Favoritos) el player y
+        // el mini-reproductor siguen activos y responden al teclado.
+        if (document.querySelector('.sheet.open:not(.sheet-tab)')) return;
+        // En grupos de radios (valoración), pestañas o carril de listas, las
+        // flechas pertenecen al widget enfocado, no al seek/volumen global.
+        if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown')
+            && e.target && e.target.closest
+            && e.target.closest('[role="radiogroup"], [role="tablist"], .playlist-rail')) {
+          return;
+        }
         switch (e.key) {
           case ' ': e.preventDefault(); this.togglePlay(); break;
           case 'ArrowRight': if (e.shiftKey) this.next(); else this.seekTo(((this.audio.currentTime||0)+5) / (this.audio.duration||1)); break;

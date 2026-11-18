@@ -18,6 +18,7 @@
 import argparse
 import hashlib
 import os
+import posixpath
 import re
 import struct
 import sys
@@ -119,13 +120,23 @@ def local_refs(html):
     return refs
 
 
-def css_refs(css):
+def css_refs(css, css_path="css/styles.css"):
+    """Recursos locales referenciados por url(...) en CSS, resueltos
+    respecto al directorio de la hoja de estilos (no a la raíz)."""
     refs = set()
+    base = posixpath.dirname(css_path)
     for match in re.finditer(r"url\(\s*['\"]?([^'\")]+)['\"]?\s*\)", css):
         url = match.group(1).strip()
+        if not url or url.startswith("#"):
+            continue
         if re.match(r"^(?:data:|[a-z]+:|//)", url, re.I):
             continue
-        refs.add(url.split("?")[0].split("#")[0].lstrip("./"))
+        clean = url.split("?")[0].split("#")[0]
+        if clean.startswith("/"):
+            refs.add(clean)
+        else:
+            joined = posixpath.join(base, clean) if base else clean
+            refs.add(posixpath.normpath(joined))
     return refs
 
 

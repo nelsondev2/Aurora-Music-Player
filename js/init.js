@@ -40,8 +40,10 @@ Object.assign(App, {
 
       // Cargar datos persistentes (IndexedDB + localStorage)
       await this.loadAllFromStorage();
-      this.loadFavorites();
-      this.loadStats();
+      await Promise.all([
+        Promise.resolve().then(() => this.loadFavorites()).catch(() => {}),
+        Promise.resolve().then(() => this.loadStats()).catch(() => {})
+      ]);
 
       // Restaurar sesión (cola, pista actual, posición, shuffle, repeat)
       const restored = await this.restoreSession();
@@ -84,24 +86,46 @@ Object.assign(App, {
         if (document.visibilityState === 'hidden') return;
         this.saveSession();
       }, 5000);
-      // Persistir una última vez al ocultar/cerrar y liberar objectURLs.
+      // Persistir al pasar a segundo plano (en móvil/WebView pagehide y
+      // beforeunload a menudo no saltan cuando el sistema mata la app días
+      // después) y al cerrar la pestaña.
       this._onPageHide = (e) => {
         // En bfcache (pagehide persisted=true) NO revocar: al volver atrás
         // los objectURL deben seguir vivos.
-        if (e && e.type === 'pagehide' && e.persisted) return;
-        // Un borrado con «Deshacer» pendiente no debe sobrevivir al cierre:
-        // si se cierra la app, se confirma para que la pista/lista no
-        // reaparezca al volver a abrirla.
-        try { if (this._pendingTrackDelete) this._commitPendingTrackDelete(); } catch (err) {}
-        try { if (this._pendingPlaylistDelete) this._commitPendingPlaylistDelete(); } catch (err) {}
-        //  vaciar los segundos escuchados aún no guardados
-        // (el flush es cada 10 s: cerrar perdía el último tramo).
-        try { if (this._currentPlayStart && typeof this._flushListening === 'function') this._flushListening(); } catch (err) {}
-        try { this.saveSession(); } catch (err) {}
-        try { this.releaseAllUrls(); } catch (err) {}
+        const bfcache = !!(e && e.type === 'pagehide' && e.persisted);
+        this._flushDurableState({ close: !bfcache });
+      };
+      this._onVisibilityPersist = () => {
+        if (document.hidden) {
+          // En segundo plano el audio puede seguir sonando: guardar estado y
+          // portadas pendientes SIN revocar objectURLs ni confirmar deshaceres.
+          this._flushDurableState({ close: false });
+        } else {
+          // Al regresar del segundo plano: renovar marca de actividad,
+          // revalidar almacenamiento persistente y repintar portadas si la
+          // GPU del WebView descartó texturas de <canvas>.
+          this.touchStorageActivity();
+          this.ensurePersistentStorage(false);
+          if (typeof this.refreshVisibleCovers === 'function') {
+            this.refreshVisibleCovers();
+          }
+        }
+      };
+      this._onPageShow = (e) => {
+        if (e && e.persisted) {
+          this.touchStorageActivity();
+          if (typeof this.refreshVisibleCovers === 'function') this.refreshVisibleCovers();
+        }
       };
       window.addEventListener('pagehide', this._onPageHide);
+      window.addEventListener('pageshow', this._onPageShow);
       window.addEventListener('beforeunload', this._onPageHide);
+      document.addEventListener('visibilitychange', this._onVisibilityPersist);
+
+      // Safari 17+, Firefox y varios WebView rechazan storage.persist() si
+      // se llama en el arranque sin gesto del usuario: reintentar una vez
+      // dentro del primer toque/tecla real si aún no está concedido.
+      this._armPersistGesture();
 
       // Aplicar idioma a todos los textos estáticos del DOM
       this.applyLang();
@@ -142,7 +166,11 @@ Object.assign(App, {
         this.retagExistingTracks({ silent: true, onlyIncomplete: true }).catch(() => {});
       }
 
-      if (typeof this.maybeShowBackgroundNotice === 'function') this.maybeShowBackgroundNotice();
+      if (this._storageReadFailed) {
+        this.toast(this.t('toast_storage_read_error'));
+      } else if (typeof this.maybeShowBackgroundNotice === 'function') {
+        this.maybeShowBackgroundNotice();
+      }
 
       this._initialized = true;
       document.dispatchEvent(new CustomEvent('aurora:ready', { detail: { tracks: this.tracks.length } }));
@@ -175,18 +203,102 @@ Object.assign(App, {
       } catch (e) {}
     },
 
+    /* Vuelca a almacenamiento los cambios pendientes en memoria. Con
+     * close=true también confirma borrados diferidos y suelta objectURLs. */
+    _flushDurableState(opts) {
+      const closing = !!(opts && opts.close);
+      if (closing) {
+        try { if (this._pendingTrackDelete) this._commitPendingTrackDelete(); } catch (err) {}
+        try { if (this._pendingPlaylistDelete) this._commitPendingPlaylistDelete(); } catch (err) {}
+      }
+      try { if (typeof this._flushPendingPlaylistCovers === 'function') this._flushPendingPlaylistCovers(); } catch (err) {}
+      try { if (typeof this._flushPendingCoverThumbs === 'function') this._flushPendingCoverThumbs(); } catch (err) {}
+      try { if (this._currentPlayStart && typeof this._flushListening === 'function') this._flushListening(); } catch (err) {}
+      try { this.saveSession(); } catch (err) {}
+      if (closing) {
+        try { this.releaseAllUrls(); } catch (err) {}
+      }
+    },
+
+    /* Solicita y verifica almacenamiento persistente (StorageManager).
+     * Evita que el navegador/sistema purgue IndexedDB + localStorage tras
+     * varios días sin abrir la app o bajo presión de espacio. */
+    async ensurePersistentStorage(fromUserGesture) {
+      try {
+        const sm = typeof navigator !== 'undefined' ? navigator.storage : null;
+        if (!sm) return false;
+        if (typeof sm.persisted === 'function') {
+          try {
+            const already = await sm.persisted();
+            if (already) {
+              this._storagePersisted = true;
+              if (typeof this.syncStoragePersistUI === 'function') this.syncStoragePersistUI();
+              return true;
+            }
+          } catch (e) {}
+        }
+        if (typeof sm.persist !== 'function') {
+          this._storagePersisted = false;
+          if (typeof this.syncStoragePersistUI === 'function') this.syncStoragePersistUI();
+          return false;
+        }
+        // Evitar llamadas repetidas fuera de gesto en la misma sesión; si
+        // viene de un toque directo del usuario, siempre se intenta.
+        if (!fromUserGesture && this._persistTriedAuto) {
+          if (typeof this.syncStoragePersistUI === 'function') this.syncStoragePersistUI();
+          return !!this._storagePersisted;
+        }
+        if (!fromUserGesture) this._persistTriedAuto = true;
+        const granted = !!(await sm.persist());
+        this._storagePersisted = granted;
+        if (typeof this.syncStoragePersistUI === 'function') this.syncStoragePersistUI();
+        return granted;
+      } catch (e) {
+        return !!this._storagePersisted;
+      }
+    },
+
+    _armPersistGesture() {
+      if (this._persistGestureArmed) return;
+      const sm = typeof navigator !== 'undefined' ? navigator.storage : null;
+      if (!sm || typeof sm.persist !== 'function') return;
+      this._persistGestureArmed = true;
+      const onGesture = () => {
+        document.removeEventListener('click', onGesture, true);
+        document.removeEventListener('keydown', onGesture, true);
+        if (this._storagePersisted) return;
+        // Llamada síncrona dentro del gesto para conservar userActivation.
+        try {
+          sm.persist().then((g) => {
+            this._storagePersisted = !!g;
+            if (typeof this.syncStoragePersistUI === 'function') this.syncStoragePersistUI();
+          }).catch(() => {});
+        } catch (e) {}
+      };
+      document.addEventListener('click', onGesture, true);
+      document.addEventListener('keydown', onGesture, true);
+    },
+
+    /* Registra actividad reciente en IndexedDB al abrir o reanudar la app
+     * (máx. una vez cada 30 min) para renovar la ventana de actividad de
+     * motores como WebKit aunque la sesión sea solo de escucha. */
+    touchStorageActivity() {
+      if (!this._storageOk || !window.AuroraStorage) return;
+      const now = Date.now();
+      if (this._lastStorageTouch && (now - this._lastStorageTouch) < 30 * 60 * 1000) return;
+      this._lastStorageTouch = now;
+      window.AuroraStorage.setSetting('lastActiveAt', now).catch(() => {});
+    },
+
     /* ============================================================
      *  Carga desde IndexedDB + localStorage
      * ============================================================ */
     async loadAllFromStorage() {
-      // Pedir almacenamiento persistente: evita que el sistema borre la
-      // biblioteca solo por falta de espacio (orígenes «best-effort»).
-      try {
-        if (navigator.storage && typeof navigator.storage.persist === 'function') {
-          navigator.storage.persist().then((g) => { this._storagePersisted = !!g; }).catch(() => {});
-        }
-      } catch (e) {}
+      // Comprobar y pedir almacenamiento persistente para evitar purgas
+      // automáticas en orígenes «best-effort».
+      this.ensurePersistentStorage(false);
       this._storageOk = true;
+      this._storageReadFailed = false;
       try {
         // Tracks
         if (!window.AuroraStorage) throw new Error('IndexedDB no disponible');
@@ -204,7 +316,7 @@ Object.assign(App, {
         //  nada de crear un objectURL por pista al arrancar
         // (miles de URLs vivas antes de escuchar nada): getTrackUrl
         // lo crea perezosamente al reproducir/compartir y lo cachea.
-        this.tracks = stored.map(t => {
+        this.tracks = (Array.isArray(stored) ? stored : []).filter(Boolean).map(t => {
           //  los registros guardados antes de esta corrección
           // pueden traer el objectURL de la sesión en que se
           // guardaron: está muerto, fuera (getTrackUrl acuñará uno
@@ -219,29 +331,44 @@ Object.assign(App, {
         this.invalidateTrackIndex();
       } catch (e) {
         console.warn('[Aurora] Error cargando pistas:', e);
+        this._lastError = { msg: 'storage-tracks: ' + ((e && e.message) || e), ts: Date.now() };
         this.tracks = [];
         this._storageOk = false;
+        this._storageReadFailed = true;
       }
 
       // Playlists (IndexedDB). No hay ninguna lista predefinida: la
       // biblioteca arranca con cero listas y el usuario crea las que quiera.
       try {
         const pls = await window.AuroraStorage.getAllPlaylists();
-        this.playlists = Array.isArray(pls) ? pls : [];
+        this.playlists = Array.isArray(pls) ? pls.filter(Boolean) : [];
         this.playlists.forEach(pl => {
-          if (pl && pl.coverArt && !pl._coverCache) {
+          if (typeof this._hydratePlaylistCover === 'function') {
+            this._hydratePlaylistCover(pl);
+          } else if (pl && pl.coverArt && !pl._coverCache) {
             pl._coverCache = pl.coverArt;
             pl._coverCacheHash = pl.coverArtHash || null;
           }
         });
       } catch (e) {
+        console.warn('[Aurora] Error cargando listas:', e);
+        this._lastError = { msg: 'storage-playlists: ' + ((e && e.message) || e), ts: Date.now() };
         this.playlists = [];
+        this._storageOk = false;
+        this._storageReadFailed = true;
       }
+
+      // Si la lectura de IndexedDB falló, NO ejecutar migraciones ni tocar
+      // los almacenes: evitaría sobrescribir datos reales con estado vacío.
+      if (!this._storageOk) return;
 
       this._settlePlaylists();
       // «Mi Música»: la lista automática donde viven las canciones
       // agregadas fuera de cualquier lista (ver migrateMiMusica).
       this.migrateMiMusica();
+      if (this.tracks.length || this.playlists.length) {
+        this.touchStorageActivity();
+      }
     },
 
     /* «Mi Música» (id fijo 'mi-musica') es la lista automática de la
@@ -297,10 +424,14 @@ Object.assign(App, {
     },
 
     _createMiMusica(trackIds) {
+      const cover = typeof this.coverFallback === 'function'
+        ? this.coverFallback()
+        : { from: '#6E5CFF', to: '#FF7AB6', angle: 135 };
       const pl = {
         id: 'mi-musica',
         name: 'Mi Música',
         description: '',
+        cover: { from: cover.from, to: cover.to, angle: cover.angle || 135 },
         trackIds: [...new Set((trackIds || []).filter(Boolean))]
       };
       this.playlists.unshift(pl);
@@ -554,10 +685,9 @@ Object.assign(App, {
       }
     },
     async saveFavorites() {
-      try {
-        const arr = [...this.favorites];
-        await window.AuroraStorage.setSetting('favorites', arr);
-        localStorage.setItem('aurora_favs', JSON.stringify(arr));
-      } catch (e) {}
+      if (this._storageReadFailed && !this.tracks.length) return;
+      const arr = [...this.favorites];
+      try { localStorage.setItem('aurora_favs', JSON.stringify(arr)); } catch (e) {}
+      try { await window.AuroraStorage.setSetting('favorites', arr); } catch (e) {}
     },
 });

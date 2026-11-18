@@ -18,57 +18,71 @@ Object.assign(App, {
       if (!cont) return;
       const playsObj = (this.stats && this.stats.plays) || {};
       const topTracks = this.getTopTracks(10);
-      const topArtists = this.getTopArtists(5);
+      const allPlayedArtists = this.getTopArtists(Infinity);
+      const topArtists = allPlayedArtists.slice(0, 5);
       //  «Más saltadas» y «Olvidadas» se retiraron de
       // Estadísticas; quedan reproducciones, tops y tiempo.
       const totalPlays = Object.values(playsObj).reduce((a, b) => a + (Number(b) || 0), 0);
       const totalSec = (this.stats && this.stats.totalSeconds) || 0;
+      const rawPlaysLbl = this.t('stats_plays');
+      // En alemán los sustantivos conservan mayúscula inicial («Wiedergaben»);
+      // en turco y demás idiomas toLocaleLowerCase respeta las reglas locales.
+      let playsUnit = rawPlaysLbl;
+      if (this.lang !== 'de') {
+        try { playsUnit = rawPlaysLbl.toLocaleLowerCase(this.lang || undefined); }
+        catch (e) { playsUnit = rawPlaysLbl.toLowerCase(); }
+      }
 
       cont.innerHTML = `
         <div class="stats-grid">
           <div class="stat-card">
             <div class="stat-value">${totalPlays}</div>
-            <div class="stat-label">${this.t('stats_plays')}</div>
+            <div class="stat-label">${this.esc(rawPlaysLbl)}</div>
           </div>
           <div class="stat-card">
             <div class="stat-value">${this.fmtDuration(totalSec)}</div>
-            <div class="stat-label">${this.t('stats_listening_time')}</div>
+            <div class="stat-label">${this.esc(this.t('stats_listening_time'))}</div>
           </div>
           <div class="stat-card">
             <div class="stat-value">${this.tracks.length}</div>
-            <div class="stat-label">${this.t('all_tracks_section')}</div>
+            <div class="stat-label">${this.esc(this.t('all_tracks_section'))}</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value">${topArtists.length}</div>
-            <div class="stat-label">${this.t('stats_artists')}</div>
+            <div class="stat-value">${allPlayedArtists.length}</div>
+            <div class="stat-label">${this.esc(this.t('stats_artists'))}</div>
           </div>
         </div>
 
-        <h4 class="section-title">${this.t('stats_top_artists')}</h4>
-        ${topArtists.length === 0 ? '<p class="stats-empty">' + this.t('no_results') + '</p>' : ''}
+        <h4 class="section-title">${this.esc(this.t('stats_top_artists'))}</h4>
+        ${topArtists.length === 0 ? '<p class="stats-empty">' + this.esc(this.t('no_results')) + '</p>' : ''}
         <ul class="stats-list">
           ${topArtists.map((a, i) => `
             <li class="stats-row" data-artist="${this.esc(a.artist)}">
-              <div class="stats-rank">${i + 1}</div>
-              <div class="stats-info">
-                <div class="stats-name">${this.esc(a.artist)}</div>
-                <div class="stats-sub">${a.count} ${this.t('stats_plays').toLowerCase()}</div>
-              </div>
+              <button type="button" class="stats-row-btn">
+                <div class="stats-rank">${i + 1}</div>
+                <div class="stats-info">
+                  <div class="stats-name">${this.esc(a.artist)}</div>
+                  <div class="stats-sub">${a.count} ${this.esc(playsUnit)}</div>
+                </div>
+                <svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>
+              </button>
             </li>
           `).join('')}
         </ul>
 
-        <h4 class="section-title">${this.t('stats_top_tracks')}</h4>
-        ${topTracks.length === 0 ? '<p class="stats-empty">' + this.t('no_results') + '</p>' : ''}
+        <h4 class="section-title">${this.esc(this.t('stats_top_tracks'))}</h4>
+        ${topTracks.length === 0 ? '<p class="stats-empty">' + this.esc(this.t('no_results')) + '</p>' : ''}
         <ul class="stats-list">
           ${topTracks.map((t, i) => `
             <li class="stats-row" data-track="${this.esc(t.track.id)}">
-              <div class="stats-rank">${i + 1}</div>
-              <div class="row-cover"><canvas width="144" height="144"></canvas></div>
-              <div class="stats-info">
-                <div class="stats-name">${this.esc(t.track.title)}</div>
-                <div class="stats-sub">${this.esc(t.track.artist)} · ${t.count} ${this.t('stats_plays').toLowerCase()}</div>
-              </div>
+              <button type="button" class="stats-row-btn">
+                <div class="stats-rank">${i + 1}</div>
+                <div class="row-cover"><canvas width="144" height="144" aria-hidden="true"></canvas></div>
+                <div class="stats-info">
+                  <div class="stats-name">${this.esc(t.track.title)}</div>
+                  <div class="stats-sub">${this.esc(t.track.artist)} · ${t.count} ${this.esc(playsUnit)}</div>
+                </div>
+              </button>
             </li>
           `).join('')}
         </ul>
@@ -78,19 +92,24 @@ Object.assign(App, {
       const resetDiv = document.createElement('div');
       resetDiv.className = 'stats-reset-wrap';
       resetDiv.innerHTML = `
-        <button class="primary-btn compact ghost danger" id="btnResetStats"><svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg> ${this.esc(this.t('stats_reset_btn'))}</button>
+        <button type="button" class="primary-btn compact ghost danger" id="btnResetStats"><svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg> ${this.esc(this.t('stats_reset_btn'))}</button>
       `;
       cont.appendChild(resetDiv);
       const btnRS = document.getElementById('btnResetStats');
       if (btnRS) btnRS.addEventListener('click', async () => {
-        if (await this.showConfirm({ message: this.t('stats_reset_confirm'), danger: false })) this.resetStats();
+        if (await this.showConfirm({
+          message: this.t('stats_reset_confirm'),
+          okLabel: this.t('stats_reset_btn'),
+          danger: true
+        })) this.resetStats();
       });
 
-      // Dibujar covers
-      cont.querySelectorAll('.stats-row').forEach((row, i) => {
+      // Dibujar covers y enlazar botones accesibles
+      cont.querySelectorAll('.stats-row').forEach((row) => {
+        const trigger = row.querySelector('.stats-row-btn') || row;
         const artist = row.dataset.artist;
         if (artist) {
-          row.addEventListener('click', () => {
+          trigger.addEventListener('click', () => {
             if (typeof this.goToArtist === 'function') this.goToArtist(artist);
           });
           return;
@@ -102,7 +121,7 @@ Object.assign(App, {
           const cv = row.querySelector('canvas');
           if (cv) this.drawRowCover(cv, track);
         }
-        row.addEventListener('click', () => {
+        trigger.addEventListener('click', () => {
           // Sin contexto, playTrack dejaba el anterior con la cola de
           // toda la biblioteca: etiqueta y cola divorciadas. Manda la
           // lista de la canción, como en Buscar (/).
@@ -117,9 +136,12 @@ Object.assign(App, {
       // consulta y la búsqueda no encontraba nada. Se usan propiedades
       // Unicode (letras + números) conservando los 8 idiomas.
       return String(str)
+        .replace(/ß/g, 'ss')
+        .replace(/ẞ/g, 'ss')
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
+        .replace(/ı/g, 'i')
         .replace(/[^\p{L}\p{N}\s]/gu, ' ')
         .replace(/\s+/g, ' ')
         .trim();
@@ -221,9 +243,12 @@ Object.assign(App, {
           addTitle('search_section_artists');
           artists.forEach(ar => {
             const li = document.createElement('li');
-            li.className = 'artist-row';
-            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(ar.name)}</div><div class="row-sub">${this.esc(this.fmtTracksCount(ar.tracks.length))}</div></div><svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
-            li.addEventListener('click', () => this.goToArtist(ar.name));
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'artist-row';
+            btn.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(ar.name)}</div><div class="row-sub">${this.esc(this.fmtTracksCount(ar.tracks.length))}</div></div><svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
+            btn.addEventListener('click', () => this.goToArtist(ar.name));
+            li.appendChild(btn);
             ul.appendChild(li);
           });
         }
@@ -231,9 +256,12 @@ Object.assign(App, {
           addTitle('search_section_albums');
           albums.forEach(al => {
             const li = document.createElement('li');
-            li.className = 'artist-row';
-            li.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(al.name)}</div><div class="row-sub">${this.esc(al.artist)} · ${this.esc(this.fmtTracksCount(al.tracks.length))}</div></div><svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
-            li.addEventListener('click', () => this.goToAlbum(al.name, al.artist));
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'artist-row';
+            btn.innerHTML = `<div class="row-text"><div class="row-title">${this.esc(al.name)}</div><div class="row-sub">${this.esc(al.artist)} · ${this.esc(this.fmtTracksCount(al.tracks.length))}</div></div><svg class="ico row-chevron" aria-hidden="true"><use href="#i-chevron-right"></use></svg>`;
+            btn.addEventListener('click', () => this.goToAlbum(al.name, al.artist));
+            li.appendChild(btn);
             ul.appendChild(li);
           });
         }

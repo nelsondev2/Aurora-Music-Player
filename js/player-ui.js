@@ -25,8 +25,21 @@ Object.assign(App, {
         if (albumEmpty) { albumEmpty.textContent = ''; albumEmpty.style.display = 'none'; }
         document.getElementById('timeTotal').textContent = '0:00';
         document.getElementById('timeCurrent').textContent = '0:00';
+        const lrcCur0 = document.getElementById('lyricsTimeCurrent');
+        if (lrcCur0) lrcCur0.textContent = '0:00';
+        const lrcTot0 = document.getElementById('lyricsTimeTotal');
+        if (lrcTot0) lrcTot0.textContent = '0:00';
         this._syncLyricsButton();
         document.getElementById('progressFill').style.width = '0%';
+        const lrcFill0 = document.getElementById('lyricsProgressFill');
+        if (lrcFill0) lrcFill0.style.width = '0%';
+        ['progressTrack', 'lyricsProgressTrack'].forEach(pid => {
+          const el = document.getElementById(pid);
+          if (el) {
+            el.setAttribute('aria-valuenow', '0');
+            el.removeAttribute('aria-valuetext');
+          }
+        });
         this._applyCoverPalette(this.coverFallback());
         // La cabecera vuelve a su texto neutro cuando no hay pista.
         const ctxIdle = document.getElementById('nowPlayingContext');
@@ -168,19 +181,27 @@ Object.assign(App, {
           const img = pre || new Image();
           const paint = () => {
             if (c._coverToken !== coverToken) return; // ya hay otra pista
+            const iw = img.naturalWidth || img.width || 0;
+            const ih = img.naturalHeight || img.height || 0;
+            if (iw <= 0 || ih <= 0) {
+              this._paintLetterCover(ctx, w, h, track);
+              return;
+            }
             ctx.clearRect(0, 0, w, h);
             // Modo "cover": misma geometría que las filas (_fitRect,)
             const r = typeof this._fitRect === 'function'
-              ? this._fitRect(img.width, img.height, w, h, 'cover')
+              ? this._fitRect(iw, ih, w, h, 'cover')
               : { x: 0, y: 0, w, h };
             ctx.drawImage(img, r.x, r.y, r.w, r.h);
           };
-          if (img.complete && img.naturalWidth > 0) { paint(); return; }
+          if (img.complete && (img.naturalWidth || img.width) > 0) { paint(); return; }
+          this._paintLetterCover(ctx, w, h, track);
           img.onload = paint;
+          img.onerror = () => {
+            if (c._coverToken !== coverToken) return;
+            this._paintLetterCover(ctx, w, h, track);
+          };
           if (!pre) img.src = src;
-          // Fondo provisional mientras carga
-          ctx.fillStyle = '#222';
-          ctx.fillRect(0, 0, w, h);
           return;
         }
       }
@@ -260,6 +281,8 @@ Object.assign(App, {
       const was = !!this._coverFs;
       this._coverFs = on;
       view.classList.toggle('cover-fullscreen', on);
+      const screen = document.getElementById('deviceScreen');
+      if (screen) screen.classList.toggle('cover-fs', on);
       this.updateCoverA11y();
       // El visualizador acompaña siempre al modo inmersivo, aunque
       // el ajuste guardado sea «apagado»: updateVisualizerUI y
@@ -327,6 +350,13 @@ Object.assign(App, {
         }
       });
       this.updateCoverA11y();
+      const pv = document.getElementById('viewPlayer');
+      if (pv) pv.classList.toggle('is-playing', !!this.isPlaying);
+      const lv = document.getElementById('viewLyrics');
+      if (lv) lv.classList.toggle('is-playing', !!this.isPlaying);
+      document.querySelectorAll('.pl-live, .queue-item.current .eq-badge, .track-row.current .eq-badge, .home-card.is-current .eq-badge').forEach(b => {
+        b.classList.toggle('playing', !!this.isPlaying);
+      });
 
       /* Los anillos de «esta lista está sonando» (hero de la lista
        * abierta y «Reproducir Todo» de Favoritos) se pintan al
@@ -434,9 +464,16 @@ Object.assign(App, {
           : this.fmtTime(dur);
       }
       const track = document.getElementById('progressTrack');
+      const lrcTrack = document.getElementById('lyricsProgressTrack');
+      const valNow = String(Math.round(pct));
+      const valText = this.fmtTime(cur) + ' / ' + this.fmtTime(dur);
       if (track) {
-        track.setAttribute('aria-valuenow', String(Math.round(pct)));
-        track.setAttribute('aria-valuetext', this.fmtTime(cur) + ' / ' + this.fmtTime(dur));
+        track.setAttribute('aria-valuenow', valNow);
+        track.setAttribute('aria-valuetext', valText);
+      }
+      if (lrcTrack) {
+        lrcTrack.setAttribute('aria-valuenow', valNow);
+        lrcTrack.setAttribute('aria-valuetext', valText);
       }
 
       // Buffer (: con duración 0/desconocida salía Infinity%)

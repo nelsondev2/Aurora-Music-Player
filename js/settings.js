@@ -15,6 +15,9 @@ Object.assign(App, {
      * ============================================================ */
     async saveSession() {
       try {
+        // Si IndexedDB falló al arrancar, no sobrescribir la sesión guardada
+        // con una cola vacía.
+        if (this._storageReadFailed && !this.tracks.length) return;
         // Deduplicación: el intervalo de 5 s corre siempre, pero solo se
         // escribe en IndexedDB si algo cambió (evita desgaste y bloqueos
         // de la transacción en móviles). La posición se redondea a 2 s.
@@ -197,12 +200,11 @@ Object.assign(App, {
       if (typeof this.stats.totalSeconds !== 'number' || !isFinite(this.stats.totalSeconds) || this.stats.totalSeconds < 0) this.stats.totalSeconds = 0;
     },
     async saveStats() {
-      try {
-        this.stats.lastPlayed = new Date().toISOString();
-        await window.AuroraStorage.setSetting('stats', this.stats);
-        // También en localStorage como respaldo
-        localStorage.setItem('aurora_stats', JSON.stringify(this.stats));
-      } catch (e) {}
+      if (this._storageReadFailed && !this.tracks.length) return;
+      this.stats.lastPlayed = new Date().toISOString();
+      // Espejo síncrono primero para no perderlo si el WebView se cierra.
+      try { localStorage.setItem('aurora_stats', JSON.stringify(this.stats)); } catch (e) {}
+      try { await window.AuroraStorage.setSetting('stats', this.stats); } catch (e) {}
     },
 
     /* Reiniciar estadísticas de reproducción */
@@ -404,7 +406,7 @@ Object.assign(App, {
         text1: '#1A1612',
         text2: 'rgba(26,22,18,0.72)',
         text3: 'rgba(26,22,18,0.64)',
-        text4: 'rgba(26,22,18,0.48)',
+        text4: 'rgba(26,22,18,0.50)',
         surface: 'rgba(20,16,12,0.05)',
         surface2: 'rgba(20,16,12,0.08)',
         surfaceHi: 'rgba(20,16,12,0.12)',
@@ -412,7 +414,7 @@ Object.assign(App, {
         blurBg: 'rgba(255, 250, 244, 0.92)',
         toastBg: 'rgba(244, 241, 234, 0.96)',
         toastText: '#1A1612',
-        danger: '#BE3F3F'
+        danger: '#A62626'
       },
       amoled: {
         bg0: '#000000', bg1: '#000000', bg2: '#0a0a0a', bg3: '#141414',
@@ -446,9 +448,9 @@ Object.assign(App, {
     // 6 acentos cumplen ≥4.5:1 en texto y rellenos, oscuro y claro).
     ACCENTS: {
       aurora: { from: '#745CFF', to: '#FF6FA5', accent: '#9D8BFF', accent2: '#FF8FB8', fill: '#5B45D6', fill2: '#4836B4', fillLight: '#4E3FC8', fillLight2: '#3E32A8' },
-      ocean:  { from: '#1F7AE0', to: '#23C8B2', accent: '#5EAAE8', accent2: '#4FE0C3', fill: '#1763B8', fill2: '#12559F', fillLight: '#145FA8', fillLight2: '#0F4C8C' },
-      moss:   { from: '#1E9E62', to: '#9BD147', accent: '#5FBF7A', accent2: '#B9E26B', fill: '#177A45', fill2: '#12653A', fillLight: '#146C3E', fillLight2: '#0F5A33' },
-      amber:  { from: '#E8710A', to: '#F5B81F', accent: '#F5A623', accent2: '#FFCF4D', fill: '#B85C0E', fill2: '#9A4D0B', fillLight: '#9C550C', fillLight2: '#854708' },
+      ocean:  { from: '#1F7AE0', to: '#23C8B2', accent: '#5EAAE8', accent2: '#4FE0C3', fill: '#1763B8', fill2: '#12559F', fillLight: '#11589E', fillLight2: '#0D4782' },
+      moss:   { from: '#1E9E62', to: '#9BD147', accent: '#5FBF7A', accent2: '#B9E26B', fill: '#177A45', fill2: '#12653A', fillLight: '#116338', fillLight2: '#0D522E' },
+      amber:  { from: '#E8710A', to: '#F5B81F', accent: '#F5A623', accent2: '#FFCF4D', fill: '#B85C0E', fill2: '#9A4D0B', fillLight: '#874808', fillLight2: '#733C05' },
       cherry: { from: '#E01A44', to: '#FF6B81', accent: '#FB5E7E', accent2: '#FF9FB0', fill: '#C21840', fill2: '#A31236', fillLight: '#A8163A', fillLight2: '#8F1130' },
       fuchsia:{ from: '#C22BD6', to: '#FF5CA8', accent: '#EE6BE8', accent2: '#FF8FD0', fill: '#A61FB8', fill2: '#8C169C', fillLight: '#9315A8', fillLight2: '#7A118C' }
     },
@@ -565,6 +567,7 @@ Object.assign(App, {
       // el CSS funcione; data-theme-pref conserva la preferencia («system»).
       root.setAttribute('data-theme', resolved);
       root.setAttribute('data-theme-pref', pref);
+      root.style.colorScheme = light ? 'light' : 'dark';
       // Semántico (depuración y selectores futuros); el color real va en
       // las variables --accent*. Antes solo se aplicaba el tema.
       root.setAttribute('data-accent', this.accent);
@@ -711,6 +714,8 @@ Object.assign(App, {
         if (typeof this.updateChrome === 'function') this.updateChrome();
         const statsEl = document.getElementById('statsContent');
         if (statsEl && statsEl.innerHTML) this.renderStats();
+        if (typeof this.setRepeatUI === 'function') this.setRepeatUI();
+        if (typeof this.syncAllScrollFades === 'function') this.syncAllScrollFades();
       } catch (e) {}
     },
 
@@ -816,12 +821,16 @@ Object.assign(App, {
       if (m) m.checked = this._marqueeEnabled !== false;
       const mode = this.getTransitionMode();
       document.querySelectorAll('[data-transition]').forEach(b => {
-        b.classList.toggle('active', b.dataset.transition === mode);
+        const on = b.dataset.transition === mode;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
       const xfRow = document.getElementById('xfadeOpts');
       if (xfRow) xfRow.hidden = mode !== 'crossfade';
       document.querySelectorAll('[data-xfade]').forEach(b => {
-        b.classList.toggle('active', Number(b.dataset.xfade) === (this.crossfadeDuration || 0));
+        const on = Number(b.dataset.xfade) === (this.crossfadeDuration || 0);
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
       });
       const ver = document.getElementById('aboutVersion');
       if (ver) {
@@ -865,6 +874,7 @@ Object.assign(App, {
         this.showView(lyricsOn ? 'lyrics' : 'home');
       }
       if (typeof this.updateChrome === 'function') this.updateChrome();
+      if (typeof this.syncAllScrollFades === 'function') this.syncAllScrollFades();
     },
 
     buildLangList() {
@@ -874,23 +884,113 @@ Object.assign(App, {
       const langs = window.SUPPORTED_LANGS || [];
       langs.forEach(l => {
         const li = document.createElement('li');
-        li.className = 'lang-row' + (l.code === this.lang ? ' active' : '');
-        li.innerHTML = `
-          <span class="lang-flag">${l.flag}</span>
-          <span class="lang-name">${l.name}</span>
-          ${l.code === this.lang ? '<svg class="ico lang-check" aria-hidden="true"><use href="#i-check"></use></svg>' : ''}
+        const active = l.code === this.lang;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'lang-row' + (active ? ' active' : '');
+        if (active) btn.setAttribute('aria-current', 'true');
+        btn.innerHTML = `
+          <span class="lang-flag" aria-hidden="true">${this.esc(l.flag)}</span>
+          <span class="lang-name">${this.esc(l.name)}</span>
+          ${active ? '<svg class="ico lang-check" aria-hidden="true"><use href="#i-check"></use></svg>' : ''}
         `;
-        li.addEventListener('click', () => {
+        btn.addEventListener('click', () => {
           this.setLang(l.code);
           this.closeSheet('sheetLanguage');
         });
+        li.appendChild(btn);
         ul.appendChild(li);
       });
+    },
+
+    /* Sincroniza el botón y el aviso de almacenamiento persistente en Ajustes. */
+    syncStoragePersistUI() {
+      const btn = document.getElementById('menuPersistStorage');
+      const hint = document.getElementById('storagePersistHint');
+      const sm = typeof navigator !== 'undefined' ? navigator.storage : null;
+      const canPersist = !!(sm && typeof sm.persist === 'function');
+      const persisted = this._storagePersisted === true;
+      if (btn) btn.hidden = !canPersist || persisted;
+      if (hint) {
+        if (persisted) {
+          hint.textContent = this.t('settings_persist_active_hint');
+          hint.hidden = false;
+        } else if (canPersist) {
+          hint.textContent = this.t('settings_persist_hint');
+          hint.hidden = false;
+        } else {
+          hint.hidden = true;
+        }
+      }
+    },
+
+    /* Acción directa desde Ajustes → Mantenimiento (con gesto del usuario). */
+    async requestStorageProtection() {
+      const sm = typeof navigator !== 'undefined' ? navigator.storage : null;
+      if (!sm || typeof sm.persist !== 'function') return false;
+      let granted = false;
+      try {
+        // Invocar persist() antes de cualquier otro await para mantener el gesto activo.
+        granted = !!(await sm.persist());
+      } catch (e) {
+        granted = false;
+      }
+      if (!granted && typeof sm.persisted === 'function') {
+        try { granted = !!(await sm.persisted()); } catch (e) {}
+      }
+      this._storagePersisted = granted;
+      this.syncStoragePersistUI();
+      if (typeof this.updateStorageUsage === 'function') await this.updateStorageUsage();
+      this.toast(this.t(granted ? 'toast_storage_persisted' : 'toast_storage_persist_denied'));
+      return granted;
+    },
+
+    /* Libera cachés regenerables (objectURLs sin uso, cachés de ganancia y
+     * collages de listas, que se vuelven a crear solos al abrirlas) sin
+     * tocar canciones, audio, listas, favoritos ni estadísticas. */
+    async freeStorageCaches() {
+      try {
+        if (typeof this.pruneUrlCache === 'function') {
+          const inUse = new Set();
+          try { if (this.audio && this.audio.src) inUse.add(this.audio.src); } catch (e) {}
+          try { if (this._preloadAudio && this._preloadAudio.src) inUse.add(this._preloadAudio.src); } catch (e) {}
+          if (this._urlCache) {
+            for (const [id, url] of Array.from(this._urlCache.entries())) {
+              if (inUse.has(url)) continue;
+              try { URL.revokeObjectURL(url); } catch (e) {}
+              this._urlCache.delete(id);
+            }
+          }
+        }
+        if (this._trackGainCache && typeof this._trackGainCache.clear === 'function') {
+          this._trackGainCache.clear();
+        }
+        if (Array.isArray(this.playlists)) {
+          for (const pl of this.playlists) {
+            if (pl && (pl.coverArt || pl._coverCache)) {
+              if (typeof this._invalidatePlaylistCover === 'function') this._invalidatePlaylistCover(pl);
+              await this.persistPlaylist(pl);
+            }
+          }
+        }
+        this.renderPlaylists();
+        if (typeof this.renderHome === 'function') this.renderHome();
+        if (typeof this.updateStorageUsage === 'function') await this.updateStorageUsage();
+        this.toast(this.t('toast_caches_cleared'));
+      } catch (e) {
+        this.toast(this.t('toast_caches_cleared'));
+      }
     },
 
     /* Muestra el uso de almacenamiento (IndexedDB) en Ajustes.
      * Se llama al abrir Ajustes; si la API no existe, se oculta la fila. */
     async updateStorageUsage() {
+      try {
+        if (navigator.storage && typeof navigator.storage.persisted === 'function') {
+          this._storagePersisted = !!(await navigator.storage.persisted());
+        }
+      } catch (e) {}
+      this.syncStoragePersistUI();
       const label = document.getElementById('storageUsageLabel');
       if (!label) return;
       try {
@@ -905,17 +1005,10 @@ Object.assign(App, {
         }
         const used = this.fmtBytes(usage);
         const total = (typeof quota === 'number' && quota > 0) ? ' / ' + this.fmtBytes(quota) : '';
-        // 🔒 = almacenamiento persistente concedido (el sistema no lo borra solo).
-        let lock = '';
-        try {
-          if (this._storagePersisted === undefined && navigator.storage && typeof navigator.storage.persisted === 'function') {
-            this._storagePersisted = await navigator.storage.persisted();
-          }
-          if (this._storagePersisted) lock = ' 🔒';
-        } catch (e) {}
+        const protectedSuffix = this._storagePersisted ? ' · ' + this.t('storage_protected_badge') : '';
         label.textContent = this.t('storage_usage')
           .replace('X', String(this.tracks.length))
-          .replace('Y', used + total) + lock;
+          .replace('Y', used + total) + protectedSuffix;
         label.style.display = '';
       } catch (e) {
         label.style.display = 'none';
@@ -959,7 +1052,8 @@ Object.assign(App, {
       try {
         if (navigator.storage && typeof navigator.storage.estimate === 'function') {
           const { usage, quota } = await navigator.storage.estimate();
-          lines.push('almacenamiento=' + this.fmtBytes(usage || 0) + ' / ' + this.fmtBytes(quota || 0));
+          lines.push('almacenamiento=' + this.fmtBytes(usage || 0) + ' / ' + this.fmtBytes(quota || 0)
+            + ' persistente=' + (this._storagePersisted ? 'si' : 'no'));
         }
       } catch (e) {}
       if (this._lastError && this._lastError.msg) {

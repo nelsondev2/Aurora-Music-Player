@@ -90,7 +90,8 @@ Object.assign(App, {
           }
           const row = ul.querySelector('li[data-track-id="' + curId + '"]');
           if (row) {
-            try { row.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+            const reduced = typeof this.prefersReducedMotion === 'function' && this.prefersReducedMotion();
+            try { row.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' }); } catch (e) {}
           }
         }, 380);
       }
@@ -121,33 +122,8 @@ Object.assign(App, {
       const heroPlay = document.getElementById('btnPlayPlaylistNow');
       if (heroPlay) heroPlay.classList.toggle('is-playing', this.isPlaylistPlaying(pl));
       if (coverEl) {
-        const cover = this.getPlaylistCover(pl);
         coverEl.classList.toggle('is-playing', this.isPlaylistPlaying(pl));
-        if (typeof cover === 'string' && typeof this._safeImageDataUrl === 'function' && this._safeImageDataUrl(cover)) {
-          coverEl.style.background = '';
-          const img = document.createElement('img');
-          img.src = cover;
-          img.alt = '';
-          coverEl.textContent = '';
-          coverEl.appendChild(img);
-        } else {
-          const from = (cover && cover.from) || ((this.coverFallback && this.coverFallback().from) || '#6E5CFF');
-          const to = (cover && cover.to) || ((this.coverFallback && this.coverFallback().to) || '#FF7AB6');
-          //  La portada de la lista se pinta con el mismo pintor que la de
-          //  una pista (luz, surcos e inicial del nombre).
-          coverEl.textContent = '';
-          const cv = document.createElement('canvas');
-          cv.width = 240; cv.height = 240;
-          coverEl.appendChild(cv);
-          const ctx = cv.getContext('2d');
-          if (ctx && window.AuroraCover) {
-            window.AuroraCover.paint(ctx, 240, 240, {
-              from, to, text: pl.name, letter: this.coverInitial(pl.name)
-            });
-          } else if (ctx) {
-            ctx.fillStyle = from; ctx.fillRect(0, 0, 240, 240);
-          }
-        }
+        this.renderEditPlaylistCover(pl, coverEl);
       }
       if (!ul) return;
       //  soltar la lista virtual anterior (si la hubo) ANTES de
@@ -172,8 +148,9 @@ Object.assign(App, {
         li.className = 'track-row' + (isCurrent ? ' current' : '');
         li.dataset.trackId = id;
         li.dataset.idx = String(i);
+        li.tabIndex = 0;
         li.innerHTML = `
-          <div class="row-cover"><canvas width="144" height="144"></canvas></div>
+          <div class="row-cover"><canvas width="144" height="144" aria-hidden="true"></canvas></div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>
@@ -182,13 +159,24 @@ Object.assign(App, {
           <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>
           <button class="row-action remove-from-pl" aria-label="${this.esc(this.t('remove_from_playlist'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
         `;
-        li.addEventListener('click', (e) => {
-          if (e.target.closest('.remove-from-pl, .track-menu-btn')) return;
+        const activatePlaylistRow = () => {
           // Reproducir esta pista dentro del contexto de la playlist.
           // playTrack se encarga de setear la cola = pistas de la playlist.
           this.playTrack(t.id, { type: 'playlist', id: pl.id, name: pl.name });
           this.renderQueue();
           if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
+        };
+        li.addEventListener('click', (e) => {
+          if (e.target.closest('.remove-from-pl, .track-menu-btn')) return;
+          activatePlaylistRow();
+        });
+        li.addEventListener('keydown', (e) => {
+          if (e.target !== li) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            activatePlaylistRow();
+          }
         });
         const menuBtn = li.querySelector('.track-menu-btn');
         if (menuBtn) menuBtn.addEventListener('click', (e) => {
@@ -220,6 +208,9 @@ Object.assign(App, {
           const li = makeEditRow(t, i);
           if (li) ul.appendChild(li);
         });
+      }
+      if (typeof this.syncAllScrollFades === 'function') {
+        this.syncAllScrollFades(document.getElementById('sheetEditPlaylist'));
       }
     },
 
@@ -325,9 +316,15 @@ Object.assign(App, {
       // - lista vacía → re-render completo (muestra el estado "sin pistas")
       // - si no → quitar solo la fila afectada
       if (this._editingPlaylistId === playlistId) {
-        if (pl.trackIds.length === 0) this.renderEditPlaylist();
-        else this._removeTrackFromEditView(trackId);
+        if (pl.trackIds.length === 0) {
+          this.renderEditPlaylist();
+        } else {
+          this._removeTrackFromEditView(trackId);
+          if (typeof this.renderEditPlaylistCover === 'function') this.renderEditPlaylistCover(pl);
+        }
       }
+      this.renderPlaylists();
+      if (typeof this.renderHome === 'function') this.renderHome();
       this.renderQueue();
       this.toast(this.t('toast_removed_from_playlist'));
     },
@@ -343,7 +340,8 @@ Object.assign(App, {
       // Match por data-track-id (robusto): antes se buscaba por el texto
       // del título, lo que eliminaba de la vista TODAS las filas de
       // canciones con el mismo nombre aunque solo se quitara una.
-      const row = document.querySelector('#editPlaylistTracks .track-row[data-track-id="' + CSS.escape(trackId) + '"]');
+      const safeId = typeof this._cssEsc === 'function' ? this._cssEsc(trackId) : String(trackId).replace(/["\\]/g, '\\$&');
+      const row = document.querySelector('#editPlaylistTracks .track-row[data-track-id="' + safeId + '"]');
       if (row) {
         row.style.transition = 'opacity .2s, transform .2s';
         row.style.opacity = '0';
@@ -370,6 +368,11 @@ Object.assign(App, {
       pl.trackIds = [];
       this._invalidatePlaylistCover(pl);
       this.persistPlaylist(pl);
+      if (this._editingPlaylistId === playlistId && typeof this.renderEditPlaylistCover === 'function') {
+        this.renderEditPlaylistCover(pl);
+      }
+      this.renderPlaylists();
+      if (typeof this.renderHome === 'function') this.renderHome();
       // Actualizar vista sin parpadeo
       const ul = document.getElementById('editPlaylistTracks');
       if (ul) {
@@ -389,6 +392,7 @@ Object.assign(App, {
         // Mostrar estado vacío coherente después (mismo componente que
         // Biblioteca/Favoritos, en su variante compacta).
         setTimeout(() => {
+          if (this._editingPlaylistId !== playlistId || pl.trackIds.length !== 0) return;
           ul.innerHTML = '';
           const li = document.createElement('li');
           li.className = 'empty-state compact';
@@ -410,6 +414,7 @@ Object.assign(App, {
             this.persistPlaylist(pl);
             this.renderEditPlaylist();
             this.renderPlaylists();
+            if (typeof this.renderHome === 'function') this.renderHome();
             this._updatePlaylistMeta(pl);
             this.toast(this.t('toast_restored'));
           }

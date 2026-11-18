@@ -7,7 +7,7 @@
  * Display en títulos, wordmark y letras de portada. Sin CDN. */
 @font-face {
   font-family: 'Outfit';
-  src: url('assets/fonts/outfit-latin-700.woff2') format('woff2');
+  src: url('../assets/fonts/outfit-latin-700.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -15,6 +15,7 @@
 
 /* ---------- Variables ---------- */
 :root {
+  color-scheme: dark;
   /* Paleta (dark por defecto; applyTheme pisa las dinámicas) */
   --bg-0:        #050509;
   --bg-1:        #0a0a12;
@@ -46,7 +47,7 @@
   --font-sans:   -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
   --font-display: 'Outfit', ui-rounded, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
-  --fs-3xs: 0.5625rem;
+  --fs-3xs: 0.625rem;
   --fs-2xs: 0.625rem;
   --fs-micro: 0.6875rem;
   --fs-caption: 0.75rem;
@@ -209,10 +210,10 @@ svg { display: block; }
     --pad: 12px;
     --bottom-nav-h: 50px;
   }
-  .sec-btn { font-size: 0.5rem; padding: 6px 2px; }
+  .sec-btn { font-size: var(--fs-2xs); padding: 6px 2px; }
   .sec-btn .ico { width: 16px; height: 16px; }
-  .sec-btn span { font-size: 0.5rem; }
-  .nav-btn { font-size: 0.5rem; }
+  .sec-btn span { font-size: var(--fs-2xs); max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .nav-btn { font-size: var(--fs-2xs); }
   .nav-btn .ico { width: 16px; height: 16px; }
   .ctrl-play { width: 56px; height: 56px; }
   .ctrl-prev .ico, .ctrl-next .ico, .ctrl-play .ico { width: 22px; height: 22px; }
@@ -220,17 +221,7 @@ svg { display: block; }
   .lrc-line { font-size: var(--lrc-font-size, 0.9375rem); }
   .controls-secondary { gap: 2px; padding: 6px 0 4px; }
   /* Toolbar de letras más compacta */
-  /* El ajuste fino (desfase, velocidad, bucle, restablecer) va
- * siempre visible: todas las opciones, una detrás de otra en la
- * fila desplazable de la barra. Por eso el contenedor NO genera
- * caja (display: contents) y sus grupos son piezas directas de
- * la fila: si generara caja con flex-basis: 100%, ocuparía la
- * fila entera, la partiría en varias líneas y desperdigaría
- * los grupos por la pantalla. */
-.lyrics-fine { display: contents; }
-.lt-btn.active { color: var(--accent); }
-
-.lyrics-toolbar { padding: 3px 4px; gap: 1px; }
+  .lyrics-toolbar { padding: 3px 4px; gap: 1px; }
   /* 40 px también en pantallas estrechas: 26 px no es un objetivo táctil. */
   .lt-btn { min-width: 40px; height: 40px; padding: 0 4px; }
   .lt-btn .ico { width: 12px; height: 12px; }
@@ -240,10 +231,9 @@ svg { display: block; }
   .lt-a-lg { font-size: 0.9375rem; }
   .lt-sign { font-size: 0.6875rem; }
   .lt-group { padding: 1px 2px 1px 4px; gap: 0; }
-  .lt-group-label { font-size: 0.5rem; letter-spacing: 0.04em; }
+  .lt-group-label { font-size: var(--fs-2xs); letter-spacing: 0.03em; }
   .lt-group .lt-btn { min-width: 40px; padding: 0 4px; }
   .lt-offset-value { min-width: 32px; font-size: var(--fs-2xs); }
-    /* ocultar separadores para ahorrar espacio */
 }
 
 /* Pantallas muy bajas (landscape o móviles pequeños en altura) */
@@ -256,7 +246,7 @@ svg { display: block; }
   .track-title { font-size: 1rem; }
   .ctrl-play { width: 50px; height: 50px; }
   .controls-secondary { padding: 2px 0; }
-  .sec-btn { font-size: 0.5rem; padding: 4px 2px; }
+  .sec-btn { font-size: var(--fs-2xs); padding: 4px 2px; }
   .sec-btn .ico { width: 15px; height: 15px; }
   .lyrics-mini { padding: 2px 4px 6px; }
   .lyrics-toolbar { padding: 2px 4px; }
@@ -434,6 +424,9 @@ svg { display: block; }
   animation: coverFloat 6s ease-in-out infinite;
   box-shadow:
     0 32px 64px rgba(0,0,0,0.55),
+    0 0 40px rgba(var(--accent-rgb), 0.32);
+  box-shadow:
+    0 32px 64px rgba(0,0,0,0.55),
     0 0 40px color-mix(in srgb, var(--cover-from) 35%, transparent);
 }
 /*  aquí vivía la pista visual de la portada (velo,
@@ -531,85 +524,107 @@ svg { display: block; }
 }
 
 /* ---------- Progreso ---------- */
+/* --- Progreso: pista visible de 4 px con área táctil de 32 px (WCAG 2.2 SC 2.5.8). */
 .progress-section {
   position: relative;
   z-index: 5;
-  padding: 8px 6px 8px;
+  padding: 0 6px 8px;
   flex-shrink: 0;
 }
 .progress-track {
   position: relative;
-  height: 3px;
-  background: var(--surface-2);
+  height: 32px;
+  background: transparent;
   border-radius: var(--radius-pill);
   overflow: visible;
   cursor: pointer;
   touch-action: none;
-  transition: height var(--dur) var(--ease-out);
 }
-/*  la pista visible mide 3px; el agarre tactil sube a ~25px de alto. */
 .progress-track::before {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  /* [5]: la auditoria externa midio 22px de alto util; ahora ~31px. */
-  top: -14px;
-  bottom: -14px;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  background: var(--surface-hi);
+  border-radius: var(--radius-pill);
+  transition: height var(--dur) var(--ease-out);
 }
-.progress-track:hover,
-.progress-track:focus-visible,
-.progress-track.dragging {
-  height: 5px;
-}
+.progress-track:focus-visible::before,
+.progress-track.dragging::before { height: 6px; }
 .progress-fill {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 50%;
+  height: 4px;
   width: 0%;
-  /*  timeupdate llega a ~4 Hz y el relleno avanzaba a escalones;
- con la transición lineal el avance es continuo. Solo sonando y
- nunca arrastrando (en pausa el salto al buscar es inmediato). */
+  transform: translateY(-50%);
+  /* timeupdate llega a ~4 Hz; la transición lineal suaviza el avance
+   * solo durante la reproducción y nunca al arrastrar. */
   transition: width .3s linear;
-  background: linear-gradient(90deg, var(--cover-from), var(--cover-to));
+  background: linear-gradient(90deg, var(--accent-fill), var(--accent-fill-2));
   border-radius: var(--radius-pill);
   pointer-events: none;
 }
 .progress-thumb {
   position: absolute;
-  right: -6px;
+  right: -7px;
   top: 50%;
-  width: 12px;
-  height: 12px;
+  width: 13px;
+  height: 13px;
   border-radius: 50%;
-  background: #fff;
-  transform: translateY(-50%) scale(0);
+  background: var(--accent);
+  border: 2px solid var(--accent-on-fill);
+  transform: translateY(-50%) scale(0.75);
   box-shadow: 0 2px 8px rgba(0,0,0,0.5);
   transition: transform var(--dur) var(--ease-out);
   pointer-events: none;
 }
-.progress-track.dragging .progress-fill { transition: none; }
-.view-player:not(:has(#coverArt.playing)) .progress-fill { transition: none; }
+.progress-track.dragging .progress-fill,
+.view-player:not(.is-playing) .progress-fill,
+.lyrics-progress-track.dragging .lyrics-progress-fill,
+.view-lyrics:not(.is-playing) .lyrics-progress-fill { transition: none; }
 .progress-track.dragging .progress-thumb,
-.progress-track:hover .progress-thumb,
-.progress-track:focus-visible .progress-thumb { transform: translateY(-50%) scale(1); }
+.progress-track:focus-visible .progress-thumb { transform: translateY(-50%) scale(1.15); }
+@media (hover: hover) and (pointer: fine) {
+  .progress-track:hover::before { height: 6px; }
+  .progress-track:hover .progress-thumb { transform: translateY(-50%) scale(1.15); }
+}
 
 .progress-buffer {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 50%;
+  height: 4px;
   width: 0%;
-  background: rgba(255,255,255,0.10);
+  transform: translateY(-50%);
+  background: var(--surface-hi);
   border-radius: var(--radius-pill);
   pointer-events: none;
 }
 
 .time-row {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  margin-top: 8px;
+  margin-top: 0;
   font-size: var(--fs-micro);
   font-variant-numeric: tabular-nums;
   color: var(--text-3);
   font-weight: 500;
+}
+.time-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 40px;
+  min-height: 28px;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
 /* ---------- Controles principales ---------- */
@@ -753,9 +768,10 @@ svg { display: block; }
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-top: 1px solid var(--border);
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   align-items: stretch;
-  z-index: 50;
+  z-index: 115;
 }
 .nav-btn {
   flex: 1;
@@ -852,7 +868,7 @@ svg { display: block; }
   transform: translateY(0);
 }
 .cover-fs-title {
-  font-size: var(--fs-h3, 20px);
+  font-size: var(--fs-title);
   font-weight: 700;
   color: #fff;
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.65);
@@ -862,34 +878,44 @@ svg { display: block; }
 }
 .cover-fs-artist {
   margin-top: 2px;
-  font-size: var(--fs-small, 13px);
-  color: rgba(255, 255, 255, 0.82);
+  font-size: var(--fs-sm);
+  color: rgba(255, 255, 255, 0.84);
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.6);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/*  aquí vivía el resumen fijo de la cola (idea 10),
- * retirado por completo junto con su HTML, su JS y su clave. */
-/* (idea 6): valor a la derecha de las filas del menú (sleep). */
+.cover-fs-hint {
+  display: none;
+  margin-top: 8px;
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.78);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.72);
+}
+.view-player.cover-fullscreen .cover-fs-hint {
+  display: block;
+}
+/* (idea 6): valor a la derecha de las filas del menú (temporizador). */
 .menu-value {
   margin-left: auto;
-  font-size: var(--fs-small, 13px);
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
-/* Sin barra inferior: la portada manda en toda la pantalla. */
-.device-screen:has(.view-player.cover-fullscreen) .bottom-nav {
+/* En móvil/tablet la portada inmersiva oculta la barra inferior; en escritorio
+ * (aurora-wide) la barra lateral central se mantiene para no dejar un hueco vacío. */
+html:not(.aurora-wide) .device-screen.cover-fs .bottom-nav {
   display: none !important;
 }
-/*  retiradas también las reglas que anunciaban ampliar/
- * salir sobre la portada (la insignia ya no existe). */
 .lyrics-exit-fs {
   position: absolute;
   top: calc(var(--safe-top) + 8px);
   right: 16px;
-  z-index: 100;
+  z-index: 60;
   display: none;
 }
 .view-lyrics.lyrics-fullscreen .lyrics-exit-fs {
@@ -912,6 +938,9 @@ svg { display: block; }
   overflow: visible;
 }
 .lyrics-toolbar::-webkit-scrollbar { display: none; }
+/* El ajuste fino (desfase, velocidad, bucle, restablecer) forma parte
+ * directa de la fila desplazable de la barra en todos los anchos. */
+.lyrics-fine { display: contents; }
 .lt-btn {
   display: flex;
   align-items: center;
@@ -1111,7 +1140,7 @@ svg { display: block; }
  * relleno de acción (--accent-fill) da ~7:1. Vale para este y
  * los otros cuatro selectores marcados abajo. */
   background: var(--accent-fill);
-  color: #fff;
+  color: var(--accent-on-fill);
   padding: 6px 14px;
   border-radius: 999px;
   font-size: var(--fs-caption);
@@ -1121,25 +1150,12 @@ svg { display: block; }
 .lyrics-loop-indicator .ico { width: 12px; height: 12px; }
 /* Quitar el bucle también es un botón: 32 px táctiles como mínimo,
  * no los 24 que lo dejaban por debajo del resto de la barra. */
-.lyrics-loop-indicator .lt-btn { color: #fff; min-width: 32px; height: 32px; }
+.lyrics-loop-indicator .lt-btn { color: var(--accent-on-fill); min-width: 36px; height: 36px; }
 
-.lyrics-controls {
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 32px;
-  padding: 16px 0 calc(var(--safe-bottom) + 16px);
-  background: linear-gradient(180deg, transparent, rgba(0,0,0,0.7) 50%);
-}
 .lyrics-controls .ctrl-prev, .lyrics-controls .ctrl-next { color: var(--text-1); }
 .lyrics-controls .ctrl-play {
-  background: rgba(255,255,255,0.12);
-  color: var(--text-1);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: linear-gradient(135deg, var(--accent-fill), var(--accent-fill-2));
+  color: var(--accent-on-fill);
   box-shadow: 0 10px 30px rgba(0,0,0,0.4);
 }
 
@@ -1203,7 +1219,7 @@ svg { display: block; }
   overflow: hidden;
 }
 .sheet.open .sheet-panel { transform: translateY(0); }
-.sheet-full .sheet-panel { max-height: 100%; height: 100%; min-height: 0; border-radius: 0; }
+.sheet-full .sheet-panel { width: 100%; max-width: 100%; max-height: 100%; height: 100%; min-height: 0; border-radius: 0; padding-top: var(--safe-top); }
 
 .sheet-handle {
   width: 36px;
@@ -1252,7 +1268,6 @@ svg { display: block; }
   transition: background .15s, transform .15s, color .15s;
 }
 .icon-btn-sm:active { background: var(--surface-hi); transform: scale(0.92); }
-.icon-btn-sm:hover { color: var(--text-1); }
 .text-btn {
   font-size: var(--fs-sm);
   font-weight: 600;
@@ -1271,7 +1286,7 @@ svg { display: block; }
 /* En el header de la biblioteca, los dos botones (Nueva + Borrar todo)
    deben caber en pantallas estrechas: reducimos un poco el padding y el h3. */
 #sheetLibrary .sheet-header h3 { font-size: var(--fs-ui); }
-#sheetLibrary .sheet-header .text-btn { padding: 6px 8px; font-size: var(--fs-caption); }
+#sheetLibrary .sheet-header .text-btn { padding: 6px 8px; font-size: var(--fs-caption); min-height: 40px; }
 #sheetLibrary .sheet-header .text-btn .ico { margin-right: 2px; }
 
 .sheet-body {
@@ -1498,29 +1513,19 @@ svg { display: block; }
 .pl-bars i {
   display: block;
   width: 3px;
-  height: 6px;
+  height: 7px;
   border-radius: 2px;
   background: #fff;
+}
+.pl-live.playing .pl-bars i {
+  height: 6px;
   animation: plBar 0.8s ease-in-out infinite;
 }
-.pl-bars i:nth-child(2) { animation-delay: .15s; height: 10px; }
-.pl-bars i:nth-child(3) { animation-delay: .3s; height: 7px; }
+.pl-live.playing .pl-bars i:nth-child(2) { animation-delay: .15s; height: 10px; }
+.pl-live.playing .pl-bars i:nth-child(3) { animation-delay: .3s; height: 7px; }
 @keyframes plBar {
   0%, 100% { transform: scaleY(0.45); }
   50% { transform: scaleY(1); }
-}
-.pl-info { flex: 1; min-width: 0; }
-.pl-info h4 {
-  font-size: var(--fs-ui);
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.pl-info p {
-  font-size: var(--fs-caption);
-  color: var(--text-3);
-  margin-top: 2px;
 }
 
 /* ---------- Library grid ---------- */
@@ -1556,6 +1561,45 @@ svg { display: block; }
   outline-offset: 2px;
   border-radius: 14px;
 }
+.pl-cover {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent-fill), var(--accent-2));
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.28);
+}
+.pl-cover .pl-cover-grad {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.pl-cover-letter {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 3.1rem;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  user-select: none;
+}
+.pl-cover.has-art .pl-cover-letter,
+.home-card-cover.has-art .pl-cover-letter,
+.edit-pl-cover.has-art .pl-cover-letter {
+  display: none;
+}
 .pl-card .pl-cover {
   width: 100%;
   height: auto;
@@ -1563,6 +1607,28 @@ svg { display: block; }
   padding-bottom: 0;
   border-radius: 14px;
   box-shadow: 0 12px 28px rgba(0,0,0,0.32);
+}
+.pl-card .pl-cover-letter { font-size: 3.4rem; }
+.pl-play-fab {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-fill);
+  color: var(--accent-on-fill);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.18);
+  z-index: 2;
+  transition: transform .15s, filter .2s;
+}
+.pl-play-fab .ico { width: 14px; height: 14px; }
+.pl-play-fab:active { transform: scale(0.92); }
+@media (hover: hover) and (pointer: fine) {
+  .pl-play-fab:hover { filter: brightness(1.08); transform: scale(1.04); }
 }
 .pl-card .pl-play-fab { width: 40px; height: 40px; right: 10px; bottom: 10px; }
 .pl-card .pl-play-fab .ico { width: 15px; height: 15px; }
@@ -1612,11 +1678,23 @@ svg { display: block; }
   gap: 8px;
   margin-bottom: 18px;
   overflow-x: auto;
+  scrollbar-width: none;
   padding-bottom: 4px;
-  /* [12]: el ultimo chip se cortaba sin avisar de que hay scroll;
- el difuminado del borde derecho lo comunica. */
-  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
-  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+.eq-presets::-webkit-scrollbar { display: none; }
+/* Difuminado de borde reactivo: solo cuando una tira horizontal realmente
+ * desborda y únicamente en el extremo donde aún queda contenido por ver. */
+.fade-right {
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 26px), transparent);
+}
+.fade-left {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 26px);
+  mask-image: linear-gradient(90deg, transparent, #000 26px);
+}
+.fade-both {
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 22px, #000 calc(100% - 22px), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 22px, #000 calc(100% - 22px), transparent);
 }
 .eq-preset {
   padding: 8px 14px;
@@ -1656,17 +1734,40 @@ svg { display: block; }
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 6px;
-  background: var(--surface-2);
-  border-radius: 999px;
+  height: 32px;
+  background: transparent;
+  border-radius: var(--radius-pill);
   outline: none;
+  cursor: pointer;
+}
+.eq-band input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  background: var(--surface-hi);
+  border-radius: var(--radius-pill);
 }
 .eq-band input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 18px; height: 18px;
+  width: 20px; height: 20px;
+  margin-top: -7px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: linear-gradient(135deg, var(--accent-fill), var(--accent-2));
+  border: 2px solid #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  cursor: pointer;
+}
+.eq-band input[type="range"]::-moz-range-track {
+  height: 6px;
+  background: var(--surface-hi);
+  border-radius: var(--radius-pill);
+  border: 0;
+}
+.eq-band input[type="range"]::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-fill), var(--accent-2));
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  cursor: pointer;
 }
 .eq-band-label {
   font-size: var(--fs-micro);
@@ -1718,32 +1819,52 @@ svg { display: block; }
   font-weight: 600;
   min-height: 18px;
 }
+.sleep-status:empty { display: none; }
+.sleep-fade-hint {
+  text-align: center;
+  margin: 12px 0 0;
+}
 
 /* ---------- Volume ---------- */
 .slider {
   flex: 1;
   -webkit-appearance: none;
   appearance: none;
-  height: 6px;
-  background: var(--surface);
+  height: 32px;
+  background: transparent;
   border-radius: var(--radius-pill);
   outline: none;
   min-width: 0;
+  cursor: pointer;
+}
+.slider::-webkit-slider-runnable-track {
+  height: 6px;
+  background: var(--surface-hi);
+  border-radius: var(--radius-pill);
 }
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 22px; height: 22px;
+  margin-top: -8px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  border: 1.5px solid rgba(20, 16, 12, 0.16);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.32);
   cursor: pointer;
 }
+.slider::-moz-range-track {
+  height: 6px;
+  background: var(--surface-hi);
+  border-radius: var(--radius-pill);
+  border: 0;
+}
 .slider::-moz-range-thumb {
-  width: 22px; height: 22px;
+  width: 19px; height: 19px;
   border-radius: 50%;
   background: #fff;
-  border: none;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  border: 1.5px solid rgba(20, 16, 12, 0.16);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.32);
+  cursor: pointer;
 }
 
 /* ---------- Menu rows ---------- */
@@ -1810,21 +1931,20 @@ svg { display: block; }
   border: 0;
   cursor: pointer;
 }
-.toast-action:hover { opacity: 0.9; }
-.toast-action:focus-visible {
-  outline: 2px solid var(--accent-on-fill);
-  outline-offset: 2px;
+@media (hover: hover) and (pointer: fine) {
+  .toast-action:hover { opacity: 0.9; }
 }
 .toast.is-danger {
   color: var(--danger);
+  border-color: rgba(232, 90, 90, 0.4);
   border-color: color-mix(in srgb, var(--danger) 40%, transparent);
 }
 
 /* ---------- Estados ---------- */
 .spin-loader {
   width: 18px; height: 18px;
-  border: 2px solid rgba(255,255,255,0.2);
-  border-top-color: #fff;
+  border: 2px solid var(--surface-hi);
+  border-top-color: currentColor;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -1851,9 +1971,33 @@ svg { display: block; }
 
 /* ---------- Reduce motion ---------- */
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur: 0.01ms;
+    --view-dur: 0.01ms;
+    --sheet-dur: 0.01ms;
+  }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
-    transition-duration: 0.05ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .cover-art.playing,
+  .pl-live.playing .pl-bars i,
+  .eq-badge.playing i,
+  .hw-orb,
+  .skel,
+  .mini-title.marquee,
+  .marquee-inner {
+    animation: none !important;
+  }
+  .pl-live.playing .pl-bars i,
+  .eq-badge.playing i {
+    height: 7px;
+    transform: none !important;
+  }
+  .spin-loader {
+    animation: spin 2s linear infinite !important;
   }
 }
 
@@ -1911,35 +2055,44 @@ svg { display: block; }
  *  Drag-and-drop en la cola
  * ===================================================================== */
 .drag-handle {
-  /*  la base decía 28 px, pero el bloque táctil posterior
- * (40×44 px) ya fijaba el tamaño real; se alinea la base para
- * que el primer valor que se lea no parezca un asa diminuta. */
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
+  width: 40px;
+  min-width: 40px;
+  height: 44px;
+  min-height: 44px;
+  margin-left: -5px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-4);
+  opacity: 0.55;
   flex-shrink: 0;
   cursor: grab;
   background: transparent;
-  transition: color .15s, background .15s;
+  touch-action: none;
+  transition: color .15s, background .15s, opacity .15s;
 }
-.drag-handle:active { cursor: grabbing; color: var(--text-1); background: var(--surface); }
-.queue-item .row-action.queue-remove { width: 30px; height: 30px; }
+.drag-handle .ico { width: 13px; height: 13px; }
+.drag-handle:active { cursor: grabbing; color: var(--text-1); background: var(--surface); opacity: 1; }
+.drag-handle:focus-visible { opacity: 1; }
 
-/* Filas de una lista: los controles se aligeran. El asa de arrastre y
- * los dos botones de acción siguen ocupando 40 px (objetivo táctil),
- * pero su icono es más pequeño y su color pasa a --text-3; con ratón
- * aparecen al pasar por la fila y en cuanto recibe el foco. */
+/* Filas de una lista: controles táctiles de 40 px con presencia serena. */
+.queue-item .row-action.queue-remove,
 #editPlaylistTracks .row-action {
-  color: var(--text-3);
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
 }
-#editPlaylistTracks .row-action .ico { width: 16px; height: 16px; }
+#editPlaylistTracks .row-action,
+#editPlaylistTracks .drag-handle {
+  color: var(--text-3);
+  background: transparent;
+}
+#editPlaylistTracks .row-action .ico { width: 15px; height: 15px; }
+#editPlaylistTracks .remove-from-pl { color: var(--text-3); }
 #editPlaylistTracks .remove-from-pl:active {
-  color: var(--danger);
-  background: rgba(239, 68, 68, 0.12);
+  color: var(--text-1);
+  background: var(--surface);
 }
 @media (hover: hover) and (pointer: fine) {
   #editPlaylistTracks .track-row .row-action,
@@ -2036,6 +2189,7 @@ svg { display: block; }
   width: 100%;
   aspect-ratio: 1.4;
   border-radius: 8px;
+  border: 1px solid var(--border);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -2064,42 +2218,72 @@ svg { display: block; }
 
 .accent-grid {
   display: grid;
-  /* Seis acentos: 3×2, círculos grandes y nombres legibles. */
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  /* Seis acentos: 3×2 en tarjetas coherentes con .theme-opt, con etiqueta
+   * de alto contraste debajo del círculo y marca ✓ al estar activo. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 .accent-opt {
-  aspect-ratio: 1;
-  border-radius: 50%;
-  border: 3px solid transparent;
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  padding-bottom: 4px;
-  transition: transform .15s, border-color .2s;
+  gap: 8px;
+  min-height: 86px;
+  padding: 12px 6px 10px;
+  background: var(--surface);
+  border: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  transition: transform .15s, border-color .2s, background .15s;
   position: relative;
 }
-.accent-opt:active { transform: scale(0.9); }
-.accent-opt.active { border-color: var(--text-1); }
-.accent-opt[data-accent="aurora"] { background: linear-gradient(135deg, #745CFF, #FF6FA5); }
-.accent-opt[data-accent="ocean"]  { background: linear-gradient(135deg, #1F7AE0, #23C8B2); }
-.accent-opt[data-accent="moss"]   { background: linear-gradient(135deg, #1E9E62, #9BD147); }
-.accent-opt[data-accent="amber"]  { background: linear-gradient(135deg, #E8710A, #F5B81F); }
-.accent-opt[data-accent="cherry"] { background: linear-gradient(135deg, #E01A44, #FF6B81); }
-.accent-opt[data-accent="fuchsia"] { background: linear-gradient(135deg, #C22BD6, #FF5CA8); }
-.accent-opt span {
-  font-size: var(--fs-3xs);
-  font-weight: 700;
-  color: rgba(255,255,255,0.95);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  /* Pastilla oscura: el nombre se lee sobre cualquier extremo
- * del degradado, también los luminosos (ámbar, musgo); antes solo
- * llevaba sombra y sobre el amarillo casi no se leía. */
-  background: rgba(0, 0, 0, 0.38);
-  padding: 2px 7px;
-  border-radius: 999px;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+.accent-opt:active { transform: scale(0.95); }
+.accent-opt.active {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.12);
+}
+.accent-swatch {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  flex-shrink: 0;
+}
+.accent-opt[data-accent="aurora"] .accent-swatch { background: linear-gradient(135deg, #5B45D6, #FF6FA5); }
+.accent-opt[data-accent="ocean"]  .accent-swatch { background: linear-gradient(135deg, #1763B8, #23C8B2); }
+.accent-opt[data-accent="moss"]   .accent-swatch { background: linear-gradient(135deg, #177A45, #9BD147); }
+.accent-opt[data-accent="amber"]  .accent-swatch { background: linear-gradient(135deg, #B85C0E, #F5B81F); }
+.accent-opt[data-accent="cherry"] .accent-swatch { background: linear-gradient(135deg, #C21840, #FF6B81); }
+.accent-opt[data-accent="fuchsia"] .accent-swatch { background: linear-gradient(135deg, #A61FB8, #FF5CA8); }
+.accent-check {
+  width: 18px;
+  height: 18px;
+  padding: 2px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.42);
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity .15s, transform .15s;
+}
+.accent-opt.active .accent-check {
+  opacity: 1;
+  transform: scale(1);
+}
+.accent-name {
+  max-width: 100%;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.accent-opt.active .accent-name {
+  color: var(--text-1);
 }
 
 /* =====================================================================
@@ -2137,17 +2321,24 @@ svg { display: block; }
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
-.stats-list { margin-bottom: 18px; }
-.stats-row {
+.stats-list { list-style: none; margin-bottom: 18px; }
+.stats-row { list-style: none; }
+.stats-row-btn {
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
   padding: 10px 8px;
+  border: 0;
   border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   transition: background .15s;
   cursor: pointer;
 }
-.stats-row:active { background: var(--surface); }
+.stats-row-btn:active { background: var(--surface); }
 .stats-rank {
   width: 28px;
   height: 28px;
@@ -2202,13 +2393,6 @@ svg { display: block; }
 /* =====================================================================
  *  Soporte tema claro (#11)
  * ===================================================================== */
-:root[data-theme="light"] .icon-add {
-  color: #0a0a12;
-}
-:root[data-theme="light"] .ctrl-play { color: #fff; }
-:root[data-theme="light"] .sheet-panel {
-  background: var(--bg-1);
-}
 :root[data-theme="light"] .bg-blur::after {
   background:
     radial-gradient(ellipse at 50% 0%, transparent 0%, var(--bg-0) 75%),
@@ -2231,8 +2415,13 @@ svg { display: block; }
   display: flex;
   align-items: center;
   gap: 14px;
+  width: 100%;
   padding: 14px 12px;
+  border: 0;
   border-radius: 14px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
   transition: background .15s;
   color: var(--text-1);
@@ -2240,20 +2429,38 @@ svg { display: block; }
 }
 .lang-row:active { background: var(--surface); }
 .lang-row.active {
+  background: rgba(var(--accent-rgb), 0.16);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), color-mix(in srgb, var(--accent-2) 10%, transparent));
-  outline: 1px solid var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 .lang-flag {
-  font-size: 1.625rem;
-  width: 36px;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: 7px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
   flex-shrink: 0;
   line-height: 1;
 }
+.lang-row.active .lang-flag {
+  background: rgba(var(--accent-rgb), 0.18);
+  border-color: rgba(var(--accent-rgb), 0.42);
+  color: var(--accent);
+}
 .lang-name {
   flex: 1;
+  min-width: 0;
   font-size: var(--fs-ui);
   font-weight: 600;
+  overflow-wrap: anywhere;
 }
 .lang-check {
   color: var(--accent);
@@ -2264,16 +2471,8 @@ svg { display: block; }
 
 /* Soporte tema claro para listas nuevas */
 :root[data-theme="light"] .lang-row.active {
-  /*  ídem — morado y rosa cableados fuera; manda el acento. */
+  background: rgba(var(--accent-rgb), 0.10);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.10), color-mix(in srgb, var(--accent-2) 6%, transparent));
-}
-
-/* =====================================================================
- *  Nav inferior con 4 botones (ajuste de grid)
- * ===================================================================== */
-.bottom-nav {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
 }
 
 /* =====================================================================
@@ -2286,12 +2485,16 @@ svg { display: block; }
   margin-bottom: 16px;
 }
 .edit-pl-cover {
+  position: relative;
   width: 76px;
   height: 76px;
   border-radius: 18px;
   overflow: hidden;
   flex-shrink: 0;
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: linear-gradient(135deg, var(--accent-fill), var(--accent-2));
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2299,6 +2502,7 @@ svg { display: block; }
   font-size: 1.75rem;
   box-shadow: 0 10px 24px rgba(0,0,0,0.32);
 }
+.edit-pl-cover .pl-cover-letter { font-size: 2.1rem; }
 .edit-pl-cover canvas {
   display: block;
   width: 100%;
@@ -2378,8 +2582,6 @@ svg { display: block; }
   scrollbar-width: none;
   padding-bottom: 2px;
   margin-bottom: 16px;
-  -webkit-mask-image: linear-gradient(90deg, #000 93%, transparent 100%);
-  mask-image: linear-gradient(90deg, #000 93%, transparent 100%);
 }
 #sheetEditPlaylist .edit-pl-actions::-webkit-scrollbar { display: none; }
 #sheetEditPlaylist .pl-action-btn { flex: 0 0 auto; }
@@ -2484,14 +2686,6 @@ svg { display: block; }
 .primary-btn.ghost .ico { width: 13px; height: 13px; }
 
 /* Botón "Quitar de la lista" en editar playlist */
-#editPlaylistTracks .remove-from-pl {
-  color: var(--text-3);
-}
-#editPlaylistTracks .remove-from-pl:active {
-  color: var(--danger);
-  background: rgba(239, 68, 68, 0.12);
-}
-
 /* (El subtítulo del picker de pistas se fue en la.) */
 
 /* =====================================================================
@@ -2542,9 +2736,10 @@ svg { display: block; }
 }
 .settings-row:active { background: var(--surface); }
 .settings-row input[type="checkbox"] {
-  width: 22px;
-  height: 22px;
-  accent-color: var(--accent);
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  accent-color: var(--accent-fill);
   cursor: pointer;
 }
 
@@ -2645,17 +2840,33 @@ svg { display: block; }
  * Nota: el movimiento reducido ya lo cubre el bloque global
  * prefers-reduced-motion existente en este archivo. */
 button:focus-visible,
+a[href]:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="radio"]:focus-visible,
+input[type="checkbox"]:focus-visible,
+.aurora-select:focus-visible,
 .track-row:focus-visible,
+.queue-item:focus-visible,
+.pl-card:focus-visible,
 .menu-row:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
-/*  los sliders (volumen, EQ) no tenían anillo de foco:
- * navegarlos con teclado era ir a ciegas. */
-input[type="range"]:focus-visible {
+.field input:focus-visible,
+.lrc-editor-textarea:focus-visible,
+.edit-pl-name-input:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 4px;
+  outline-offset: 2px;
+  border-color: var(--accent);
+}
+/*  los sliders (volumen, EQ, progreso) llevan anillo de foco nítido. */
+input[type="range"]:focus-visible,
+.progress-track:focus-visible,
+.lyrics-progress-track:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
   border-radius: var(--radius-pill);
 }
 
@@ -2704,10 +2915,13 @@ button,
   z-index: 90;
 }
 .sheet-tab .sheet-panel {
+  width: 100%;
+  max-width: 100%;
   max-height: 100%;
   height: 100%;
   min-height: 0;
   border-radius: 0;
+  padding-top: var(--safe-top);
   padding-bottom: 0;
 }
 
@@ -2718,11 +2932,27 @@ button,
   z-index: 130;
 }
 .sheet.sheet-full:not(.sheet-tab) .sheet-panel {
+  width: 100%;
+  max-width: 100%;
   max-height: 100%;
   height: 100%;
   min-height: 0;
   border-radius: 0;
+  padding-top: var(--safe-top);
   padding-bottom: max(20px, var(--safe-bottom));
+}
+.sheet:not(.sheet-confirm) .sheet-panel {
+  max-width: 100%;
+}
+/* Cuando el dispositivo se muestra enmarcado con margen exterior (≥500px),
+ * el marco ya queda separado de cualquier notch/barra de estado; en
+ * escritorio a pantalla completa (aurora-wide) se repone --safe-top abajo. */
+@media (min-width: 500px) {
+  .sheet-full .sheet-panel,
+  .sheet-tab .sheet-panel,
+  .sheet.sheet-full:not(.sheet-tab) .sheet-panel {
+    padding-top: 0;
+  }
 }
 
 /* Overlays y menús (Opciones, Sleep, EQ, cola, pista, temas, etc.): cubren el chrome
@@ -2748,9 +2978,9 @@ button,
   display: flex;
   flex-direction: column;
 }
-.app-chrome .mini-player,
-.app-chrome .bottom-nav { pointer-events: auto; }
+.app-chrome .mini-player { pointer-events: auto; }
 .app-chrome .bottom-nav {
+  pointer-events: auto;
   position: relative;
   left: auto;
   right: auto;
@@ -2845,10 +3075,6 @@ button,
 .mini-btn .ico { width: 16px; height: 16px; }
 .mini-btn:active { background: var(--surface); transform: scale(0.92); }
 
-.bottom-nav {
-  z-index: 115;
-}
-
 /* ---------- Inicio ---------- */
 .view-home {
   overflow: hidden;
@@ -2900,6 +3126,7 @@ button,
   padding: 12px;
   margin-bottom: 18px;
   border-radius: 18px;
+  background: rgba(var(--accent-rgb), 0.16);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), color-mix(in srgb, var(--accent-2) 10%, transparent));
   border: 1px solid var(--border);
 }
@@ -3011,9 +3238,16 @@ button,
   border-radius: 14px;
   overflow: hidden;
   background: var(--surface);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   margin-bottom: 8px;
   box-shadow: 0 10px 22px rgba(0,0,0,0.28);
 }
+.home-card-cover[data-pl] {
+  background-color: var(--accent-fill);
+}
+.home-card-cover .pl-cover-letter { font-size: 3.1rem; }
 .home-card-cover canvas { width: 100%; height: 100%; display: block; }
 /* Marca de «esta es la pista cargada» sobre la portada: ecualizador de
  * tres barras en la esquina; solo se mueve si está sonando. */
@@ -3150,8 +3384,15 @@ button,
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
   padding: 10px 8px;
+  border: 0;
   border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 .artist-row:active { background: var(--surface); }
 .row-chevron { color: var(--text-4); font-size: var(--fs-caption); }
@@ -3454,6 +3695,9 @@ button,
 
 .cover-art.liked-pulse {
   box-shadow:
+    0 0 0 3px var(--accent-2),
+    0 28px 56px rgba(0,0,0,0.5);
+  box-shadow:
     0 0 0 3px color-mix(in srgb, var(--accent-2) 85%, white),
     0 28px 56px rgba(0,0,0,0.5);
 }
@@ -3630,6 +3874,9 @@ button,
   border-radius: 22px;
   overflow: hidden;
   box-shadow:
+    0 20px 44px rgba(var(--accent-rgb), 0.36),
+    0 0 0 1px rgba(255,255,255,0.1);
+  box-shadow:
     0 20px 44px color-mix(in srgb, var(--accent) 38%, transparent),
     0 0 0 1px rgba(255,255,255,0.1);
 }
@@ -3747,7 +3994,7 @@ button,
   flex-shrink: 0;
 }
 
-.pl-card, .pl-row, .home-card { cursor: pointer; }
+.pl-card, .home-card { cursor: pointer; }
 
 @media (prefers-reduced-motion: reduce) {
   .hw-orb { animation: none !important; }
@@ -3812,9 +4059,17 @@ button,
   margin: 8px 0 16px;
 }
 
+.settings-danger-zone {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
 :root[data-theme="light"] {
+  color-scheme: light;
   --text-3: rgba(26, 22, 18, 0.64);
-  --text-4: rgba(26, 22, 18, 0.48);
+  --text-4: rgba(26, 22, 18, 0.50);
+  --danger: #A62626;
 }
 :root[data-theme="light"] .bottom-nav,
 :root[data-theme="light"] .mini-player {
@@ -3842,8 +4097,22 @@ button,
 :root[data-theme="light"] .primary-btn:not(.ghost) { color: var(--accent-on-fill); }
 :root[data-theme="light"] .icon-add { color: var(--text-1); }
 :root[data-theme="light"] .device-screen { background: var(--bg-0); }
+@media (min-width: 500px) {
+  :root[data-theme="light"] .device-screen,
+  :root[data-theme="light"].aurora-tablet .device-screen {
+    border-color: #D8D0C2;
+    box-shadow:
+      0 26px 64px rgba(26, 22, 18, 0.16),
+      0 0 0 1px rgba(255, 255, 255, 0.65) inset;
+  }
+}
+:root[data-theme="light"] .cover-buffering {
+  background: rgba(26, 22, 18, 0.68);
+  color: #fff;
+}
 
 :root[data-theme="amoled"] {
+  color-scheme: dark;
   --bg-0: #000000;
   --bg-1: #000000;
   --bg-2: #0a0a0a;
@@ -3853,8 +4122,10 @@ button,
 :root[data-theme="amoled"] .mini-player {
   background: rgba(0, 0, 0, 0.94);
   border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
 }
-:root[data-theme="amoled"] .nav-btn { color: rgba(255, 255, 255, 0.42); }
+/* ≥4.5:1 AA sobre #000000 (0.58 → 6.91:1; antes 0.42 → 3.92:1). */
+:root[data-theme="amoled"] .nav-btn { color: rgba(255, 255, 255, 0.58); }
 :root[data-theme="amoled"] .nav-btn.active { color: var(--accent); }
 :root[data-theme="amoled"] .toast {
   border-color: rgba(255, 255, 255, 0.10);
@@ -3865,7 +4136,6 @@ button,
   border-top-color: rgba(255, 255, 255, 0.08);
 }
 :root[data-theme="amoled"] .device-screen { background: #000; }
-:root[data-theme="amoled"] .mini-player { box-shadow: none; }
 
 /* =====================================================================
  *  Fase E — Hover de puntero, tablet 600–899, desktop ≥ 900
@@ -3874,7 +4144,7 @@ button,
 .queue-item, .track-row, .artist-row,
 .nav-btn, .eq-preset, .sleep-opt,
 .menu-row, .search-filter, .xfade-opt, .theme-opt,
-.home-hero, .home-card, .pl-row, .pl-card, .lang-row,
+.home-hero, .home-card, .pl-card, .lang-row,
 .stats-row, .search-history-row, .accent-opt, .pl-action-btn {
   cursor: pointer;
 }
@@ -3896,11 +4166,13 @@ button,
   .queue-item:hover,
   .track-row:hover,
   .artist-row:hover,
-  .stats-row:hover,
+  .stats-row-btn:hover,
   .search-history-row:hover { background: var(--surface); }
-  .playlist-list .pl-row:hover { background: var(--surface-2); }
   .playlist-rail .pl-card:hover { transform: translateY(-2px); }
-  .home-hero:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+  .home-hero:hover {
+    border-color: rgba(var(--accent-rgb), 0.45);
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  }
   .home-card:hover .home-card-cover { box-shadow: 0 14px 28px rgba(0,0,0,0.36); }
   .menu-row:hover,
   .settings-row:hover,
@@ -3908,11 +4180,13 @@ button,
   .search-filter:hover,
   .eq-preset:hover,
   .xfade-opt:hover {
+    border-color: rgba(var(--accent-rgb), 0.45);
     border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
     color: var(--text-1);
   }
   .sleep-opt:hover,
-  .theme-opt:hover { background: var(--surface-2); }
+  .theme-opt:hover,
+  .accent-opt:hover { background: var(--surface-2); }
   .primary-btn:hover { filter: brightness(1.06); }
   .text-btn:hover { opacity: 0.85; }
   .remove-from-pl:hover,
@@ -4049,6 +4323,7 @@ html.aurora-wide .nav-btn.active {
 }
 html.aurora-wide .sheet.sheet-full,
 html.aurora-wide .sheet.sheet-desk-full {
+  --sheet-max: 680px;
   position: absolute;
   left: calc(var(--np-col) + var(--side-col));
   right: 0;
@@ -4056,6 +4331,8 @@ html.aurora-wide .sheet.sheet-desk-full {
   bottom: 0;
   width: auto;
 }
+html.aurora-wide #sheetLibrary { --sheet-max: 1040px; }
+html.aurora-wide #sheetEditPlaylist { --sheet-max: 760px; }
 html.aurora-wide .sheet.sheet-full .sheet-panel,
 html.aurora-wide .sheet.sheet-desk-full .sheet-panel {
   max-width: none;
@@ -4064,46 +4341,67 @@ html.aurora-wide .sheet.sheet-desk-full .sheet-panel {
   max-height: 100%;
   border-radius: 0;
   transform: none;
+  padding-top: var(--safe-top);
   padding-bottom: 0;
 }
 html.aurora-wide .sheet.open.sheet-full .sheet-panel,
 html.aurora-wide .sheet.open.sheet-desk-full .sheet-panel {
   transform: none;
 }
-/* [8]: en pantallas anchas el contenido de estas hojas se limita a
- una columna de lectura centrada (680px): filas, interruptores y
- acciones quedan a una distancia razonable de su etiqueta. */
+/* Cabecera, pestañas fijas y cuerpo comparten exactamente --sheet-max,
+ * conservando el filete inferior de lado a lado del panel derecho. */
 html.aurora-wide .sheet.sheet-full .sheet-header,
-html.aurora-wide .sheet.sheet-desk-full .sheet-header,
+html.aurora-wide .sheet.sheet-desk-full .sheet-header {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: max(20px, calc((100% - var(--sheet-max)) / 2 + 16px));
+}
+html.aurora-wide #sheetLibrary .lib-tabs {
+  width: 100%;
+  padding-inline: max(20px, calc((100% - var(--sheet-max)) / 2 + 20px));
+}
 html.aurora-wide .sheet.sheet-full .sheet-body,
 html.aurora-wide .sheet.sheet-desk-full .sheet-body {
   width: 100%;
-  max-width: 680px;
+  max-width: var(--sheet-max);
   margin-inline: auto;
 }
-/* [10]: el tirador de arrastre es un gesto movil; en el panel
- acoplado de escritorio no arrastra nada y solo confunde. */
+/* El tirador de arrastre es un gesto móvil; en escritorio no arrastra. */
 html.aurora-wide .sheet-handle { display: none; }
+/* Modales compactos (Más, Cola, Sleep, Temas, Idioma, Menú de pista,
+ * Confirmación…): centrados sobre TODA la ventana con backdrop completo,
+ * de modo que al abrirlos desde el reproductor izquierdo atenúen y
+ * bloqueen ambos paneles por igual. */
 html.aurora-wide .sheet:not(.sheet-full):not(.sheet-desk-full) {
   position: absolute;
-  left: calc(var(--np-col) + var(--side-col));
-  right: 0;
-  top: 0;
-  bottom: 0;
+  inset: 0;
   align-items: center;
   justify-content: center;
 }
 html.aurora-wide .sheet:not(.sheet-full):not(.sheet-desk-full) .sheet-panel {
-  max-width: 400px;
+  max-width: 420px;
   width: calc(100% - 48px);
   border-radius: 20px;
+  border: 1px solid var(--border);
   transform: translateY(16px);
-  max-height: min(80%, 560px);
+  max-height: min(82%, 580px);
   padding-bottom: 16px;
   margin: 0 auto;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
 }
 html.aurora-wide .sheet.open:not(.sheet-full):not(.sheet-desk-full) .sheet-panel {
   transform: translateY(0);
+}
+/* En escritorio sin canciones, la bienvenida principal con el CTA
+ * «Cargar música» ya vive en el panel derecho: la columna izquierda
+ * queda en reposo sereno sin duplicar un segundo botón primario. */
+html.aurora-wide .view-player #emptyState .empty-cta,
+html.aurora-wide .view-player #emptyState .empty-hint {
+  display: none;
+}
+html.aurora-wide .view-player #emptyState {
+  opacity: 0.72;
 }
 /* Biblioteca en escritorio: el carril de listas deja de ser un scroll
    horizontal y pasa a ser una rejilla; las filas de canciones no se
@@ -4119,19 +4417,6 @@ html.aurora-wide .playlist-rail {
 html.aurora-wide .playlist-rail .pl-card {
   flex: initial;
   min-width: 0;
-}
-html.aurora-wide #sheetLibrary .sheet-body {
-  width: 100%;
-  max-width: 1040px;
-  margin: 0 auto;
-}
-/* Editor de lista: misma anchura de lectura que la biblioteca para que
- * las pastillas y las filas no queden pegadas al borde izquierdo de una
- * pantalla ultrapanorámica. */
-html.aurora-wide #sheetEditPlaylist .sheet-body {
-  width: 100%;
-  max-width: 760px;
-  margin: 0 auto;
 }
 html.aurora-wide .toast {
   left: calc(var(--np-col) + var(--side-col) + (100% - var(--np-col) - var(--side-col)) / 2);
@@ -4184,11 +4469,6 @@ html.aurora-wide .toast {
   .ctrl-btn.ctrl-play:active { transform: none; }
 }
 
-.progress-track:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
 .controls-secondary .sec-btn {
   min-width: 44px;
   min-height: 44px;
@@ -4227,7 +4507,7 @@ html.aurora-wide .toast {
   border-radius: 12px;
   background: var(--surface);
   color: var(--text-2);
-  font-size: 0.5625rem;
+  font-size: var(--fs-2xs);
   font-weight: 800;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -4259,31 +4539,19 @@ html.aurora-wide .toast {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-.mini-player > .mini-btn,
+.mini-player > .mini-btn { position: relative; z-index: 2; }
 .mini-player > .mini-cover,
-.mini-player > .mini-text { position: relative; z-index: 2; }
-.mini-player > .mini-cover,
-.mini-player > .mini-text { pointer-events: none; }
+.mini-player > .mini-text { position: relative; z-index: 2; pointer-events: none; }
 
 /* =====================================================================
  *  Pulido de interfaz (ronda de diseño 1–12)
  * ===================================================================== */
 
-/* Estados vacíos coherentes: el mismo bloque en Biblioteca, Favoritos,
- * búsqueda, cola y edición de listas. La variante compacta es para listas
- * dentro de sheets; la normal mantiene el aire de la bienvenida de Inicio. */
+/* Estados vacíos coherentes en flujo dentro de listas y carriles. */
 .track-list > .empty-state,
 .queue-list > .empty-state,
-.playlist-list > .empty-state { list-style: none; }
-/* Los estados vacíos dentro de listas van EN FLUJO, nunca como capa:
- * ocupan su sitio en la lista, no tapan filas ni interceptan toques de
- * los botones vecinos (regresión de las capturas: «Sin listas todavía»
- * sobre las canciones y «Nueva» sin responder). Solo #emptyState, el
- * del reproductor, es absoluto (ver su bloque). */
-.track-list > .empty-state,
-.queue-list > .empty-state,
-.playlist-list > .empty-state,
 .playlist-rail > .empty-state {
+  list-style: none;
   position: relative;
   inset: auto;
   z-index: auto;
@@ -4328,13 +4596,8 @@ html.aurora-wide .toast {
 .menu-row.is-fav .ico { color: var(--accent); }
 
 /* Objetivos táctiles mínimos también en controles secundarios. */
-.drag-handle { min-width: 40px; min-height: 40px; }
 .menu-row { min-height: 44px; }
 .sheet-header .text-btn { min-height: 40px; }
-
-/* En la cabecera de la biblioteca los botones ya no se aprietan: la
- * sección de canciones tiene su propia fila de acciones. */
-#sheetLibrary .sheet-header .text-btn { min-height: 40px; }
 
 /* Acciones visibles al enfocar con teclado (además del hover). */
 .text-btn:focus-visible,
@@ -4399,43 +4662,17 @@ html.aurora-wide .toast {
   letter-spacing: 0.02em;
 }
 .row-action {
-  width: 36px;
-  height: 36px;
-  flex: 0 0 36px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
 }
 .row-action .ico { width: 17px; height: 17px; }
 /* Asa de arrastre: objetivo táctil real (34×40 px) para poder
  * agarrarla con el dedo sin precisión; el icono sigue tenue para no
  * robar protagonismo al texto. touch-action:none evita que el
  * navegador interprete el gesto como scroll de la hoja. */
-.drag-handle {
-  width: 40px;
-  min-width: 40px;
-  height: 44px;
-  min-height: 44px;
-  margin-left: -5px;
-  border-radius: 8px;
-  opacity: 0.55;
-  touch-action: none;
-}
-.drag-handle .ico { width: 13px; height: 13px; }
-.queue-item .row-action.queue-remove,
-#editPlaylistTracks .row-action {
-  width: 36px;
-  height: 36px;
-  flex-basis: 36px;
-}
-#editPlaylistTracks .row-action .ico { width: 16px; height: 16px; }
 .track-row.current .row-duration,
 .queue-item.current .row-duration { color: var(--text-2); }
-
-/* «Vaciar» de la cola: pastilla discreta alineada a la derecha, no la
- * barra a todo ancho que encabezaba la lista como un botón primario. */
-#sheetQueue #btnClearQueue {
-  display: flex;
-  width: fit-content;
-  margin: 0 0 12px auto;
-}
 
 /* Pantallas muy estrechas: portada algo menor antes que recortar el
  * título hasta dejarlo ilegible. */
@@ -4446,9 +4683,9 @@ html.aurora-wide .toast {
   .row-action,
   .queue-item .row-action.queue-remove,
   #editPlaylistTracks .row-action {
-    width: 34px;
-    height: 34px;
-    flex-basis: 34px;
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
   }
 }
 
@@ -4612,7 +4849,10 @@ html.aurora-wide .toast {
   bottom: auto;
   z-index: 6;
   flex-shrink: 0;
+  display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 4px;
   padding: 8px 18px calc(var(--safe-bottom) + 10px);
   background: var(--blur-bg);
@@ -4635,28 +4875,68 @@ html.aurora-wide .toast {
 }
 .lyrics-time:last-child { text-align: right; }
 .lyrics-progress-track {
+  position: relative;
   flex: 1;
-  height: 3px;
-  border-radius: 999px;
-  background: var(--surface-hi);
-  overflow: hidden;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  overflow: visible;
+  cursor: pointer;
+  touch-action: none;
 }
+.lyrics-progress-track::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 4px;
+  transform: translateY(-50%);
+  border-radius: var(--radius-pill);
+  background: var(--surface-hi);
+  transition: height var(--dur) var(--ease-out);
+}
+.lyrics-progress-track:focus-visible::before,
+.lyrics-progress-track.dragging::before { height: 6px; }
 .lyrics-progress-fill {
-  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 4px;
   width: 0%;
-  border-radius: inherit;
-  background: var(--accent);
+  transform: translateY(-50%);
+  border-radius: var(--radius-pill);
+  background: linear-gradient(90deg, var(--accent-fill), var(--accent-fill-2));
   transition: width .25s linear;
+  pointer-events: none;
+}
+.lyrics-progress-thumb {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--accent-on-fill);
+  transform: translateY(-50%) scale(0.75);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  transition: transform var(--dur) var(--ease-out);
+  pointer-events: none;
+}
+.lyrics-progress-track.dragging .lyrics-progress-thumb,
+.lyrics-progress-track:focus-visible .lyrics-progress-thumb {
+  transform: translateY(-50%) scale(1.15);
+}
+@media (hover: hover) and (pointer: fine) {
+  .lyrics-progress-track:hover::before { height: 6px; }
+  .lyrics-progress-track:hover .lyrics-progress-thumb { transform: translateY(-50%) scale(1.15); }
 }
 .lyrics-control-row {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 34px;
-}
-.lyrics-controls .ctrl-play {
-  background: linear-gradient(135deg, var(--accent-fill), var(--accent-fill-2));
-  color: var(--accent-on-fill);
 }
 /* El indicador de bucle se apoya sobre la barra, no sobre la letra. */
 .lyrics-loop-indicator { bottom: calc(var(--safe-bottom) + 132px); }
@@ -4678,68 +4958,12 @@ html.aurora-wide .toast {
  *  iconos sin nombre.
  * ===================================================================== */
 
-/* «+» sobrio: superficie, no el disco de acento (ese se queda en
- * Inicio, donde cargar música es la acción principal). */
-#btnBack { background: var(--surface); }
-#btnBack:active { background: var(--surface-2); }
-
-/* --- Progreso: la línea visible sigue fina, pero el área de toque
- * mide 22 px y el tirador siempre se insinúa (crece al arrastrar). */
-.progress-section { padding-top: 4px; }
-.progress-track {
-  height: 22px;
-  background: transparent;
-}
-.progress-track::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 4px;
-  transform: translateY(-50%);
-  background: var(--surface-2);
-  border-radius: var(--radius-pill);
-}
-.progress-track:hover,
-.progress-track:focus-visible,
-.progress-track.dragging { height: 22px; }
-.progress-track:hover::before,
-.progress-track:focus-visible::before,
-.progress-track.dragging::before { height: 6px; }
-.progress-fill {
-  top: 50%;
-  bottom: auto;
-  height: 4px;
-  transform: translateY(-50%);
-  /* Acento uniforme: el degradado con los colores de la portada
-   * cambiaba a rosa a mitad de barra sin significar nada. */
-  background: linear-gradient(90deg, var(--accent-fill), var(--accent-fill-2));
-}
-.progress-buffer {
-  top: 50%;
-  bottom: auto;
-  height: 4px;
-  transform: translateY(-50%);
-}
 .progress-ab-range {
   top: 50%;
   bottom: auto;
   height: 6px;
   transform: translateY(-50%);
 }
-.progress-thumb {
-  width: 13px;
-  height: 13px;
-  right: -7px;
-  background: var(--accent);
-  border: 2px solid #fff;
-  transform: translateY(-50%) scale(0.75);
-}
-.progress-track.dragging .progress-thumb,
-.progress-track:hover .progress-thumb,
-.progress-track:focus-visible .progress-thumb { transform: translateY(-50%) scale(1.15); }
-.time-row { margin-top: 3px; }
 
 /* --- Transporte: grupo centrado, no cinco botones a los extremos.
  * Aleatorio/repetir a 44 px en --text-2 (ya no parecen bloqueados)
@@ -4864,19 +5088,6 @@ html.aurora-wide .toast {
     color: var(--text-1);
   }
 }
-/* Controles de cada pista: presentes pero en voz baja. El asa sigue
- * siendo 40×44 (objetivo táctil) y el ✕ ya no se tiñe al tocarlo:
- * quitar una canción tiene su propio feedback (la fila desaparece). */
-#editPlaylistTracks .row-action,
-#editPlaylistTracks .drag-handle {
-  background: transparent;
-}
-#editPlaylistTracks .row-action .ico { width: 15px; height: 15px; }
-#editPlaylistTracks .remove-from-pl { color: var(--text-3); }
-#editPlaylistTracks .remove-from-pl:active {
-  color: var(--text-1);
-  background: var(--surface);
-}
 @media (hover: hover) and (pointer: fine) {
   #editPlaylistTracks .remove-from-pl:hover,
   #editPlaylistTracks .track-menu-btn:hover {
@@ -4903,12 +5114,13 @@ html.aurora-wide .toast {
 .lyrics-toolbar .lt-btn,
 .lyrics-toolbar .lt-group .lt-btn,
 .lyrics-toolbar .lyrics-speed .lt-btn {
-  height: 36px;
+  min-width: 38px;
+  height: 38px;
   border-radius: 999px;
 }
 .lyrics-toolbar .lt-group .lt-btn,
 .lyrics-toolbar .lyrics-speed .lt-btn {
-  min-width: 32px;
+  min-width: 36px;
   padding: 0 4px;
 }
 /* Valores entre − y +: una sola voz (0.0s y 1.0× se leen igual). */
@@ -4925,7 +5137,7 @@ html.aurora-wide .toast {
 @media (max-width: 360px) {
   .lyrics-toolbar .lt-btn,
   .lyrics-toolbar .lt-group .lt-btn,
-  .lyrics-toolbar .lyrics-speed .lt-btn { height: 34px; }
+  .lyrics-toolbar .lyrics-speed .lt-btn { min-width: 36px; height: 36px; }
 }
 
 /* =====================================================================
@@ -4964,7 +5176,7 @@ html.aurora-wide .toast {
   background: var(--surface); color: var(--text-2); font: inherit; font-size: var(--fs-sm);
   font-weight: 600; cursor: pointer; min-height: 40px;
 }
-.lib-tab.active { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; } /*  contraste */
+.lib-tab.active { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--accent-on-fill); } /* contraste */
 /*  la barra de pestañas vive fuera del cuerpo desplazable
  * (hermana de la cabecera en el panel flexible): queda fija al
  * hacer scroll, con el mismo fondo del panel y su filete
@@ -4974,7 +5186,7 @@ html.aurora-wide .toast {
   margin: 0;
   padding: 10px 20px 12px;
   border-bottom: 1px solid var(--border);
-  background: var(--bg-2);
+  background: inherit;
 }
 .lib-tools { margin: 16px 0 4px; display: flex; gap: 8px; flex-wrap: wrap; }
 #btnFindDuplicates {
@@ -4992,7 +5204,20 @@ html.aurora-wide .toast {
   list-style: none; margin: 0; padding: 0;
   display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 14px;
 }
-.catalog-card { cursor: pointer; }
+.catalog-card { min-width: 0; list-style: none; }
+.catalog-card-btn {
+  display: block; width: 100%; padding: 0; border: 0; border-radius: var(--radius-md);
+  background: transparent; color: inherit; font: inherit; text-align: left;
+  cursor: pointer; transition: transform .15s, opacity .15s;
+}
+.catalog-card-btn:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) {
+  .catalog-card-btn:hover .cat-name { color: var(--accent); }
+}
+.catalog-grid > .catalog-empty {
+  grid-column: 1 / -1;
+  list-style: none;
+}
 .catalog-card .cat-cover {
   width: 100%; aspect-ratio: 1; border-radius: var(--radius-md); overflow: hidden;
   background: var(--surface-2); display: flex; align-items: center; justify-content: center;
@@ -5000,7 +5225,7 @@ html.aurora-wide .toast {
 .catalog-card .cat-cover canvas { width: 100%; height: 100%; display: block; }
 .catalog-card .cat-name {
   margin-top: 7px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-1);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .15s;
 }
 .catalog-card .cat-sub {
   font-size: var(--fs-caption); color: var(--text-3);
@@ -5009,11 +5234,19 @@ html.aurora-wide .toast {
 .pl-sort-row {
   display: flex; align-items: center; gap: 10px; margin: 12px 0 4px;
 }
-.pl-sort-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); }
+.pl-sort-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-2); cursor: pointer; }
 .aurora-select {
   flex: 1; min-height: 40px; padding: 8px 10px; border-radius: var(--radius-sm);
   border: 1px solid var(--border); background: var(--surface); color: var(--text-1);
-  font: inherit; font-size: var(--fs-sm);
+  font: inherit; font-size: var(--fs-sm); cursor: pointer;
+}
+.aurora-select option {
+  background-color: var(--bg-2);
+  color: var(--text-1);
+}
+:root[data-theme="light"] .aurora-select option {
+  background-color: var(--bg-1);
+  color: var(--text-1);
 }
 /* Renombrar con confirmar: input + ✓/✗ en línea */
 .edit-pl-rename { display: flex; align-items: center; gap: 6px; width: 100%; }
@@ -5023,7 +5256,7 @@ html.aurora-wide .toast {
   background: var(--surface); color: var(--text-1); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-.edit-pl-rename-btn.confirm { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; } /*  contraste */
+.edit-pl-rename-btn.confirm { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--accent-on-fill); } /* contraste */
 /* Editor LRC por toques */
 /* ---------- Canciones duplicadas (sheetDuplicates) ---------- */
 .dup-view {
@@ -5229,7 +5462,7 @@ html.aurora-wide .toast {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  border: 1.8px solid var(--text-4);
+  border: 1.8px solid var(--text-3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -5375,14 +5608,14 @@ html.aurora-wide .toast {
   }
   .dup-clean-all:hover {
     background: rgba(232, 90, 90, 0.16);
-    border-color: rgba(232, 90, 90, 0.42);
     background: color-mix(in srgb, var(--danger) 16%, transparent);
+    border-color: rgba(232, 90, 90, 0.42);
     border-color: color-mix(in srgb, var(--danger) 44%, transparent);
   }
   .dup-del-others:hover {
     background: rgba(232, 90, 90, 0.10);
-    border-color: rgba(232, 90, 90, 0.42);
     background: color-mix(in srgb, var(--danger) 10%, transparent);
+    border-color: rgba(232, 90, 90, 0.42);
     border-color: color-mix(in srgb, var(--danger) 44%, transparent);
   }
 }
@@ -5392,5 +5625,61 @@ html.aurora-wide .toast {
   .dup-cover { width: 40px; height: 40px; flex-basis: 40px; }
   .dup-pick { gap: 9px; padding: 6px; }
 }
-/*  botón «Más opciones» en las filas de la cola */
+/* Cola de reproducción: acciones agrupadas y coherentes */
+.queue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.queue-actions[hidden] { display: none !important; }
+.queue-actions .primary-btn.compact {
+  width: auto;
+  flex: 1 1 auto;
+  margin: 0;
+}
+.queue-actions #btnClearQueue { flex: 0 0 auto; }
+.queue-actions .primary-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  pointer-events: none;
+}
 .queue-item .queue-menu { flex: 0 0 auto; }
+.queue-item .drag-handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  color: var(--text-1);
+}
+
+/* Tolerancia a idiomas largos (de, ru, uk, pl, id) sin desbordes */
+.nav-btn { min-width: 0; }
+.nav-btn span,
+.sec-btn .sec-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-row > span:not(.menu-value),
+.settings-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.xfade-opt,
+.sleep-opt {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sheet-header h3 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#browseHero[hidden],
+#browseSortRow[hidden],
+#btnPlayBrowse[hidden] {
+  display: none !important;
+}

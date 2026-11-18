@@ -96,24 +96,25 @@ Object.assign(App, {
       try {
         const newTracks = await window.AuroraUploader.processFiles(mediaFiles, {
           onProgress: (i, n, name) => this.updateImportOverlay(i, n, name),
-          isCancelled: () => this._importCancelled
+          isCancelled: () => this._importCancelled,
+          fingerprint: (file) => this._fileFingerprint(file)
         });
         const cancelled = this._importCancelled;
-        this.hideImportOverlay();
         if (!newTracks.length) {
+          this.hideImportOverlay();
           this.toast(cancelled ? this.t('toast_import_cancelled').replace('X', '0') : this.t('toast_load_failed'));
           return;
         }
 
-        // #10 Duplicados: nombre y tamaño acotan los candidatos, pero
-        // decide el contenido (huella). Así no se descarta un archivo
-        // ajeno que solo coincide en nombre y tamaño, y una canción
-        // renombrada se reconoce como la que ya está.
+        // #10 Duplicados: la huella ya viene calculada en paralelo durante
+        // processFiles(), así que aquí la comprobación es prácticamente
+        // instantánea y el overlay no se cierra antes de que aparezcan las pistas.
         let dupCount = 0;
         const uniqueTracks = [];
         const existingForPlaylist = [];
         const dupIdx = this._buildDupIndex(this.tracks);
-        for (const t of newTracks) {
+        for (let i = 0; i < newTracks.length; i++) {
+          const t = newTracks[i];
           const existing = await this.findDuplicateFor(t, dupIdx);
           if (existing) {
             dupCount++;
@@ -158,13 +159,15 @@ Object.assign(App, {
             this.persistPlaylist(destPlEarly);
           }
         }
-        if (dupCount > 0 && readded === 0 && uniqueTracks.length === 0) {
-          this.toast(dupCount + ' ' + this.t('toast_duplicate_found') + lrcSuffix);
-        }
         if (uniqueTracks.length === 0) {
+          this.hideImportOverlay();
+          if (dupCount > 0 && readded === 0) {
+            this.toast(dupCount + ' ' + this.t('toast_duplicate_found') + lrcSuffix);
+          }
           if (readded > 0) {
-            this.renderPlaylists();
             if (this._editingPlaylistId === destIdEarly) this.renderEditPlaylist();
+            this.renderPlaylists();
+            if (typeof this.renderHome === 'function') this.renderHome();
             let msg = readded + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destPlEarly.name;
             msg += lrcSuffix;
             this.toast(msg);
@@ -173,14 +176,16 @@ Object.assign(App, {
           // también son «de fuera» y entran en Mi Música.
           if (!targetPlaylistId && existingForPlaylist.length &&
               typeof this._ensureMiMusica === 'function') {
-            this._ensureMiMusica(existingForPlaylist.map(t => t.id));
+            const autoPl = this._ensureMiMusica(existingForPlaylist.map(t => t.id));
+            if (autoPl && this._editingPlaylistId === autoPl.id) this.renderEditPlaylist();
             this.renderPlaylists();
+            if (typeof this.renderHome === 'function') this.renderHome();
           }
           return;
         }
         const tracksToAdd = uniqueTracks;
 
-        // Añadir todas las pistas a memoria primero (rápido)
+        // 1) Añadir todas las pistas y actualizar la lista destino en memoria primero.
         const now = Date.now();
         for (const t of tracksToAdd) {
           t.addedAt = t.addedAt || now;
@@ -188,17 +193,13 @@ Object.assign(App, {
         }
         this.invalidateTrackIndex();
 
-        // Guardar en IndexedDB en segundo plano para no bloquear la UI/reproducción
-        this.persistTracksBatch(tracksToAdd).catch((e) => {
-          console.warn('[Aurora] persistencia en segundo plano:', e);
-        });
-
         /* Sin lista destino, las canciones «de fuera» entran en
          * «Mi Música» (se crea sola si es la primera vez), además de
          * vivir en Todas las canciones como siempre. Con lista destino
          * solo van a esa lista. */
+        let autoPl = null;
         if (!targetPlaylistId && typeof this._ensureMiMusica === 'function') {
-          this._ensureMiMusica([...tracksToAdd, ...existingForPlaylist].map(t => t.id));
+          autoPl = this._ensureMiMusica([...tracksToAdd, ...existingForPlaylist].map(t => t.id));
         }
 
         // Lista destino opcional (solo si se importa desde una lista).
@@ -230,14 +231,26 @@ Object.assign(App, {
             if (this.shuffle && this._originalQueue) this._originalQueue.push(t.id);
           });
         }
+
+        // 2) Pintar PRIMERO la lista abierta y cerrar el overlay en el mismo fotograma:
+        //    las canciones aparecen al instante, antes de clonar los blobs a IndexedDB.
+        this.hideImportOverlay();
+        this.hideEmptyState();
+        const touchedPlaylistId = destId || (autoPl && autoPl.id) || null;
+        if (this._editingPlaylistId && this._editingPlaylistId === touchedPlaylistId) {
+          this.renderEditPlaylist();
+        }
         this.renderPlaylists();
+        const libSheet = document.getElementById('sheetLibrary');
+        if (libSheet && libSheet.classList.contains('open') && this._libTab && this._libTab !== 'playlists'
+            && typeof this.renderLibraryCatalog === 'function') {
+          this.renderLibraryCatalog();
+        }
+        if (typeof this.updateChrome === 'function') this.updateChrome();
         this.renderQueue();
         this.renderFavorites();
         if (typeof this.renderHome === 'function') this.renderHome();
-        if (typeof this.updateChrome === 'function') this.updateChrome();
-        // Si estábamos editando la playlist destino, refrescar la vista
-        if (this._editingPlaylistId === destId) this.renderEditPlaylist();
-        this.hideEmptyState();
+
         const folderSuffix = fromDirectory ? ' ' + this.t('folder_tag') : '';
         if (this._importCancelled) {
           this.toast(this.t('toast_import_cancelled').replace('X', String(tracksToAdd.length)) + lrcSuffix);
@@ -247,14 +260,16 @@ Object.assign(App, {
             : this.t('toast_added_to_library');
           this.toast(tracksToAdd.length + ' ' + destMsg + folderSuffix + lrcSuffix);
         }
-        // Con música ya dentro, se vuelve a pedir almacenamiento
-        // persistente: algunos navegadores solo lo conceden tras
-        // interacción real con la app, no en el primer arranque.
-        try {
-          if (navigator.storage && typeof navigator.storage.persist === 'function') {
-            navigator.storage.persist().then((g) => { this._storagePersisted = !!g; }).catch(() => {});
-          }
-        } catch (e) {}
+
+        // 3) Persistir en IndexedDB tras ceder un turno al navegador para que el
+        //    repintado de la lista salga en pantalla de inmediato, y en bloques
+        //    pequeños para no congelar el hilo principal ni abortar por tamaño.
+        this._queueTracksPersistence(tracksToAdd);
+
+        // Con música ya dentro, verificar / solicitar almacenamiento persistente.
+        if (typeof this.ensurePersistentStorage === 'function') {
+          this.ensurePersistentStorage(false);
+        }
       } catch (e) {
         console.error('[Aurora] Error cargando archivos:', e);
         this._lastError = { msg: 'upload: ' + e.message, ts: Date.now() };
@@ -310,7 +325,15 @@ Object.assign(App, {
       } catch (e) {
         return Promise.resolve(null);
       }
-      return head.arrayBuffer().then((buf) => {
+      const readBuf = typeof head.arrayBuffer === 'function'
+        ? head.arrayBuffer()
+        : new Promise((resolve, reject) => {
+            const fr = new FileReader();
+            fr.onload = () => resolve(fr.result);
+            fr.onerror = () => reject(fr.error);
+            fr.readAsArrayBuffer(head);
+          });
+      return readBuf.then((buf) => {
         const bytes = new Uint8Array(buf);
         const finish = (hash) => (file.size + ':' + hash).toLowerCase();
         const subtle = (typeof crypto !== 'undefined' && crypto && crypto.subtle) ? crypto.subtle : null;
@@ -395,26 +418,48 @@ Object.assign(App, {
     showImportOverlay(done, total, name) {
       const el = document.getElementById('importOverlay');
       if (!el) return;
+      const wasHidden = el.hidden;
+      if (wasHidden) el._prevFocus = document.activeElement;
       el.hidden = false;
       this.updateImportOverlay(done, total, name);
+      if (typeof this._ensureTabTrap === 'function') this._ensureTabTrap();
+      if (wasHidden) {
+        const cancelBtn = document.getElementById('btnCancelImport');
+        if (cancelBtn && typeof cancelBtn.focus === 'function') {
+          try { cancelBtn.focus({ preventScroll: true }); } catch (e) {}
+        }
+      }
       if (!this.tracks.length) this.showImportSkeleton();
     },
     updateImportOverlay(done, total, name) {
       const fill = document.getElementById('importBarFill');
+      const bar = document.getElementById('importProgressBar');
       const count = document.getElementById('importCount');
       const file = document.getElementById('importFileName');
       const n = Math.max(1, total || 1);
       const pct = Math.max(0, Math.min(100, Math.round((done || 0) * 100 / n)));
       if (fill) fill.style.width = pct + '%';
+      if (bar) bar.setAttribute('aria-valuenow', String(pct));
       if (count) count.textContent = (done || 0) + ' / ' + (total || 0);
       if (file) file.textContent = name || '';
     },
     hideImportOverlay() {
       const el = document.getElementById('importOverlay');
-      if (el) el.hidden = true;
+      let prev = null;
+      if (el) {
+        prev = el._prevFocus;
+        el._prevFocus = null;
+        el.hidden = true;
+      }
       const fill = document.getElementById('importBarFill');
       if (fill) fill.style.width = '0%';
+      const bar = document.getElementById('importProgressBar');
+      if (bar) bar.setAttribute('aria-valuenow', '0');
       this.hideImportSkeleton();
+      if (prev && prev.isConnected && !prev.disabled && typeof prev.focus === 'function'
+          && (!prev.closest || !prev.closest('[inert], [aria-hidden="true"], [hidden]'))) {
+        try { prev.focus({ preventScroll: true }); } catch (e) {}
+      }
     },
 
     _skeletonRowHtml() {
@@ -1002,67 +1047,146 @@ Object.assign(App, {
       return /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v);
     },
 
-    /* Persiste múltiples pistas en una sola transacción de IndexedDB.
-     * Mucho más rápido que llamar persistTrack() N veces secuencialmente. */
-    async persistTracksBatch(tracks) {
-      try {
-        await window.AuroraStorage.open();
-        const db = window.AuroraStorage.db;
-        if (!db) {
-          // Fallback: persistir una por una
-          for (const t of tracks) await this.persistTrack(t);
+    _queueTracksPersistence(tracks) {
+      if (!Array.isArray(tracks) || !tracks.length) return Promise.resolve();
+      const prev = this._bgPersistPromise || Promise.resolve();
+      const job = prev.catch(() => {}).then(async () => {
+        // Cede un turno de eventos para que el repintado de la lista salga a
+        // pantalla antes de clonar los blobs en IndexedDB.
+        await new Promise(r => setTimeout(r, 0));
+        await this.persistTracksBatch(tracks, { background: true });
+      }).catch((e) => {
+        console.warn('[Aurora] persistencia en segundo plano:', e);
+      });
+      this._bgPersistPromise = job;
+      return job;
+    },
+
+    _serializeTrackForStore(track, hasAudio) {
+      const toSave = Object.assign({}, track);
+      //  el objectURL es de sesión; si se persiste, al reabrir es una URL
+      //  muerta y el reproductor salta de canción en canción.
+      delete toSave.src;
+      delete toSave._lrcCache;
+      delete toSave._lrcCacheKey;
+      delete toSave._thumbsHiRes;
+      delete toSave._thumbing;
+      delete toSave._thumbsDirty;
+      toSave.hasAudio = !!hasAudio;
+      delete toSave.fileBlob;
+      delete toSave._file;
+      return toSave;
+    },
+
+    /* Una vez confirmado el blob en IndexedDB, suelta la referencia en RAM
+     * (salvo que la pista sea la actual, esté en caché de URLs o pendiente de
+     * deshacer) para no retener cientos de MB tras una importación grande. */
+    _releasePersistedTrackBlob(track) {
+      if (!track || !track.hasAudio) return;
+      if (this.currentTrack && this.currentTrack.id === track.id) return;
+      if (this._urlCache && this._urlCache.has(track.id)) return;
+      if (this._pendingDelete && this._pendingDelete.track && this._pendingDelete.track.id === track.id) return;
+      if (track._file) delete track._file;
+      if (track.fileBlob) delete track.fileBlob;
+    },
+
+    async _persistTrackChunk(chunk) {
+      await window.AuroraStorage.open();
+      const db = window.AuroraStorage.db;
+      if (!db) {
+        for (const t of chunk) {
+          await this.persistTrack(t);
+          this._releasePersistedTrackBlob(t);
+        }
+        return;
+      }
+      const wroteAudio = [];
+      await new Promise((resolve, reject) => {
+        let tx;
+        try {
+          tx = db.transaction(['tracks', 'blobs'], 'readwrite');
+        } catch (err) {
+          if (err && err.name === 'InvalidStateError') window.AuroraStorage.db = null;
+          reject(err);
           return;
         }
-        const tx = db.transaction(['tracks', 'blobs'], 'readwrite');
-        const store = tx.objectStore('tracks');
-        const blobStore = tx.objectStore('blobs');
-        const promises = [];
-        for (const track of tracks) {
-          const toSave = Object.assign({}, track);
-          //  el objectURL es de sesión; si se persiste, al
-          // reabrir es una URL muerta y el reproductor salta de
-          // canción en canción sin poder reproducir ninguna.
-          delete toSave.src;
-          //  campos de trabajo de sesión fuera (ver
-          // persistTrack): _lrcCache duplicaba la letra guardada.
-          delete toSave._lrcCache;
-          delete toSave._lrcCacheKey;
-          delete toSave._thumbsHiRes;
-          delete toSave._thumbing;
-          delete toSave._thumbsDirty;
-          //  El audio va a su propio almacén (ver storage.js); si ya
-          //  estaba guardado no se reescribe.
-          if (!track.hasAudio) {
-            const audio = track._file || track.fileBlob;
+        let settled = false;
+        const fail = (err) => {
+          if (settled) return;
+          settled = true;
+          reject(err || tx.error || new Error('IndexedDB tx aborted'));
+        };
+        tx.oncomplete = () => {
+          if (settled) return;
+          settled = true;
+          resolve();
+        };
+        tx.onerror = () => fail(tx.error);
+        tx.onabort = () => fail(tx.error);
+        try {
+          const store = tx.objectStore('tracks');
+          const blobStore = tx.objectStore('blobs');
+          for (const track of chunk) {
+            const audio = !track.hasAudio ? (track._file || track.fileBlob) : null;
             if (audio) {
-              blobStore.put(audio, track.id);
-              track.hasAudio = true;
-              toSave.hasAudio = true;
+              const bReq = blobStore.put(audio, track.id);
+              bReq.onerror = () => fail(bReq.error);
+              wroteAudio.push(track);
             }
+            const toSave = this._serializeTrackForStore(track, track.hasAudio || !!audio);
+            const tReq = store.put(toSave);
+            tReq.onerror = () => fail(tReq.error);
           }
-          delete toSave.fileBlob;
-          delete toSave._file;
-          promises.push(new Promise((resolve, reject) => {
-            const req = store.put(toSave);
-            req.onsuccess = resolve;
-            req.onerror = () => reject(req.error);
-          }));
+        } catch (err) {
+          try { tx.abort(); } catch (abErr) {}
+          fail(err);
         }
-        await Promise.all(promises);
-        // Esperar a que la transacción se complete
-        await new Promise((resolve, reject) => {
-          tx.oncomplete = resolve;
-          tx.onerror = () => reject(tx.error);
-          tx.onabort = () => reject(tx.error);
+      });
+      // Solo tras tx.oncomplete el blob está realmente confirmado en disco:
+      // marcar hasAudio antes hacía que un aborto omitiera los blobs en el
+      // reintento y al reabrir días después las pistas quedaran sin audio.
+      for (const track of wroteAudio) {
+        track.hasAudio = true;
+        this._releasePersistedTrackBlob(track);
+      }
+      this._storageOk = true;
+    },
+
+    /* Persiste múltiples pistas en bloques atómicos pequeños (6 por
+     * transacción): no bloquea el hilo principal al clonar cientos de
+     * audios, evita abortos por transacciones gigantes en WebView y
+     * garantiza que cada bloque quede confirmado en disco al instante. */
+    async persistTracksBatch(tracks, opts) {
+      if (!Array.isArray(tracks) || !tracks.length) return;
+      const CHUNK = 6;
+      const background = !!(opts && opts.background);
+      for (let i = 0; i < tracks.length; i += CHUNK) {
+        if (background && i > 0) {
+          await new Promise(r => setTimeout(r, 0));
+        }
+        const slice = tracks.slice(i, i + CHUNK).filter(t => {
+          if (!t || !t.id) return false;
+          // Si el usuario borró una pista mientras se guardaba en segundo plano,
+          // no resucitarla en IndexedDB.
+          if (background && !this.getTrackById(t.id)) return false;
+          return true;
         });
-      } catch (e) {
-        console.warn('[Aurora] persistTracksBatch falló, intentando uno por uno:', e);
-        if (this._isQuotaError(e)) {
-          this.toast(this.t('toast_storage_full'));
-          this.offerFreeStorage();
-          return;
+        if (!slice.length) continue;
+        try {
+          await this._persistTrackChunk(slice);
+        } catch (e) {
+          console.warn('[Aurora] persistTracksBatch falló, intentando uno por uno:', e);
+          if (this._isQuotaError(e)) {
+            this.toast(this.t('toast_storage_full'));
+            this.offerFreeStorage();
+            return;
+          }
+          for (const t of slice) {
+            if (background && !this.getTrackById(t.id)) continue;
+            await this.persistTrack(t);
+            this._releasePersistedTrackBlob(t);
+          }
         }
-        for (const t of tracks) await this.persistTrack(t);
       }
     },
 
@@ -1408,7 +1532,8 @@ Object.assign(App, {
         // el usuario puede elegir cualquier otra en la hoja.
         groups.push({ key, keep: sorted[0], dups: sorted.slice(1) });
       });
-      return groups.sort((a, b) => String(a.keep.title || '').localeCompare(String(b.keep.title || '')));
+      const loc = (window.getLang && window.getLang()) || undefined;
+      return groups.sort((a, b) => String(a.keep.title || '').localeCompare(String(b.keep.title || ''), loc, { sensitivity: 'base' }));
     },
 
     renderDuplicates(opts) {
