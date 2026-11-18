@@ -96,24 +96,25 @@ Object.assign(App, {
       try {
         const newTracks = await window.AuroraUploader.processFiles(mediaFiles, {
           onProgress: (i, n, name) => this.updateImportOverlay(i, n, name),
-          isCancelled: () => this._importCancelled
+          isCancelled: () => this._importCancelled,
+          fingerprint: (file) => this._fileFingerprint(file)
         });
         const cancelled = this._importCancelled;
-        this.hideImportOverlay();
         if (!newTracks.length) {
+          this.hideImportOverlay();
           this.toast(cancelled ? this.t('toast_import_cancelled').replace('X', '0') : this.t('toast_load_failed'));
           return;
         }
 
-        // #10 Duplicados: nombre y tamaño acotan los candidatos, pero
-        // decide el contenido (huella). Así no se descarta un archivo
-        // ajeno que solo coincide en nombre y tamaño, y una canción
-        // renombrada se reconoce como la que ya está.
+        // #10 Duplicados: la huella ya viene calculada en paralelo durante
+        // processFiles(), así que aquí la comprobación es prácticamente
+        // instantánea y el overlay no se cierra antes de que aparezcan las pistas.
         let dupCount = 0;
         const uniqueTracks = [];
         const existingForPlaylist = [];
         const dupIdx = this._buildDupIndex(this.tracks);
-        for (const t of newTracks) {
+        for (let i = 0; i < newTracks.length; i++) {
+          const t = newTracks[i];
           const existing = await this.findDuplicateFor(t, dupIdx);
           if (existing) {
             dupCount++;
@@ -158,13 +159,15 @@ Object.assign(App, {
             this.persistPlaylist(destPlEarly);
           }
         }
-        if (dupCount > 0 && readded === 0 && uniqueTracks.length === 0) {
-          this.toast(dupCount + ' ' + this.t('toast_duplicate_found') + lrcSuffix);
-        }
         if (uniqueTracks.length === 0) {
+          this.hideImportOverlay();
+          if (dupCount > 0 && readded === 0) {
+            this.toast(dupCount + ' ' + this.t('toast_duplicate_found') + lrcSuffix);
+          }
           if (readded > 0) {
-            this.renderPlaylists();
             if (this._editingPlaylistId === destIdEarly) this.renderEditPlaylist();
+            this.renderPlaylists();
+            if (typeof this.renderHome === 'function') this.renderHome();
             let msg = readded + ' ' + this.t('toast_added_to_playlist_plural') + ' ' + destPlEarly.name;
             msg += lrcSuffix;
             this.toast(msg);
@@ -173,14 +176,16 @@ Object.assign(App, {
           // también son «de fuera» y entran en Mi Música.
           if (!targetPlaylistId && existingForPlaylist.length &&
               typeof this._ensureMiMusica === 'function') {
-            this._ensureMiMusica(existingForPlaylist.map(t => t.id));
+            const autoPl = this._ensureMiMusica(existingForPlaylist.map(t => t.id));
+            if (autoPl && this._editingPlaylistId === autoPl.id) this.renderEditPlaylist();
             this.renderPlaylists();
+            if (typeof this.renderHome === 'function') this.renderHome();
           }
           return;
         }
         const tracksToAdd = uniqueTracks;
 
-        // Añadir todas las pistas a memoria primero (rápido)
+        // 1) Añadir todas las pistas y actualizar la lista destino en memoria primero.
         const now = Date.now();
         for (const t of tracksToAdd) {
           t.addedAt = t.addedAt || now;
@@ -188,17 +193,13 @@ Object.assign(App, {
         }
         this.invalidateTrackIndex();
 
-        // Guardar en IndexedDB en segundo plano para no bloquear la UI/reproducción
-        this.persistTracksBatch(tracksToAdd).catch((e) => {
-          console.warn('[Aurora] persistencia en segundo plano:', e);
-        });
-
         /* Sin lista destino, las canciones «de fuera» entran en
          * «Mi Música» (se crea sola si es la primera vez), además de
          * vivir en Todas las canciones como siempre. Con lista destino
          * solo van a esa lista. */
+        let autoPl = null;
         if (!targetPlaylistId && typeof this._ensureMiMusica === 'function') {
-          this._ensureMiMusica([...tracksToAdd, ...existingForPlaylist].map(t => t.id));
+          autoPl = this._ensureMiMusica([...tracksToAdd, ...existingForPlaylist].map(t => t.id));
         }
 
         // Lista destino opcional (solo si se importa desde una lista).
@@ -230,14 +231,26 @@ Object.assign(App, {
             if (this.shuffle && this._originalQueue) this._originalQueue.push(t.id);
           });
         }
+
+        // 2) Pintar PRIMERO la lista abierta y cerrar el overlay en el mismo fotograma:
+        //    las canciones aparecen al instante, antes de clonar los blobs a IndexedDB.
+        this.hideImportOverlay();
+        this.hideEmptyState();
+        const touchedPlaylistId = destId || (autoPl && autoPl.id) || null;
+        if (this._editingPlaylistId && this._editingPlaylistId === touchedPlaylistId) {
+          this.renderEditPlaylist();
+        }
         this.renderPlaylists();
+        const libSheet = document.getElementById('sheetLibrary');
+        if (libSheet && libSheet.classList.contains('open') && this._libTab && this._libTab !== 'playlists'
+            && typeof this.renderLibraryCatalog === 'function') {
+          this.renderLibraryCatalog();
+        }
+        if (typeof this.updateChrome === 'function') this.updateChrome();
         this.renderQueue();
         this.renderFavorites();
         if (typeof this.renderHome === 'function') this.renderHome();
-        if (typeof this.updateChrome === 'function') this.updateChrome();
-        // Si estábamos editando la playlist destino, refrescar la vista
-        if (this._editingPlaylistId === destId) this.renderEditPlaylist();
-        this.hideEmptyState();
+
         const folderSuffix = fromDirectory ? ' ' + this.t('folder_tag') : '';
         if (this._importCancelled) {
           this.toast(this.t('toast_import_cancelled').replace('X', String(tracksToAdd.length)) + lrcSuffix);
@@ -247,17 +260,16 @@ Object.assign(App, {
             : this.t('toast_added_to_library');
           this.toast(tracksToAdd.length + ' ' + destMsg + folderSuffix + lrcSuffix);
         }
-        // Con música ya dentro, se vuelve a pedir almacenamiento
-        // persistente: algunos navegadores solo lo conceden tras
-        // interacción real con la app, no en el primer arranque.
-        try {
-          if (navigator.storage && typeof navigator.storage.persist === 'function') {
-            navigator.storage.persist().then((g) => { this._storagePersisted = !!g; }).catch(() => {});
-          }
-        } catch (e) {}
-        // También al importar parcialmente (cancelado): el marcador debe
-        // reflejar lo que realmente quedó guardado.
-        this.syncLibCountMarker();
+
+        // 3) Persistir en IndexedDB tras ceder un turno al navegador para que el
+        //    repintado de la lista salga en pantalla de inmediato, y en bloques
+        //    pequeños para no congelar el hilo principal ni abortar por tamaño.
+        this._queueTracksPersistence(tracksToAdd);
+
+        // Con música ya dentro, verificar / solicitar almacenamiento persistente.
+        if (typeof this.ensurePersistentStorage === 'function') {
+          this.ensurePersistentStorage(false);
+        }
       } catch (e) {
         console.error('[Aurora] Error cargando archivos:', e);
         this._lastError = { msg: 'upload: ' + e.message, ts: Date.now() };
@@ -313,7 +325,15 @@ Object.assign(App, {
       } catch (e) {
         return Promise.resolve(null);
       }
-      return head.arrayBuffer().then((buf) => {
+      const readBuf = typeof head.arrayBuffer === 'function'
+        ? head.arrayBuffer()
+        : new Promise((resolve, reject) => {
+            const fr = new FileReader();
+            fr.onload = () => resolve(fr.result);
+            fr.onerror = () => reject(fr.error);
+            fr.readAsArrayBuffer(head);
+          });
+      return readBuf.then((buf) => {
         const bytes = new Uint8Array(buf);
         const finish = (hash) => (file.size + ':' + hash).toLowerCase();
         const subtle = (typeof crypto !== 'undefined' && crypto && crypto.subtle) ? crypto.subtle : null;
@@ -398,26 +418,48 @@ Object.assign(App, {
     showImportOverlay(done, total, name) {
       const el = document.getElementById('importOverlay');
       if (!el) return;
+      const wasHidden = el.hidden;
+      if (wasHidden) el._prevFocus = document.activeElement;
       el.hidden = false;
       this.updateImportOverlay(done, total, name);
+      if (typeof this._ensureTabTrap === 'function') this._ensureTabTrap();
+      if (wasHidden) {
+        const cancelBtn = document.getElementById('btnCancelImport');
+        if (cancelBtn && typeof cancelBtn.focus === 'function') {
+          try { cancelBtn.focus({ preventScroll: true }); } catch (e) {}
+        }
+      }
       if (!this.tracks.length) this.showImportSkeleton();
     },
     updateImportOverlay(done, total, name) {
       const fill = document.getElementById('importBarFill');
+      const bar = document.getElementById('importProgressBar');
       const count = document.getElementById('importCount');
       const file = document.getElementById('importFileName');
       const n = Math.max(1, total || 1);
       const pct = Math.max(0, Math.min(100, Math.round((done || 0) * 100 / n)));
       if (fill) fill.style.width = pct + '%';
+      if (bar) bar.setAttribute('aria-valuenow', String(pct));
       if (count) count.textContent = (done || 0) + ' / ' + (total || 0);
       if (file) file.textContent = name || '';
     },
     hideImportOverlay() {
       const el = document.getElementById('importOverlay');
-      if (el) el.hidden = true;
+      let prev = null;
+      if (el) {
+        prev = el._prevFocus;
+        el._prevFocus = null;
+        el.hidden = true;
+      }
       const fill = document.getElementById('importBarFill');
       if (fill) fill.style.width = '0%';
+      const bar = document.getElementById('importProgressBar');
+      if (bar) bar.setAttribute('aria-valuenow', '0');
       this.hideImportSkeleton();
+      if (prev && prev.isConnected && !prev.disabled && typeof prev.focus === 'function'
+          && (!prev.closest || !prev.closest('[inert], [aria-hidden="true"], [hidden]'))) {
+        try { prev.focus({ preventScroll: true }); } catch (e) {}
+      }
     },
 
     _skeletonRowHtml() {
@@ -885,7 +927,7 @@ Object.assign(App, {
  * falló: los llamantes enseñan su toast según este resultado
  * (: antes ambos éxitos devolvían true y «Compartir» decía
  * «Enviado a Delta Chat» también cuando solo se descargaba). */
-    async exportFile({ name, content, mimeType = 'application/json', caption = '' }) {
+    async exportFile({ name, content, mimeType = 'application/octet-stream', caption = '' }) {
       if (window.webxdc && typeof window.webxdc.sendToChat === 'function') {
         /* La forma que Delta Chat acepta hoy es { name, blob }. El
  * plainText histórico puede ser rechazado por clientes
@@ -1005,82 +1047,147 @@ Object.assign(App, {
       return /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v);
     },
 
-    /* Persiste múltiples pistas en una sola transacción de IndexedDB.
-     * Mucho más rápido que llamar persistTrack() N veces secuencialmente. */
-    async persistTracksBatch(tracks) {
-      try {
-        await window.AuroraStorage.open();
-        const db = window.AuroraStorage.db;
-        if (!db) {
-          // Fallback: persistir una por una
-          for (const t of tracks) await this.persistTrack(t);
-          return;
-        }
-        const tx = db.transaction(['tracks', 'blobs'], 'readwrite');
-        const store = tx.objectStore('tracks');
-        const blobStore = tx.objectStore('blobs');
-        const promises = [];
-        for (const track of tracks) {
-          const toSave = Object.assign({}, track);
-          //  el objectURL es de sesión; si se persiste, al
-          // reabrir es una URL muerta y el reproductor salta de
-          // canción en canción sin poder reproducir ninguna.
-          delete toSave.src;
-          //  campos de trabajo de sesión fuera (ver
-          // persistTrack): _lrcCache duplicaba la letra guardada.
-          delete toSave._lrcCache;
-          delete toSave._lrcCacheKey;
-          delete toSave._thumbsHiRes;
-          delete toSave._thumbing;
-          delete toSave._thumbsDirty;
-          //  El audio va a su propio almacén (ver storage.js); si ya
-          //  estaba guardado no se reescribe.
-          if (!track.hasAudio) {
-            const audio = track._file || track.fileBlob;
-            if (audio) {
-              blobStore.put(audio, track.id);
-              track.hasAudio = true;
-              toSave.hasAudio = true;
-            }
-          }
-          delete toSave.fileBlob;
-          delete toSave._file;
-          promises.push(new Promise((resolve, reject) => {
-            const req = store.put(toSave);
-            req.onsuccess = resolve;
-            req.onerror = () => reject(req.error);
-          }));
-        }
-        await Promise.all(promises);
-        // Esperar a que la transacción se complete
-        await new Promise((resolve, reject) => {
-          tx.oncomplete = resolve;
-          tx.onerror = () => reject(tx.error);
-          tx.onabort = () => reject(tx.error);
-        });
-      } catch (e) {
-        console.warn('[Aurora] persistTracksBatch falló, intentando uno por uno:', e);
-        if (this._isQuotaError(e)) {
-          this.toast(this.t('toast_storage_full'));
-          this.offerFreeStorage();
-          return;
-        }
-        for (const t of tracks) await this.persistTrack(t);
-      }
+    _queueTracksPersistence(tracks) {
+      if (!Array.isArray(tracks) || !tracks.length) return Promise.resolve();
+      const prev = this._bgPersistPromise || Promise.resolve();
+      const job = prev.catch(() => {}).then(async () => {
+        // Cede un turno de eventos para que el repintado de la lista salga a
+        // pantalla antes de clonar los blobs en IndexedDB.
+        await new Promise(r => setTimeout(r, 0));
+        await this.persistTracksBatch(tracks, { background: true });
+      }).catch((e) => {
+        console.warn('[Aurora] persistencia en segundo plano:', e);
+      });
+      this._bgPersistPromise = job;
+      return job;
     },
 
-    /* Guarda en localStorage cuántas pistas tiene la biblioteca.
-     * Sirve para detectar pérdida de datos: si al arrancar hay 0 pistas
-     * pero el marcador dice N > 0, el almacenamiento se borró fuera de
-     * la app (o se abrió otra copia) y se avisa en vez de callar. */
-    syncLibCountMarker() {
-      try {
-        if (this.tracks.length > 0) {
-          localStorage.setItem('aurora_lib_count', String(this.tracks.length));
-        } else {
-          localStorage.removeItem('aurora_lib_count');
+    _serializeTrackForStore(track, hasAudio) {
+      const toSave = Object.assign({}, track);
+      //  el objectURL es de sesión; si se persiste, al reabrir es una URL
+      //  muerta y el reproductor salta de canción en canción.
+      delete toSave.src;
+      delete toSave._lrcCache;
+      delete toSave._lrcCacheKey;
+      delete toSave._thumbsHiRes;
+      delete toSave._thumbing;
+      delete toSave._thumbsDirty;
+      toSave.hasAudio = !!hasAudio;
+      delete toSave.fileBlob;
+      delete toSave._file;
+      return toSave;
+    },
+
+    /* Una vez confirmado el blob en IndexedDB, suelta la referencia en RAM
+     * (salvo que la pista sea la actual, esté en caché de URLs o pendiente de
+     * deshacer) para no retener cientos de MB tras una importación grande. */
+    _releasePersistedTrackBlob(track) {
+      if (!track || !track.hasAudio) return;
+      if (this.currentTrack && this.currentTrack.id === track.id) return;
+      if (this._urlCache && this._urlCache.has(track.id)) return;
+      if (this._pendingDelete && this._pendingDelete.track && this._pendingDelete.track.id === track.id) return;
+      if (track._file) delete track._file;
+      if (track.fileBlob) delete track.fileBlob;
+    },
+
+    async _persistTrackChunk(chunk) {
+      await window.AuroraStorage.open();
+      const db = window.AuroraStorage.db;
+      if (!db) {
+        for (const t of chunk) {
+          await this.persistTrack(t);
+          this._releasePersistedTrackBlob(t);
         }
-      } catch (e) {}
+        return;
+      }
+      const wroteAudio = [];
+      await new Promise((resolve, reject) => {
+        let tx;
+        try {
+          tx = db.transaction(['tracks', 'blobs'], 'readwrite');
+        } catch (err) {
+          if (err && err.name === 'InvalidStateError') window.AuroraStorage.db = null;
+          reject(err);
+          return;
+        }
+        let settled = false;
+        const fail = (err) => {
+          if (settled) return;
+          settled = true;
+          reject(err || tx.error || new Error('IndexedDB tx aborted'));
+        };
+        tx.oncomplete = () => {
+          if (settled) return;
+          settled = true;
+          resolve();
+        };
+        tx.onerror = () => fail(tx.error);
+        tx.onabort = () => fail(tx.error);
+        try {
+          const store = tx.objectStore('tracks');
+          const blobStore = tx.objectStore('blobs');
+          for (const track of chunk) {
+            const audio = !track.hasAudio ? (track._file || track.fileBlob) : null;
+            if (audio) {
+              const bReq = blobStore.put(audio, track.id);
+              bReq.onerror = () => fail(bReq.error);
+              wroteAudio.push(track);
+            }
+            const toSave = this._serializeTrackForStore(track, track.hasAudio || !!audio);
+            const tReq = store.put(toSave);
+            tReq.onerror = () => fail(tReq.error);
+          }
+        } catch (err) {
+          try { tx.abort(); } catch (abErr) {}
+          fail(err);
+        }
+      });
+      // Solo tras tx.oncomplete el blob está realmente confirmado en disco:
+      // marcar hasAudio antes hacía que un aborto omitiera los blobs en el
+      // reintento y al reabrir días después las pistas quedaran sin audio.
+      for (const track of wroteAudio) {
+        track.hasAudio = true;
+        this._releasePersistedTrackBlob(track);
+      }
+      this._storageOk = true;
+    },
+
+    /* Persiste múltiples pistas en bloques atómicos pequeños (6 por
+     * transacción): no bloquea el hilo principal al clonar cientos de
+     * audios, evita abortos por transacciones gigantes en WebView y
+     * garantiza que cada bloque quede confirmado en disco al instante. */
+    async persistTracksBatch(tracks, opts) {
+      if (!Array.isArray(tracks) || !tracks.length) return;
+      const CHUNK = 6;
+      const background = !!(opts && opts.background);
+      for (let i = 0; i < tracks.length; i += CHUNK) {
+        if (background && i > 0) {
+          await new Promise(r => setTimeout(r, 0));
+        }
+        const slice = tracks.slice(i, i + CHUNK).filter(t => {
+          if (!t || !t.id) return false;
+          // Si el usuario borró una pista mientras se guardaba en segundo plano,
+          // no resucitarla en IndexedDB.
+          if (background && !this.getTrackById(t.id)) return false;
+          return true;
+        });
+        if (!slice.length) continue;
+        try {
+          await this._persistTrackChunk(slice);
+        } catch (e) {
+          console.warn('[Aurora] persistTracksBatch falló, intentando uno por uno:', e);
+          if (this._isQuotaError(e)) {
+            this.toast(this.t('toast_storage_full'));
+            this.offerFreeStorage();
+            return;
+          }
+          for (const t of slice) {
+            if (background && !this.getTrackById(t.id)) continue;
+            await this.persistTrack(t);
+            this._releasePersistedTrackBlob(t);
+          }
+        }
+      }
     },
 
     async deleteTrack(trackId, opts) {
@@ -1129,7 +1236,6 @@ Object.assign(App, {
       if (typeof this._invalidateArtwork === 'function') this._invalidateArtwork(trackId);
       this.tracks.splice(idx, 1);
       this.invalidateTrackIndex();
-      this.syncLibCountMarker();
       // Quitar de la cola
       const qIdx = this.queue.indexOf(trackId);
       if (qIdx >= 0) {
@@ -1223,7 +1329,6 @@ Object.assign(App, {
       const at = Math.max(0, Math.min(p.idx, this.tracks.length));
       this.tracks.splice(at, 0, t);
       this.invalidateTrackIndex();
-      this.syncLibCountMarker();
       p.playlistIds.forEach(plId => {
         const pl = this.playlists.find(x => x.id === plId);
         if (pl && pl.trackIds.indexOf(t.id) < 0) {
@@ -1252,6 +1357,10 @@ Object.assign(App, {
       this.renderQueue();
       this.renderFavorites();
       if (typeof this.renderHome === 'function') this.renderHome();
+      const dupSheet = document.getElementById('sheetDuplicates');
+      if (dupSheet && dupSheet.classList.contains('open') && typeof this.renderDuplicates === 'function') {
+        this.renderDuplicates();
+      }
       if (typeof this.updateChrome === 'function') this.updateChrome();
       this.toast(this.t('toast_restored'));
     },
@@ -1292,7 +1401,6 @@ Object.assign(App, {
       // 3. Vaciar estado en memoria
       this.tracks = [];
       this.invalidateTrackIndex();
-      this.syncLibCountMarker();
       this.queue = [];
       this.queueIdx = 0;
       this._originalQueue = null;
@@ -1410,8 +1518,9 @@ Object.assign(App, {
         : String(v || '').trim().toLowerCase();
       const map = new Map();
       this.tracks.forEach(t => {
-        const key = norm(t.title) + '\u0000' + norm(t.artist);
-        if (!key.trim()) return;
+        const nt = norm(t && t.title);
+        if (!nt) return;
+        const key = nt + '\u0000' + norm(t && t.artist);
         if (!map.has(key)) map.set(key, []);
         map.get(key).push(t);
       });
@@ -1419,113 +1528,256 @@ Object.assign(App, {
       map.forEach((list, key) => {
         if (list.length < 2) return;
         const sorted = list.slice().sort((a, b) => (a.addedAt || 0) - (b.addedAt || 0));
-        //  «keep» es solo el valor por defecto (la más antigua);
-        // la copia que se conserva la elige el usuario en la hoja.
+        // «keep» es el valor por defecto (la copia más antigua);
+        // el usuario puede elegir cualquier otra en la hoja.
         groups.push({ key, keep: sorted[0], dups: sorted.slice(1) });
       });
-      return groups.sort((a, b) => String(a.keep.title || '').localeCompare(String(b.keep.title || '')));
+      const loc = (window.getLang && window.getLang()) || undefined;
+      return groups.sort((a, b) => String(a.keep.title || '').localeCompare(String(b.keep.title || ''), loc, { sensitivity: 'base' }));
     },
 
-    renderDuplicates() {
+    renderDuplicates(opts) {
+      opts = opts || {};
       const cont = document.getElementById('duplicatesContent');
       if (!cont) return;
+      const scroller = cont.closest ? cont.closest('.sheet-body') : null;
+      const prevScroll = scroller ? scroller.scrollTop : 0;
       const groups = this.findDuplicateGroups();
       cont.innerHTML = '';
       if (!groups.length) {
         const div = document.createElement('div');
-        div.className = 'empty-state compact';
-        div.innerHTML = this.emptyStateHtml({ icon: 'check', title: this.t('duplicates_none') });
+        div.className = 'empty-state compact dup-empty';
+        div.innerHTML = this.emptyStateHtml({
+          icon: 'check',
+          title: this.t('duplicates_none'),
+          text: this.t('duplicates_none_sub')
+        });
         cont.appendChild(div);
         return;
       }
-      //  qué copia se conserva lo elige el usuario, no la
-      // antigüedad. La elección vive por grupo (clave título+artista)
-      // y sobrevive a los repintados de la hoja; si la elegida ya no
-      // está en el grupo, se vuelve al valor por defecto (la más
-      // antigua, g.keep). Antes la «original» era intocable y solo
-      // se podían borrar las demás: imposible quedarse con una
-      // copia mejor (p. ej. un FLAC en vez del MP3 viejo).
+
       if (!(this._dupKeepSel instanceof Map)) this._dupKeepSel = new Map();
       const sel = this._dupKeepSel;
       const refresh = () => {
         this.renderDuplicates();
         if (typeof this.renderLibrarySections === 'function') this.renderLibrarySections();
       };
-      groups.forEach(g => {
+      const trackBytes = (t) => {
+        const n = Number((t && (t.fileSize || t.size)) || 0);
+        return (isFinite(n) && n > 0) ? n : 0;
+      };
+      const fileFormat = (t) => {
+        const m = String((t && t.fileName) || '').match(/\.([a-z0-9]{2,5})$/i);
+        return m ? m[1].toUpperCase() : '';
+      };
+
+      const resolved = groups.map(g => {
         const all = [g.keep].concat(g.dups);
         const chosenId = sel.get(g.key);
         const keeper = all.find(t => t.id === chosenId) || g.keep;
         const others = all.filter(t => t.id !== keeper.id);
-        const box = document.createElement('div');
+        const albums = all.map(t => String((t && t.album) || '').trim()).filter(Boolean);
+        const firstAlb = albums[0] || '';
+        const sharedAlbum = (albums.length === all.length && albums.every(a => a.toLowerCase() === firstAlb.toLowerCase()))
+          ? firstAlb : '';
+        return { key: g.key, all, keeper, others, sharedAlbum };
+      });
+
+      const allOthers = [];
+      let totalBytes = 0;
+      resolved.forEach(g => {
+        g.others.forEach(t => {
+          allOthers.push(t);
+          totalBytes += trackBytes(t);
+        });
+      });
+      const showSpace = totalBytes > 0 && typeof this.fmtBytes === 'function';
+
+      // Cabecera de resumen: cifras claras + acción global para limpiar de una vez
+      const summary = document.createElement('div');
+      summary.className = 'dup-summary';
+      summary.innerHTML =
+        '<div class="dup-stats' + (showSpace ? ' has-space' : '') + '">' +
+          '<div class="dup-stat-box">' +
+            '<div class="dup-stat-val">' + resolved.length + '</div>' +
+            '<div class="dup-stat-lbl">' + this.esc(this.t('duplicates_stat_groups')) + '</div>' +
+          '</div>' +
+          '<div class="dup-stat-box">' +
+            '<div class="dup-stat-val">' + allOthers.length + '</div>' +
+            '<div class="dup-stat-lbl">' + this.esc(this.t('duplicates_stat_extra')) + '</div>' +
+          '</div>' +
+          (showSpace
+            ? '<div class="dup-stat-box">' +
+                '<div class="dup-stat-val dup-stat-size">' + this.esc(this.fmtBytes(totalBytes)) + '</div>' +
+                '<div class="dup-stat-lbl">' + this.esc(this.t('duplicates_stat_space')) + '</div>' +
+              '</div>'
+            : '') +
+        '</div>' +
+        '<p class="dup-hint">' + this.esc(this.t('duplicates_hint')) + '</p>';
+      if (allOthers.length > 0) {
+        const cleanBtn = document.createElement('button');
+        cleanBtn.type = 'button';
+        cleanBtn.className = 'dup-clean-all';
+        cleanBtn.id = 'btnDeleteAllDuplicates';
+        cleanBtn.innerHTML =
+          '<svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>' +
+          '<span>' + this.esc(this.t('duplicates_delete_all').replace('X', String(allOthers.length))) + '</span>';
+        cleanBtn.addEventListener('click', async () => {
+          const ok = await this.showConfirm({
+            message: this.t('duplicates_confirm').replace('X', String(allOthers.length)),
+            okLabel: this.t('confirm_delete'),
+            danger: true
+          });
+          if (!ok) return;
+          for (const t of allOthers) await this.deleteTrack(t.id, { undo: false });
+          sel.clear();
+          refresh();
+        });
+        summary.appendChild(cleanBtn);
+      }
+      cont.appendChild(summary);
+
+      // Tarjetas por canción: portada y título una sola vez; filas limpias para comparar copias
+      const listWrap = document.createElement('div');
+      listWrap.className = 'dup-groups';
+      resolved.forEach(g => {
+        const box = document.createElement('section');
         box.className = 'dup-group';
-        const title = document.createElement('p');
-        title.className = 'dup-group-title';
-        title.textContent = keeper.title + ' · ' + keeper.artist;
-        box.appendChild(title);
-        const row = (t, isKeep) => {
+        const songTitle = g.keeper.title || this.t('unknown_track');
+        const songArtist = g.keeper.artist || this.t('unknown_artist');
+        const subText = songArtist + (g.sharedAlbum ? ' · ' + g.sharedAlbum : '');
+
+        const head = document.createElement('div');
+        head.className = 'dup-head';
+        head.innerHTML =
+          '<div class="row-cover dup-cover"><canvas width="144" height="144"></canvas></div>' +
+          '<div class="dup-head-text">' +
+            '<h4 class="dup-group-title">' + this.esc(songTitle) + '</h4>' +
+            '<p class="dup-group-sub">' + this.esc(subText) + '</p>' +
+          '</div>' +
+          '<span class="dup-count-badge">' + g.all.length + '×</span>';
+        const headCv = head.querySelector('canvas');
+        if (headCv) this.drawRowCover(headCv, g.keeper);
+        box.appendChild(head);
+
+        const rowsWrap = document.createElement('div');
+        rowsWrap.className = 'dup-rows';
+        g.all.forEach(t => {
+          const isKeep = t.id === g.keeper.id;
           const div = document.createElement('div');
           div.className = 'dup-row' + (isKeep ? ' is-keep' : '');
           div.dataset.trackId = t.id;
-          // Nombre + duración + tamaño: lo que se necesita para
-          // decidir qué copia vale más (calidad ≈ tamaño).
-          div.innerHTML = '<div class="row-cover"><canvas width="144" height="144"></canvas></div>' +
-            '<div class="row-text"><div class="row-title">' + this.esc(t.title) + '</div>' +
-            '<div class="row-sub">' + this.esc(t.fileName || '') +
-            (t.duration ? ' · ' + this.fmtTime(t.duration) : '') +
-            (t.fileSize && typeof this.fmtBytes === 'function' ? ' · ' + this.fmtBytes(t.fileSize) : '') +
-            '</div></div>' +
-            (isKeep ? '<span class="dup-keep">' + this.esc(this.t('duplicates_keep')) + '</span>' : '');
+
+          const fileLabel = t.fileName || t.title || songTitle;
+          const fmt = fileFormat(t);
+          const bytes = trackBytes(t);
+          const isFav = !!(this.favorites && this.favorites.has(t.id));
+          const rating = Number(t.rating) || 0;
+          const rowAlbum = (!g.sharedAlbum && t.album) ? String(t.album).trim() : '';
+
+          const details = [];
+          if (t.duration > 0) details.push(this.esc(this.fmtTime(t.duration)));
+          if (bytes > 0 && typeof this.fmtBytes === 'function') details.push(this.esc(this.fmtBytes(bytes)));
+          if (rowAlbum) details.push(this.esc(rowAlbum));
+
+          let metaHtml = '';
+          if (isKeep) {
+            metaHtml += '<span class="dup-keep">' + this.esc(this.t('duplicates_keep')) + '</span>';
+          }
+          if (fmt) {
+            metaHtml += '<span class="dup-tag">' + this.esc(fmt) + '</span>';
+          }
+          if (details.length) {
+            metaHtml += '<span class="dup-detail">' + details.join(' · ') + '</span>';
+          }
+          if (isFav) {
+            metaHtml += '<span class="dup-flag is-fav" aria-hidden="true"><svg class="ico"><use href="#i-heart-solid"></use></svg></span>';
+          }
+          if (rating > 0) {
+            metaHtml += '<span class="dup-flag is-rate" aria-hidden="true"><svg class="ico"><use href="#i-star"></use></svg>' + rating + '</span>';
+          }
+
+          const pickBtn = document.createElement('button');
+          pickBtn.type = 'button';
+          pickBtn.className = 'dup-pick';
+          pickBtn.setAttribute('aria-pressed', isKeep ? 'true' : 'false');
+          pickBtn.setAttribute('aria-label',
+            (isKeep ? this.t('duplicates_keep') : this.t('duplicates_keep_this')) + ': ' + fileLabel);
+          if (!isKeep) pickBtn.title = this.t('duplicates_keep_this');
+          pickBtn.innerHTML =
+            '<span class="dup-radio" aria-hidden="true">' +
+              (isKeep ? '<svg class="ico" aria-hidden="true"><use href="#i-check"></use></svg>' : '') +
+            '</span>' +
+            '<span class="dup-info">' +
+              '<span class="dup-file">' + this.esc(fileLabel) + '</span>' +
+              (metaHtml ? '<span class="dup-meta">' + metaHtml + '</span>' : '') +
+            '</span>';
+          pickBtn.addEventListener('click', () => {
+            if (isKeep) return;
+            sel.set(g.key, t.id);
+            this.renderDuplicates({ focusTrackId: t.id });
+          });
+          div.appendChild(pickBtn);
+
           if (!isKeep) {
-            // «Conservar esta»: la insignia (y la protección) se
-            // mueve a esta copia; la anterior pasa a ser borrable.
-            const keepBtn = document.createElement('button');
-            keepBtn.type = 'button';
-            keepBtn.className = 'dup-keep-btn';
-            keepBtn.textContent = this.t('duplicates_keep_this');
-            keepBtn.addEventListener('click', () => {
-              sel.set(g.key, t.id);
-              this.renderDuplicates();
-            });
-            div.appendChild(keepBtn);
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'row-action';
-            btn.setAttribute('aria-label', this.t('confirm_delete'));
-            btn.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>';
-            btn.addEventListener('click', async () => {
+            const delOne = document.createElement('button');
+            delOne.type = 'button';
+            delOne.className = 'dup-del-btn';
+            delOne.title = this.t('confirm_delete');
+            delOne.setAttribute('aria-label', this.t('confirm_delete') + ': ' + fileLabel);
+            delOne.innerHTML = '<svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>';
+            delOne.addEventListener('click', async () => {
               await this.deleteTrack(t.id);
               refresh();
             });
-            div.appendChild(btn);
+            div.appendChild(delOne);
           }
-          const cv = div.querySelector('canvas');
-          if (cv) this.drawRowCover(cv, t);
-          return div;
-        };
-        box.appendChild(row(keeper, true));
-        others.forEach(t => box.appendChild(row(t, false)));
-        // Borrado del grupo de una vez: se conserva la elegida y
-        // caen las demás. Con confirmación y sin «Deshacer»
-        // individual (es un lote deliberado, como «borrar todo»).
-        if (others.length) {
+
+          rowsWrap.appendChild(div);
+        });
+        box.appendChild(rowsWrap);
+
+        // Cuando una misma canción tiene 3 o más copias, pie de tarjeta
+        // para borrar las sobrantes de ese grupo de una sola vez.
+        if (g.others.length > 1) {
+          const foot = document.createElement('div');
+          foot.className = 'dup-foot';
           const delBtn = document.createElement('button');
           delBtn.type = 'button';
           delBtn.className = 'dup-del-others';
-          delBtn.textContent = this.t('duplicates_delete_others') + ' (' + others.length + ')';
+          delBtn.innerHTML =
+            '<svg class="ico" aria-hidden="true"><use href="#i-trash-can"></use></svg>' +
+            '<span>' + this.esc(this.t('duplicates_delete_others') + ' (' + g.others.length + ')') + '</span>';
           delBtn.addEventListener('click', async () => {
             const ok = await this.showConfirm({
-              message: this.t('duplicates_confirm').replace('X', String(others.length)),
+              message: this.t('duplicates_confirm').replace('X', String(g.others.length)),
               okLabel: this.t('confirm_delete'),
               danger: true
             });
             if (!ok) return;
-            for (const t of others) await this.deleteTrack(t.id, { undo: false });
+            for (const t of g.others) await this.deleteTrack(t.id, { undo: false });
+            sel.delete(g.key);
             refresh();
           });
-          box.appendChild(delBtn);
+          foot.appendChild(delBtn);
+          box.appendChild(foot);
         }
-        cont.appendChild(box);
+
+        listWrap.appendChild(box);
       });
+      cont.appendChild(listWrap);
+
+      if (scroller && prevScroll > 0) scroller.scrollTop = prevScroll;
+      if (opts.focusTrackId) {
+        const rows = cont.querySelectorAll('.dup-row');
+        for (let i = 0; i < rows.length; i++) {
+          if (rows[i].dataset.trackId === opts.focusTrackId) {
+            const btn = rows[i].querySelector('.dup-pick');
+            if (btn) { try { btn.focus({ preventScroll: true }); } catch (e) {} }
+            break;
+          }
+        }
+      }
     },
 
     openDuplicates() {

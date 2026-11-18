@@ -6,9 +6,11 @@
  *  dos caminos pasan por el mismo pintor y que la semilla es estable.
  * ===================================================================== */
 
+import fs from 'node:fs';
+import path from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bootApp, makeTrack, setLibrary } from './helpers/app.mjs';
+import { ROOT, bootApp, makeTrack, setLibrary } from './helpers/app.mjs';
 
 /** Contexto 2D mínimo que solo apunta qué se ha llamado. */
 function contextoEspia() {
@@ -135,5 +137,159 @@ test('un color guardado que no es hex no llega al estilo', async () => {
     });
     assert.equal(/url\(|http|;background/i.test(style), false, 'nada raro dentro del fondo');
     assert.match(style, /#ABCDEF/);
+  } finally { teardown(); }
+});
+
+test('CSS conserva las reglas base de .pl-cover, .pl-cover-grad, .pl-cover-letter y .pl-play-fab', () => {
+  const css = fs.readFileSync(path.join(ROOT, 'css/styles.css'), 'utf8');
+  assert.match(css, /\.pl-cover\s*\{[^}]*position:\s*relative[^}]*overflow:\s*hidden/s,
+    '.pl-cover posiciona y recorta sus capas');
+  assert.match(css, /\.pl-cover\s+\.pl-cover-grad\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0/s,
+    '.pl-cover-grad cubre toda la tarjeta y no colapsa a 0px');
+  assert.match(css, /\.pl-cover-letter\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0/s,
+    '.pl-cover-letter queda centrada sobre el degradado');
+  assert.match(css, /\.pl-play-fab\s*\{[^}]*position:\s*absolute[^}]*border-radius:\s*50%/s,
+    '.pl-play-fab conserva su geometría flotante');
+});
+
+test('el collage tolera portadas fallidas, mantiene degradado de respaldo y vuelve al degradado al vaciar', async () => {
+  const { App, window, errors, teardown } = await bootApp({ lang: 'es' });
+  try {
+    // Simulamos carga de imágenes: la segunda falla (3 válidas de 4) para
+    // comprobar que drawCollage usa images.length y no selected.length.
+    const ART_OK = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/';
+    const ART_BAD = 'data:image/jpeg;base64,ROTA000000000000000000000000';
+    const RealImage = window.Image;
+    window.Image = class MockImage {
+      constructor() {
+        this.naturalWidth = 0;
+        this.naturalHeight = 0;
+        this.width = 0;
+        this.height = 0;
+        this.onload = null;
+        this.onerror = null;
+      }
+      set src(v) {
+        this._src = v;
+        setTimeout(() => {
+          if (v === ART_BAD) {
+            if (this.onerror) this.onerror(new Error('bad image'));
+          } else {
+            this.naturalWidth = 128;
+            this.naturalHeight = 128;
+            this.width = 128;
+            this.height = 128;
+            if (this.onload) this.onload();
+          }
+        }, 0);
+      }
+      get src() { return this._src || ''; }
+    };
+    const REAL_1PX_PNG =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+X2ioAAAAASUVORK5CYII=';
+    window.HTMLCanvasElement.prototype.toDataURL = () => REAL_1PX_PNG;
+
+    const tracks = [
+      makeTrack('c1', { cover: ART_OK, coverThumbLg: ART_OK, coverIsImage: true }),
+      makeTrack('c2', { cover: ART_BAD, coverThumbLg: ART_BAD, coverIsImage: true }),
+      makeTrack('c3', { cover: ART_OK, coverThumbLg: ART_OK, coverIsImage: true }),
+      makeTrack('c4', { cover: ART_OK, coverThumbLg: ART_OK, coverIsImage: true }),
+    ];
+    setLibrary(App, tracks);
+    App.playlists = [{
+      id: 'pl-mix',
+      name: 'Viaje',
+      trackIds: ['c1', 'c2', 'c3', 'c4'],
+      cover: { from: '#7C3AED', to: '#EC4899', angle: 135 },
+    }];
+
+    App.renderPlaylists();
+    App.renderHome();
+    App.openEditPlaylist('pl-mix');
+
+    await new Promise((r) => setTimeout(r, 40));
+
+    const pl = App.playlists[0];
+    assert.equal(pl.coverArt, REAL_1PX_PNG,
+      'el collage de 3 imágenes válidas se generó sin lanzar excepción');
+
+    // Re-renderizar Listas e Inicio conserva el collage Y el degradado de respaldo debajo.
+    App.renderPlaylists();
+    App.renderHome();
+
+    const gradEl = window.document.querySelector('#libraryPlaylists .pl-cover-grad');
+    assert.ok(gradEl);
+    const libStyle = gradEl.getAttribute('style') || '';
+    assert.match(libStyle, /url\(/, 'la tarjeta de biblioteca muestra el collage');
+    assert.match(libStyle, /linear-gradient/, 'debajo del collage queda el degradado de respaldo');
+    assert.equal(window.document.querySelector('#libraryPlaylists .pl-cover-letter'), null,
+      'con collage no se superpone la inicial');
+
+    const homeCover = window.document.querySelector('#homePlaylists .home-card-cover');
+    assert.ok(homeCover);
+    assert.equal(homeCover.classList.contains('has-art'), true);
+    assert.equal(homeCover.querySelector('.pl-cover-letter'), null,
+      'en Inicio tampoco queda la inicial encima del collage');
+    assert.match(homeCover.getAttribute('style') || '', /linear-gradient/,
+      'en Inicio también hay degradado de respaldo');
+
+    const editCover = window.document.getElementById('editPlaylistCover');
+    assert.ok(editCover.querySelector('img'), 'el editor enseña la imagen del collage');
+    assert.match(editCover.getAttribute('style') || '', /linear-gradient/,
+      'el editor conserva el degradado CSS debajo del <img>');
+
+    // Al quitar todas las pistas, el collage se invalida y reaparece el degradado (nunca negro).
+    for (const id of ['c1', 'c2', 'c3', 'c4']) App.removeFromPlaylist('pl-mix', id);
+    assert.equal(pl.coverArt, null, 'al vaciar la lista se limpia el collage anterior');
+    const emptyGrad = window.document.querySelector('#libraryPlaylists .pl-cover-grad');
+    assert.match(emptyGrad.getAttribute('style') || '', /linear-gradient/);
+    assert.equal(/url\(/.test(emptyGrad.getAttribute('style') || ''), false);
+    assert.ok(window.document.querySelector('#libraryPlaylists .pl-cover-letter'),
+      'la lista vacía recupera su inicial');
+    assert.ok(editCover.querySelector('canvas') || editCover.querySelector('.pl-cover-letter'),
+      'el encabezado de la lista vacía recupera su portada generada');
+
+    // Repintado tras volver del segundo plano no lanza errores.
+    assert.doesNotThrow(() => App.refreshVisibleCovers());
+
+    window.Image = RealImage;
+    assert.deepEqual(errors, []);
+  } finally { teardown(); }
+});
+
+test('un canvas 2D perdido por la GPU no guarda un collage negro', async () => {
+  const { App, window, teardown } = await bootApp();
+  try {
+    const ART = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/';
+    window.Image = class {
+      set src(v) {
+        this._s = v;
+        this.naturalWidth = 64;
+        this.naturalHeight = 64;
+        this.width = 64;
+        this.height = 64;
+        setTimeout(() => this.onload && this.onload(), 0);
+      }
+    };
+    const origGetCtx = window.HTMLCanvasElement.prototype.getContext;
+    window.HTMLCanvasElement.prototype.getContext = function () {
+      const base = origGetCtx.call(this);
+      return new Proxy(base, {
+        get(target, prop) {
+          if (prop === 'isContextLost') return () => true;
+          return target[prop];
+        },
+      });
+    };
+
+    setLibrary(App, [makeTrack('g1', { cover: ART, coverThumbLg: ART, coverIsImage: true })]);
+    const pl = { id: 'pl-gpu', name: 'Nocturna', trackIds: ['g1'], cover: { from: '#14B8A6', to: '#6366F1', angle: 135 } };
+    App.playlists = [pl];
+    App.renderPlaylists();
+
+    await new Promise((r) => setTimeout(r, 30));
+    assert.equal(pl.coverArt || null, null, 'no se cachea ni persiste un JPEG negro');
+    const grad = window.document.querySelector('#libraryPlaylists .pl-cover-grad');
+    assert.match(grad.getAttribute('style') || '', /linear-gradient/, 'mantiene el degradado vivo');
   } finally { teardown(); }
 });

@@ -48,7 +48,7 @@ Object.assign(App, {
           okBtn.classList.toggle('danger', opts.danger !== false);
         }
         if (cancelBtn) {
-          if (opts.cancelLabel) cancelBtn.textContent = opts.cancelLabel;
+          cancelBtn.textContent = opts.cancelLabel || this.t('cancel');
           // hideCancel: aviso informativo con un solo botón (no pregunta)
           cancelBtn.style.display = opts.hideCancel ? 'none' : '';
         }
@@ -98,11 +98,21 @@ Object.assign(App, {
       s.setAttribute('aria-hidden', 'false');
       this._syncSheetLayer();
       const panel = s.querySelector('.sheet-panel');
+      const isTab = s.classList.contains('sheet-tab');
       if (panel) {
-        panel.setAttribute('role', 'dialog');
-        panel.setAttribute('aria-modal', 'true');
+        // Las pestañas persistentes (Biblioteca, Buscar, Favoritos) conviven
+        // con la barra de navegación, el mini-reproductor y —en escritorio—
+        // la columna del reproductor: se exponen como region (no modal) para
+        // no secuestrar Tab ni ocultar el chrome a lectores de pantalla.
+        if (isTab) {
+          panel.setAttribute('role', 'region');
+          panel.removeAttribute('aria-modal');
+        } else {
+          panel.setAttribute('role', 'dialog');
+          panel.setAttribute('aria-modal', 'true');
+        }
         if (!panel.hasAttribute('tabindex')) panel.setAttribute('tabindex', '-1');
-        // axe: un role=dialog sin nombre accesible es violación seria.
+        // Un role=dialog/region sin nombre accesible es violación de ARIA.
         // Se toma el <h3> del sheet; si no existe (p. ej. confirmación),
         // showConfirm() asigna aria-labelledby al mensaje.
         if (!panel.hasAttribute('aria-label') && !panel.hasAttribute('aria-labelledby')) {
@@ -118,25 +128,72 @@ Object.assign(App, {
       const focusable = s.querySelector('button, a[href], input:not([type="hidden"]), textarea, select, [tabindex]:not([tabindex="-1"])');
       setTimeout(() => {
         try { (focusable || panel).focus({ preventScroll: true }); } catch (e) {}
+        this.syncAllScrollFades(s);
       }, 40);
-      // [4]: las hojas declaran aria-modal pero el Tab escapaba al
-      // fondo (medido por auditoría externa). Se instala una sola vez
-      // la trampa de foco sobre la hoja superior de la pila.
-      if (!this._tabTrapBound) {
-        this._tabTrapBound = true;
-        document.addEventListener('keydown', (e) => this._sheetTabTrap(e), true);
-      }
+      // Trampa de foco única sobre la hoja MODAL superior de la pila
+      // (las pestañas .sheet-tab dejan libre el chrome y el reproductor).
+      this._ensureTabTrap();
       if (typeof this.updateChrome === 'function') this.updateChrome();
     },
-    /* Trampa de foco ([4]): con una hoja abierta, Tab/Shift+Tab
- * ciclan dentro de su panel; si el foco ya está fuera (p. ej. tras
- * cerrar una hoja hija), lo devuelve al primer/último control. */
+    prefersReducedMotion() {
+      try {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+      } catch (e) {
+        return false;
+      }
+    },
+
+    /* Difuminado de borde reactivo en tiras horizontales: solo cuando hay
+     * desbordamiento real, y en el extremo donde aún queda contenido. */
+    syncScrollFade(el) {
+      if (!el) return;
+      if (!el._fadeWired) {
+        el._fadeWired = true;
+        el.addEventListener('scroll', () => this.syncScrollFade(el), { passive: true });
+      }
+      const max = (el.scrollWidth || 0) - (el.clientWidth || 0);
+      if (max <= 2) {
+        el.classList.remove('fade-left', 'fade-right', 'fade-both');
+        return;
+      }
+      const sl = el.scrollLeft || 0;
+      const left = sl > 2;
+      const right = sl < max - 2;
+      el.classList.toggle('fade-both', left && right);
+      el.classList.toggle('fade-left', left && !right);
+      el.classList.toggle('fade-right', right && !left);
+    },
+
+    syncAllScrollFades(scope) {
+      const root = scope || document;
+      root.querySelectorAll('.eq-presets, #sheetEditPlaylist .edit-pl-actions, .lyrics-toolbar, .search-filters').forEach(el => {
+        this.syncScrollFade(el);
+      });
+    },
+
+    _ensureTabTrap() {
+      if (this._tabTrapBound) return;
+      this._tabTrapBound = true;
+      document.addEventListener('keydown', (e) => this._sheetTabTrap(e), true);
+    },
+
+    /* Trampa de foco: con #importOverlay o una hoja MODAL abierta, Tab/Shift+Tab
+     * ciclan dentro de su panel; si la superior es una pestaña (.sheet-tab), el
+     * foco puede circular con naturalidad hacia la navegación y el player. */
     _sheetTabTrap(e) {
-      if (e.key !== 'Tab' || !this._sheetStack || !this._sheetStack.length) return;
-      const s = document.getElementById(this._sheetStack[this._sheetStack.length - 1]);
-      if (!s || !s.classList.contains('open')) return;
-      const panel = s.querySelector('.sheet-panel') || s;
+      if (e.key !== 'Tab') return;
       const sel = 'button:not([disabled]), a[href], area[href], input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      const imp = document.getElementById('importOverlay');
+      let panel = null;
+      if (imp && !imp.hidden) {
+        panel = imp;
+      } else if (this._sheetStack && this._sheetStack.length) {
+        const s = document.getElementById(this._sheetStack[this._sheetStack.length - 1]);
+        if (!s || !s.classList.contains('open') || s.classList.contains('sheet-tab')) return;
+        panel = s.querySelector('.sheet-panel') || s;
+      } else {
+        return;
+      }
       let f = Array.from(panel.querySelectorAll(sel)).filter(el => el.getClientRects().length > 0);
       if (!f.length) f = Array.from(panel.querySelectorAll(sel));
       if (!f.length) { e.preventDefault(); try { panel.focus({ preventScroll: true }); } catch (err) {} return; }
@@ -154,8 +211,6 @@ Object.assign(App, {
         s.classList.remove('open');
         s.setAttribute('aria-hidden', 'true');
         // inert evita que el foco del teclado entre en un sheet cerrado.
-        // (En navegadores antiguos se ignora; el CSS visibility:hidden
-        // ya lo impide).
         try { s.inert = true; } catch (e) { s.setAttribute('inert', ''); }
         const prev = s._prevFocus;
         s._prevFocus = null;
@@ -165,16 +220,39 @@ Object.assign(App, {
         }
         s.style.zIndex = '';
         this._syncSheetLayer();
-        if ((!this._sheetStack || !this._sheetStack.length) && prev && typeof prev.focus === 'function') {
-          try { prev.focus(); } catch (e) {}
+        const openStack = (this._sheetStack || []).filter(sid => {
+          const el = document.getElementById(sid);
+          return !!(el && el.classList.contains('open'));
+        });
+        if (!openStack.length) {
+          if (prev && typeof prev.focus === 'function' && prev.isConnected) {
+            try { prev.focus({ preventScroll: true }); } catch (e) {}
+          }
+        } else {
+          // Al cerrar una hoja hija (p. ej. Temas sobre Ajustes, o EQ sobre
+          // Más), devolver el foco al disparador en la hoja que queda arriba
+          // (o al chrome/player si la superior es una pestaña .sheet-tab).
+          const topEl = document.getElementById(openStack[openStack.length - 1]);
+          const topIsTab = !!(topEl && topEl.classList.contains('sheet-tab'));
+          const canRestorePrev = !!(prev && typeof prev.focus === 'function' && prev.isConnected && !prev.disabled && (
+            (topEl && topEl.contains(prev)) ||
+            (topIsTab && (!prev.closest || !prev.closest('[inert], [aria-hidden="true"]')))
+          ));
+          if (canRestorePrev) {
+            try { prev.focus({ preventScroll: true }); } catch (e) {}
+          } else if (topEl) {
+            const fallback = topEl.querySelector('button:not([disabled]), a[href], input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')
+              || topEl.querySelector('.sheet-panel');
+            if (fallback && typeof fallback.focus === 'function') {
+              try { fallback.focus({ preventScroll: true }); } catch (e) {}
+            }
+          }
         }
       }
       // Si se cierra el sheet de confirmación por backdrop/X, resolver false
       if (id === 'sheetConfirm' && this._confirmResolver) {
         this._confirmResolver(false);
       }
-      // (: al cerrar la hoja de creación ya no hay «modo add»
-      // que limpiar: _addingToPlaylistId fue extirpado.)
       // Si se cierra el sheet de edición, limpiar editing
       if (id === 'sheetEditPlaylist') {
         this._editingPlaylistId = null;
@@ -194,12 +272,16 @@ Object.assign(App, {
         const el = document.getElementById(sid);
         return !!(el && el.classList.contains('open'));
       });
+      this._sheetStack = stack;
+      let hasTab = false;
       stack.forEach((sid, i) => {
         const el = document.getElementById(sid);
         if (!el) return;
+        const isTab = el.classList.contains('sheet-tab');
+        if (isTab) hasTab = true;
         const base = el.classList.contains('sheet-confirm')
           ? 160
-          : (el.classList.contains('sheet-tab') ? 90 : 130);
+          : (isTab ? 90 : 130);
         el.style.zIndex = String(base + i);
         const isTop = i === stack.length - 1;
         // Solo el sheet superior debe ser accesible. Los inferiores siguen
@@ -210,24 +292,17 @@ Object.assign(App, {
           else el.setAttribute('inert', '');
         }
       });
-    },
-
-    _trapSheetFocus(e) {
-      const open = document.querySelectorAll('.sheet.open');
-      if (!open.length) return;
-      const sheet = open[open.length - 1];
-      const nodes = Array.from(sheet.querySelectorAll(
-        'button, [href], input:not([type="hidden"]), textarea, select, [tabindex]:not([tabindex="-1"])'
-      )).filter(el => !el.disabled && el.offsetParent !== null);
-      if (nodes.length < 1) return;
-      const first = nodes[0];
-      const last = nodes[nodes.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
+      // Cuando una pestaña (.sheet-tab) cubre #viewHome, sacar #viewHome del
+      // orden de tabulación para que Tab pase limpio de la pestaña al chrome
+      // (y al reproductor en aurora-wide) sin caer en el Inicio tapado detrás.
+      const homeView = document.getElementById('viewHome');
+      if (homeView && homeView.classList.contains('active')) {
+        const hideHome = hasTab;
+        homeView.setAttribute('aria-hidden', hideHome ? 'true' : 'false');
+        try { homeView.inert = hideHome; } catch (e) {
+          if (hideHome) homeView.setAttribute('inert', '');
+          else homeView.removeAttribute('inert');
+        }
       }
     },
 
@@ -239,6 +314,14 @@ Object.assign(App, {
       // al ir a otra vista se abandona (y al volver no resucita).
       if (name !== 'player' && this._coverFs && typeof this.setCoverFullscreen === 'function') {
         this.setCoverFullscreen(false);
+      }
+      if (name !== 'lyrics') {
+        const lv = document.getElementById('viewLyrics');
+        if (lv && lv.classList.contains('lyrics-fullscreen')) {
+          lv.classList.remove('lyrics-fullscreen');
+          const fsBtn = document.getElementById('btnLrcFullscreen');
+          if (fsBtn) fsBtn.setAttribute('aria-pressed', 'false');
+        }
       }
       const views = document.querySelectorAll('.view');
       const wide = document.documentElement.classList.contains('aurora-wide');
@@ -432,6 +515,11 @@ Object.assign(App, {
       }
       const mins = Math.min(24 * 60, parsed);
       this.sleepEndAt = Date.now() + mins * 60 * 1000;
+      document.querySelectorAll('.sleep-opt').forEach(x => {
+        const on = !x.dataset.sleep && parseInt(x.dataset.min, 10) === mins;
+        x.classList.toggle('active', on);
+        x.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
       this.sleepTick = setInterval(() => {
         if (!this.sleepEndAt) return;
         if (Date.now() >= this.sleepEndAt) this._fireSleep();
@@ -444,6 +532,11 @@ Object.assign(App, {
     startSleepEndOfTrack() {
       this.cancelSleep();
       this._sleepEndOfTrack = true;
+      document.querySelectorAll('.sleep-opt').forEach(x => {
+        const on = x.dataset.sleep === 'eot';
+        x.classList.toggle('active', on);
+        x.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
       this.updateSleepStatus();
       this.toast(this.t('toast_sleep_eot'));
     },
@@ -490,7 +583,10 @@ Object.assign(App, {
         this.togglePlay(false);
       }
       this._sleepFading = false;
-      document.querySelectorAll('.sleep-opt').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.sleep-opt').forEach(x => {
+        x.classList.remove('active');
+        x.setAttribute('aria-pressed', 'false');
+      });
       this.toast(this.t('toast_sleep_done'));
     },
     cancelSleep() {
@@ -503,6 +599,10 @@ Object.assign(App, {
         try { if (this.audio) this.audio.volume = this.volume; } catch (e) {}
         this._setPlaybackGain(this._normGain || 1, true);
       }
+      document.querySelectorAll('.sleep-opt').forEach(x => {
+        x.classList.remove('active');
+        x.setAttribute('aria-pressed', 'false');
+      });
       this.updateSleepStatus();
     },
     updateSleepStatus() {

@@ -46,6 +46,7 @@ import sys, zipfile
 names = zipfile.ZipFile(${JSON.stringify(a)}).namelist()
 assert 'index.html' in names, 'index.html fuera de la raíz'
 assert not any(n.split('/')[-1] == 'webxdc.js' for n in names), 'webxdc.js no debe viajar'
+assert not any('backup' in n.lower() for n in names), 'backup no debe viajar en el .xdc'
 assert not any(n.startswith(('test/', 'docs/', 'node_modules/')) for n in names), names
 assert 'manifest.toml' in names and 'icon.png' in names
 `], { cwd: ROOT, stdio: 'pipe' });

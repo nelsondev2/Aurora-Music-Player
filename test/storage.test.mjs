@@ -179,3 +179,212 @@ test('la precarga y el cambio sin pausa no se rompen sin audio en memoria', asyn
     assert.equal(App.gaplessNext(), false, 'sin audio no hay empalme, pero tampoco error');
   } finally { teardown(); }
 });
+
+test('importar canciones pinta la lista de inmediato antes de persistir los blobs en bloques', async () => {
+  const { App, window, teardown } = await bootApp({ lang: 'es' });
+  try {
+    const Storage = window.AuroraStorage;
+    // Evitar los 2.5 s de timeout de <audio> en jsdom (no dispara loadedmetadata).
+    window.AuroraUploader.probeDuration = async () => 185;
+
+    const pl = { id: 'pl-fast', name: 'Recientes', trackIds: [], cover: { from: '#6E5CFF', to: '#FF7AB6', angle: 135 } };
+    App.playlists = [pl];
+    await App.persistPlaylist(pl);
+    App.openEditPlaylist('pl-fast');
+
+    const files = [];
+    for (let i = 0; i < 15; i++) {
+      const bytes = new Uint8Array([i + 1, (i * 7) & 255, 42, 99, i]);
+      const f = new File([bytes], `Cancion ${i + 1}.mp3`, { type: 'audio/mpeg' });
+      files.push(f);
+    }
+
+    await App.handleFileInput(files, false, 'pl-fast');
+
+    // Justo al terminar handleFileInput, las 15 filas ya están pintadas en la lista abierta.
+    const rows = window.document.querySelectorAll('#editPlaylistTracks .track-row');
+    assert.equal(rows.length, 15, 'las 15 pistas aparecen al instante en la lista abierta');
+    assert.ok(App.tracks.every((t) => typeof t.fp === 'string' && t.fp.length > 0),
+      'las huellas ya vienen calculadas en paralelo durante la importación');
+
+    // Esperar a que termine la persistencia por bloques en segundo plano.
+    await App._bgPersistPromise;
+    const savedTracks = await Storage.getAllTracks();
+    assert.equal(savedTracks.length, 15, 'todas las pistas quedaron guardadas en IndexedDB');
+    assert.ok(savedTracks.every((t) => t.hasAudio === true), 'todas quedaron marcadas con audio confirmado');
+    const sampleBlob = await Storage.getBlob(savedTracks[14].id);
+    assert.ok(sampleBlob && typeof sampleBlob.size === 'number' && sampleBlob.size === 5,
+      'el blob del último bloque también está en IndexedDB');
+
+    // También cuando «Mi Música» está abierta y se importa sin lista destino.
+    const extraFile = new File([new Uint8Array([88, 77, 66, 55])], 'Suelta.mp3', { type: 'audio/mpeg' });
+    await App.handleFileInput([extraFile], false, null);
+    App.openEditPlaylist('mi-musica');
+    const extraFile2 = new File([new Uint8Array([11, 22, 33, 44])], 'Suelta 2.mp3', { type: 'audio/mpeg' });
+    await App.handleFileInput([extraFile2], false, null);
+    assert.equal(window.document.querySelectorAll('#editPlaylistTracks .track-row').length, 2,
+      '«Mi Música» abierta se actualiza al instante al importar nuevas pistas');
+    await App._bgPersistPromise;
+  } finally { teardown(); }
+});
+
+test('si falla una transacción en lote, el reintento conserva todos los blobs de audio', async () => {
+  const { App, window, teardown } = await bootApp();
+  try {
+    const Storage = window.AuroraStorage;
+    await Storage.open();
+    const origTx = Storage.db.transaction.bind(Storage.db);
+    let failBatchOnce = true;
+    Storage.db.transaction = (stores, mode) => {
+      if (failBatchOnce && Array.isArray(stores) && stores.includes('blobs') && mode === 'readwrite') {
+        failBatchOnce = false;
+        throw new Error('transacción abortada simulada');
+      }
+      return origTx(stores, mode);
+    };
+
+    const blob1 = new Blob([new Uint8Array([10, 20, 30])], { type: 'audio/mpeg' });
+    const blob2 = new Blob([new Uint8Array([40, 50, 60, 70])], { type: 'audio/mpeg' });
+    const t1 = makeTrack('fb-1', { fileBlob: blob1, hasAudio: false });
+    const t2 = makeTrack('fb-2', { fileBlob: blob2, hasAudio: false });
+    setLibrary(App, [t1, t2]);
+
+    await App.persistTracksBatch([t1, t2]);
+
+    const b1 = await Storage.getBlob('fb-1');
+    const b2 = await Storage.getBlob('fb-2');
+    assert.ok(esBlob(b1) && b1.size === 3, 'blob 1 guardado pese al fallo del lote');
+    assert.ok(esBlob(b2) && b2.size === 4, 'blob 2 guardado pese al fallo del lote');
+  } finally { teardown(); }
+});
+
+test('getAllTracks pagina bibliotecas grandes y open() se recupera de un fallo transitorio en frío', async () => {
+  const { window, teardown } = await bootApp();
+  try {
+    const Storage = window.AuroraStorage;
+    for (let i = 0; i < 125; i++) {
+      const id = 'trk-' + String(i).padStart(4, '0');
+      await Storage.putTrack(makeTrack(id, { fileBlob: undefined, hasAudio: true }));
+    }
+
+    // Cerrar conexión y simular un UnknownError transitorio en la primera reapertura
+    // (típico al volver a abrir un WebView tras varios días en reposo).
+    Storage.db.close();
+    Storage.db = null;
+    const origOpen = window.indexedDB.open.bind(window.indexedDB);
+    let failedOnce = false;
+    window.indexedDB.open = (name, ver) => {
+      if (!failedOnce) {
+        failedOnce = true;
+        const fakeReq = {};
+        setTimeout(() => {
+          const err = new Error('transient cold open failure');
+          err.name = 'UnknownError';
+          fakeReq.error = err;
+          if (fakeReq.onerror) fakeReq.onerror();
+        }, 0);
+        return fakeReq;
+      }
+      return origOpen(name, ver);
+    };
+
+    const loaded = await Storage.getAllTracks();
+    window.indexedDB.open = origOpen;
+    assert.equal(failedOnce, true);
+    assert.equal(loaded.length, 125, 'recuperó las 125 pistas en varias páginas sin perder ninguna');
+  } finally { teardown(); }
+});
+
+test('un fallo al leer IndexedDB no sobrescribe la sesión, favoritos ni estadísticas guardadas', async () => {
+  const { App, window, teardown } = await bootApp({ lang: 'es' });
+  try {
+    const Storage = window.AuroraStorage;
+    const t = makeTrack('safe-1', { fileBlob: new Blob([new Uint8Array([1, 2])]), hasAudio: false });
+    await App.persistTrack(t);
+    setLibrary(App, [t]);
+    App.currentTrack = t;
+    App.queue = ['safe-1'];
+    App.favorites = new Set(['safe-1']);
+    App.stats = { plays: { 'safe-1': 4 }, skips: {}, totalSeconds: 720 };
+    await App.saveSession();
+    await App.saveFavorites();
+    await App.saveStats();
+
+    // Simular fallo de lectura en el arranque siguiente.
+    const origGetAll = Storage.getAllTracks.bind(Storage);
+    Storage.getAllTracks = async () => { throw new Error('disco ocupado'); };
+    await App.loadAllFromStorage();
+    Storage.getAllTracks = origGetAll;
+
+    assert.equal(App._storageOk, false);
+    assert.equal(App._storageReadFailed, true);
+
+    // Aunque corran los guardados periódicos, los datos reales siguen intactos.
+    App.currentTrack = null;
+    App.queue = [];
+    App.favorites = new Set();
+    App.stats = { plays: {}, skips: {}, totalSeconds: 0 };
+    await App.saveSession();
+    await App.saveFavorites();
+    await App.saveStats();
+
+    const sess = await Storage.getSetting('session');
+    const favs = await Storage.getSetting('favorites');
+    const stats = await Storage.getSetting('stats');
+    assert.equal(sess.currentTrackId, 'safe-1', 'la sesión guardada no se pisó con vacío');
+    assert.deepEqual(favs, ['safe-1'], 'los favoritos guardados siguen intactos');
+    assert.equal(stats.plays['safe-1'], 4, 'las estadísticas guardadas siguen intactas');
+  } finally { teardown(); }
+});
+
+test('Ajustes permite activar almacenamiento persistente y liberar cachés sin borrar la música', async () => {
+  const { App, window, teardown } = await bootApp({ lang: 'es' });
+  try {
+    let persisted = false;
+    let persistCalls = 0;
+    Object.defineProperty(window.navigator, 'storage', {
+      configurable: true,
+      value: {
+        estimate: async () => ({ usage: 10 * 1024 * 1024, quota: 1024 * 1024 * 1024 }),
+        persisted: async () => persisted,
+        persist: async () => { persistCalls++; persisted = true; return true; },
+      },
+    });
+
+    const blob = new Blob([new Uint8Array([5, 6, 7, 8])], { type: 'audio/mpeg' });
+    const t = makeTrack('keep-1', { fileBlob: blob, hasAudio: false });
+    await App.persistTrack(t);
+    setLibrary(App, [t]);
+    const pl = {
+      id: 'pl-cache',
+      name: 'Favoritas del mes',
+      trackIds: ['keep-1'],
+      coverArt: 'data:image/jpeg;base64,/9j/CACHE000000000000000000',
+      coverArtHash: 'v384|keep-1#keep-1:39',
+    };
+    App.playlists = [pl];
+    await App.persistPlaylist(pl);
+
+    await App.updateStorageUsage();
+    const btnPersist = window.document.getElementById('menuPersistStorage');
+    const hint = window.document.getElementById('storagePersistHint');
+    const label = window.document.getElementById('storageUsageLabel');
+    assert.equal(btnPersist.hidden, false, 'muestra el botón para proteger almacenamiento');
+    assert.equal(hint.hidden, false, 'explica cómo evitar borrados por inactividad');
+
+    await App.requestStorageProtection();
+    assert.equal(persistCalls, 1);
+    assert.equal(App._storagePersisted, true);
+    assert.equal(btnPersist.hidden, true, 'una vez protegido se oculta el botón');
+    assert.ok(
+      label.textContent.includes(App.t('storage_protected_badge')),
+      'la etiqueta indica almacenamiento protegido con texto traducible'
+    );
+
+    await App.freeStorageCaches();
+    assert.equal(pl.coverArt, null, 'se liberó el collage en caché');
+    assert.equal((await window.AuroraStorage.getAllTracks()).length, 1, 'la canción sigue guardada');
+    assert.ok(esBlob(await window.AuroraStorage.getBlob('keep-1')), 'el audio sigue intacto');
+    assert.equal((await window.AuroraStorage.getAllPlaylists()).length, 1, 'la lista sigue guardada');
+  } finally { teardown(); }
+});

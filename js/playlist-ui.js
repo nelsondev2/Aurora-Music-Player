@@ -227,6 +227,7 @@ Object.assign(App, {
     drawRowCover(canvas, track, opts) {
       if (!canvas || !track) return;
       const ctx = canvas.getContext('2d');
+      if (!ctx) return;
       const W = canvas.width, H = canvas.height;
       const ambient = !!(opts && opts.fit === 'ambient');
       const isImage = !!track.customCover || track.coverIsImage || (typeof track.cover === 'string' && (track.cover.startsWith('data:') || track.cover.startsWith('blob:')));
@@ -235,29 +236,39 @@ Object.assign(App, {
         ? track.cover : null;
 
       const paintImg = (src) => {
+        if (!src) { this._paintLetterCover(ctx, W, H, track); return; }
+        this._paintLetterCover(ctx, W, H, track);
         const img = new Image();
         img.onload = () => {
+          const iw = img.naturalWidth || img.width || 0;
+          const ih = img.naturalHeight || img.height || 0;
+          if (iw <= 0 || ih <= 0) {
+            this._paintLetterCover(ctx, W, H, track);
+            return;
+          }
           ctx.clearRect(0,0,W,H);
           if (ambient) {
             // Fondo: la obra en grande, desenfocada si el motor lo
             // soporta (si no, queda oscurecida sin más).
             ctx.fillStyle = '#101018';
             ctx.fillRect(0, 0, W, H);
-            const bg = this._fitRect(img.width, img.height, W, H, 'cover');
+            const bg = this._fitRect(iw, ih, W, H, 'cover');
             ctx.save();
             try { ctx.filter = 'blur(10px) brightness(0.45)'; } catch (e) { /* sin filtro: fondo oscuro */ }
             ctx.drawImage(img, bg.x - bg.w * 0.08, bg.y - bg.h * 0.08, bg.w * 1.16, bg.h * 1.16);
             ctx.restore();
             // La obra entera, centrada.
-            const fg = this._fitRect(img.width, img.height, W, H, 'contain');
+            const fg = this._fitRect(iw, ih, W, H, 'contain');
             ctx.drawImage(img, fg.x, fg.y, fg.w, fg.h);
             return;
           }
-          const r = this._fitRect(img.width, img.height, W, H, 'cover');
+          const r = this._fitRect(iw, ih, W, H, 'cover');
           ctx.drawImage(img, r.x, r.y, r.w, r.h);
         };
+        img.onerror = () => {
+          this._paintLetterCover(ctx, W, H, track);
+        };
         img.src = src;
-        ctx.fillStyle = '#222'; ctx.fillRect(0,0,W,H);
       };
 
       if (isImage && (thumb || full)) {
@@ -337,13 +348,7 @@ Object.assign(App, {
         track.coverThumbLg = await U.resizeDataUrl(src, 384);
         track._thumbsDirty = true;
         if (!this._thumbPersistTimer) {
-          this._thumbPersistTimer = setTimeout(() => {
-            this._thumbPersistTimer = null;
-            this.tracks.filter(tr => tr._thumbsDirty).forEach(tr => {
-              tr._thumbsDirty = false;
-              this.persistTrack(tr);
-            });
-          }, 2500);
+          this._thumbPersistTimer = setTimeout(() => this._flushPendingCoverThumbs(), 2500);
         }
         return !!track.coverThumb;
       } catch (e) {
@@ -351,6 +356,18 @@ Object.assign(App, {
       } finally {
         track._thumbing = false;
       }
+    },
+
+    _flushPendingCoverThumbs() {
+      if (this._thumbPersistTimer) {
+        clearTimeout(this._thumbPersistTimer);
+        this._thumbPersistTimer = null;
+      }
+      if (!Array.isArray(this.tracks)) return;
+      this.tracks.filter(tr => tr && tr._thumbsDirty).forEach(tr => {
+        tr._thumbsDirty = false;
+        this.persistTrack(tr);
+      });
     },
 
     /* ============================================================
@@ -477,12 +494,7 @@ Object.assign(App, {
       return (typeof v === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(v)) ? v : fallback;
     },
 
-    /* Fondo de la portada de una lista SIN carátula. Mismo lenguaje que
-     * la portada generada de una pista (luz arriba, degradado en
-     * diagonal, la semilla decide el ángulo y dónde cae la luz) para que
-     * dos listas del mismo acento no se vean idénticas. Devuelve la
-     * declaración `background-image` completa. */
-    playlistCoverStyle(pl) {
+    _playlistGradientParams(pl) {
       const base = { from: '#6E5CFF', to: '#FF7AB6' };
       const fb = (this.coverFallback && this.coverFallback()) || base;
       const pal = this._playlistCoverFallback(pl) || fb;
@@ -492,14 +504,43 @@ Object.assign(App, {
       const p = (window.AuroraCover && typeof window.AuroraCover.listParams === 'function')
         ? window.AuroraCover.listParams((pl && (pl.name || pl.id)) || '', { from, to })
         : { angle: 135, gx: 30, gy: 24, from, to };
-      const angle = p.angle, gx = p.gx, gy = p.gy;
-      return 'background-image:' +
-        'radial-gradient(125% 125% at ' + gx + '% ' + gy + '%, rgba(255,255,255,0.26), rgba(255,255,255,0) 62%),' +
-        'linear-gradient(' + angle + 'deg, ' + from + ', ' + to + ');';
+      const layers =
+        'radial-gradient(125% 125% at ' + p.gx + '% ' + p.gy + '%, rgba(255,255,255,0.26), rgba(255,255,255,0) 62%),' +
+        'linear-gradient(' + p.angle + 'deg, ' + from + ', ' + to + ')';
+      return { from, to, angle: p.angle, gx: p.gx, gy: p.gy, layers };
+    },
+
+    /* Fondo de la portada de una lista SIN carátula. Mismo lenguaje que
+     * la portada generada de una pista (luz arriba, degradado en
+     * diagonal, la semilla decide el ángulo y dónde cae la luz) para que
+     * dos listas del mismo acento no se vean idénticas. Devuelve la
+     * declaración `background-image` completa. */
+    playlistCoverStyle(pl) {
+      const p = this._playlistGradientParams(pl);
+      return 'background-image:' + p.layers + ';';
+    },
+
+    /* Fondo de portada CON collage: apila la imagen sobre el degradado de
+     * la lista para que, si el WebView descarta o falla al decodificar la
+     * textura, se vea el degradado en lugar de un recuadro negro. */
+    playlistArtStyle(pl, dataUrl) {
+      if (!dataUrl || !this._safeImageDataUrl(dataUrl)) return this.playlistCoverStyle(pl);
+      const p = this._playlistGradientParams(pl);
+      return 'background-color:' + p.from +
+        ';background-image:url(\'' + dataUrl + '\'),' + p.layers +
+        ';background-size:cover;background-position:center;background-repeat:no-repeat;';
     },
 
     _hydratePlaylistCover(pl) {
       if (!pl) return;
+      if (pl.coverArt && !this._safeImageDataUrl(pl.coverArt)) {
+        pl.coverArt = null;
+        pl.coverArtHash = null;
+      }
+      if (pl._coverCache && !this._safeImageDataUrl(pl._coverCache)) {
+        pl._coverCache = null;
+        pl._coverCacheHash = null;
+      }
       if (pl.coverArt && !pl._coverCache) {
         pl._coverCache = pl.coverArt;
         pl._coverCacheHash = pl.coverArtHash || null;
@@ -520,15 +561,101 @@ Object.assign(App, {
       if (!this._coverPersistIds) this._coverPersistIds = new Set();
       this._coverPersistIds.add(pl.id);
       if (this._coverPersistTimer) return;
-      this._coverPersistTimer = setTimeout(() => {
+      this._coverPersistTimer = setTimeout(() => this._flushPendingPlaylistCovers(), 400);
+    },
+
+    _flushPendingPlaylistCovers() {
+      if (this._coverPersistTimer) {
+        clearTimeout(this._coverPersistTimer);
         this._coverPersistTimer = null;
-        const ids = this._coverPersistIds;
-        this._coverPersistIds = new Set();
-        ids.forEach(id => {
-          const p = this.playlists.find(x => x.id === id);
-          if (p) this.persistPlaylist(p);
-        });
-      }, 400);
+      }
+      const ids = this._coverPersistIds;
+      if (!ids || !ids.size) return;
+      this._coverPersistIds = new Set();
+      ids.forEach(id => {
+        const p = this.playlists.find(x => x.id === id);
+        if (p) this.persistPlaylist(p);
+      });
+    },
+
+    _canCheckCanvasAlpha() {
+      if (typeof this._canvasAlphaReadable === 'boolean') return this._canvasAlphaReadable;
+      try {
+        const c = document.createElement('canvas');
+        c.width = 1; c.height = 1;
+        const x = c.getContext('2d');
+        if (!x || typeof x.getImageData !== 'function') {
+          this._canvasAlphaReadable = false;
+          return false;
+        }
+        x.fillStyle = '#ffffff';
+        x.fillRect(0, 0, 1, 1);
+        const d = x.getImageData(0, 0, 1, 1).data;
+        this._canvasAlphaReadable = !!(d && d[3] === 255);
+      } catch (e) {
+        this._canvasAlphaReadable = false;
+      }
+      return this._canvasAlphaReadable;
+    },
+
+    /* Detecta un canvas 2D perdido por la GPU (isContextLost() o todos los
+     * píxeles con alfa 0 tras pintar). Evita que toDataURL('image/jpeg')
+     * convierta transparencia en un JPEG negro y lo persista en la lista. */
+    _isCanvasLost(ctx, size) {
+      if (!ctx) return true;
+      try {
+        if (typeof ctx.isContextLost === 'function' && ctx.isContextLost() === true) return true;
+      } catch (e) {}
+      if (!this._canCheckCanvasAlpha() || typeof ctx.getImageData !== 'function') return false;
+      try {
+        const pts = [
+          [size >> 2, size >> 2],
+          [size >> 1, size >> 1],
+          [(size * 3) >> 2, (size * 3) >> 2],
+          [(size * 3) >> 2, size >> 2],
+          [size >> 2, (size * 3) >> 2]
+        ];
+        for (let i = 0; i < pts.length; i++) {
+          const d = ctx.getImageData(pts[i][0], pts[i][1], 1, 1).data;
+          if (d && d[3] > 0) return false;
+        }
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+
+    /* Carga y decodifica una imagen de portada con límite de tiempo para
+     * que una imagen dañada o sin decodificar ni pinte negro ni bloquee
+     * _coverPending indefinidamente. */
+    _loadCollageImage(src) {
+      if (!src || !this._safeImageDataUrl(src)) return Promise.resolve(null);
+      return new Promise(resolve => {
+        let settled = false;
+        const img = new Image();
+        const finish = (val) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          img.onload = img.onerror = null;
+          resolve(val);
+        };
+        const timer = setTimeout(() => finish(null), 4000);
+        const checkReady = () => {
+          const w = img.naturalWidth || img.width || 0;
+          const h = img.naturalHeight || img.height || 0;
+          finish(w > 0 && h > 0 ? img : null);
+        };
+        img.onload = () => {
+          if (typeof img.decode === 'function') {
+            img.decode().then(checkReady, checkReady);
+          } else {
+            checkReady();
+          }
+        };
+        img.onerror = () => finish(null);
+        img.src = src;
+      });
     },
 
     /* ============================================================
@@ -538,17 +665,19 @@ Object.assign(App, {
      *  gradiente de la lista. Se cachea en RAM y se persiste en
      *  pl.coverArt para sobrevivir recargas. */
     getPlaylistCover(pl) {
+      if (!pl) return this._playlistCoverFallback(null);
       const fallback = this._playlistCoverFallback(pl);
       this._hydratePlaylistCover(pl);
       // Con el índice id->pista: buscar cada id con find() sobre miles
       // de pistas hacía renderPlaylists cuadrático (medido en el estrés).
       const tracks = (pl.trackIds || []).map(id => this.getTrackById(id)).filter(Boolean);
-      const withImage = tracks.filter(t => this._playlistTrackArtSrc(t));
+      const withImage = tracks.filter(t => {
+        const src = this._playlistTrackArtSrc(t);
+        return src && this._safeImageDataUrl(src);
+      });
 
       if (withImage.length === 0) {
-        const stored = pl._coverCache || pl.coverArt || null;
-        if (stored && (pl.trackIds || []).length) return stored;
-        if (stored) {
+        if (pl._coverCache || pl.coverArt || pl._coverPending) {
           this._invalidatePlaylistCover(pl);
           this._persistPlaylistCoverSoon(pl);
         }
@@ -559,7 +688,8 @@ Object.assign(App, {
         const src = this._playlistTrackArtSrc(t) || '';
         return t.id + ':' + src.length;
       }).join(',');
-      const cached = pl._coverCache || pl.coverArt || null;
+      const rawCached = pl._coverCache || pl.coverArt || null;
+      const cached = (rawCached && this._safeImageDataUrl(rawCached)) ? rawCached : null;
       const cachedHash = pl._coverCacheHash || pl.coverArtHash || null;
       if (cached && cachedHash === hash) {
         pl._coverCache = cached;
@@ -576,163 +706,341 @@ Object.assign(App, {
       const canvas = document.createElement('canvas');
       canvas.width = SIZE; canvas.height = SIZE;
       const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        if (pl._coverPending === hash) pl._coverPending = null;
+        return cached || fallback;
+      }
 
       const selected = withImage.slice(0, Math.min(8, withImage.length));
-      const n = selected.length;
+      const pal = this._playlistGradientParams(pl);
 
-      // Dibujar las imágenes sincrónicamente si ya están cargadas.
-      // Como las covers son dataURLs, precargamos todas y luego pintamos.
       const drawCollage = (images) => {
-        // Fondo oscuro por si quedan huecos
-        ctx.fillStyle = '#0a0a12';
+        const n = images.length;
+        if (!n) return 0;
+        // Base con el degradado propio de la lista (nunca negro puro) por
+        // si una carátula trae transparencia o queda un borde libre.
+        try {
+          const grad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
+          grad.addColorStop(0, pal.from);
+          grad.addColorStop(1, pal.to);
+          ctx.fillStyle = grad;
+        } catch (e) {
+          ctx.fillStyle = pal.from;
+        }
         ctx.fillRect(0, 0, SIZE, SIZE);
 
+        let drawn = 0;
+        const put = (img, x, y, w, h) => {
+          if (this._drawImageCover(ctx, img, x, y, w, h)) drawn++;
+        };
+
         if (n === 1) {
-          // Una sola: ocupa todo
-          this._drawImageCover(ctx, images[0], 0, 0, SIZE, SIZE);
+          put(images[0], 0, 0, SIZE, SIZE);
         } else if (n === 2) {
-          // Dos: una arriba, una abajo
-          this._drawImageCover(ctx, images[0], 0, 0, SIZE, SIZE/2);
-          this._drawImageCover(ctx, images[1], 0, SIZE/2, SIZE, SIZE/2);
+          put(images[0], 0, 0, SIZE, SIZE / 2);
+          put(images[1], 0, SIZE / 2, SIZE, SIZE / 2);
         } else if (n === 3) {
-          // Tres: una grande arriba, dos pequeñas abajo
-          this._drawImageCover(ctx, images[0], 0, 0, SIZE, SIZE*0.6);
-          this._drawImageCover(ctx, images[1], 0, SIZE*0.6, SIZE/2, SIZE*0.4);
-          this._drawImageCover(ctx, images[2], SIZE/2, SIZE*0.6, SIZE/2, SIZE*0.4);
+          put(images[0], 0, 0, SIZE, SIZE * 0.6);
+          put(images[1], 0, SIZE * 0.6, SIZE / 2, SIZE * 0.4);
+          put(images[2], SIZE / 2, SIZE * 0.6, SIZE / 2, SIZE * 0.4);
         } else if (n === 4) {
-          // Cuatro: cuadrícula 2x2
-          this._drawImageCover(ctx, images[0], 0, 0, SIZE/2, SIZE/2);
-          this._drawImageCover(ctx, images[1], SIZE/2, 0, SIZE/2, SIZE/2);
-          this._drawImageCover(ctx, images[2], 0, SIZE/2, SIZE/2, SIZE/2);
-          this._drawImageCover(ctx, images[3], SIZE/2, SIZE/2, SIZE/2, SIZE/2);
+          put(images[0], 0, 0, SIZE / 2, SIZE / 2);
+          put(images[1], SIZE / 2, 0, SIZE / 2, SIZE / 2);
+          put(images[2], 0, SIZE / 2, SIZE / 2, SIZE / 2);
+          put(images[3], SIZE / 2, SIZE / 2, SIZE / 2, SIZE / 2);
         } else if (n === 5 || n === 6) {
-          // 5-6: una grande arriba + cuadrícula abajo
-          // Fila superior: una imagen ancha (toda la anchura, mitad de altura)
-          this._drawImageCover(ctx, images[0], 0, 0, SIZE, SIZE/2);
-          // Fila inferior: hasta 5 imágenes en cuadrícula
-          const cols = n - 1; // 4 o 5
+          put(images[0], 0, 0, SIZE, SIZE / 2);
+          const cols = n - 1;
           const cellW = SIZE / cols;
           for (let i = 1; i < n; i++) {
-            this._drawImageCover(ctx, images[i], (i-1) * cellW, SIZE/2, cellW, SIZE/2);
+            put(images[i], (i - 1) * cellW, SIZE / 2, cellW, SIZE / 2);
           }
         } else if (n === 7) {
-          // 7: cuadrícula 4+3 (4 arriba, 3 abajo)
           const cols = 4;
           const cellW = SIZE / cols;
-          this._drawImageCover(ctx, images[0], 0, 0, cellW, SIZE/2);
-          this._drawImageCover(ctx, images[1], cellW, 0, cellW, SIZE/2);
-          this._drawImageCover(ctx, images[2], 2*cellW, 0, cellW, SIZE/2);
-          this._drawImageCover(ctx, images[3], 3*cellW, 0, cellW, SIZE/2);
-          // 3 abajo, centradas
-          const off = (SIZE - 3*cellW) / 2;
-          this._drawImageCover(ctx, images[4], off, SIZE/2, cellW, SIZE/2);
-          this._drawImageCover(ctx, images[5], off + cellW, SIZE/2, cellW, SIZE/2);
-          this._drawImageCover(ctx, images[6], off + 2*cellW, SIZE/2, cellW, SIZE/2);
+          put(images[0], 0, 0, cellW, SIZE / 2);
+          put(images[1], cellW, 0, cellW, SIZE / 2);
+          put(images[2], 2 * cellW, 0, cellW, SIZE / 2);
+          put(images[3], 3 * cellW, 0, cellW, SIZE / 2);
+          const off = (SIZE - 3 * cellW) / 2;
+          put(images[4], off, SIZE / 2, cellW, SIZE / 2);
+          put(images[5], off + cellW, SIZE / 2, cellW, SIZE / 2);
+          put(images[6], off + 2 * cellW, SIZE / 2, cellW, SIZE / 2);
         } else {
-          // 8 (caso por defecto): cuadrícula 4x2
           const cols = 4, rows = 2;
           const cellW = SIZE / cols;
           const cellH = SIZE / rows;
           for (let i = 0; i < n; i++) {
             const col = i % cols;
             const row = Math.floor(i / cols);
-            this._drawImageCover(ctx, images[i], col * cellW, row * cellH, cellW, cellH);
+            put(images[i], col * cellW, row * cellH, cellW, cellH);
           }
         }
-        // Separadores sutiles entre celdas (líneas oscuras)
+        if (!drawn) return 0;
+
+        // Separadores sutiles entre celdas
         ctx.strokeStyle = 'rgba(0,0,0,0.45)';
         ctx.lineWidth = 2;
         if (n === 2) {
-          ctx.beginPath(); ctx.moveTo(0, SIZE/2); ctx.lineTo(SIZE, SIZE/2); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, SIZE / 2); ctx.lineTo(SIZE, SIZE / 2); ctx.stroke();
         } else if (n === 3) {
-          ctx.beginPath(); ctx.moveTo(0, SIZE*0.6); ctx.lineTo(SIZE, SIZE*0.6); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(SIZE/2, SIZE*0.6); ctx.lineTo(SIZE/2, SIZE); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, SIZE * 0.6); ctx.lineTo(SIZE, SIZE * 0.6); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(SIZE / 2, SIZE * 0.6); ctx.lineTo(SIZE / 2, SIZE); ctx.stroke();
         } else if (n === 4) {
-          ctx.beginPath(); ctx.moveTo(SIZE/2, 0); ctx.lineTo(SIZE/2, SIZE); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(0, SIZE/2); ctx.lineTo(SIZE, SIZE/2); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(SIZE / 2, 0); ctx.lineTo(SIZE / 2, SIZE); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, SIZE / 2); ctx.lineTo(SIZE, SIZE / 2); ctx.stroke();
         } else if (n === 5 || n === 6) {
-          // Separador horizontal en la mitad + verticales en la fila inferior
-          ctx.beginPath(); ctx.moveTo(0, SIZE/2); ctx.lineTo(SIZE, SIZE/2); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, SIZE / 2); ctx.lineTo(SIZE, SIZE / 2); ctx.stroke();
           const cols = n - 1;
           const cellW = SIZE / cols;
           for (let i = 1; i < cols; i++) {
-            ctx.beginPath(); ctx.moveTo(i*cellW, SIZE/2); ctx.lineTo(i*cellW, SIZE); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(i * cellW, SIZE / 2); ctx.lineTo(i * cellW, SIZE); ctx.stroke();
           }
         } else if (n === 7) {
-          ctx.beginPath(); ctx.moveTo(0, SIZE/2); ctx.lineTo(SIZE, SIZE/2); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, SIZE / 2); ctx.lineTo(SIZE, SIZE / 2); ctx.stroke();
           const cols = 4;
           const cellW = SIZE / cols;
           for (let i = 1; i < cols; i++) {
-            ctx.beginPath(); ctx.moveTo(i*cellW, 0); ctx.lineTo(i*cellW, SIZE/2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(i * cellW, 0); ctx.lineTo(i * cellW, SIZE / 2); ctx.stroke();
           }
-        } else {
-          // 8: cuadrícula 4x2 con separadores
+        } else if (n >= 8) {
           const cols = 4, rows = 2;
           const cellW = SIZE / cols;
           const cellH = SIZE / rows;
           for (let i = 1; i < cols; i++) {
-            ctx.beginPath(); ctx.moveTo(i*cellW, 0); ctx.lineTo(i*cellW, SIZE); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(i * cellW, 0); ctx.lineTo(i * cellW, SIZE); ctx.stroke();
           }
           ctx.beginPath(); ctx.moveTo(0, cellH); ctx.lineTo(SIZE, cellH); ctx.stroke();
         }
+        return drawn;
       };
 
-      // Precargar todas las imágenes y luego pintar
-      // Promise.all() convierte el array de promesas en una sola promesa
-      // que se resuelve cuando todas han terminado.
-      const promises = Promise.all(selected.map(t => {
-        return new Promise(resolve => {
-          const img = new Image();
-          img.onload = () => resolve(img);
-          img.onerror = () => resolve(null);
-          img.src = this._playlistTrackArtSrc(t) || '';
-        });
-      }));
-
-      promises.then(images => {
+      Promise.all(selected.map(t => this._loadCollageImage(this._playlistTrackArtSrc(t)))).then(images => {
+        // Si la lista cambió mientras cargaban las imágenes, no pisar su estado nuevo.
+        if (pl._coverPending !== hash) return;
+        pl._coverPending = null;
         const valid = images.filter(Boolean);
-        if (pl._coverPending === hash) pl._coverPending = null;
-        if (valid.length === 0) return;
-        drawCollage(valid);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        if (valid.length === 0) {
+          this._applyPlaylistFallback(pl);
+          return;
+        }
+        const drawn = drawCollage(valid);
+        if (!drawn || this._isCanvasLost(ctx, SIZE)) {
+          this._applyPlaylistFallback(pl);
+          return;
+        }
+        let dataUrl = '';
+        try { dataUrl = canvas.toDataURL('image/jpeg', 0.82); } catch (e) { dataUrl = ''; }
+        if (!this._safeImageDataUrl(dataUrl) || dataUrl.length < 24) {
+          this._applyPlaylistFallback(pl);
+          return;
+        }
         pl._coverCache = dataUrl;
         pl._coverCacheHash = hash;
         pl.coverArt = dataUrl;
         pl.coverArtHash = hash;
         this._applyPlaylistCover(pl, dataUrl);
         this._persistPlaylistCoverSoon(pl);
-      }).catch(() => { if (pl._coverPending === hash) pl._coverPending = null; });
+      }).catch(() => {
+        if (pl._coverPending === hash) {
+          pl._coverPending = null;
+          this._applyPlaylistFallback(pl);
+        }
+      });
 
       return cached || fallback;
     },
 
-    _applyPlaylistCover(pl, dataUrl) {
-      if (!pl || !dataUrl) return;
-      document.querySelectorAll('[data-pl-cover="' + CSS.escape(pl.id) + '"]').forEach(el => {
-        el.style.backgroundImage = 'url(' + dataUrl + ')';
-        el.style.backgroundSize = 'cover';
-        el.style.backgroundPosition = 'center';
-        el.classList.add('has-art');
-        const icon = el.querySelector('.pl-cover-icon');
-        if (icon) icon.remove();
-        const letter = el.querySelector('.pl-cover-letter');
+    _paintPlaylistCoverElement(el, pl, dataUrl) {
+      if (!el || !pl) return;
+      const hasArt = !!(dataUrl && this._safeImageDataUrl(dataUrl));
+      const p = this._playlistGradientParams(pl);
+      const gradEl = el.querySelector('.pl-cover-grad');
+      const target = gradEl || el;
+      target.style.cssText = hasArt ? this.playlistArtStyle(pl, dataUrl) : this.playlistCoverStyle(pl);
+      target.style.backgroundColor = p.from;
+      if (gradEl) {
+        el.style.backgroundColor = p.from;
+      }
+      el.classList.toggle('has-art', hasArt);
+      const icon = el.querySelector('.pl-cover-icon');
+      if (icon) icon.remove();
+      let letter = el.querySelector('.pl-cover-letter');
+      if (hasArt) {
         if (letter) letter.remove();
+      } else if (!letter) {
+        letter = document.createElement('span');
+        letter.className = 'pl-cover-letter';
+        letter.setAttribute('aria-hidden', 'true');
+        letter.textContent = this.coverInitial(pl.name);
+        if (gradEl && gradEl.nextSibling) el.insertBefore(letter, gradEl.nextSibling);
+        else el.appendChild(letter);
+      } else {
+        letter.textContent = this.coverInitial(pl.name);
+      }
+    },
+
+    /* Pinta la portada del encabezado de #sheetEditPlaylist manteniendo
+     * siempre el degradado CSS debajo del <canvas>/<img>, con recuperación
+     * automática si la imagen falla o la GPU vacía el canvas. */
+    renderEditPlaylistCover(pl, coverEl) {
+      const el = coverEl || document.getElementById('editPlaylistCover');
+      if (!el || !pl) return;
+      const cover = this.getPlaylistCover(pl);
+      const hasArt = typeof cover === 'string' && this._safeImageDataUrl(cover);
+      this._setEditPlaylistCoverContent(el, pl, hasArt ? cover : null);
+    },
+
+    _setEditPlaylistCoverContent(el, pl, dataUrl) {
+      if (!el || !pl) return;
+      const hasArt = !!(dataUrl && this._safeImageDataUrl(dataUrl));
+      const basePal = this._playlistGradientParams(pl);
+      el.style.cssText = this.playlistCoverStyle(pl);
+      el.style.backgroundColor = basePal.from;
+      el.classList.toggle('has-art', hasArt);
+      el.innerHTML = '';
+
+      const paintFallback = () => {
+        el.style.cssText = this.playlistCoverStyle(pl);
+        el.style.backgroundColor = basePal.from;
+        el.classList.remove('has-art');
+        el.innerHTML = '';
+        let painted = false;
+        if (window.AuroraCover && typeof window.AuroraCover.paint === 'function') {
+          try {
+            const pal = this._playlistGradientParams(pl);
+            const cv = document.createElement('canvas');
+            cv.width = 240; cv.height = 240;
+            const ctx = cv.getContext('2d');
+            if (ctx) {
+              window.AuroraCover.paint(ctx, 240, 240, {
+                from: pal.from,
+                to: pal.to,
+                text: pl.name || pl.id || '',
+                letter: this.coverInitial(pl.name)
+              });
+              if (!this._isCanvasLost(ctx, 240)) {
+                el.appendChild(cv);
+                painted = true;
+              }
+            }
+          } catch (e) {}
+        }
+        if (!painted) {
+          const letter = document.createElement('span');
+          letter.className = 'pl-cover-letter';
+          letter.setAttribute('aria-hidden', 'true');
+          letter.textContent = this.coverInitial(pl.name);
+          el.appendChild(letter);
+        }
+      };
+
+      if (hasArt) {
+        const img = document.createElement('img');
+        img.alt = '';
+        img.onerror = () => {
+          if (pl._coverCache === dataUrl || pl.coverArt === dataUrl) {
+            this._invalidatePlaylistCover(pl);
+            this._persistPlaylistCoverSoon(pl);
+          }
+          paintFallback();
+          this._applyPlaylistFallback(pl);
+        };
+        img.src = dataUrl;
+        el.appendChild(img);
+      } else {
+        paintFallback();
+      }
+    },
+
+    _cssEsc(v) {
+      const s = String(v == null ? '' : v);
+      if (typeof CSS !== 'undefined' && CSS && typeof CSS.escape === 'function') {
+        return CSS.escape(s);
+      }
+      return s.replace(/["\\]/g, '\\$&');
+    },
+
+    _applyPlaylistFallback(pl) {
+      if (!pl || !pl.id) return;
+      document.querySelectorAll('[data-pl-cover="' + this._cssEsc(pl.id) + '"]').forEach(el => {
+        this._paintPlaylistCoverElement(el, pl, null);
       });
       if (this._editingPlaylistId === pl.id) {
         const edit = document.getElementById('editPlaylistCover');
-        if (edit) {
-          edit.style.background = '';
-          edit.innerHTML = '<img src="' + dataUrl + '" alt="">';
-        }
+        if (edit) this._setEditPlaylistCoverContent(edit, pl, null);
       }
+    },
+
+    _applyPlaylistCover(pl, dataUrl) {
+      if (!pl || !pl.id) return;
+      if (!dataUrl || !this._safeImageDataUrl(dataUrl)) {
+        this._applyPlaylistFallback(pl);
+        return;
+      }
+      document.querySelectorAll('[data-pl-cover="' + this._cssEsc(pl.id) + '"]').forEach(el => {
+        this._paintPlaylistCoverElement(el, pl, dataUrl);
+      });
+      if (this._editingPlaylistId === pl.id) {
+        const edit = document.getElementById('editPlaylistCover');
+        if (edit) this._setEditPlaylistCoverContent(edit, pl, dataUrl);
+      }
+    },
+
+    /* Al volver del segundo plano (Android WebView / iOS descartan texturas
+     * de <canvas> y dataURL bajo presión de memoria), repinta las portadas
+     * visibles que hayan quedado vacías. */
+    refreshVisibleCovers() {
+      try {
+        if (this.currentTrack && typeof this.updateCoverArt === 'function') {
+          const mainCv = document.getElementById('coverCanvas');
+          if (mainCv && mainCv.width > 0) {
+            const ctx = mainCv.getContext('2d');
+            if (ctx && this._isCanvasLost(ctx, mainCv.width)) this.updateCoverArt(this.currentTrack);
+          }
+          if (typeof this.updateMiniCover === 'function') this.updateMiniCover(this.currentTrack);
+        }
+        if (this._editingPlaylistId) {
+          const pl = this.playlists.find(p => p.id === this._editingPlaylistId);
+          if (pl) this.renderEditPlaylistCover(pl);
+        }
+        const libSheet = document.getElementById('sheetLibrary');
+        if (libSheet && libSheet.classList.contains('open')) {
+          this.renderPlaylists();
+        }
+        if (this.currentView === 'home' && typeof this.renderHome === 'function') {
+          const heroCv = document.getElementById('homeHeroCanvas');
+          const needsRepaint = heroCv && heroCv.width > 0 && this._isCanvasLost(heroCv.getContext('2d'), heroCv.width);
+          if (needsRepaint) {
+            this.renderHome();
+          } else {
+            this.playlists.forEach(pl => {
+              const els = document.querySelectorAll('[data-pl-cover="' + this._cssEsc(pl.id) + '"]');
+              if (!els.length) return;
+              const cover = this.getPlaylistCover(pl);
+              const art = (typeof cover === 'string' && this._safeImageDataUrl(cover)) ? cover : null;
+              els.forEach(el => this._paintPlaylistCoverElement(el, pl, art));
+            });
+          }
+        }
+      } catch (e) {}
     },
 
     /* Helper: dibuja una imagen cubriendo un rect (object-fit: cover) */
     _drawImageCover(ctx, img, x, y, w, h) {
-      const r = Math.max(w / img.width, h / img.height);
-      const dw = img.width * r, dh = img.height * r;
-      const dx = x + (w - dw) / 2, dy = y + (h - dh) / 2;
-      ctx.drawImage(img, dx, dy, dw, dh);
+      if (!ctx || !img) return false;
+      const iw = img.naturalWidth || img.width || 0;
+      const ih = img.naturalHeight || img.height || 0;
+      if (iw <= 0 || ih <= 0 || w <= 0 || h <= 0) return false;
+      try {
+        const r = Math.max(w / iw, h / ih);
+        const dw = iw * r, dh = ih * r;
+        const dx = x + (w - dw) / 2, dy = y + (h - dh) / 2;
+        ctx.drawImage(img, dx, dy, dw, dh);
+        return true;
+      } catch (e) {
+        return false;
+      }
     },
 
     unbindVirtualList(ul) {
@@ -781,9 +1089,10 @@ Object.assign(App, {
       const ulRect = ul.getBoundingClientRect();
       const scRect = scroller.getBoundingClientRect();
       const startPx = Math.max(0, scRect.top - ulRect.top);
+      const viewH = scroller.clientHeight || (typeof window !== 'undefined' && window.innerHeight) || 640;
       const overscan = 8;
       let start = Math.max(0, Math.floor(startPx / rowH) - overscan);
-      let end = Math.min(items.length, Math.ceil((startPx + scroller.clientHeight) / rowH) + overscan);
+      let end = Math.min(items.length, Math.ceil((startPx + viewH) / rowH) + overscan);
       const keep = new Set();
       Array.from(ul.children).forEach(ch => {
         if (ch === spacer) return;
@@ -835,7 +1144,16 @@ Object.assign(App, {
         const nq = curId ? this.queue.indexOf(curId) : -1;
         this.queueIdx = nq >= 0 ? nq : Math.min(this.queueIdx, Math.max(0, this.queue.length - 1));
       }
-      if (this.queue.length === 0) {
+      const isEmpty = this.queue.length === 0;
+      const qActions = document.getElementById('queueActions');
+      if (qActions) qActions.hidden = isEmpty;
+      const clearBtn = document.getElementById('btnClearQueue');
+      if (clearBtn) clearBtn.disabled = this.queue.length <= 1;
+      if (ctxLabel && isEmpty) {
+        ctxLabel.textContent = '';
+        ctxLabel.style.display = 'none';
+      }
+      if (isEmpty) {
         //  desvincular la lista virtual anterior — su listener
         // de scroll seguía vivo y repintaba filas fantasma sobre
         // el estado vacío al desplazar la hoja.
@@ -845,7 +1163,8 @@ Object.assign(App, {
         emptyLi.className = 'empty-state compact';
         emptyLi.innerHTML = this.emptyStateHtml({
           icon: 'list-ol',
-          title: this.t('queue_empty')
+          title: this.t('queue_empty'),
+          text: this.t('queue_empty_hint')
         });
         ul.appendChild(emptyLi);
         return;
@@ -856,26 +1175,42 @@ Object.assign(App, {
       const makeQueueRow = (id, i) => {
         const t = queueById ? queueById.get(id) : this.tracks.find(x => x.id === id);
         if (!t) return null;
+        const isCurrent = i === this.queueIdx;
+        const nowBadge = isCurrent
+          ? `<span class="eq-badge eq-badge-row${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
+          : '';
         const li = document.createElement('li');
-        li.className = 'queue-item' + (i === this.queueIdx ? ' current' : '');
+        li.className = 'queue-item' + (isCurrent ? ' current' : '');
         li.dataset.idx = i;
         li.dataset.trackId = id;
+        li.tabIndex = 0;
         li.innerHTML = `
-          <button class="drag-handle" aria-label="${this.esc(this.t('move'))}"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
-          <div class="row-cover"><canvas width="144" height="144"></canvas></div>
+          <button class="drag-handle" type="button" aria-label="${this.esc(this.t('move') + ': ' + (t.title || ''))}"><svg class="ico" aria-hidden="true"><use href="#i-grip-vertical"></use></svg></button>
+          <div class="row-cover"><canvas width="144" height="144" aria-hidden="true"></canvas>${nowBadge}</div>
           <div class="row-text">
             <div class="row-title">${this.esc(t.title)}</div>
             <div class="row-sub">${this.esc(t.artist)} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>
           </div>
           <div class="row-duration">${this.fmtRowDuration(t)}</div>
-          <button class="row-action queue-menu" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>
-          <button class="row-action queue-remove" aria-label="${this.esc(this.t('remove'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
+          <button class="row-action queue-menu" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>
+          <button class="row-action queue-remove" type="button" aria-label="${this.esc(this.t('remove'))}"><svg class="ico" aria-hidden="true"><use href="#i-xmark"></use></svg></button>
         `;
+        const activateQueueItem = () => {
+          this.playFromQueue(i);
+          if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
+        };
         // Click normal → reproducir
         li.addEventListener('click', (e) => {
           if (e.target.closest('.drag-handle, .queue-remove, .queue-menu')) return;
-          this.playFromQueue(i);
-          if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
+          activateQueueItem();
+        });
+        li.addEventListener('keydown', (e) => {
+          if (e.target !== li) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            activateQueueItem();
+          }
         });
         // Quitar de la cola
         li.querySelector('.queue-remove').addEventListener('click', (e) => {
@@ -1062,6 +1397,52 @@ Object.assign(App, {
         autoScroll(e.clientY);
         markTarget(e.clientY);
       });
+      const applyMove = (from, to, refocus) => {
+        const maxIdx = (opts && opts.maxIndex != null)
+          ? opts.maxIndex
+          : this.queue.length - 1;
+        const clamped = Math.max(0, Math.min(maxIdx, to));
+        if (clamped === from || maxIdx <= 0) return;
+        const focusMoved = () => {
+          if (!refocus) return;
+          if (ul._virt && scroller) {
+            const rowH = ul._virt.rowH || 64;
+            const top = clamped * rowH;
+            if (top < scroller.scrollTop) scroller.scrollTop = top;
+            else if (top + rowH > scroller.scrollTop + scroller.clientHeight) {
+              scroller.scrollTop = Math.max(0, top + rowH - scroller.clientHeight);
+            }
+            if (ul._virt.onScroll) ul._virt.onScroll();
+          }
+          const nextHandle = ul.querySelector(`${itemSelector}[data-idx="${clamped}"] .drag-handle`);
+          if (nextHandle && typeof nextHandle.focus === 'function') {
+            try { nextHandle.focus({ preventScroll: true }); } catch (err) {}
+            try { nextHandle.scrollIntoView({ block: 'nearest' }); } catch (err) {}
+          }
+        };
+        if (opts && typeof opts.onReorder === 'function') {
+          opts.onReorder(from, clamped);
+          focusMoved();
+          return;
+        }
+        const moved = this.queue.splice(from, 1)[0];
+        this.queue.splice(clamped, 0, moved);
+        if (this.queueIdx === from) this.queueIdx = clamped;
+        else if (from < this.queueIdx && clamped >= this.queueIdx) this.queueIdx--;
+        else if (from > this.queueIdx && clamped <= this.queueIdx) this.queueIdx++;
+        // Con aleatorio activo la cola visible es una permutación:
+        // la misma mudanza se refleja en la original por id.
+        if (this.shuffle && Array.isArray(this._originalQueue) && this._originalQueue.length) {
+          const fromOrig = this._originalQueue.indexOf(moved);
+          if (fromOrig >= 0) {
+            this._originalQueue.splice(fromOrig, 1);
+            this._originalQueue.splice(Math.min(clamped, this._originalQueue.length), 0, moved);
+          }
+        }
+        if (typeof this.saveSession === 'function') this.saveSession();
+        this.renderQueue();
+        focusMoved();
+      };
       const finish = (e, commit) => {
         if (!dragging) return;
         dragging = false;
@@ -1073,31 +1454,26 @@ Object.assign(App, {
         li.style.zIndex = '';
         if (ul._virt && ul._virt.dragIdx === startIdx) ul._virt.dragIdx = null;
         if (!commit || to === startIdx) return;
-        if (opts && typeof opts.onReorder === 'function') {
-          opts.onReorder(startIdx, to);
-          return;
-        }
-        const moved = this.queue.splice(startIdx, 1)[0];
-        this.queue.splice(to, 0, moved);
-        if (this.queueIdx === startIdx) this.queueIdx = to;
-        else if (startIdx < this.queueIdx && to >= this.queueIdx) this.queueIdx--;
-        else if (startIdx > this.queueIdx && to <= this.queueIdx) this.queueIdx++;
-        // Con aleatorio activo la cola visible es una permutación:
-        // la misma mudanza se refleja en la original por id (si un id
-        // estuviera repetido se mueve la primera aparición; la cola
-        // no suele tener duplicados).
-        if (this.shuffle && Array.isArray(this._originalQueue) && this._originalQueue.length) {
-          const fromOrig = this._originalQueue.indexOf(moved);
-          if (fromOrig >= 0) {
-            this._originalQueue.splice(fromOrig, 1);
-            this._originalQueue.splice(Math.min(to, this._originalQueue.length), 0, moved);
-          }
-        }
-        if (typeof this.saveSession === 'function') this.saveSession();
-        this.renderQueue();
+        applyMove(startIdx, to, false);
       };
       handle.addEventListener('pointerup', (e) => finish(e, true));
       handle.addEventListener('pointercancel', (e) => finish(e, false));
+      // Reordenación equivalente con teclado (WCAG 2.2 SC 2.5.7 Dragging Movements):
+      // ↑/↓ mueve una posición, Inicio/Fin lleva al principio o al final y conserva el foco.
+      handle.addEventListener('keydown', (e) => {
+        const curIdx = parseInt(li.dataset.idx, 10);
+        const from = isNaN(curIdx) ? idx : curIdx;
+        const maxIdx = (opts && opts.maxIndex != null) ? opts.maxIndex : this.queue.length - 1;
+        let to = null;
+        if (e.key === 'ArrowUp') to = from - 1;
+        else if (e.key === 'ArrowDown') to = from + 1;
+        else if (e.key === 'Home') to = 0;
+        else if (e.key === 'End') to = maxIdx;
+        if (to === null) return;
+        e.preventDefault();
+        e.stopPropagation();
+        applyMove(from, to, true);
+      });
     },
 
     clearUpcomingQueue() {
@@ -1168,6 +1544,7 @@ Object.assign(App, {
         libCountEl.textContent = String(this.playlists.length);
         libCountEl.hidden = this.playlists.length === 0;
       }
+      if (typeof this.syncLibraryTools === 'function') this.syncLibraryTools();
       {
         const target = grid;
         if (!target) return;
@@ -1189,20 +1566,20 @@ Object.assign(App, {
           const li = document.createElement('li');
           const playing = this.isPlaylistPlaying(pl);
           li.className = 'pl-card' + (playing ? ' is-playing' : '');
+          li.tabIndex = 0;
           const cover = this.getPlaylistCover(pl);
           // Nunca interpolar una portada sin validar dentro de style="":
           // una comilla o un `)` permitiría inyectar CSS/HTML desde datos no fiables.
           const hasArt = typeof cover === 'string' && this._safeImageDataUrl(cover);
-          const coverBg = hasArt
-            ? `background-image:url('${cover}');background-size:cover;background-position:center;`
-            : this.playlistCoverStyle(pl);
+          const coverBg = hasArt ? this.playlistArtStyle(pl, cover) : this.playlistCoverStyle(pl);
+          const pal = this._playlistGradientParams(pl);
           //  Favoritos vive solo en su vista; en Listas ya no
           // hay lista con trato de favorita.
           const tracksLabel = this.playlistMetaLabel(pl);
           // Ya no hay lista predefinida: ninguna lleva insignia.
           const badge = '';
           const live = playing
-            ? '<span class="pl-live"><span class="pl-bars"><i></i><i></i><i></i></span></span>'
+            ? `<span class="pl-live${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><span class="pl-bars"><i></i><i></i><i></i></span></span>`
             : '';
           // En las tarjetas el play va sobre la portada como disco
           // de acento.
@@ -1210,8 +1587,8 @@ Object.assign(App, {
                  <svg class="ico" aria-hidden="true"><use href="#i-play"></use></svg>
                </button>`;
           const coverHtml = `
-            <div class="pl-cover${hasArt ? ' has-art' : ''}" data-pl-cover="${this.esc(pl.id)}">
-              <div class="pl-cover-grad" style="${coverBg}" data-pl-cover="${this.esc(pl.id)}"></div>
+            <div class="pl-cover${hasArt ? ' has-art' : ''}" data-pl-cover="${this.esc(pl.id)}" style="background-color:${pal.from};">
+              <div class="pl-cover-grad" style="${coverBg}"></div>
               ${hasArt ? '' : `<span class="pl-cover-letter" aria-hidden="true">${this.esc(this.coverInitial(pl.name))}</span>`}
               ${live}
               ${fabHtml}
@@ -1226,6 +1603,14 @@ Object.assign(App, {
           li.addEventListener('click', (e) => {
             if (e.target.closest('.row-action, .pl-play-fab, .pl-row-play')) return;
             this.openEditPlaylist(pl.id);
+          });
+          li.addEventListener('keydown', (e) => {
+            if (e.target !== li) return;
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              e.stopPropagation();
+              this.openEditPlaylist(pl.id);
+            }
           });
           target.appendChild(li);
         });
@@ -1319,14 +1704,15 @@ Object.assign(App, {
  * es estable: los empates conservan el orden de entrada. */
     sortTracksBy(tracks, mode) {
       const arr = (tracks || []).slice();
-      const txt = (v) => String(v == null ? '' : v).toLocaleLowerCase();
+      const loc = this.lang || undefined;
+      const cmp = (a, b) => String(a == null ? '' : a).localeCompare(String(b == null ? '' : b), loc, { sensitivity: 'base' });
       switch (mode) {
         case 'title':
-          return arr.sort((a, b) => txt(a.title).localeCompare(txt(b.title)));
+          return arr.sort((a, b) => cmp(a.title, b.title));
         case 'artist':
-          return arr.sort((a, b) => txt(a.artist).localeCompare(txt(b.artist)) || txt(a.title).localeCompare(txt(b.title)));
+          return arr.sort((a, b) => cmp(a.artist, b.artist) || cmp(a.title, b.title));
         case 'album':
-          return arr.sort((a, b) => txt(a.album).localeCompare(txt(b.album)) || txt(a.title).localeCompare(txt(b.title)));
+          return arr.sort((a, b) => cmp(a.album, b.album) || cmp(a.title, b.title));
         case 'recent':
           return arr.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
         case 'duration':
@@ -1349,7 +1735,8 @@ Object.assign(App, {
         if (!map.has(name)) map.set(name, { name, tracks: [] });
         map.get(name).tracks.push(t);
       });
-      return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+      const loc = (window.getLang && window.getLang()) || undefined;
+      return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, loc, { sensitivity: 'base' }));
     },
 
     /*  aquí vivía smartPlaylistTracks — el motor de las
@@ -1390,12 +1777,13 @@ Object.assign(App, {
  * de verdad, en listas y colas, es sortByRating. */
     getTopRatedTracks() {
       const plays = (this.stats && this.stats.plays) || {};
+      const loc = (window.getLang && window.getLang()) || undefined;
       return this.tracks
         .filter(t => this._ratingOf(t) > 0)
         .sort((a, b) =>
           (this._ratingOf(b) - this._ratingOf(a)) ||
           ((plays[b.id] || 0) - (plays[a.id] || 0)) ||
-          String(a.title || '').localeCompare(String(b.title || '')));
+          String(a.title || '').localeCompare(String(b.title || ''), loc, { sensitivity: 'base' }));
     },
 
     /* Reproduce la lista de favoritos como una playlist independiente */

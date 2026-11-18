@@ -46,6 +46,21 @@ Object.assign(App, {
     async openFilePicker(useDirectory, targetPlaylistId) {
       if (useDirectory && !this.supportsFolderPicker()) useDirectory = false;
 
+      // Pedir almacenamiento persistente de forma síncrona dentro del clic
+      // de importar (antes de cualquier await) para que Safari/Firefox/Chrome
+      // conserven la activación del usuario y protejan la biblioteca de purgas.
+      if (!this._storagePersisted && !this._persistAskedOnPick) {
+        this._persistAskedOnPick = true;
+        try {
+          if (navigator.storage && typeof navigator.storage.persist === 'function') {
+            navigator.storage.persist().then((g) => {
+              this._storagePersisted = !!g;
+              if (typeof this.syncStoragePersistUI === 'function') this.syncStoragePersistUI();
+            }).catch(() => {});
+          }
+        } catch (e) {}
+      }
+
       // En Delta Chat nativo manda su selector integrado
       // (webxdc.importFiles,). El modo carpeta no existe allí y ya
       // viene degradado a archivos por supportsFolderPicker(). Si el

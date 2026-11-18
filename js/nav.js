@@ -81,7 +81,8 @@ Object.assign(App, {
     _syncMiniMarquee() {
       const el = document.getElementById('miniPlayerTitle');
       if (!el) return;
-      el.classList.toggle('marquee', el.scrollWidth > el.clientWidth + 4);
+      const reduced = typeof this.prefersReducedMotion === 'function' && this.prefersReducedMotion();
+      el.classList.toggle('marquee', !reduced && this._marqueeEnabled !== false && el.scrollWidth > el.clientWidth + 4);
     },
 
     openNowPlaying() {
@@ -217,9 +218,9 @@ Object.assign(App, {
       const lists = this.playlists.slice(0, 8);
 
       root.innerHTML = hero +
-        this._homeRail('homeRecent', this.t('home_recent'), recent, 'track') +
+        this._homeRail('homeRecent', this.t('home_recent'), recent, 'track', 'recent') +
         this._homePlaylists(lists) +
-        this._homeRail('homeTop', this.t('home_top'), top, 'track') +
+        this._homeRail('homeTop', this.t('home_top'), top, 'track', 'stats') +
         this._homeRatedRail();
 
       if (t) {
@@ -240,7 +241,7 @@ Object.assign(App, {
       </div>`;
     },
 
-    _homeRail(id, title, tracks, kind) {
+    _homeRail(id, title, tracks, kind, seeAllTarget) {
       if (!tracks || !tracks.length) return '';
       const curId = this.currentTrack && this.currentTrack.id;
       const items = tracks.map(t => {
@@ -252,13 +253,13 @@ Object.assign(App, {
           ? `<span class="eq-badge${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
           : '';
         return `<button class="home-card${isCur ? ' is-current' : ''}" type="button" data-kind="${kind}" data-id="${this.esc(t.id)}">
-          <div class="home-card-cover"><canvas width="384" height="384"></canvas>${nowBadge}</div>
+          <div class="home-card-cover"><canvas width="384" height="384" aria-hidden="true"></canvas>${nowBadge}</div>
           <span class="home-card-title">${this.esc(t.title)}</span>
           <span class="home-card-sub">${this.esc(t.artist || '')}</span>
         </button>`;
       }).join('');
       return `<section class="home-section">
-        ${this._sectionHead(title)}
+        ${this._sectionHead(title, seeAllTarget || 'library')}
         <div class="home-rail" id="${id}">${items}</div>
       </section>`;
     },
@@ -278,15 +279,13 @@ Object.assign(App, {
           ? `<span class="eq-badge${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
           : '';
         return `<button class="home-card${isCur ? ' is-current' : ''}" type="button" data-kind="track" data-id="${this.esc(t.id)}">
-          <div class="home-card-cover"><canvas width="384" height="384"></canvas>${nowBadge}</div>
+          <div class="home-card-cover"><canvas width="384" height="384" aria-hidden="true"></canvas>${nowBadge}</div>
           <span class="home-card-title">${this.esc(t.title)}</span>
           <span class="home-card-sub rated-sub"><span class="sub-stars" aria-hidden="true">${'★'.repeat(this._ratingOf(t))}</span><span class="sub-artist">${this.esc(t.artist || '')}</span></span>
         </button>`;
       }).join('');
       return `<section class="home-section">
-        <div class="home-section-head">
-          <h3 class="home-section-title">${this.esc(this.t('rated_title'))}</h3>
-        </div>
+        ${this._sectionHead(this.t('rated_title'), 'rated')}
         <div class="home-rail" id="homeRated">${items}</div>
       </section>`;
     },
@@ -321,8 +320,9 @@ Object.assign(App, {
       if (!lists || !lists.length) return '';
       const items = lists.map(pl => {
         const n = (pl.trackIds || []).length;
+        const gradStyle = typeof this.playlistCoverStyle === 'function' ? this.playlistCoverStyle(pl) : '';
         return `<button class="home-card" type="button" data-kind="playlist" data-id="${this.esc(pl.id)}">
-          <div class="home-card-cover" data-pl="${this.esc(pl.id)}" data-pl-cover="${this.esc(pl.id)}"><span class="pl-cover-letter" aria-hidden="true">${this.esc(this.coverInitial(pl.name))}</span></div>
+          <div class="home-card-cover" data-pl="${this.esc(pl.id)}" data-pl-cover="${this.esc(pl.id)}" style="${gradStyle}"><span class="pl-cover-letter" aria-hidden="true">${this.esc(this.coverInitial(pl.name))}</span></div>
           <span class="home-card-title">${this.esc(pl.name)}</span>
           <span class="home-card-sub">${this.esc(this.fmtTracksCount(n))}</span>
         </button>`;
@@ -340,10 +340,38 @@ Object.assign(App, {
       this._bindHomeCards(home);
     },
 
-    /* «Ver todo» de cada sección (su destino lo declara data-see-all). */
+    /* «Ver todo» de cada sección: lleva a su vista específica en lugar de
+     * dejar al usuario siempre en la rejilla genérica de listas. */
     _bindSeeAll(scope) {
       scope.querySelectorAll('[data-see-all]').forEach(btn => {
-        btn.addEventListener('click', () => this.goNav(btn.dataset.seeAll));
+        btn.addEventListener('click', () => {
+          const dest = btn.dataset.seeAll;
+          if (dest === 'stats' && typeof this.renderStats === 'function') {
+            this.renderStats();
+            this.openSheet('sheetStats');
+            return;
+          }
+          if (dest === 'recent' && typeof this.openBrowse === 'function') {
+            this.openBrowse({
+              type: 'recent',
+              title: this.t('home_recent'),
+              tracks: this.getRecentlyAdded(this.tracks.length)
+            });
+            return;
+          }
+          if (dest === 'rated' && typeof this.openBrowse === 'function' && typeof this.getTopRatedTracks === 'function') {
+            this.openBrowse({
+              type: 'rated',
+              title: this.t('rated_title'),
+              tracks: this.getTopRatedTracks()
+            });
+            return;
+          }
+          if (dest === 'library' && typeof this.setLibTab === 'function') {
+            this.setLibTab('playlists');
+          }
+          this.goNav(dest || 'library');
+        });
       });
     },
 
@@ -373,17 +401,16 @@ Object.assign(App, {
           const coverEl = card.querySelector('[data-pl]');
           if (coverEl && pl) {
             const cover = this.getPlaylistCover(pl);
-            if (typeof cover === 'string' && cover.startsWith('data:')) {
+            const hasArt = typeof cover === 'string' && this._safeImageDataUrl(cover);
+            if (typeof this._paintPlaylistCoverElement === 'function') {
+              this._paintPlaylistCoverElement(coverEl, pl, hasArt ? cover : null);
+            } else if (hasArt) {
               coverEl.style.backgroundImage = 'url(' + cover + ')';
               coverEl.style.backgroundSize = 'cover';
+              coverEl.style.backgroundPosition = 'center';
+              coverEl.classList.add('has-art');
             } else if (typeof this.playlistCoverStyle === 'function') {
-              //  mismo fondo que en Listas (luz + degradado), no un color
-              //  plano: cinco listas del mismo acento eran indistinguibles.
-              coverEl.style.cssText += this.playlistCoverStyle(pl);
-            } else {
-              const from = (cover && cover.from) || ((this.coverFallback && this.coverFallback().from) || '#6E5CFF');
-              const to = (cover && cover.to) || ((this.coverFallback && this.coverFallback().to) || '#FF7AB6');
-              coverEl.style.background = 'linear-gradient(135deg,' + from + ',' + to + ')';
+              coverEl.style.cssText = this.playlistCoverStyle(pl);
             }
           }
           card.addEventListener('click', () => this.openEditPlaylist(id));
@@ -404,9 +431,18 @@ Object.assign(App, {
  *. Álbumes y artistas siguen accesibles
  * desde el menú de cada pista («Ir al artista» / «Ir al álbum»).
  * ============================================================ */
+    syncLibraryTools() {
+      const tools = document.getElementById('libraryTools');
+      if (!tools) return;
+      const tab = this._libTab || 'playlists';
+      const totalTracks = Array.isArray(this.tracks) ? this.tracks.length : 0;
+      tools.hidden = tab !== 'playlists' || totalTracks < 2;
+    },
+
     renderLibrarySections() {
       this.renderPlaylists();
       this.renderLibraryCatalog();
+      this.syncLibraryTools();
     },
 
     /*  pestañas de la biblioteca. 'playlists' es la vista de
@@ -419,9 +455,8 @@ Object.assign(App, {
       document.querySelectorAll('.lib-tab').forEach(b => {
         const on = b.dataset.libtab === this._libTab;
         b.classList.toggle('active', on);
-        //  el estado visual debe reflejarse en ARIA — los
-        // lectores de pantalla anuncian qué pestaña está activa.
         b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.setAttribute('tabindex', on ? '0' : '-1');
       });
       const show = (id, on) => {
         const el = document.getElementById(id);
@@ -431,6 +466,7 @@ Object.assign(App, {
       show('libSectionAlbums', this._libTab === 'albums');
       show('libSectionArtists', this._libTab === 'artists');
       show('libSectionGenres', this._libTab === 'genres');
+      this.syncLibraryTools();
       if (this._libTab !== 'playlists') this.renderLibraryCatalog();
     },
 
@@ -445,14 +481,28 @@ Object.assign(App, {
       const grid = document.getElementById(gridId);
       if (!grid) return;
       grid.innerHTML = '';
+      const renderEmpty = (icon) => {
+        const li = document.createElement('li');
+        li.className = 'catalog-empty empty-state compact';
+        li.innerHTML = this.emptyStateHtml({
+          icon,
+          title: this.t('no_tracks_loaded'),
+          text: this.t('empty_library_hint')
+        });
+        grid.appendChild(li);
+      };
       const card = (name, sub, seedTrack, onOpen) => {
         const li = document.createElement('li');
         li.className = 'catalog-card';
-        li.innerHTML = '<div class="cat-cover"><canvas width="240" height="240"></canvas></div>' +
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'catalog-card-btn';
+        btn.innerHTML = '<div class="cat-cover"><canvas width="240" height="240" aria-hidden="true"></canvas></div>' +
           '<div class="cat-name">' + this.esc(name) + '</div>' +
           '<div class="cat-sub">' + this.esc(sub) + '</div>';
-        li.addEventListener('click', onOpen);
-        const cv = li.querySelector('canvas');
+        btn.addEventListener('click', onOpen);
+        li.appendChild(btn);
+        const cv = btn.querySelector('canvas');
         if (cv && seedTrack) this.drawRowCover(cv, seedTrack);
         else if (cv) {
           const ctx = cv.getContext('2d');
@@ -461,21 +511,27 @@ Object.assign(App, {
         return li;
       };
       if (tab === 'albums') {
-        this.getAlbums().forEach(al => {
+        const list = this.getAlbums();
+        if (!list.length) { renderEmpty('compact-disc'); return; }
+        list.forEach(al => {
           const years = [...new Set(al.tracks.map(t => t.year).filter(Boolean))];
           const sub = al.artist + ' · ' + this.fmtTracksCount(al.tracks.length) + (years.length === 1 ? ' · ' + years[0] : '');
           const seed = al.tracks.find(t => t.coverIsImage) || al.tracks[0];
           grid.appendChild(card(al.name, sub, seed, () => this.goToAlbum(al.name, al.artist)));
         });
       } else if (tab === 'artists') {
-        this.getArtists().forEach(ar => {
+        const list = this.getArtists();
+        if (!list.length) { renderEmpty('user'); return; }
+        list.forEach(ar => {
           const albums = new Set(ar.tracks.map(t => this.albumKey(t))).size;
           const sub = this.fmtTracksCount(ar.tracks.length) + ' · ' + albums + ' ' + this.t('tab_albums').toLowerCase();
           const seed = ar.tracks.find(t => t.coverIsImage) || ar.tracks[0];
           grid.appendChild(card(ar.name, sub, seed, () => this.goToArtist(ar.name)));
         });
       } else if (tab === 'genres') {
-        this.getGenres().forEach(g => {
+        const list = this.getGenres();
+        if (!list.length) { renderEmpty('music'); return; }
+        list.forEach(g => {
           const seed = g.tracks.find(t => t.coverIsImage) || g.tracks[0];
           grid.appendChild(card(g.name, this.fmtTracksCount(g.tracks.length), seed, () => {
             this.openBrowse({ type: 'genre', title: g.name, tracks: g.tracks.slice() });
@@ -521,18 +577,37 @@ Object.assign(App, {
      *  Vista Álbum / Artista
      * ============================================================ */
     openBrowse(opts) {
-      this._browse = opts;
+      opts = opts || {};
+      const list = Array.isArray(opts.tracks) ? opts.tracks : [];
+      this._browse = Object.assign({}, opts, { tracks: list });
       //  cada vista nueva empieza en su orden natural.
       const sortSel = document.getElementById('browseSortSelect');
       if (sortSel) { this._browse.sort = 'added'; sortSel.value = 'added'; }
       const title = document.getElementById('browseTitle');
+      const hero = document.getElementById('browseHero');
+      const heroTitle = document.getElementById('browseHeroTitle');
+      const sortRow = document.getElementById('browseSortRow');
+      const playBtn = document.getElementById('btnPlayBrowse');
       const sub = document.getElementById('browseSubtitle');
-      if (title) title.textContent = opts.title || '';
-      if (sub) sub.textContent = opts.subtitle || this.fmtTracksCount((opts.tracks || []).length);
+      const hasTracks = list.length > 0;
+      if (title) title.textContent = opts.title || '—';
+      if (hero) hero.hidden = !hasTracks;
+      if (sortRow) sortRow.hidden = list.length <= 1;
+      if (playBtn) playBtn.hidden = !hasTracks;
+      if (heroTitle) heroTitle.textContent = opts.title || '—';
+      if (sub) {
+        const parts = [];
+        if (opts.subtitle) parts.push(opts.subtitle);
+        parts.push(this.fmtTracksCount(list.length));
+        const totalDur = list.reduce((s, x) => s + ((x && Number(x.duration)) || 0), 0);
+        const durLbl = totalDur > 0 && typeof this.fmtDurationLabel === 'function' ? this.fmtDurationLabel(totalDur) : '';
+        if (durLbl) parts.push(durLbl);
+        sub.textContent = parts.join(' · ');
+      }
       const coverEl = document.getElementById('browseCover');
-      if (coverEl) {
-        coverEl.innerHTML = '<canvas width="240" height="240"></canvas>';
-        const seed = (opts.tracks || []).find(t => t.coverIsImage) || (opts.tracks || [])[0];
+      if (coverEl && hasTracks) {
+        coverEl.innerHTML = '<canvas width="240" height="240" aria-hidden="true"></canvas>';
+        const seed = list.find(t => t && t.coverIsImage) || list[0];
         const cv = coverEl.querySelector('canvas');
         if (cv && seed) this.drawRowCover(cv, seed);
       }
@@ -549,17 +624,48 @@ Object.assign(App, {
       return this.sortTracksBy(this._browse.tracks || [], mode);
     },
 
+    _browsePlayContext() {
+      if (!this._browse) return { type: 'all' };
+      if (this._browse.type === 'album') {
+        return { type: 'album', name: this._browse.title, artist: this._browse.artist || this._browse.subtitle };
+      }
+      if (this._browse.type === 'genre') return { type: 'genre', name: this._browse.title };
+      if (this._browse.type === 'artist') return { type: 'artist', name: this._browse.title };
+      return { type: 'all' };
+    },
+
     renderBrowseTracks() {
       const ul = document.getElementById('browseTracks');
-      if (!ul || !this._browse) return;
+      if (!ul) return;
       ul.innerHTML = '';
-      const tracks = this.browseTracksSorted();
-      const ctx = this._browse.type === 'album'
-        ? { type: 'album', name: this._browse.title, artist: this._browse.artist || this._browse.subtitle }
-        : this._browse.type === 'genre'
-          ? { type: 'genre', name: this._browse.title }
-          : { type: 'artist', name: this._browse.title };
-      tracks.forEach(t => ul.appendChild(this.makeTrackRow(t, { playContext: ctx })));
+      const tracks = this._browse ? this.browseTracksSorted() : [];
+      const hero = document.getElementById('browseHero');
+      const sortRow = document.getElementById('browseSortRow');
+      const playBtn = document.getElementById('btnPlayBrowse');
+      if (!tracks.length) {
+        if (hero) hero.hidden = true;
+        if (sortRow) sortRow.hidden = true;
+        if (playBtn) playBtn.hidden = true;
+        const li = document.createElement('li');
+        li.className = 'empty-state compact';
+        li.innerHTML = this.emptyStateHtml({
+          icon: 'compact-disc',
+          title: this.t('no_results')
+        });
+        ul.appendChild(li);
+        return;
+      }
+      if (hero) hero.hidden = false;
+      if (sortRow) sortRow.hidden = tracks.length <= 1;
+      if (playBtn) playBtn.hidden = false;
+      const customCtx = this._browse && (this._browse.type === 'recent' || this._browse.type === 'rated');
+      const baseCtx = this._browsePlayContext();
+      tracks.forEach(t => {
+        const ctx = customCtx && typeof this.trackPlayContextFor === 'function'
+          ? this.trackPlayContextFor(t)
+          : baseCtx;
+        ul.appendChild(this.makeTrackRow(t, { playContext: ctx }));
+      });
     },
 
     playBrowse() {
@@ -573,11 +679,7 @@ Object.assign(App, {
       this.queue = ids;
       this.queueIdx = 0;
       this._plSyncIds = null; //  álbum/artista/género no sincronizan
-      this.playContext = this._browse.type === 'album'
-        ? { type: 'album', name: this._browse.title, artist: this._browse.artist || this._browse.subtitle }
-        : this._browse.type === 'genre'
-          ? { type: 'genre', name: this._browse.title }
-          : { type: 'artist', name: this._browse.title };
+      this.playContext = this._browsePlayContext();
       // Igual que playPlaylist(): si shuffle está activo, barajar la cola nueva
       // anclando su primera pista (no la que sonaba antes); si no, limpiar la
       // cola original para no restaurar una lista ajena.
@@ -638,6 +740,7 @@ Object.assign(App, {
       const isCurrent = this.currentTrack && this.currentTrack.id === t.id;
       li.className = 'track-row' + (isCurrent ? ' current' : '');
       li.dataset.track = t.id;
+      li.tabIndex = 0;
       // Subtítulo sin eco: el álbum se oculta cuando coincide con el
       // título o con el artista (sencillos: «BALALAIKA» y debajo
       // «9Lana · BALALAIKA» decía lo mismo dos veces). Igual que ya
@@ -652,7 +755,7 @@ Object.assign(App, {
         ? `<span class="eq-badge eq-badge-row${this.isPlaying ? ' playing' : ''}" aria-hidden="true"><i></i><i></i><i></i></span>`
         : '';
       li.innerHTML = `
-        <div class="row-cover"><canvas width="144" height="144"></canvas>${nowBadge}</div>
+        <div class="row-cover"><canvas width="144" height="144" aria-hidden="true"></canvas>${nowBadge}</div>
         <div class="row-text">
           <div class="row-title">${this.esc(t.title)}</div>
           <div class="row-sub">${this.esc(t.artist)}${showAlbum ? ' · ' + this.esc(t.album) : ''} <span class="row-rating"${this._ratingOf(t) ? '' : ' hidden'}>${'★'.repeat(this._ratingOf(t))}</span></div>
@@ -660,12 +763,23 @@ Object.assign(App, {
         <div class="row-duration">${this.fmtRowDuration(t)}</div>
         <button class="row-action track-menu-btn" type="button" aria-label="${this.esc(this.t('more_options'))}"><svg class="ico" aria-hidden="true"><use href="#i-ellipsis-vertical"></use></svg></button>`;
       const ctx = opts.playContext || { type: 'all' };
-      li.addEventListener('click', (e) => {
-        if (e.target.closest('.track-menu-btn')) return;
+      const activateRow = () => {
         this.playTrack(t.id, ctx);
         this.updateChrome();
         // Elegir canción en una lista abre el reproductor.
         if (typeof this.openPlayerForTrackPick === 'function') this.openPlayerForTrackPick();
+      };
+      li.addEventListener('click', (e) => {
+        if (e.target.closest('.track-menu-btn')) return;
+        activateRow();
+      });
+      li.addEventListener('keydown', (e) => {
+        if (e.target !== li) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          e.stopPropagation();
+          activateRow();
+        }
       });
       const menuBtn = li.querySelector('.track-menu-btn');
       if (menuBtn) menuBtn.addEventListener('click', (e) => {

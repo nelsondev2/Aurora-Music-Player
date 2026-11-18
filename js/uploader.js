@@ -37,6 +37,7 @@
       opts = opts || {};
       const onProgress = typeof opts.onProgress === 'function' ? opts.onProgress : null;
       const isCancelled = typeof opts.isCancelled === 'function' ? opts.isCancelled : () => false;
+      const fingerprintFn = typeof opts.fingerprint === 'function' ? opts.fingerprint : null;
       const out = [];
       // Separar audio vs lrc para emparejarlos por nombre
       const audios = [];
@@ -72,11 +73,15 @@
           const myIdx = index++;
           const file = audios[myIdx];
           try {
-            const track = await this.processOne(file, lrcs, artworkCache);
+            const track = await this.processOne(file, lrcs, artworkCache, fingerprintFn);
             results[myIdx] = track;
           } catch (e) {
             console.warn('[Aurora] No se pudo procesar', file.name, e);
-            results[myIdx] = this.fallbackTrack(file);
+            const fb = this.fallbackTrack(file);
+            if (fingerprintFn) {
+              try { fb.fp = await fingerprintFn(file); } catch (err) {}
+            }
+            results[myIdx] = fb;
           }
           completed++;
           if (onProgress) onProgress(completed, audios.length, file.name);
@@ -97,7 +102,7 @@
     },
 
     /* ---------- Procesa un único File ---------- */
-    async processOne(file, lrcsMap, artworkCache) {
+    async processOne(file, lrcsMap, artworkCache, fingerprintFn) {
       const baseName = file.name.replace(/\.[^.]+$/, '').toLowerCase();
       const id = 't-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
       const fromName = this.parseFilename(file.name);
@@ -128,10 +133,11 @@
       // ENTERO (los FLAC son los más grandes) para llegar a los
       // mismos datos. Solo se le llama si falta el título Vorbis.
       const vorbisComplete = !!(vorbis && this.tagText(vorbis.title));
-      let [tags, lrcText, duration] = await Promise.all([
+      let [tags, lrcText, duration, fp] = await Promise.all([
         vorbisComplete ? Promise.resolve(null) : this.readTags(file).catch(() => null),
         lrcFile ? this.readTextFile(lrcFile).catch(() => null) : Promise.resolve(null),
-        (vorbis && vorbis.duration) ? Promise.resolve(vorbis.duration) : this.probeDuration(file).catch(() => 0)
+        (vorbis && vorbis.duration) ? Promise.resolve(vorbis.duration) : this.probeDuration(file).catch(() => 0),
+        fingerprintFn ? Promise.resolve().then(() => fingerprintFn(file)).catch(() => null) : Promise.resolve(null)
       ]);
 
       /* El lector propio rellena lo que falte sin pisar nunca un
@@ -177,7 +183,9 @@
         }
       }
 
-      if (!meta.lrc) {
+      const maybeId3 = !isVorbisFile && !/\.(m4a|mp4|webm)$/i.test(file.name || '')
+        && !/audio\/(?:mp4|x-m4a|webm)/i.test(file.type || '');
+      if (!meta.lrc && !lrcText && maybeId3) {
         try {
           const customLyrics = await this.readLyricsFromId3v2(file);
           if (customLyrics) {
@@ -211,7 +219,8 @@
         artist: meta.artist,
         album: meta.album,
         duration: duration || 0,
-        src: URL.createObjectURL(file),
+        src: null,
+        fp: fp || null,
         cover: meta.cover,
         coverIsImage,
         coverThumb,
@@ -273,19 +282,26 @@
       return { artist: '', title: this.cleanName(name) };
     },
 
-    /* ---------- Lee tags ID3 con jsmediatags (cargado desde CDN) ---------- */
+    /* ---------- Lee tags ID3 con jsmediatags ---------- */
     readTags(file) {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         if (!window.jsmediatags) return resolve(null);
+        let settled = false;
+        const done = (val) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(val);
+        };
+        const timer = setTimeout(() => done(null), 3500);
         try {
           // Solicitamos explícitamente lyrics para asegurar que USLT se lea.
-          // jsmediatags por defecto puede no incluir lyrics en algunos builds.
           window.jsmediatags.read(file, {
             tags: ['title', 'artist', 'album', 'year', 'comment', 'track', 'genre', 'picture', 'lyrics', 'composer', 'USLT', 'SYLT'],
-            onSuccess: (r) => resolve(r.tags || null),
-            onError: (e) => resolve(null)
+            onSuccess: (r) => done((r && r.tags) || null),
+            onError: () => done(null)
           });
-        } catch (e) { resolve(null); }
+        } catch (e) { done(null); }
       });
     },
 
@@ -638,33 +654,56 @@
       });
     },
 
-    /* Lee la duración real del archivo con un <audio> temporal. */
-    probeDuration(file) {
-      return new Promise((resolve) => {
-        try {
-          const a = document.createElement('audio');
-          a.preload = 'metadata';
-          const url = URL.createObjectURL(file);
-          let settled = false;
-          let timer = null;
-          const finish = (sec) => {
-            if (settled) return;
-            settled = true;
-            if (timer) clearTimeout(timer);
-            try { URL.revokeObjectURL(url); } catch (e) {}
-            try { a.removeAttribute('src'); a.load(); } catch (e) {}
-            resolve(sec > 0 && isFinite(sec) ? Math.round(sec) : 0);
-          };
-          a.addEventListener('loadedmetadata', () => finish(a.duration));
-          a.addEventListener('error', () => finish(0));
-          /* Cuatro segundos bastan para metadatos locales; un archivo
-           * corrupto o un WebView lento no debe retener la importación. */
-          timer = setTimeout(() => finish(0), 4000);
-          a.src = url;
-        } catch (e) {
-          resolve(0);
-        }
-      });
+    /* Lee la duración real del archivo con un <audio> temporal.
+     * Se limita la concurrencia a 3 elementos simultáneos: en Android
+     * WebView abrir 6+ decodificadores a la vez satura MediaPlayer y
+     * deja la importación esperando el timeout pista por pista. */
+    _probeActive: 0,
+    _probeWaiters: [],
+
+    _acquireProbeSlot() {
+      if (this._probeActive < 3) {
+        this._probeActive++;
+        return Promise.resolve();
+      }
+      return new Promise(r => this._probeWaiters.push(r));
+    },
+
+    _releaseProbeSlot() {
+      const next = this._probeWaiters.shift();
+      if (next) next();
+      else this._probeActive = Math.max(0, this._probeActive - 1);
+    },
+
+    async probeDuration(file) {
+      await this._acquireProbeSlot();
+      try {
+        return await new Promise((resolve) => {
+          try {
+            const a = document.createElement('audio');
+            a.preload = 'metadata';
+            const url = URL.createObjectURL(file);
+            let settled = false;
+            let timer = null;
+            const finish = (sec) => {
+              if (settled) return;
+              settled = true;
+              if (timer) clearTimeout(timer);
+              try { URL.revokeObjectURL(url); } catch (e) {}
+              try { a.removeAttribute('src'); a.load(); } catch (e) {}
+              resolve(sec > 0 && isFinite(sec) ? Math.round(sec) : 0);
+            };
+            a.addEventListener('loadedmetadata', () => finish(a.duration));
+            a.addEventListener('error', () => finish(0));
+            timer = setTimeout(() => finish(0), 2500);
+            a.src = url;
+          } catch (e) {
+            resolve(0);
+          }
+        });
+      } finally {
+        this._releaseProbeSlot();
+      }
     },
 
     /* ---------- Track mínimo de respaldo si todo falla ---------- */
@@ -676,7 +715,8 @@
         artist: this._t('unknown_artist', 'Artista desconocido'),
         album: this._t('no_album', 'Sin álbum'),
         duration: 0,
-        src: URL.createObjectURL(file),
+        src: null,
+        fp: null,
         cover: this.randomCover(),
         coverIsImage: false,
         genre: '',

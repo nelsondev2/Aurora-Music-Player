@@ -17,20 +17,20 @@
  *  y desde JS con App.t('key').
  * ===================================================================== */
 const SUPPORTED_LANGS = [
-  { code: 'es', name: 'Español',         flag: '🇪🇸' },
-  { code: 'en', name: 'English',         flag: '🇬🇧' },
-  { code: 'pt', name: 'Português',       flag: '🇵🇹' },
-  { code: 'zh', name: '中文',              flag: '🇨🇳' },
-  { code: 'ja', name: '日本語',            flag: '🇯🇵' },
-  { code: 'fr', name: 'Français',        flag: '🇫🇷' },
-  { code: 'it', name: 'Italiano',        flag: '🇮🇹' },
-  { code: 'ru', name: 'Русский',         flag: '🇷🇺' },
-  { code: 'de', name: 'Deutsch',         flag: '🇩🇪' },
-  { code: 'uk', name: 'Українська',      flag: '🇺🇦' },
-  { code: 'pl', name: 'Polski',          flag: '🇵🇱' },
-  { code: 'tr', name: 'Türkçe',          flag: '🇹🇷' },
-  { code: 'id', name: 'Bahasa Indonesia', flag: '🇮🇩' },
-  { code: 'zh-TW', name: '繁體中文',       flag: '🇹🇼' }
+  { code: 'es',    name: 'Español',          flag: 'ES' },
+  { code: 'en',    name: 'English',          flag: 'EN' },
+  { code: 'pt',    name: 'Português',        flag: 'PT' },
+  { code: 'zh',    name: '中文',               flag: 'ZH' },
+  { code: 'ja',    name: '日本語',             flag: 'JA' },
+  { code: 'fr',    name: 'Français',         flag: 'FR' },
+  { code: 'it',    name: 'Italiano',         flag: 'IT' },
+  { code: 'ru',    name: 'Русский',          flag: 'RU' },
+  { code: 'de',    name: 'Deutsch',          flag: 'DE' },
+  { code: 'uk',    name: 'Українська',       flag: 'UK' },
+  { code: 'pl',    name: 'Polski',           flag: 'PL' },
+  { code: 'tr',    name: 'Türkçe',           flag: 'TR' },
+  { code: 'id',    name: 'Bahasa Indonesia', flag: 'ID' },
+  { code: 'zh-TW', name: '繁體中文',           flag: 'ZH-TW' }
 ];
 
 const I18N = {
@@ -370,7 +370,7 @@ const I18N = {
     'zh-TW': '均衡器'
   },
   sleep: {
-    es: 'Sleep',
+    es: 'Temporizador',
     en: 'Sleep',
     pt: 'Sleep',
     zh: '睡眠',
@@ -943,7 +943,7 @@ const I18N = {
     'zh-TW': '進行中 · 本曲結束'
   },
   toast_sleep_eot: {
-    es: 'Sleep al final de la canción',
+    es: 'Apagar al final de la canción',
     en: 'Sleep at end of track',
     pt: 'Sleep no fim da faixa',
     zh: '本曲结束后休眠',
@@ -1712,7 +1712,7 @@ const I18N = {
     'zh-TW': '睡眠定時器：結束'
   },
   toast_sleep_started: {
-    es: 'Sleep en X min',
+    es: 'Apagado en X min',
     en: 'Sleep in X min',
     pt: 'Sleep em X min',
     zh: 'X 分钟后休眠',
@@ -2191,7 +2191,7 @@ const I18N = {
     'zh-TW': '保存'
   },
   lrc_edit_hint: {
-    es: 'Pega o edita la letra aquí. Usa [mm:ss.xx] para timestamps.',
+    es: 'Pega o edita la letra aquí. Usa [mm:ss.xx] para las marcas de tiempo.',
     en: 'Paste or edit lyrics here. Use [mm:ss.xx] for timestamps.',
     pt: 'Cole ou edite a letra aqui. Use [mm:ss.xx] para timestamps.',
     zh: '在此粘贴或编辑歌词。使用 [mm:ss.xx] 作为时间戳。',
@@ -2250,7 +2250,7 @@ const I18N = {
     'zh-TW': '循環段落'
   },
   lrc_loop_clear: {
-    es: 'Quitar loop', en: 'Clear loop', pt: 'Limpar loop',
+    es: 'Quitar bucle', en: 'Clear loop', pt: 'Limpar loop',
     zh: '清除循环', ja: 'ループ解除', fr: 'Effacer la boucle',
     it: 'Rimuovi loop', ru: 'Сбросить повтор',
     de: 'Loop entfernen',
@@ -2346,7 +2346,7 @@ const I18N = {
     'zh-TW': '音量標準化'
   },
   settings_reset_eq: {
-    es: 'Resetear EQ', en: 'Reset EQ', pt: 'Redefinir EQ', zh: '重置EQ', ja: 'EQをリセット',
+    es: 'Restablecer EQ', en: 'Reset EQ', pt: 'Redefinir EQ', zh: '重置EQ', ja: 'EQをリセット',
     fr: 'Réinitialiser EQ', it: 'Reimposta EQ', ru: 'Сбросить EQ',
     de: 'EQ zurücksetzen',
     uk: 'Скинути еквалайзер',
@@ -3123,6 +3123,118 @@ const I18N = {
     id: 'Mengerti',
     'zh-TW': '知道了'
   },
+  settings_persist_storage: {
+    es: 'Proteger datos de la biblioteca',
+    en: 'Protect library storage',
+    pt: 'Proteger dados da biblioteca',
+    zh: '保护曲库存储',
+    ja: 'ライブラリの保存を保護',
+    fr: 'Protéger le stockage de la bibliothèque',
+    it: 'Proteggi i dati della libreria',
+    ru: 'Защитить хранилище фонотеки',
+    de: 'Bibliotheksspeicher schützen',
+    uk: 'Захистити сховище фонотеки',
+    pl: 'Chroń dane biblioteki',
+    tr: 'Kitaplık verilerini koru',
+    id: 'Lindungi penyimpanan pustaka',
+    'zh-TW': '保護曲庫儲存空間'
+  },
+  settings_persist_hint: {
+    es: 'Solicita almacenamiento permanente para evitar que el navegador o el sistema borren tu música tras varios días sin abrir la app. En Safari/iOS añádela a la pantalla de inicio; en Delta Chat evita el borrado automático de mensajes.',
+    en: 'Requests persistent storage so the browser or system does not clear your music after days of inactivity. On Safari/iOS add the app to your Home Screen; in Delta Chat keep auto-delete off for this chat.',
+    pt: 'Solicita armazenamento persistente para evitar que o navegador ou o sistema apague sua música após dias sem abrir o app. No Safari/iOS adicione à Tela de Início; no Delta Chat evite apagar mensagens automaticamente.',
+    zh: '请求持久存储，防止浏览器或系统在多日未打开后清理音乐。Safari/iOS 请添加到主屏幕；Delta Chat 请关闭自动删除消息。',
+    ja: '数日間開かなくてもブラウザやシステムに音楽を消去されないよう永続ストレージを要求します。Safari/iOS はホーム画面に追加し、Delta Chat ではメッセージ自動削除をオフにしてください。',
+    fr: 'Demande un stockage persistant pour éviter que le navigateur ou le système n’efface votre musique après plusieurs jours d’inactivité. Sur Safari/iOS, ajoutez l’app à l’écran d’accueil ; dans Delta Chat, désactivez la suppression automatique des messages.',
+    it: 'Richiede archiviazione persistente per evitare che il browser o il sistema cancellino la musica dopo giorni di inattività. Su Safari/iOS aggiungila alla schermata Home; in Delta Chat evita l’eliminazione automatica dei messaggi.',
+    ru: 'Запрашивает постоянное хранилище, чтобы браузер или система не очищали музыку после нескольких дней бездействия. В Safari/iOS добавьте на экран «Домой»; в Delta Chat отключите автоудаление сообщений.',
+    de: 'Fordert dauerhaften Speicher an, damit Browser oder System deine Musik nach Tagen ohne Nutzung nicht löschen. Unter Safari/iOS zum Home-Bildschirm hinzufügen; in Delta Chat automatisches Löschen deaktivieren.',
+    uk: 'Запитує постійне сховище, щоб браузер або система не очищали музику після кількох днів бездіяльності. У Safari/iOS додайте на початковий екран; у Delta Chat вимкніть автовидалення повідомлень.',
+    pl: 'Prosi o trwałą pamięć, aby przeglądarka lub system nie usuwały muzyki po kilku dniach nieaktywności. W Safari/iOS dodaj do ekranu głównego; w Delta Chat wyłącz automatyczne usuwanie wiadomości.',
+    tr: 'Günlerce açılmadığında tarayıcının veya sistemin müziğinizi silmemesi için kalıcı depolama ister. Safari/iOS’ta Ana Ekrana ekleyin; Delta Chat’te otomatik mesaj silmeyi kapatın.',
+    id: 'Meminta penyimpanan persisten agar browser atau sistem tidak menghapus musik setelah beberapa hari tidak dibuka. Di Safari/iOS tambahkan ke Layar Utama; di Delta Chat nonaktifkan hapus pesan otomatis.',
+    'zh-TW': '請求持久儲存空間，防止瀏覽器或系統在多日未開啟後清除音樂。Safari/iOS 請加入主畫面；Delta Chat 請關閉自動刪除訊息。'
+  },
+  settings_persist_active_hint: {
+    es: 'Almacenamiento protegido: el navegador no borrará tu biblioteca automáticamente por inactividad. Evita limpiadores de caché y el borrado automático de mensajes.',
+    en: 'Storage protected: the browser will not clear your library automatically due to inactivity. Avoid cache cleaners and message auto-delete.',
+    pt: 'Armazenamento protegido: o navegador não apagará sua biblioteca automaticamente por inatividade. Evite limpadores de cache e exclusão automática de mensagens.',
+    zh: '存储已受保护：浏览器不会因长期未打开而自动清除曲库。请避免清理缓存和自动删除消息。',
+    ja: 'ストレージ保護済み：長期間開かなくてもブラウザが自動でライブラリを削除しません。キャッシュ削除ツールや自動削除にご注意ください。',
+    fr: 'Stockage protégé : le navigateur n’effacera pas automatiquement votre bibliothèque en cas d’inactivité. Évitez les nettoyeurs de cache et la suppression automatique.',
+    it: 'Archiviazione protetta: il browser non cancellerà automaticamente la libreria per inattività. Evita pulitori di cache ed eliminazione automatica dei messaggi.',
+    ru: 'Хранилище защищено: браузер не удалит фонотеку автоматически из-за бездействия. Избегайте очистки кэша и автоудаления сообщений.',
+    de: 'Speicher geschützt: Der Browser löscht deine Bibliothek bei Inaktivität nicht automatisch. Vermeide Cache-Reiniger und automatisches Nachrichtenlöschen.',
+    uk: 'Сховище захищено: браузер не видалить фонотеку автоматично через бездіяльність. Уникайте очищення кешу й автовидалення повідомлень.',
+    pl: 'Pamięć chroniona: przeglądarka nie usunie automatycznie biblioteki z powodu braku aktywności. Unikaj czyszczenia pamięci podręcznej i autousuwania wiadomości.',
+    tr: 'Depolama korunuyor: tarayıcı hareketsizlik nedeniyle kitaplığınızı otomatik silmez. Önbellek temizleyicilerden ve otomatik mesaj silmeden kaçının.',
+    id: 'Penyimpanan terlindungi: browser tidak akan menghapus pustaka secara otomatis karena tidak aktif. Hindari pembersih cache dan hapus pesan otomatis.',
+    'zh-TW': '儲存空間已受保護：瀏覽器不會因長期未開啟而自動清除曲庫。請避免清理快取與自動刪除訊息。'
+  },
+  toast_storage_persisted: {
+    es: 'Almacenamiento protegido frente a borrado automático',
+    en: 'Storage protected against automatic eviction',
+    pt: 'Armazenamento protegido contra limpeza automática',
+    zh: '已开启防自动清理存储保护',
+    ja: '自動削除からストレージを保護しました',
+    fr: 'Stockage protégé contre la suppression automatique',
+    it: 'Archiviazione protetta dalla cancellazione automatica',
+    ru: 'Хранилище защищено от автоочистки',
+    de: 'Speicher vor automatischer Löschung geschützt',
+    uk: 'Сховище захищено від автоочищення',
+    pl: 'Pamięć chroniona przed automatycznym czyszczeniem',
+    tr: 'Depolama otomatik silmeye karşı korundu',
+    id: 'Penyimpanan terlindungi dari penghapusan otomatis',
+    'zh-TW': '已開啟防自動清除儲存保護'
+  },
+  toast_storage_persist_denied: {
+    es: 'El navegador no concedió almacenamiento permanente; instala la app en Inicio para evitar borrados',
+    en: 'The browser did not grant persistent storage; add the app to your Home Screen to prevent clearing',
+    pt: 'O navegador não concedeu armazenamento permanente; adicione à Tela de Início para evitar limpeza',
+    zh: '浏览器未授予持久存储；请将应用添加到主屏幕以防清理',
+    ja: '永続ストレージが許可されませんでした。消去を防ぐにはホーム画面に追加してください',
+    fr: 'Le navigateur n’a pas accordé le stockage persistant ; ajoutez l’app à l’écran d’accueil',
+    it: 'Il browser non ha concesso archiviazione persistente; aggiungi l’app alla schermata Home',
+    ru: 'Браузер не выдал постоянное хранилище; добавьте приложение на главный экран',
+    de: 'Dauerhafter Speicher wurde nicht gewährt; füge die App zum Home-Bildschirm hinzu',
+    uk: 'Браузер не надав постійне сховище; додайте застосунок на головний екран',
+    pl: 'Przeglądarka nie przyznała trwałej pamięci; dodaj aplikację do ekranu głównego',
+    tr: 'Tarayıcı kalıcı depolama izni vermedi; silinmeyi önlemek için Ana Ekrana ekleyin',
+    id: 'Browser tidak memberikan penyimpanan persisten; tambahkan ke Layar Utama untuk mencegah penghapusan',
+    'zh-TW': '瀏覽器未授予持久儲存空間；請將應用程式加入主畫面以防清除'
+  },
+  toast_storage_read_error: {
+    es: 'No se pudo leer el almacenamiento local. Cierra y vuelve a abrir la app para recuperar tus datos.',
+    en: 'Could not read local storage. Close and reopen the app to recover your data.',
+    pt: 'Não foi possível ler o armazenamento local. Feche e reabra o app para recuperar seus dados.',
+    zh: '无法读取本地存储，请关闭并重新打开应用以恢复数据。',
+    ja: 'ローカルストレージを読み込めませんでした。アプリを開き直してください。',
+    fr: 'Impossible de lire le stockage local. Fermez puis rouvrez l’application pour récupérer vos données.',
+    it: 'Impossibile leggere la memoria locale. Chiudi e riapri l’app per recuperare i dati.',
+    ru: 'Не удалось прочитать локальное хранилище. Перезапустите приложение для восстановления данных.',
+    de: 'Lokaler Speicher konnte nicht gelesen werden. App neu öffnen, um die Daten zu laden.',
+    uk: 'Не вдалося прочитати локальне сховище. Перезапустіть застосунок, щоб відновити дані.',
+    pl: 'Nie udało się odczytać pamięci lokalnej. Zamknij i otwórz ponownie aplikację.',
+    tr: 'Yerel depolama okunamadı. Verilerinizi kurtarmak için uygulamayı kapatıp yeniden açın.',
+    id: 'Tidak dapat membaca penyimpanan lokal. Tutup dan buka kembali aplikasi untuk memulihkan data.',
+    'zh-TW': '無法讀取本機儲存空間，請關閉並重新開啟應用程式以復原資料。'
+  },
+  toast_caches_cleared: {
+    es: 'Cachés liberadas. Tu música y tus listas siguen intactas.',
+    en: 'Caches cleared. Your music and playlists remain intact.',
+    pt: 'Caches limpos. Sua música e suas listas continuam intactas.',
+    zh: '缓存已清理，音乐与歌单完好保留。',
+    ja: 'キャッシュを削除しました。音楽とプレイリストはそのままです。',
+    fr: 'Caches vidés. Votre musique et vos listes restent intactes.',
+    it: 'Cache svuotata. La tua musica e le playlist restano intatte.',
+    ru: 'Кэш очищен. Музыка и плейлисты сохранены.',
+    de: 'Caches geleert. Deine Musik und Listen bleiben erhalten.',
+    uk: 'Кеш очищено. Музика та списки збережені.',
+    pl: 'Pamięć podręczna wyczyszczona. Muzyka i listy pozostały nienaruszone.',
+    tr: 'Önbellekler temizlendi. Müziğiniz ve listeleriniz güvende.',
+    id: 'Cache dibersihkan. Musik dan daftar putar Anda tetap utuh.',
+    'zh-TW': '快取已清理，音樂與播放清單完好保留。'
+  },
   settings_free_storage: {
     es: 'Liberar espacio', en: 'Free up space', pt: 'Libertar espaço',
     zh: '释放空间', ja: '容量を空ける', fr: 'Libérer de l\'espace',
@@ -3565,7 +3677,7 @@ const I18N = {
     'zh-TW': '無法複製，請手動選取文字。'
   },
   settings_marquee: {
-    es: 'Marquee en títulos largos', en: 'Marquee for long titles', pt: 'Marquee em títulos longos',
+    es: 'Desplazar títulos largos', en: 'Marquee for long titles', pt: 'Marquee em títulos longos',
     zh: '长标题滚动', ja: '長いタイトルをスクロール', fr: 'Marquee des titres longs',
     it: 'Marquee per titoli lunghi', ru: 'Бегущая строка длинных названий',
     de: 'Lauftext bei langen Titeln',
@@ -3576,7 +3688,7 @@ const I18N = {
     'zh-TW': '長標題滾動'
   },
   settings_sleep_fade: {
-    es: 'El temporizador sleep hace un fade-out de 10 s al apagar.',
+    es: 'El temporizador atenúa el volumen durante 10 s antes de apagar.',
     en: 'The sleep timer fades out over 10 s before stopping.',
     pt: 'O temporizador sleep faz fade-out de 10 s ao parar.',
     zh: '睡眠定时器在停止前会淡出 10 秒。',
@@ -3849,7 +3961,7 @@ const I18N = {
     'zh-TW': '變速時保持音調'
   },
   settings_preserves_pitch_hint: {
-    es: 'Mantiene el tono natural de la voz sin distorsionar el pitch.', en: 'Keeps natural voice pitch without chipmunk effect.', pt: 'Mantém o tom natural da voz sem distorcer o pitch.',
+    es: 'Mantiene el tono natural de la voz sin deformarlo.', en: 'Keeps natural voice pitch without chipmunk effect.', pt: 'Mantém o tom natural da voz sem distorcer o pitch.',
     zh: '保持自然声音音调，避免变声效果。', ja: '声の高さを変えずに自然なトーンを維持します。', fr: 'Maintient la voix naturelle sans effet accéléré.',
     it: 'Mantiene il timbro vocale naturale senza alterare l’intonazione.', ru: 'Сохраняет естественную тональность голоса без искажения.',
     de: 'Hält die natürliche Tonhöhe der Stimme ohne Pitch-Verzerrung.',
@@ -4203,6 +4315,17 @@ const I18N = {
     id: 'Durasi',
     'zh-TW': '時長'
   },
+  tab_playlists: {
+    es: 'Listas', en: 'Playlists', pt: 'Listas',
+    zh: '歌单', ja: 'リスト', fr: 'Listes',
+    it: 'Playlist', ru: 'Плейлисты',
+    de: 'Listen',
+    uk: 'Плейлисти',
+    pl: 'Listy',
+    tr: 'Listeler',
+    id: 'Daftar',
+    'zh-TW': '歌單'
+  },
   tab_albums: {
     es: 'Álbumes', en: 'Albums', pt: 'Álbuns',
     zh: '专辑', ja: 'アルバム', fr: 'Albums',
@@ -4351,6 +4474,66 @@ const I18N = {
     id: 'X salinan duplikat akan dihapus dan yang dipilih dipertahankan. Lanjut?',
     'zh-TW': '將刪除 X 個重複副本，只保留所選的一個。繼續嗎？'
   },
+  duplicates_none_sub: {
+    es: 'Tu biblioteca está al día, sin copias repetidas.',
+    en: 'Your library is clean, with no repeated copies.',
+    pt: 'Sua biblioteca está em dia, sem cópias repetidas.',
+    zh: '音乐库很整洁，没有重复副本。',
+    ja: 'ライブラリに重複コピーはありません。',
+    fr: 'Votre bibliothèque est propre, sans copies en double.',
+    it: 'La tua libreria è in ordine, senza copie ripetute.',
+    ru: 'В медиатеке порядок, повторяющихся копий нет.',
+    de: 'Deine Mediathek ist sauber, ohne doppelte Kopien.',
+    uk: 'У медіатеці лад, повторюваних копій немає.',
+    pl: 'Biblioteka jest uporządkowana, bez powtórzonych kopii.',
+    tr: 'Kitaplığın düzenli, yinelenen kopya yok.',
+    id: 'Pustaka rapi, tidak ada salinan berulang.',
+    'zh-TW': '音樂庫很整潔，沒有重複副本。'
+  },
+  duplicates_stat_groups: {
+    es: 'Canciones', en: 'Songs', pt: 'Músicas',
+    zh: '歌曲', ja: '曲', fr: 'Titres',
+    it: 'Brani', ru: 'Треки', de: 'Songs',
+    uk: 'Пісні', pl: 'Utwory', tr: 'Şarkılar',
+    id: 'Lagu', 'zh-TW': '歌曲'
+  },
+  duplicates_stat_extra: {
+    es: 'Sobrantes', en: 'Extras', pt: 'Extras',
+    zh: '多余副本', ja: '重複分', fr: 'En trop',
+    it: 'In più', ru: 'Лишние', de: 'Überzählig',
+    uk: 'Зайві', pl: 'Nadmiarowe', tr: 'Fazlalık',
+    id: 'Duplikat', 'zh-TW': '多餘副本'
+  },
+  duplicates_stat_space: {
+    es: 'A liberar', en: 'Reclaimable', pt: 'A liberar',
+    zh: '可释放', ja: '削減可能', fr: 'Libérable',
+    it: 'Liberabili', ru: 'Освободится', de: 'Freigebbar',
+    uk: 'Звільниться', pl: 'Do zwolnienia', tr: 'Açılacak yer',
+    id: 'Dapat dihemat', 'zh-TW': '可釋放'
+  },
+  duplicates_hint: {
+    es: 'Toca la copia que quieras conservar en cada canción.',
+    en: 'Tap the copy you want to keep for each song.',
+    pt: 'Toque na cópia que deseja manter em cada música.',
+    zh: '点选每首歌中要保留的副本。',
+    ja: '曲ごとに残したいコピーをタップしてください。',
+    fr: 'Touchez la copie à conserver pour chaque titre.',
+    it: 'Tocca la copia che vuoi tenere per ogni brano.',
+    ru: 'Нажмите на копию, которую хотите оставить для каждого трека.',
+    de: 'Tippe pro Song auf die Kopie, die du behalten möchtest.',
+    uk: 'Торкніться копії, яку хочете зберегти для кожної пісні.',
+    pl: 'Dotknij kopii, którą chcesz zachować dla każdego utworu.',
+    tr: 'Her şarkıda korumak istediğin kopyaya dokun.',
+    id: 'Ketuk salinan yang ingin dipertahankan di setiap lagu.',
+    'zh-TW': '點選每首歌中要保留的副本。'
+  },
+  duplicates_delete_all: {
+    es: 'Eliminar sobrantes (X)', en: 'Delete extras (X)', pt: 'Excluir extras (X)',
+    zh: '删除多余副本 (X)', ja: '重複分を削除 (X)', fr: 'Supprimer les doublons (X)',
+    it: 'Elimina copie in più (X)', ru: 'Удалить лишние (X)', de: 'Überzählige löschen (X)',
+    uk: 'Видалити зайві (X)', pl: 'Usuń nadmiarowe (X)', tr: 'Fazlalıkları sil (X)',
+    id: 'Hapus duplikat (X)', 'zh-TW': '刪除多餘副本 (X)'
+  },
   toast_sort_saved: {
     es: 'Orden guardado', en: 'Sort order saved', pt: 'Ordem salva',
     zh: '排序已保存', ja: '並び順を保存', fr: 'Ordre enregistré',
@@ -4372,6 +4555,138 @@ const I18N = {
     tr: 'Onayla',
     id: 'Konfirmasi',
     'zh-TW': '確認'
+  },
+  key_space: {
+    es: 'Espacio', en: 'Space', pt: 'Espaço',
+    zh: '空格', ja: 'スペース', fr: 'Espace',
+    it: 'Spazio', ru: 'Пробел', de: 'Leertaste',
+    uk: 'Пробіл', pl: 'Spacja', tr: 'Boşluk',
+    id: 'Spasi', 'zh-TW': '空白鍵'
+  },
+  sleep_min_5: {
+    es: '5 min', en: '5 min', pt: '5 min',
+    zh: '5 分钟', ja: '5分', fr: '5 min',
+    it: '5 min', ru: '5 мин', de: '5 Min.',
+    uk: '5 хв', pl: '5 min', tr: '5 dk',
+    id: '5 mnt', 'zh-TW': '5 分鐘'
+  },
+  sleep_min_10: {
+    es: '10 min', en: '10 min', pt: '10 min',
+    zh: '10 分钟', ja: '10分', fr: '10 min',
+    it: '10 min', ru: '10 мин', de: '10 Min.',
+    uk: '10 хв', pl: '10 min', tr: '10 dk',
+    id: '10 mnt', 'zh-TW': '10 分鐘'
+  },
+  sleep_min_15: {
+    es: '15 min', en: '15 min', pt: '15 min',
+    zh: '15 分钟', ja: '15分', fr: '15 min',
+    it: '15 min', ru: '15 мин', de: '15 Min.',
+    uk: '15 хв', pl: '15 min', tr: '15 dk',
+    id: '15 mnt', 'zh-TW': '15 分鐘'
+  },
+  sleep_min_30: {
+    es: '30 min', en: '30 min', pt: '30 min',
+    zh: '30 分钟', ja: '30分', fr: '30 min',
+    it: '30 min', ru: '30 мин', de: '30 Min.',
+    uk: '30 хв', pl: '30 min', tr: '30 dk',
+    id: '30 mnt', 'zh-TW': '30 分鐘'
+  },
+  sleep_min_45: {
+    es: '45 min', en: '45 min', pt: '45 min',
+    zh: '45 分钟', ja: '45分', fr: '45 min',
+    it: '45 min', ru: '45 мин', de: '45 Min.',
+    uk: '45 хв', pl: '45 min', tr: '45 dk',
+    id: '45 mnt', 'zh-TW': '45 分鐘'
+  },
+  sleep_hour_1: {
+    es: '1 h', en: '1 hr', pt: '1 h',
+    zh: '1 小时', ja: '1時間', fr: '1 h',
+    it: '1 h', ru: '1 ч', de: '1 Std.',
+    uk: '1 год', pl: '1 godz.', tr: '1 sa',
+    id: '1 jam', 'zh-TW': '1 小時'
+  },
+  xfade_3s: {
+    es: '3 s', en: '3 s', pt: '3 s',
+    zh: '3 秒', ja: '3秒', fr: '3 s',
+    it: '3 s', ru: '3 с', de: '3 s',
+    uk: '3 с', pl: '3 s', tr: '3 sn',
+    id: '3 dtk', 'zh-TW': '3 秒'
+  },
+  xfade_6s: {
+    es: '6 s', en: '6 s', pt: '6 s',
+    zh: '6 秒', ja: '6秒', fr: '6 s',
+    it: '6 s', ru: '6 с', de: '6 s',
+    uk: '6 с', pl: '6 s', tr: '6 sn',
+    id: '6 dtk', 'zh-TW': '6 秒'
+  },
+  xfade_12s: {
+    es: '12 s', en: '12 s', pt: '12 s',
+    zh: '12 秒', ja: '12秒', fr: '12 s',
+    it: '12 s', ru: '12 с', de: '12 s',
+    uk: '12 с', pl: '12 s', tr: '12 sn',
+    id: '12 dtk', 'zh-TW': '12 秒'
+  },
+  lrc_editor_placeholder: {
+    es: '[00:12.50]Primera línea\n[00:15.30]Segunda línea',
+    en: '[00:12.50]First line\n[00:15.30]Second line',
+    pt: '[00:12.50]Primeira linha\n[00:15.30]Segunda linha',
+    zh: '[00:12.50]第一行歌词\n[00:15.30]第二行歌词',
+    ja: '[00:12.50]1行目の歌詞\n[00:15.30]2行目の歌詞',
+    fr: '[00:12.50]Première ligne\n[00:15.30]Deuxième ligne',
+    it: '[00:12.50]Prima riga\n[00:15.30]Seconda riga',
+    ru: '[00:12.50]Первая строка\n[00:15.30]Вторая строка',
+    de: '[00:12.50]Erste Zeile\n[00:15.30]Zweite Zeile',
+    uk: '[00:12.50]Перший рядок\n[00:15.30]Другий рядок',
+    pl: '[00:12.50]Pierwszy wers\n[00:15.30]Drugi wers',
+    tr: '[00:12.50]İlk satır\n[00:15.30]İkinci satır',
+    id: '[00:12.50]Baris pertama\n[00:15.30]Baris kedua',
+    'zh-TW': '[00:12.50]第一行歌詞\n[00:15.30]第二行歌詞'
+  },
+  queue_empty_hint: {
+    es: 'Elige una canción o una lista para empezar a escuchar.',
+    en: 'Pick a song or playlist to start listening.',
+    pt: 'Escolha uma música ou lista para começar a ouvir.',
+    zh: '选择一首歌曲或歌单开始播放。',
+    ja: '曲またはプレイリストを選んで再生を始めましょう。',
+    fr: 'Choisissez un titre ou une liste pour lancer l’écoute.',
+    it: 'Scegli un brano o una playlist per iniziare l’ascolto.',
+    ru: 'Выберите песню или плейлист, чтобы начать прослушивание.',
+    de: 'Wähle einen Titel oder eine Wiedergabeliste zum Abspielen.',
+    uk: 'Виберіть пісню або список, щоб почати прослуховування.',
+    pl: 'Wybierz utwór lub listę, aby rozpocząć słuchanie.',
+    tr: 'Dinlemeye başlamak için bir şarkı veya liste seçin.',
+    id: 'Pilih lagu atau daftar putar untuk mulai mendengarkan.',
+    'zh-TW': '選擇一首歌曲或播放清單開始播放。'
+  },
+  cover_fs_hint: {
+    es: 'Toca o pulsa Esc para salir',
+    en: 'Tap or press Esc to exit',
+    pt: 'Toque ou prima Esc para sair',
+    zh: '轻点或按 Esc 退出',
+    ja: 'タップまたは Esc で終了',
+    fr: 'Touchez ou appuyez sur Échap pour quitter',
+    it: 'Tocca o premi Esc per uscire',
+    ru: 'Нажмите или Esc, чтобы выйти',
+    de: 'Tippen oder Esc zum Beenden',
+    uk: 'Торкніться або натисніть Esc, щоб вийти',
+    pl: 'Dotknij lub naciśnij Esc, aby wyjść',
+    tr: 'Çıkmak için dokunun veya Esc’ye basın',
+    id: 'Ketuk atau tekan Esc untuk keluar',
+    'zh-TW': '輕點或按 Esc 離開'
+  },
+  confirm_default: {
+    es: '¿Seguro?', en: 'Are you sure?', pt: 'Tem certeza?',
+    zh: '确定吗？', ja: 'よろしいですか？', fr: 'Confirmer ?',
+    it: 'Confermi?', ru: 'Вы уверены?', de: 'Sicher?',
+    uk: 'Ви впевнені?', pl: 'Na pewno?', tr: 'Emin misiniz?',
+    id: 'Yakin?', 'zh-TW': '確定嗎？'
+  },
+  storage_protected_badge: {
+    es: 'Protegido', en: 'Protected', pt: 'Protegido',
+    zh: '已保护', ja: '保護済み', fr: 'Protégé',
+    it: 'Protetto', ru: 'Защищено', de: 'Geschützt',
+    uk: 'Захищено', pl: 'Chronione', tr: 'Korumalı',
+    id: 'Terlindungi', 'zh-TW': '已保護'
   },
 
 };

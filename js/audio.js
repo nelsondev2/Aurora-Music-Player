@@ -123,7 +123,10 @@ Object.assign(App, {
           val.textContent = (n > 0 ? '+' : '') + n + ' dB';
           this.saveEqValues();
           try { localStorage.setItem('aurora_eq_preset', 'custom'); } catch (e) {}
-          document.querySelectorAll('.eq-preset').forEach(b => b.classList.remove('active'));
+          document.querySelectorAll('.eq-preset').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-pressed', 'false');
+          });
         });
         // <label for> real: además de axe, permite clicar la etiqueta.
         const labelEl = document.createElement('label');
@@ -140,7 +143,11 @@ Object.assign(App, {
       try {
         let preset = localStorage.getItem('aurora_eq_preset') || 'normal';
         if (preset === 'flat') preset = 'normal';
-        document.querySelectorAll('.eq-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
+        document.querySelectorAll('.eq-preset').forEach(b => {
+          const on = b.dataset.preset === preset;
+          b.classList.toggle('active', on);
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
       } catch (e) {}
     },
     /* #5 Guardar valores del EQ */
@@ -174,7 +181,11 @@ Object.assign(App, {
       });
       this.saveEqValues();
       try { localStorage.setItem('aurora_eq_preset', preset); } catch (e) {}
-      document.querySelectorAll('.eq-preset').forEach(b => b.classList.toggle('active', b.dataset.preset === preset));
+      document.querySelectorAll('.eq-preset').forEach(b => {
+        const on = b.dataset.preset === preset;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
     },
 
     /* ============================================================
@@ -441,6 +452,7 @@ Object.assign(App, {
 
     /* Crossfade de portada 200 ms, sin rotateY. */
     animateCoverTransition() {
+      if (typeof this.prefersReducedMotion === 'function' && this.prefersReducedMotion()) return;
       const front = document.getElementById('coverCanvas');
       const back = document.getElementById('coverCanvasBack');
       const bg = document.getElementById('bgGradient');
@@ -1099,6 +1111,8 @@ Object.assign(App, {
         el.setAttribute('hidden', '');
         el.classList.remove('open');
       }
+      const volBtn = document.getElementById('btnVolume');
+      if (volBtn) volBtn.setAttribute('aria-expanded', on ? 'true' : 'false');
       clearTimeout(this._npVolHide);
       if (on) {
         this._npVolHide = setTimeout(() => this.showNpVolume(false), 4000);
